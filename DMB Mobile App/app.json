@@ -1,0 +1,54 @@
+{
+  "expo": {
+    "name": "Doctor Marriage Bureau",
+    "slug": "doctors-marriage-bureau",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.doctorsmarriagebureau.app"
+    },
+    "android": {
+      "package": "com.doctorsmarriagebureau.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "node_modules/@expo-google-fonts/inter/900Black/Inter_900Black.ttf"
+          ]
+        }
+      ],
+      "expo-sharing",
+      "expo-secure-store"
+    ],
+    "scheme": "doctorsmarriagebureau",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "36dc2afa-3ea8-46a2-95f2-8532b5fbcb66"
+      }
+    },
+    "owner": "xhsjs5901"
+  }
+}

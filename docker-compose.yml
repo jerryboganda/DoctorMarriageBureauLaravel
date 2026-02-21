@@ -1,0 +1,92 @@
+version: '3'
+services:
+  app:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+    image: marriagebureau-app
+    container_name: marriagebureau-app
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - .:/var/www
+    networks:
+      - marriagebureau-network
+      - nginx-proxy-manager_default
+
+  web:
+    image: nginx:alpine
+    container_name: marriagebureau-web
+    restart: unless-stopped
+    ports:
+      - 8086:80
+    volumes:
+      - .:/var/www
+      - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
+    networks:
+      - marriagebureau-network
+      - nginx-proxy-manager_default
+
+  db:
+    image: mysql:8.0
+    container_name: marriagebureau-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: marriagebureau
+      MYSQL_USER: marriagebureau
+      MYSQL_PASSWORD: MarriageBureauPass123!
+      MYSQL_ROOT_PASSWORD: MarriageBureauRootPass123!
+    volumes:
+      - marriagebureau-db-data:/var/lib/mysql
+    networks:
+      - marriagebureau-network
+
+  soketi:
+    image: quay.io/soketi/soketi:latest-16-alpine
+    container_name: marriagebureau-soketi
+    environment:
+      SOKETI_DEBUG: '1'
+      SOKETI_METRICS_SERVER_PORT: '9601'
+      SOKETI_DEFAULT_APP_ID: '${PUSHER_APP_ID}'
+      SOKETI_DEFAULT_APP_KEY: '${PUSHER_APP_KEY}'
+      SOKETI_DEFAULT_APP_SECRET: '${PUSHER_APP_SECRET}'
+    ports:
+      - "6001:6001"
+      - "9601:9601"
+    restart: unless-stopped
+    networks:
+      - marriagebureau-network
+      - nginx-proxy-manager_default
+
+  frontend:
+    build:
+      context: ./New User Panel Frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: https://api.doctormarriagebureau.com.pk/api
+        VITE_PUSHER_APP_KEY: 3f7e1c4b5a6d7e8f9a0b1c2d3e4f5a6b
+        VITE_PUSHER_HOST: soketi.polytronx.com
+        VITE_PUSHER_PORT: 443
+        VITE_PUSHER_SCHEME: https
+        VITE_PUSHER_APP_CLUSTER: mt1
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
+        VITE_FACEBOOK_APP_ID: ${VITE_FACEBOOK_APP_ID}
+    image: marriagebureau-frontend
+    container_name: marriagebureau-frontend
+    restart: unless-stopped
+    ports:
+      - 3000:80
+    networks:
+      - marriagebureau-network
+      - nginx-proxy-manager_default
+
+networks:
+  marriagebureau-network:
+    driver: bridge
+  nginx-proxy-manager_default:
+    external: true
+
+volumes:
+  marriagebureau-db-data:
