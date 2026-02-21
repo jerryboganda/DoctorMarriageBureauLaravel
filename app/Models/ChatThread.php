@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class ChatThread extends Model
 {
     use SoftDeletes;
-    
+
     protected $fillable = [
         'sender_user_id',
         'receiver_user_id',
@@ -17,9 +17,18 @@ class ChatThread extends Model
         'active',
         'blocked_by_user'
     ];
+
     public function chats()
     {
         return $this->hasMany(Chat::class);
+    }
+
+    /**
+     * Get only the latest message in this thread (for list previews).
+     */
+    public function latestChat()
+    {
+        return $this->hasOne(Chat::class)->latestOfMany();
     }
 
     public function sender()

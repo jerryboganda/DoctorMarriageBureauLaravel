@@ -6,11 +6,6 @@ use Illuminate\Support\Facades\Broadcast;
 |--------------------------------------------------------------------------
 | Broadcast Channels
 |--------------------------------------------------------------------------
-|
-| Here you may register all of the event broadcasting channels that your
-| application supports. The given channel authorization callbacks are
-| used to check if an authenticated user can listen to the channel.
-|
 */
 
 Broadcast::channel('App.User.{id}', function ($user, $id) {
@@ -41,4 +36,9 @@ Broadcast::channel('chat.{threadId}', function ($user, $threadId) {
     $thread = \App\Models\ChatThread::find($threadId);
     if (!$thread) return false;
     return $user->id === $thread->sender_user_id || $user->id === $thread->receiver_user_id;
+});
+
+// Personal channel for real-time thread list updates
+Broadcast::channel('user.chat.{userId}', function ($user, $userId) {
+    return (int) $user->id === (int) $userId;
 });

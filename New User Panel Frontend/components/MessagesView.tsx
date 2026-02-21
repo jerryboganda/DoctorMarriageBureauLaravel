@@ -78,6 +78,43 @@ const MessagesView: React.FC = () => {
   const scheduleRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const currentUserId = user?.id;
+  const upsertMessage = (incoming: any) => {
+    if (!incoming || !incoming.id) return;
+
+    setActiveChatData((prev: any) => {
+      if (!prev) return prev;
+      const existing = Array.isArray(prev.messages) ? prev.messages : [];
+      const filtered = existing.filter((m: any) => {
+        if (m?.id === incoming.id) return false;
+        if (m?._optimistic && m?.message === incoming.message && m?.sender_user_id === incoming.sender_user_id) return false;
+        return true;
+      });
+      return {
+        ...prev,
+        messages: [...filtered, incoming].sort((a: any, b: any) => {
+          const ta = new Date(a.created_at || 0).getTime();
+          const tb = new Date(b.created_at || 0).getTime();
+          if (ta !== tb) return ta - tb;
+          return Number(a.id || 0) - Number(b.id || 0);
+        }),
+      };
+    });
+
+    setThreads((prev: any[]) => prev.map((thread: any) =>
+      thread.id === incoming.chat_thread_id
+        ? {
+            ...thread,
+            last_message: incoming.message,
+            last_message_time: 'Just now',
+            unseen_message_count: incoming.sender_user_id === currentUserId
+              ? thread.unseen_message_count
+              : Number(thread.unseen_message_count || 0) + 1,
+          }
+        : thread
+    ));
+  };
+
   // Heartbeat every 60s
   useEffect(() => {
     const sendHeartbeat = () => { api.post('/member/heartbeat').catch(() => {}); };
@@ -86,12 +123,51 @@ const MessagesView: React.FC = () => {
     return () => clearInterval(hbInterval);
   }, []);
 
-  // Fetch threads every 15s
+  // Fetch threads — poll every 30s as backup; WebSocket handles real-time
   useEffect(() => {
     fetchThreads();
-    const interval = setInterval(fetchThreads, 15000);
+    const interval = setInterval(fetchThreads, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  // Global WebSocket: listen for thread-list updates on user's personal channel
+  useEffect(() => {
+    if (!echo || !currentUserId) return;
+    const userChannel = echo.private(`user.chat.${currentUserId}`);
+
+    const onThreadUpdate = (event: any) => {
+      const data = event?.thread_id ? event : event?.data;
+      if (!data?.thread_id) return;
+      // Optimistically update the thread list
+      setThreads((prev: any[]) => {
+        const exists = prev.find((t: any) => t.id === data.thread_id);
+        if (exists) {
+          return prev.map((t: any) =>
+            t.id === data.thread_id
+              ? {
+                  ...t,
+                  last_message: data.last_message || t.last_message,
+                  last_message_time: data.last_message_time || 'Just now',
+                  unseen_message_count:
+                    data.sender_user_id === currentUserId
+                      ? t.unseen_message_count
+                      : Number(t.unseen_message_count || 0) + 1,
+                }
+              : t
+          );
+        }
+        // New thread from someone — do a full refresh
+        fetchThreads();
+        return prev;
+      });
+    };
+
+    userChannel.listen('.thread.updated', onThreadUpdate);
+
+    return () => {
+      echo.leave(`private-user.chat.${currentUserId}`);
+    };
+  }, [currentUserId]);
 
   // Online status polling every 30s
   useEffect(() => {
@@ -111,18 +187,22 @@ const MessagesView: React.FC = () => {
   // WebSocket for real-time messages
   useEffect(() => {
     if (selectedChatId && echo) {
-      const channel = echo.channel(`chat.${selectedChatId}`);
-      channel.listen('.MessageSent', (e: any) => {
-        fetchChat(selectedChatId);
-        fetchThreads();
-      });
-      channel.listen('.message.sent', (e: any) => {
-        fetchChat(selectedChatId);
-        fetchThreads();
-      });
-      return () => { echo.leaveChannel(`chat.${selectedChatId}`); };
+      const channel = echo.private(`chat.${selectedChatId}`);
+
+      const onMessage = (event: any) => {
+        const incoming = event?.message ?? event;
+        if (!incoming || Number(incoming.chat_thread_id) !== Number(selectedChatId)) return;
+        upsertMessage(incoming);
+      };
+
+      channel.listen('.message.sent', onMessage);
+      channel.listen('.MessageSent', onMessage);
+
+      return () => {
+        echo.leave(`private-chat.${selectedChatId}`);
+      };
     }
-  }, [selectedChatId]);
+  }, [selectedChatId, currentUserId]);
 
   useEffect(() => {
     if (selectedChatId) fetchChat(selectedChatId);
@@ -162,9 +242,14 @@ const MessagesView: React.FC = () => {
   const fetchThreads = async () => {
     try {
       const response = await api.get('/member/chat-list');
-      setThreads(response.data.data);
+      const data = response.data?.data;
+      // Only update state if we got a valid array — never wipe existing threads on error
+      if (Array.isArray(data)) {
+        setThreads(data);
+      }
     } catch (error) {
       console.error('Failed to fetch chat list', error);
+      // Keep existing threads on failure — do NOT clear state
     } finally {
       setLoadingList(false);
     }
@@ -174,9 +259,13 @@ const MessagesView: React.FC = () => {
     try {
       setLoadingChat(true);
       const response = await api.get(`/member/chat-view/${id}`);
-      setActiveChatData(response.data.data);
+      const data = response.data?.data;
+      if (data) {
+        setActiveChatData(data);
+      }
     } catch (error) {
       console.error('Failed to fetch chat', error);
+      // Keep existing chat data on failure — do NOT clear
     } finally {
       setLoadingChat(false);
     }
@@ -184,7 +273,6 @@ const MessagesView: React.FC = () => {
 
   const selectedThread = threads.find(t => t.id === selectedChatId);
   const currentMessages = activeChatData?.messages || [];
-  const currentUserId = user?.id;
   
   const displayedThreads = useMemo(() => {
     let filtered = threads.filter(t => 
@@ -209,10 +297,9 @@ const MessagesView: React.FC = () => {
   // Core send function — used by all send actions
   const doSendMessage = async (text: string) => {
     if (!text.trim() || !selectedChatId) return;
-    
-    // Optimistic update
+
     const optimisticMsg = {
-      id: Date.now(),
+      id: `tmp-${Date.now()}`,
       chat_thread_id: selectedChatId,
       sender_user_id: currentUserId,
       message: text,
@@ -221,19 +308,25 @@ const MessagesView: React.FC = () => {
       created_at_human: 'Just now',
       _optimistic: true,
     };
-    
+
     setActiveChatData((prev: any) => prev ? {
       ...prev,
       messages: [...(prev.messages || []), optimisticMsg],
     } : prev);
-    
+
     try {
       setSending(true);
-      await api.post('/member/chat-reply', {
+      const response = await api.post('/member/chat-reply', {
         chat_thread_id: selectedChatId,
         message: text
       });
-      await fetchChat(selectedChatId);
+
+      const persisted = response?.data?.data;
+      if (persisted?.id) {
+        upsertMessage(persisted);
+      } else {
+        await fetchChat(selectedChatId);
+      }
       await fetchThreads();
     } catch (error) {
       console.error('Failed to send message', error);

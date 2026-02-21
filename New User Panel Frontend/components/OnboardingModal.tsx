@@ -224,15 +224,52 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                 });
             }
 
-            // On the final step, mark onboarding as completed on the server
+            // On the final step, re-send ALL accumulated data + mark complete.
+            // This ensures no data is lost even if an earlier step save failed.
             if (step === totalSteps) {
-                await api.post('/full-profile/update', { onboardingCompleted: true });
+                const fullPayload: any = {
+                    basics: {
+                        firstName: data.firstName,
+                        lastName: data.lastName,
+                        gender: data.gender,
+                        dateOfBirth: data.dateOfBirth,
+                        maritalStatusId: data.maritalStatusId || null,
+                        currentResidencyCountryId: data.currentResidencyCountryId || null,
+                        currentResidencyStateId: data.currentResidencyStateId || null,
+                        currentResidencyCityId: data.currentResidencyCityId || null,
+                        height: data.height || null,
+                        weight: data.weight || null,
+                        complexion: data.complexion || null,
+                        introduction: data.introduction,
+                    },
+                    family: {
+                        religionId: data.religionId || null,
+                        casteId: data.casteId || null,
+                    },
+                    career: {
+                        designation: data.designation,
+                        company: data.company,
+                        education: data.education,
+                        institution: data.institution,
+                        incomeRangeId: data.incomeRangeId || null,
+                        careerPresent: true,
+                        isHighestDegree: true,
+                    },
+                    onboardingCompleted: true,
+                };
+                await api.post('/full-profile/update', fullPayload);
             }
 
             setSaving(false);
             return true;
         } catch (err: any) {
-            setError(err?.response?.data?.message || t('auth.onboarding.saveFailed'));
+            const serverMsg = err?.response?.data?.message;
+            const missingFields = err?.response?.data?.missingFields;
+            if (missingFields && Array.isArray(missingFields) && missingFields.length > 0) {
+                setError(`${t('auth.onboarding.saveFailed')}: ${missingFields.join(', ')}`);
+            } else {
+                setError(serverMsg || t('auth.onboarding.saveFailed'));
+            }
             setSaving(false);
             return false;
         }

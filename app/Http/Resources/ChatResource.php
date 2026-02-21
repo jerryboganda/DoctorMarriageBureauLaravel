@@ -15,16 +15,15 @@ class ChatResource extends JsonResource
      */
     public function toArray($request)
     {
-        $chats = $this->chats()->oldest()->get();
-        $user_to_show = auth()->id() !== $this->sender->id ? 'receiver' : 'sender';
+        $chats = $this->chats()->orderBy('created_at')->orderBy('id')->get();
+
         return [
+            'thread_id' => $this->id,
             'receiver_name' => $this->receiver->first_name . ' ' . $this->receiver->last_name,
             'receiver_photo' => $this->receiver->photo != null ? uploaded_asset($this->receiver->photo) : static_asset('assets/frontend/default/img/avatar-place.png'),
             'sender_name' => $this->sender->first_name . ' ' . $this->sender->last_name,
-            'auth_user_photo' =>  uploaded_asset(auth()->user()->photo) !== null ? uploaded_asset(auth()->user()->photo) : static_asset('assets/frontend/default/img/avatar-place.png'),
+            'auth_user_photo' => uploaded_asset(auth()->user()->photo) !== null ? uploaded_asset(auth()->user()->photo) : static_asset('assets/frontend/default/img/avatar-place.png'),
             'messages' => ChatViewResource::collection($chats),
-            // 'sender_messages'=>$this->sender->$chats,
-            // 'receiver_messages'=>$this->receiver->$chats,
         ];
     }
 }

@@ -1660,10 +1660,16 @@ class ProfileController extends Controller
         }
 
         if ($request->has('onboardingCompleted') && $request->input('onboardingCompleted')) {
-            if (!$this->isOnboardingDataComplete($user, $member)) {
+            // Reload user and member from DB to get latest state (e.g. photo just uploaded)
+            $user = $user->fresh();
+            $member = $user->member;
+            $missingFields = $this->getOnboardingMissingFields($user, $member);
+            if (!empty($missingFields)) {
+                \Log::warning('Onboarding incomplete for user ' . $user->id, ['missing' => $missingFields]);
                 return response()->json([
                     'result' => false,
-                    'message' => 'Please complete all onboarding fields and upload profile photo before finishing onboarding.'
+                    'message' => 'Missing: ' . implode(', ', $missingFields),
+                    'missingFields' => $missingFields,
                 ], 422);
             }
             $member->onboarding_completed = 1;
@@ -1682,8 +1688,14 @@ class ProfileController extends Controller
         ]);
     }
 
-    private function isOnboardingDataComplete(User $user, Member $member): bool
+    /**
+     * Check onboarding completeness. Returns empty array if complete,
+     * otherwise returns list of human-readable missing field labels.
+     */
+    private function getOnboardingMissingFields(User $user, Member $member): array
     {
+        $missing = [];
+
         $presentAddress = Address::where('user_id', $user->id)->where('type', 'present')->first();
         $spiritual = SpiritualBackground::where('user_id', $user->id)->first();
         $career = DB::table('careers')
@@ -1700,44 +1712,47 @@ class ProfileController extends Controller
             ->first();
         $physical = PhysicalAttribute::where('user_id', $user->id)->first();
 
-        $hasPersonal = trim((string) $user->first_name) !== ''
-            && trim((string) $user->last_name) !== ''
-            && !empty($member->gender)
-            && !empty($member->birthday)
-            && !empty($member->marital_status_id);
+        // Step 1: Personal
+        if (trim((string) $user->first_name) === '') $missing[] = 'First Name';
+        if (trim((string) $user->last_name) === '') $missing[] = 'Last Name';
+        if (empty($member->gender)) $missing[] = 'Gender';
+        if (empty($member->birthday)) $missing[] = 'Date of Birth';
+        if (empty($member->marital_status_id)) $missing[] = 'Marital Status';
 
-        $hasLocationAndReligion = $presentAddress
-            && !empty($presentAddress->country_id)
-            && !empty($presentAddress->state_id)
-            && !empty($presentAddress->city_id)
-            && $spiritual
-            && !empty($spiritual->religion_id)
-            && !empty($spiritual->caste_id);
+        // Step 2: Location & Religion
+        if (!$presentAddress || empty($presentAddress->country_id)) $missing[] = 'Country';
+        if (!$presentAddress || empty($presentAddress->state_id)) $missing[] = 'State';
+        if (!$presentAddress || empty($presentAddress->city_id)) $missing[] = 'City';
+        if (!$spiritual || empty($spiritual->religion_id)) $missing[] = 'Religion';
+        if (!$spiritual || empty($spiritual->caste_id)) $missing[] = 'Caste';
 
-        $hasCareer = $career
-            && trim((string) ($career->designation ?? '')) !== ''
-            && trim((string) ($career->company ?? '')) !== ''
-            && !empty($member->annual_salary_range_id);
+        // Step 3: Career & Education
+        if (!$career || trim((string) ($career->designation ?? '')) === '') $missing[] = 'Designation';
+        if (!$career || trim((string) ($career->company ?? '')) === '') $missing[] = 'Hospital/Company';
+        if (!$education || trim((string) ($education->degree ?? '')) === '') $missing[] = 'Degree';
+        if (!$education || trim((string) ($education->institution ?? '')) === '') $missing[] = 'Institution';
+        if (empty($member->annual_salary_range_id)) $missing[] = 'Income Range';
 
-        $hasEducation = $education
-            && trim((string) ($education->degree ?? '')) !== ''
-            && trim((string) ($education->institution ?? '')) !== '';
+        // Step 4: Appearance
+        if (!$physical || $physical->height === null || $physical->height === '') $missing[] = 'Height';
+        if (!$physical || $physical->weight === null || $physical->weight === '') $missing[] = 'Weight';
+        if (!$physical || trim((string) ($physical->complexion ?? '')) === '') $missing[] = 'Complexion';
 
-        $hasAppearance = $physical
-            && $physical->height !== null && $physical->height !== ''
-            && $physical->weight !== null && $physical->weight !== ''
-            && trim((string) ($physical->complexion ?? '')) !== '';
+        // Step 5: About Me
+        if (trim((string) ($member->introduction ?? '')) === '') $missing[] = 'Introduction';
 
-        $hasIntroduction = trim((string) ($member->introduction ?? '')) !== '';
-        $hasProfilePhoto = !empty($user->photo);
+        // Step 6: Photo
+        if (empty($user->photo)) $missing[] = 'Profile Photo';
 
-        return $hasPersonal
-            && $hasLocationAndReligion
-            && $hasCareer
-            && $hasEducation
-            && $hasAppearance
-            && $hasIntroduction
-            && $hasProfilePhoto;
+        return $missing;
+    }
+
+    /**
+     * Backward-compatible boolean wrapper used by get_full_profile_react.
+     */
+    private function isOnboardingDataComplete(User $user, Member $member): bool
+    {
+        return empty($this->getOnboardingMissingFields($user, $member));
     }
 
     public function download_biodata(Request $request)
