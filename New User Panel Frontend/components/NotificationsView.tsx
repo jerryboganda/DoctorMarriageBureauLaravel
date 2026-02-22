@@ -109,9 +109,10 @@ const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate }) => 
 
     const getNavigationTarget = (type: string): string | null => {
         const map: Record<string, string> = {
-            express_interest: 'proposals',
-            accept_interest: 'proposals',
-            interest_rejected: 'proposals',
+            // Proposals are rendered inside the dashboard view in App.tsx
+            express_interest: 'dashboard',
+            accept_interest: 'dashboard',
+            interest_rejected: 'dashboard',
             profile_viewed: 'discovery',
             gallery_image_view: 'profile',
             profile_picture_view: 'profile',
