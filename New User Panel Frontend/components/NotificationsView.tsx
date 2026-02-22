@@ -29,9 +29,11 @@ const sanitizeNotification = (item: any): NotificationItem => ({
 
 interface NotificationsViewProps {
     onNavigate?: (view: string) => void;
+    refreshVersion?: number;
+    onDataChanged?: () => void;
 }
 
-const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate }) => {
+const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate, refreshVersion, onDataChanged }) => {
     const { t } = useTranslation();
     const { user } = useAuthStore();
     const [activeTab, setActiveTab] = useState<'all' | 'unread'>('all');
@@ -46,6 +48,7 @@ const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate }) => 
                 .listen('.NotificationReceived', (e: any) => {
                     console.log('Real-time notification received:', e);
                     fetchNotifications();
+                    onDataChanged?.();
                 });
             
             return () => {
@@ -53,6 +56,10 @@ const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate }) => 
             };
         }
     }, [user?.id]);
+
+    useEffect(() => {
+        fetchNotifications();
+    }, [refreshVersion]);
 
     const fetchNotifications = async () => {
         try {
@@ -71,6 +78,7 @@ const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate }) => 
         try {
             await api.get('/member/mark-all-as-read');
             fetchNotifications();
+            onDataChanged?.();
         } catch (error) {
             console.error('Failed to mark all as read', error);
         }
@@ -80,6 +88,7 @@ const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate }) => 
         try {
             await api.get(`/member/notification/${id}`);
             fetchNotifications();
+            onDataChanged?.();
         } catch (error) {
             console.error('Failed to mark as read', error);
         }

@@ -26,6 +26,7 @@ interface DiscoveryViewProps {
     onNavigate?: (view: string) => void;
     unreadNotifCount?: number;
     sentProposalMap?: Record<string, boolean>;
+    refreshVersion?: number;
 }
 
 const getInterestFlags = (profile: ProfileMatch, isLocallySent = false) => {
@@ -108,7 +109,7 @@ const DEFAULT_FILTERS: DiscoveryFilters = {
   profession: ''
 };
 
-const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, initialTab = 'all', isIdentityVerified, onRequireVerification, onNavigate, unreadNotifCount = 0, sentProposalMap = {} }) => {
+const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, initialTab = 'all', isIdentityVerified, onRequireVerification, onNavigate, unreadNotifCount = 0, sentProposalMap = {}, refreshVersion }) => {
   const { t } = useTranslation();
   const [showFilters, setShowFilters] = useState(false);
   const [isAnonymous, setIsAnonymous] = useState(false);
@@ -187,6 +188,10 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, initialTa
     fetchDiscoveryData(currentPage);
   }, [currentPage, fetchDiscoveryData]);
 
+  useEffect(() => {
+    fetchDiscoveryData(currentPage);
+  }, [refreshVersion]);
+
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= pagination.last_page && page !== currentPage) {
       setCurrentPage(page);
@@ -248,7 +253,23 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, initialTa
 
   useEffect(() => {
     if (!sentProposalMap || Object.keys(sentProposalMap).length === 0) return;
+    const patchSentStatus = (profile: ProfileMatch): ProfileMatch => {
+      if (!sentProposalMap[String(profile.id)]) return profile;
+      return {
+        ...profile,
+        interestStatus: 'sent interest',
+        interestText: profile.interestText || 'Pending',
+      };
+    };
+
     setSuperLiked((prev) => ({ ...prev, ...sentProposalMap }));
+    setProfiles((prev) => ({
+      agent_picks: prev.agent_picks.map(patchSentStatus),
+      high_intent: prev.high_intent.map(patchSentStatus),
+      all_profiles: prev.all_profiles.map(patchSentStatus),
+    }));
+    setSearchResults((prev) => prev.map(patchSentStatus));
+    setSelectedProfile((prev) => (prev ? patchSentStatus(prev) : prev));
   }, [sentProposalMap]);
 
   const handleApplyFilters = () => {
@@ -756,7 +777,11 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, initialTa
             <ProfileDetailModal 
               profile={selectedProfile} 
               onClose={() => setSelectedProfile(null)}
-              onSendProposal={(p) => { if (!requireVerification()) onSendProposal(p); }}
+              onSendProposal={(p) => {
+                if (requireVerification()) return;
+                setSelectedProfile(null);
+                onSendProposal(p);
+              }}
               onNavigate={onNavigate}
             />
         )}

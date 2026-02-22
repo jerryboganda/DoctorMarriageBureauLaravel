@@ -66,6 +66,7 @@ const App: React.FC = () => {
     const [proposalDirection, setProposalDirection] = useState<'received' | 'sent'>('received');
     const [selectedProposalProfile, setSelectedProposalProfile] = useState<ProfileMatch | null>(null);
     const [sentProposalMap, setSentProposalMap] = useState<Record<string, boolean>>({});
+    const [dataSyncVersion, setDataSyncVersion] = useState(0);
 
     // Mobile Sidebar State
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -201,11 +202,24 @@ const App: React.FC = () => {
         }
     };
 
+    const touchDataSync = () => {
+        setDataSyncVersion((prev) => prev + 1);
+    };
+
+    const refreshCoreData = async () => {
+        await Promise.allSettled([
+            fetchIncomingInterests(),
+            fetchSentInterests(),
+            fetchNotificationCount(),
+        ]);
+        touchDataSync();
+    };
+
     const handleWithdrawInterest = async (interestId?: number) => {
         if (!interestId) return;
         try {
             await api.post('/member/interest-withdraw', { interest_id: interestId });
-            await fetchSentInterests();
+            await refreshCoreData();
         } catch (error) {
             console.error('Failed to withdraw interest', error);
         }
@@ -267,9 +281,7 @@ const scheduleVerificationPrompt = () => {
 
 useEffect(() => {
     if (isAuthenticated) {
-        fetchIncomingInterests();
-        fetchSentInterests();
-        fetchNotificationCount();
+        refreshCoreData();
         evaluateGate();
     } else {
         setGateState('gateLoading');
@@ -353,8 +365,7 @@ useEffect(() => {
         if (!interestId) return;
         try {
             await api.post('/member/interest-accept', { interest_id: interestId });
-            await fetchIncomingInterests();
-            await fetchSentInterests();
+            await refreshCoreData();
         } catch (error) {
             console.error('Failed to accept interest', error);
         }
@@ -374,7 +385,7 @@ useEffect(() => {
             // Push state to browser history to enable back button
             window.history.pushState({ view }, '', window.location.pathname);
             // Refresh notification count when navigating away from notifications
-            fetchNotificationCount();
+            refreshCoreData();
         }
         setIsMobileMenuOpen(false); // Close mobile menu on navigate
     };
@@ -451,6 +462,7 @@ useEffect(() => {
                         <Sidebar
                             currentView={currentView}
                             onNavigate={handleNavigate}
+                            dataSyncVersion={dataSyncVersion}
                             onUpgrade={() => {
                                 setShowSubscription(true);
                                 setIsMobileMenuOpen(false);
@@ -472,7 +484,7 @@ useEffect(() => {
                         <div className="flex items-center gap-1">
                             <LanguageToggle compact className="text-slate-500" />
                             <button
-                                onClick={() => { setCurrentView('notifications'); fetchNotificationCount(); }}
+                                onClick={() => { setCurrentView('notifications'); refreshCoreData(); }}
                                 className="relative p-2 text-slate-600 hover:text-primary transition-colors"
                                 aria-label={t('common.notifications')}
                             >
@@ -578,7 +590,7 @@ useEffect(() => {
                                             <motion.button
                                                 whileHover={{ scale: 1.05 }}
                                                 whileTap={{ scale: 0.95 }}
-                                                onClick={() => { setCurrentView('notifications'); fetchNotificationCount(); }}
+                                                onClick={() => { setCurrentView('notifications'); refreshCoreData(); }}
                                                 className="hidden lg:flex size-10 rounded-full items-center justify-center transition-colors shadow-sm border border-slate-100 relative bg-white text-slate-600 hover:text-primary"
                                             >
                                                 <Bell size={20} />
@@ -781,7 +793,11 @@ useEffect(() => {
                             ) : currentView === 'referral' ? (
                                 <ReferralView />
                             ) : currentView === 'notifications' ? (
-                                <NotificationsView onNavigate={handleNavigate} />
+                                <NotificationsView
+                                    onNavigate={handleNavigate}
+                                    refreshVersion={dataSyncVersion}
+                                    onDataChanged={refreshCoreData}
+                                />
                             ) : currentView === 'messages' ? (
                                 <MessagesView />
                             ) : (
@@ -796,6 +812,7 @@ useEffect(() => {
                                     onNavigate={handleNavigate}
                                     unreadNotifCount={unreadNotifCount}
                                     sentProposalMap={sentProposalMap}
+                                    refreshVersion={dataSyncVersion}
                                 />
                                 )}
                             </Suspense>
@@ -854,7 +871,7 @@ useEffect(() => {
                                     setShowDeclineModal(false);
                                     setDeclineInterestId(null);
                                 }}
-                                onDeclineSuccess={() => { fetchIncomingInterests(); fetchSentInterests(); }}
+                                onDeclineSuccess={() => { refreshCoreData(); }}
                             />
                         </Suspense>
                     )}
@@ -869,7 +886,7 @@ useEffect(() => {
                                 onNavigate={handleNavigate}
                                 onSent={(profileId) => {
                                     setSentProposalMap((prev) => ({ ...prev, [profileId]: true }));
-                                    fetchSentInterests();
+                                    refreshCoreData();
                                 }}
                             />
                         </Suspense>

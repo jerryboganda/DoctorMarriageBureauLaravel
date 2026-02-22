@@ -11,6 +11,7 @@ import LanguageToggle from './LanguageToggle';
 interface SidebarProps {
   currentView: string;
   onNavigate: (view: string) => void;
+  dataSyncVersion?: number;
   onUpgrade?: () => void;
   onCloseMobile?: () => void;
 }
@@ -29,7 +30,7 @@ const resolveAvatarUrl = (value?: string | null): string => {
   return `${API_BASE}/${candidate.replace(/^\/+/, '')}`;
 };
 
-const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, onUpgrade, onCloseMobile }) => {
+const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, dataSyncVersion, onUpgrade, onCloseMobile }) => {
   const { user, setUser } = useAuthStore();
   const { t } = useTranslation();
   const [counts, setCounts] = useState({
@@ -114,7 +115,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, onUpgrade, o
       isActive = false;
       clearInterval(interval);
     };
-  }, []);
+  }, [dataSyncVersion]);
 
   const avatarUrl = resolveAvatarUrl(user?.avatar_original || user?.avatar);
   const displayName = user?.name ?? t('nav.defaultName');
