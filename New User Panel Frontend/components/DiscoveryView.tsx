@@ -12,7 +12,7 @@ import { ProfileMatch } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { STAGGER_CONTAINER, FADE_UP_ITEM, BTN_TAP } from '../utils/motion';
 import { api } from '../utils/api';
-import { getInterestFlagsFromState, resolveInterestState } from '../utils/interestStatus';
+import { CanonicalInterestState, getInterestFlagsFromState, resolveInterestState } from '../utils/interestStatus';
 
 // API base URL for assets
 const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://api.doctormarriagebureau.com.pk';
@@ -27,6 +27,7 @@ interface DiscoveryViewProps {
     onNavigate?: (view: string) => void;
     unreadNotifCount?: number;
     sentProposalMap?: Record<string, boolean>;
+    proposalStatusMap?: Record<string, CanonicalInterestState>;
     refreshVersion?: number;
 }
 
@@ -88,7 +89,7 @@ const DEFAULT_FILTERS: DiscoveryFilters = {
   profession: ''
 };
 
-const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, initialTab = 'all', isIdentityVerified, onRequireVerification, onNavigate, unreadNotifCount = 0, sentProposalMap = {}, refreshVersion }) => {
+const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, initialTab = 'all', isIdentityVerified, onRequireVerification, onNavigate, unreadNotifCount = 0, sentProposalMap = {}, proposalStatusMap = {}, refreshVersion }) => {
   const { t } = useTranslation();
   const [showFilters, setShowFilters] = useState(false);
   const [isAnonymous, setIsAnonymous] = useState(false);
@@ -107,7 +108,6 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, initialTa
   const [shortlisted, setShortlisted] = useState<Record<string, boolean>>({});
   const [superLikeProcessing, setSuperLikeProcessing] = useState<Record<string, boolean>>({});
   const [superLiked, setSuperLiked] = useState<Record<string, boolean>>({});
-  const [interestOverrides, setInterestOverrides] = useState<Record<string, { interestStatus: string | number; interestText?: string }>>({});
   const [profiles, setProfiles] = useState<{
       agent_picks: ProfileMatch[],
       high_intent: ProfileMatch[],
@@ -129,7 +129,24 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, initialTa
   const [loading, setLoading] = useState(true);
 
   const mergeInterest = (profile: ProfileMatch): ProfileMatch => {
-    const override = interestOverrides[String(profile.id)];
+    const status = proposalStatusMap[String(profile.id)];
+    if (!status) return profile;
+
+    const override = (() => {
+      switch (status) {
+        case 'sent_pending':
+          return { interestStatus: 'sent interest', interestText: 'Proposal Sent' };
+        case 'sent_accepted':
+          return { interestStatus: 'mutual', interestText: 'Proposal Accepted' };
+        case 'received_pending':
+          return { interestStatus: 'do_response', interestText: 'Reply to Proposal' };
+        case 'received_accepted':
+          return { interestStatus: 'do_response', interestText: 'You Accepted Proposal' };
+        default:
+          return null;
+      }
+    })();
+
     if (!override) return profile;
     return {
       ...profile,
@@ -253,15 +270,6 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, initialTa
     };
 
     setSuperLiked((prev) => ({ ...prev, ...sentProposalMap }));
-    setInterestOverrides((prev) => {
-      const next = { ...prev };
-      Object.keys(sentProposalMap).forEach((id) => {
-        if (sentProposalMap[id]) {
-          next[id] = { interestStatus: 'sent interest', interestText: 'Proposal Sent' };
-        }
-      });
-      return next;
-    });
     setProfiles((prev) => ({
       agent_picks: prev.agent_picks.map(patchSentStatus),
       high_intent: prev.high_intent.map(patchSentStatus),
@@ -270,44 +278,6 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, initialTa
     setSearchResults((prev) => prev.map(patchSentStatus));
     setSelectedProfile((prev) => (prev ? patchSentStatus(prev) : prev));
   }, [sentProposalMap]);
-
-  useEffect(() => {
-    const sourceProfiles = isSearchActive
-      ? searchResults
-      : [...profiles.agent_picks, ...profiles.high_intent, ...profiles.all_profiles];
-    const ids = Array.from(new Set(sourceProfiles.map((p) => String(p.id)).filter(Boolean)));
-    const idsToFetch = ids.filter((id) => !interestOverrides[id]);
-    if (idsToFetch.length === 0) return;
-
-    let cancelled = false;
-    const hydrate = async () => {
-      const results = await Promise.allSettled(
-        idsToFetch.map((id) => api.get(`/member/member-info/${id}`))
-      );
-      if (cancelled) return;
-
-      const patch: Record<string, { interestStatus: string | number; interestText?: string }> = {};
-      results.forEach((result, idx) => {
-        if (result.status !== 'fulfilled') return;
-        const id = idsToFetch[idx];
-        const info = result.value?.data?.data;
-        if (!info) return;
-        patch[id] = {
-          interestStatus: info.interest_status,
-          interestText: info.interest_text,
-        };
-      });
-
-      if (Object.keys(patch).length > 0) {
-        setInterestOverrides((prev) => ({ ...prev, ...patch }));
-      }
-    };
-
-    hydrate();
-    return () => {
-      cancelled = true;
-    };
-  }, [profiles, searchResults, isSearchActive, interestOverrides, refreshVersion]);
 
   const handleApplyFilters = () => {
     setAppliedFilters({
@@ -814,7 +784,7 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, initialTa
       <AnimatePresence>
         {selectedProfile && (
             <ProfileDetailModal 
-              profile={selectedProfile} 
+              profile={mergeInterest(selectedProfile)}
               onClose={() => setSelectedProfile(null)}
               onSendProposal={(p) => {
                 if (requireVerification()) return;

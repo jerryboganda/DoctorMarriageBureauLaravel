@@ -11,6 +11,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { PAGE_VARIANTS } from './utils/motion';
 import { useAuthStore } from './src/stores/authStore';
 import { api } from './utils/api';
+import { CanonicalInterestState } from './utils/interestStatus';
 
 type IncomingInterest = {
     interestId: number;
@@ -66,6 +67,7 @@ const App: React.FC = () => {
     const [proposalDirection, setProposalDirection] = useState<'received' | 'sent'>('received');
     const [selectedProposalProfile, setSelectedProposalProfile] = useState<ProfileMatch | null>(null);
     const [sentProposalMap, setSentProposalMap] = useState<Record<string, boolean>>({});
+    const [proposalStatusMap, setProposalStatusMap] = useState<Record<string, CanonicalInterestState>>({});
     const [dataSyncVersion, setDataSyncVersion] = useState(0);
 
     // Mobile Sidebar State
@@ -292,6 +294,26 @@ useEffect(() => {
 }, [isAuthenticated]);
 
 useEffect(() => {
+    const next: Record<string, CanonicalInterestState> = {};
+
+    sentInterests.forEach((interest) => {
+        const profileId = String(interest.profile?.id ?? '');
+        if (!profileId) return;
+        const statusText = String(interest.status ?? '').toLowerCase();
+        next[profileId] = statusText === 'approved' ? 'sent_accepted' : 'sent_pending';
+    });
+
+    incomingInterests.forEach((interest) => {
+        const profileId = String(interest.profile?.id ?? '');
+        if (!profileId) return;
+        const statusText = String(interest.status ?? '').toLowerCase();
+        next[profileId] = statusText === 'approved' ? 'received_accepted' : 'received_pending';
+    });
+
+    setProposalStatusMap(next);
+}, [sentInterests, incomingInterests]);
+
+useEffect(() => {
     return () => {
         if (verificationDelayRef.current) {
             clearTimeout(verificationDelayRef.current);
@@ -384,8 +406,8 @@ useEffect(() => {
             setCurrentView(view);
             // Push state to browser history to enable back button
             window.history.pushState({ view }, '', window.location.pathname);
-            // Refresh notification count when navigating away from notifications
-            refreshCoreData();
+            // Keep navigation light to preserve SPA responsiveness
+            fetchNotificationCount();
         }
         setIsMobileMenuOpen(false); // Close mobile menu on navigate
     };
@@ -812,6 +834,7 @@ useEffect(() => {
                                     onNavigate={handleNavigate}
                                     unreadNotifCount={unreadNotifCount}
                                     sentProposalMap={sentProposalMap}
+                                    proposalStatusMap={proposalStatusMap}
                                     refreshVersion={dataSyncVersion}
                                 />
                                 )}
@@ -886,6 +909,7 @@ useEffect(() => {
                                 onNavigate={handleNavigate}
                                 onSent={(profileId) => {
                                     setSentProposalMap((prev) => ({ ...prev, [profileId]: true }));
+                                    setProposalStatusMap((prev) => ({ ...prev, [profileId]: 'sent_pending' }));
                                     refreshCoreData();
                                 }}
                             />

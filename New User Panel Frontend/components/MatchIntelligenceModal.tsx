@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, Zap, CheckCircle2, AlertTriangle, UserCheck, BrainCircuit, FileText, ArrowLeftRight, Loader2 } from 'lucide-react';
 import { ProfileMatch, MatchIntelligence } from '../types';
 import { api } from '../utils/api';
+import { resolveInterestState } from '../utils/interestStatus';
 
 interface MatchIntelligenceModalProps {
   profile: ProfileMatch;
@@ -20,32 +21,33 @@ const MatchIntelligenceModal: React.FC<MatchIntelligenceModalProps> = ({ profile
   const [sendError, setSendError] = useState<string | null>(null);
 
   // Guard: if interest already exists, pre-set sent state
-  const hasExistingInterest = profile.interestStatus === 0 || profile.interestStatus === '0' || profile.interestStatus === 'do_response';
+  const hasExistingInterest = resolveInterestState(profile.interestStatus, profile.interestText) !== 'none';
+
+  const fetchIntelligence = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await api.get(`/match-intelligence/${profile.id}`);
+      if (response.data.success) {
+          setData(response.data.data);
+      } else {
+          setError(t('modals.matchIntelligence.failedRetrieve'));
+      }
+    } catch (err: any) {
+      console.error('Failed to fetch match intelligence', err);
+      setError(t('modals.matchIntelligence.couldNotAnalyze'));
+    } finally {
+      setLoading(false);
+    }
+  }, [profile.id, t]);
 
   useEffect(() => {
     if (hasExistingInterest) setSent(true);
   }, [hasExistingInterest]);
 
   useEffect(() => {
-    const fetchIntelligence = async () => {
-      try {
-        setLoading(true);
-        const response = await api.get(`/match-intelligence/${profile.id}`);
-        if (response.data.success) {
-            setData(response.data.data);
-        } else {
-            setError(t('modals.matchIntelligence.failedRetrieve'));
-        }
-      } catch (err: any) {
-        console.error('Failed to fetch match intelligence', err);
-        setError(t('modals.matchIntelligence.couldNotAnalyze'));
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchIntelligence();
-  }, [profile.id]);
+  }, [fetchIntelligence]);
 
   useEffect(() => {
     setSent(false);
@@ -99,7 +101,7 @@ const MatchIntelligenceModal: React.FC<MatchIntelligenceModalProps> = ({ profile
                         <AlertTriangle size={32} />
                     </div>
                     <p className="text-slate-600 font-medium max-w-xs">{error || t('modals.matchIntelligence.failedLoad')}</p>
-                    <button onClick={() => window.location.reload()} className="text-primary font-bold hover:underline">{t('modals.matchIntelligence.retry')}</button>
+                    <button onClick={fetchIntelligence} className="text-primary font-bold hover:underline">{t('modals.matchIntelligence.retry')}</button>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
