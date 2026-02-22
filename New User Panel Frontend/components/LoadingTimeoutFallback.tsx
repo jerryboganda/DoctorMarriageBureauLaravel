@@ -5,6 +5,7 @@ interface LoadingTimeoutFallbackProps {
     timeoutMs?: number;
     reloadLabel?: string;
     compact?: boolean;
+    onReload?: () => void;
 }
 
 const LoadingTimeoutFallback: React.FC<LoadingTimeoutFallbackProps> = ({
@@ -12,6 +13,7 @@ const LoadingTimeoutFallback: React.FC<LoadingTimeoutFallbackProps> = ({
     timeoutMs = 12000,
     reloadLabel = 'Reload page',
     compact = false,
+    onReload,
 }) => {
     const [showReload, setShowReload] = useState(false);
 
@@ -26,7 +28,7 @@ const LoadingTimeoutFallback: React.FC<LoadingTimeoutFallbackProps> = ({
             <p className={`text-slate-700 ${compact ? 'text-sm font-semibold' : ''}`}>{message}</p>
             {showReload && (
                 <button
-                    onClick={() => window.location.reload()}
+                    onClick={() => (onReload ? onReload() : window.location.reload())}
                     className={`mt-4 px-4 py-2 rounded-lg bg-primary text-white font-semibold hover:bg-primary/90 transition-colors ${compact ? 'text-sm' : ''}`}
                 >
                     {reloadLabel}

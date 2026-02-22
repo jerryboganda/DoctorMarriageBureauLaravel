@@ -208,6 +208,10 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ onNavigateToProfile }) => {
     let isActive = true;
 
     const fetchData = async () => {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
+        return;
+      }
+
       try {
         const results = await Promise.allSettled([
           api.get('/dashboard/stats'),

@@ -77,6 +77,7 @@ const MessagesView: React.FC = () => {
   const icebreakerRef = useRef<HTMLDivElement>(null);
   const scheduleRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const threadUserIdsRef = useRef<number[]>([]);
 
   const currentUserId = user?.id;
   const upsertMessage = (incoming: any) => {
@@ -117,7 +118,10 @@ const MessagesView: React.FC = () => {
 
   // Heartbeat every 60s
   useEffect(() => {
-    const sendHeartbeat = () => { api.post('/member/heartbeat').catch(() => {}); };
+    const sendHeartbeat = () => {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+      api.post('/member/heartbeat').catch(() => {});
+    };
     sendHeartbeat();
     const hbInterval = setInterval(sendHeartbeat, 60000);
     return () => clearInterval(hbInterval);
@@ -125,8 +129,12 @@ const MessagesView: React.FC = () => {
 
   // Fetch threads — poll every 30s as backup; WebSocket handles real-time
   useEffect(() => {
+    const pollThreads = () => {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+      fetchThreads();
+    };
     fetchThreads();
-    const interval = setInterval(fetchThreads, 30000);
+    const interval = setInterval(pollThreads, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -169,11 +177,16 @@ const MessagesView: React.FC = () => {
     };
   }, [currentUserId]);
 
+  useEffect(() => {
+    threadUserIdsRef.current = threads.map((t) => t.user_id).filter(Boolean);
+  }, [threads]);
+
   // Online status polling every 30s
   useEffect(() => {
     const fetchOnlineStatuses = async () => {
-      const userIds = threads.map(t => t.user_id).filter(Boolean);
-      if (userIds.length === 0) return;
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+      const userIds = threadUserIdsRef.current;
+      if (!userIds || userIds.length === 0) return;
       try {
         const res = await api.post('/member/user-online-status', { user_ids: userIds });
         if (res.data?.data) setOnlineStatuses(res.data.data);
@@ -182,7 +195,7 @@ const MessagesView: React.FC = () => {
     fetchOnlineStatuses();
     const interval = setInterval(fetchOnlineStatuses, 30000);
     return () => clearInterval(interval);
-  }, [threads]);
+  }, []);
 
   // WebSocket for real-time messages
   useEffect(() => {

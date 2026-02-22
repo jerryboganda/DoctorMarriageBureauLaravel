@@ -85,6 +85,8 @@ const App: React.FC = () => {
     const [appliedCouponCode, setAppliedCouponCode] = useState<string | null>(null);
     const [profileTargetSection, setProfileTargetSection] = useState<string | null>(null);
     const [unreadNotifCount, setUnreadNotifCount] = useState(0);
+    const refreshInFlightRef = useRef<Promise<void> | null>(null);
+    const lastRefreshAtRef = useRef<number>(0);
     const verificationDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const lastHiddenAtRef = useRef<number | null>(null);
     const lastPassiveGateCheckAtRef = useRef<number>(0);
@@ -208,13 +210,32 @@ const App: React.FC = () => {
         setDataSyncVersion((prev) => prev + 1);
     };
 
-    const refreshCoreData = async () => {
-        await Promise.allSettled([
-            fetchIncomingInterests(),
-            fetchSentInterests(),
-            fetchNotificationCount(),
-        ]);
-        touchDataSync();
+    const refreshCoreData = async ({ force = false }: { force?: boolean } = {}) => {
+        const now = Date.now();
+        const minGapMs = 1500;
+
+        if (refreshInFlightRef.current) {
+            return refreshInFlightRef.current;
+        }
+
+        if (!force && now - lastRefreshAtRef.current < minGapMs) {
+            return;
+        }
+
+        const task = (async () => {
+            await Promise.allSettled([
+                fetchIncomingInterests(),
+                fetchSentInterests(),
+                fetchNotificationCount(),
+            ]);
+            lastRefreshAtRef.current = Date.now();
+            touchDataSync();
+        })().finally(() => {
+            refreshInFlightRef.current = null;
+        });
+
+        refreshInFlightRef.current = task;
+        return task;
     };
 
     const handleWithdrawInterest = async (interestId?: number) => {
@@ -283,7 +304,7 @@ const scheduleVerificationPrompt = () => {
 
 useEffect(() => {
     if (isAuthenticated) {
-        refreshCoreData();
+        refreshCoreData({ force: true });
         evaluateGate();
     } else {
         setGateState('gateLoading');
@@ -324,7 +345,7 @@ useEffect(() => {
 useEffect(() => {
     if (!isAuthenticated || gateState !== 'gateUnlocked') return;
 
-    const MIN_PASSIVE_RECHECK_INTERVAL_MS = 10000;
+    const MIN_PASSIVE_RECHECK_INTERVAL_MS = 30000;
     const MIN_HIDDEN_DURATION_MS = 5000;
 
     const runPassiveGateCheck = () => {
@@ -415,7 +436,7 @@ useEffect(() => {
     if (isLoading) {
         return (
             <div className="h-screen w-full flex items-center justify-center bg-white">
-                <LoadingTimeoutFallback message="Loading your account..." />
+                <LoadingTimeoutFallback message="Loading your account..." onReload={checkAuth} />
             </div>
         );
     }
@@ -437,7 +458,7 @@ useEffect(() => {
     if (gateState === 'gateLoading') {
         return (
             <div className="h-screen w-full flex items-center justify-center bg-white">
-                <LoadingTimeoutFallback message="Checking onboarding and verification..." />
+                <LoadingTimeoutFallback message="Checking onboarding and verification..." onReload={() => evaluateGate({ silent: false })} />
             </div>
         );
     }
@@ -506,7 +527,7 @@ useEffect(() => {
                         <div className="flex items-center gap-1">
                             <LanguageToggle compact className="text-slate-500" />
                             <button
-                                onClick={() => { setCurrentView('notifications'); refreshCoreData(); }}
+                                onClick={() => { setCurrentView('notifications'); fetchNotificationCount(); }}
                                 className="relative p-2 text-slate-600 hover:text-primary transition-colors"
                                 aria-label={t('common.notifications')}
                             >
@@ -612,7 +633,7 @@ useEffect(() => {
                                             <motion.button
                                                 whileHover={{ scale: 1.05 }}
                                                 whileTap={{ scale: 0.95 }}
-                                                onClick={() => { setCurrentView('notifications'); refreshCoreData(); }}
+                                                onClick={() => { setCurrentView('notifications'); fetchNotificationCount(); }}
                                                 className="hidden lg:flex size-10 rounded-full items-center justify-center transition-colors shadow-sm border border-slate-100 relative bg-white text-slate-600 hover:text-primary"
                                             >
                                                 <Bell size={20} />

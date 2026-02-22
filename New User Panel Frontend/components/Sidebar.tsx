@@ -83,6 +83,10 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, dataSyncVers
     let isActive = true;
 
     const fetchCounts = async () => {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
+        return;
+      }
+
       const results = await Promise.allSettled([
         api.get('/discovery'),
         api.get('/member/interest-requests'),

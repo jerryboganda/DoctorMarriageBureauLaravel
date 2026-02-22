@@ -257,6 +257,19 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onLaunchOnboarding, onOpenB
         }
     };
 
+    const refreshSecurityStatus = async () => {
+        try {
+            const securityRes = await api.get('/member/account/security-status');
+            const securityData = securityRes?.data?.data ?? null;
+            setSecurityStatus(securityData);
+            setDevices(securityData?.devices ?? []);
+            setTrustedContacts(securityData?.trusted_contacts ?? []);
+            setIs2FAEnabled(Boolean(securityData?.two_factor?.enabled));
+        } catch (error) {
+            console.error('Failed to refresh security status', error);
+        }
+    };
+
     const handleAlertsChange = async (next: { email: boolean; sms: boolean }) => {
         setLoginAlerts(next);
         setNotificationPrefs((prev) => (prev ? { ...prev, email_digest: next.email, sms: next.sms } : prev));
@@ -624,7 +637,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onLaunchOnboarding, onOpenB
                                             type={verificationType}
                                             value={verificationValue}
                                             onVerified={() => {
-                                                window.location.reload();
+                                                setShowCredentialVerification(false);
+                                                refreshSecurityStatus();
                                             }}
                                         />
 
