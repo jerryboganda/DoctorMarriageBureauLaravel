@@ -33,9 +33,9 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
     const { t } = useTranslation();
     const { setUser } = useAuthStore();
     const [step, setStep] = useState<'landing' | 'input' | 'otp' | 'onboarding' | 'forgot-password' | 'reset-otp' | 'new-password' | 'two-factor'>('landing');
-    const [authMethod, setAuthMethod] = useState<'phone' | 'email'>('phone');
+    const [authMethod, setAuthMethod] = useState<'phone' | 'email'>('email');
     const defaultCountry = getDefaultCountry();
-    const [identifier, setIdentifier] = useState(defaultCountry.dialCode);
+    const [identifier, setIdentifier] = useState('');
     const [selectedCountry, setSelectedCountry] = useState<Country>(defaultCountry);
     const [contactPhone, setContactPhone] = useState('');
     const [requiresPhone, setRequiresPhone] = useState(false);
@@ -429,7 +429,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
                                 <div className="space-y-6">
                                     <div className="space-y-4">
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold text-slate-700 uppercase mb-1 block">{t('auth.welcome.emailOrPhone')}</label>
+                                            <label className="text-xs font-bold text-slate-700 uppercase mb-1 block">{t('auth.welcome.emailAddress')}</label>
                                             <div className={`flex items-stretch bg-slate-50 border ${error ? 'border-red-500' : 'border-slate-200'} rounded-xl focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all`}>
                                                 {authMethod === 'phone' && (
                                                     <CountryCodeSelector
@@ -445,11 +445,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
                                                     placeholder={authMethod === 'phone' ? t('auth.welcome.phoneNumber') : t('auth.welcome.emailAddress')}
                                                 />
                                             </div>
-                                            <div className="flex gap-2 text-[10px] font-bold text-slate-500 uppercase justify-end">
-                                                <button onClick={() => { setAuthMethod('phone'); setIdentifier(selectedCountry.dialCode); }} className={`${authMethod === 'phone' ? 'text-primary' : 'hover:text-primary'}`}>{t('auth.welcome.usePhone')}</button>
-                                                <span>|</span>
-                                                <button onClick={() => { setAuthMethod('email'); setIdentifier(''); }} className={`${authMethod === 'email' ? 'text-primary' : 'hover:text-primary'}`}>{t('auth.welcome.useEmail')}</button>
-                                            </div>
+
                                         </div>
                                         <div>
                                             <label className="text-xs font-bold text-slate-700 uppercase mb-1 block">{t('auth.welcome.password')}</label>
@@ -530,7 +526,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
 
                                 <div className="space-y-4">
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-700 uppercase mb-1 block">{t('auth.welcome.emailOrPhone')}</label>
+                                        <label className="text-xs font-bold text-slate-700 uppercase mb-1 block">{t('auth.welcome.emailAddress')}</label>
                                         <div className={`flex items-stretch bg-slate-50 border ${error ? 'border-red-500' : 'border-slate-200'} rounded-xl focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all`}>
                                             {authMethod === 'phone' && (
                                                 <CountryCodeSelector
@@ -546,11 +542,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
                                                 placeholder={authMethod === 'phone' ? t('auth.welcome.phoneNumber') : t('auth.welcome.emailAddress')}
                                             />
                                         </div>
-                                        <div className="flex gap-2 text-[10px] font-bold text-slate-500 uppercase justify-end">
-                                            <button onClick={() => { setAuthMethod('phone'); setIdentifier(selectedCountry.dialCode); }} className={`${authMethod === 'phone' ? 'text-primary' : 'hover:text-primary'}`}>{t('auth.welcome.usePhone')}</button>
-                                            <span>|</span>
-                                            <button onClick={() => { setAuthMethod('email'); setIdentifier(''); }} className={`${authMethod === 'email' ? 'text-primary' : 'hover:text-primary'}`}>{t('auth.welcome.useEmail')}</button>
-                                        </div>
+
                                     </div>
 
                                     {error && (
@@ -831,11 +823,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
                                         />
                                     </div>
 
-                                    <div className="flex gap-2 text-xs font-bold text-slate-500 uppercase justify-end">
-                                        <button onClick={() => { setAuthMethod('phone'); setIdentifier(''); }} className={`${authMethod === 'phone' ? 'text-primary' : 'hover:text-primary'}`}>{t('auth.welcome.usePhone')}</button>
-                                        <span>|</span>
-                                        <button onClick={() => { setAuthMethod('email'); setIdentifier(''); }} className={`${authMethod === 'email' ? 'text-primary' : 'hover:text-primary'}`}>{t('auth.welcome.useEmail')}</button>
-                                    </div>
+
 
                                     {error && (
                                         <div className="p-3 bg-red-50 text-red-600 rounded-xl text-xs flex items-center gap-2 animate-in fade-in slide-in-from-top-1">

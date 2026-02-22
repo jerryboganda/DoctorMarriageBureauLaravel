@@ -1787,6 +1787,42 @@ class ProfileController extends Controller
         }
     }
 
+    public function biodata_json(Request $request)
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['result' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        // Return user with all necessary related models, just like how the frontend uses it or how get_full_profile_react provides it.
+        // Actually, the simplest approach that guarantees parity with what get_full_profile_react returns
+        // is to either call it or return the exact same data structure.
+        // But since this is specifically for Biodata, we'll return structured user.
+        $user->load([
+            'member',
+            'member.marital_status',
+            'member.mothereTongue',
+            'education',
+            'career',
+            'families',
+            'addresses.city',
+            'addresses.state',
+            'addresses.country',
+            'spiritual_backgrounds.religion',
+            'spiritual_backgrounds.caste',
+            'spiritual_backgrounds.family_value',
+            'lifestyles',
+            'physical_attributes',
+            'partner_expectations.religion',
+            'hobbies'
+        ]);
+
+        return response()->json([
+            'result' => true,
+            'data' => $user
+        ]);
+    }
+
     private function getMarriageIntentOptionSets(): array
     {
         $optionGroup = function (string $group): array {

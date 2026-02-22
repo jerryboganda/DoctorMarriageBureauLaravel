@@ -1,13 +1,23 @@
 import path from 'path';
+import fs from 'fs';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
+
+  // Use Laragon SSL certs for local HTTPS (fall back to no HTTPS if not found)
+  const keyPath = 'E:/laragon/etc/ssl/laragon.key';
+  const certPath = 'E:/laragon/etc/ssl/laragon.crt';
+  const httpsConfig = fs.existsSync(keyPath) && fs.existsSync(certPath)
+    ? { key: fs.readFileSync(keyPath), cert: fs.readFileSync(certPath) }
+    : undefined;
+
   return {
     server: {
-      port: 3000,
+      port: 5173,
       host: '0.0.0.0',
+      https: httpsConfig,
     },
     plugins: [react()],
     define: {

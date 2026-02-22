@@ -8,6 +8,9 @@ import { useAuthStore } from '../src/stores/authStore';
 import { api } from '../utils/api';
 import { compressImage } from '../utils/compression';
 import { useTranslation } from 'react-i18next';
+import html2pdf from 'html2pdf.js';
+import { createRoot } from 'react-dom/client';
+import BiodataPDFTemplate from './BiodataPDFTemplate';
 
 interface FamilyProfile {
     description: string;
@@ -452,9 +455,8 @@ const GuardiansSection: React.FC<{ guardians: Guardian[]; onRefresh: () => void 
         <div className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4">
             {/* Toast notification */}
             {toast && (
-                <div className={`fixed top-6 right-6 z-50 flex items-center gap-2 px-5 py-3 rounded-xl shadow-lg text-sm font-medium animate-in slide-in-from-right-5 ${
-                    toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
-                }`}>
+                <div className={`fixed top-6 right-6 z-50 flex items-center gap-2 px-5 py-3 rounded-xl shadow-lg text-sm font-medium animate-in slide-in-from-right-5 ${toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+                    }`}>
                     {toast.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
                     {toast.message}
                     <button onClick={() => setToast(null)} className="ml-2 opacity-70 hover:opacity-100"><X size={14} /></button>
@@ -675,9 +677,8 @@ const GuardiansSection: React.FC<{ guardians: Guardian[]; onRefresh: () => void 
                                 </div>
 
                                 <div className="flex items-center gap-3 shrink-0 border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6">
-                                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                                        g.status === 'Verified' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                                    }`}>
+                                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${g.status === 'Verified' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                                        }`}>
                                         {g.status === 'Verified' ? '✓ ' : '◷ '}{g.status}
                                     </span>
                                     {g.isOwner ? (
@@ -775,6 +776,7 @@ const ApprovalsSection: React.FC<{ approvals: Approval[]; onRefresh: () => void 
                         busy={processingId === a.id}
                         onApprove={() => handleApprove(a.id)}
                         onReject={() => handleReject(a.id)}
+                        t={t}
                     />
                 ))}
             </div>
@@ -792,7 +794,8 @@ const ApprovalCard: React.FC<{
     busy?: boolean;
     onApprove?: () => void;
     onReject?: () => void;
-}> = ({ name, desc, status, img, time, approved, busy, onApprove, onReject }) => (
+    t: any;
+}> = ({ name, desc, status, img, time, approved, busy, onApprove, onReject, t }) => (
     <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between group hover:border-primary/30 transition-all">
         <div className="flex items-center gap-4">
             <img src={img} className="size-12 rounded-full object-cover" />
@@ -832,21 +835,68 @@ const BiodataSection: React.FC<{ onShowQr: () => void }> = ({ onShowQr }) => {
     const handleDownload = async () => {
         try {
             setDownloading(true);
-            const response = await api.get('/profile/download-biodata', {
-                responseType: 'blob'
-            });
-            const blobUrl = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
-            const link = document.createElement('a');
-            link.href = blobUrl;
-            link.setAttribute('download', 'Biodata.pdf');
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            setTimeout(() => window.URL.revokeObjectURL(blobUrl), 10000);
+            const response = await api.get('/profile/biodata-json');
+
+            if (response.data.result) {
+                const userData = response.data.data;
+                const fileName = `Biodata-${userData.first_name || 'User'}.pdf`;
+
+                const container = document.createElement('div');
+                // Off-screen but fully rendered (no display:none)
+                container.style.position = 'fixed';
+                container.style.top = '-10000px';
+                container.style.left = '-10000px';
+                container.style.width = '800px';
+                container.style.height = '1120px';
+                container.style.overflow = 'hidden';
+                document.body.appendChild(container);
+
+                const root = createRoot(container);
+                root.render(<BiodataPDFTemplate userData={userData} />);
+
+                // Wait for React mount + images to load + reflow
+                setTimeout(async () => {
+                    try {
+                        const element = container.querySelector('#biodata-pdf-content') as HTMLElement;
+                        if (element) {
+                            // Force a reflow to ensure all inline styles are computed
+                            element.getBoundingClientRect();
+
+                            const opt: any = {
+                                margin: [0, 0, 0, 0],
+                                filename: fileName,
+                                image: { type: 'jpeg', quality: 0.98 },
+                                html2canvas: {
+                                    scale: 2,
+                                    useCORS: true,
+                                    logging: false,
+                                    scrollX: 0,
+                                    scrollY: 0,
+                                    width: 800,
+                                    height: 1120,
+                                    windowWidth: 800,
+                                    windowHeight: 1120,
+                                },
+                                jsPDF: { unit: 'px', format: [800, 1120], orientation: 'portrait', hotfixes: ["px_scaling"] }
+                            };
+
+                            await (html2pdf() as any).from(element).set(opt).save();
+                        }
+                    } catch (pdfErr) {
+                        console.error('PDF generation error:', pdfErr);
+                        alert('Failed to generate PDF document.');
+                    } finally {
+                        root.unmount();
+                        container.remove();
+                        setDownloading(false);
+                    }
+                }, 1200); // 1.2s for cross-origin image load + full style computation
+            } else {
+                throw new Error('Failed to retrieve biodata');
+            }
         } catch (error) {
             console.error('Failed to download biodata', error);
             alert(t('family.biodataDownloadFailed') || 'Failed to download biodata. Please try again.');
-        } finally {
             setDownloading(false);
         }
     };

@@ -97,6 +97,7 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
         Route::get('/full-profile', 'ProfileController@get_full_profile_react');
         Route::post('/full-profile/update', 'ProfileController@update_full_profile_react');
         Route::get('/profile/download-biodata', 'ProfileController@download_biodata');
+        Route::get('/profile/biodata-json', 'ProfileController@biodata_json');
 
         // Dropdowns and Profile Center (Accessible even if email not verified)
         Route::group(['prefix' => 'member'], function () {
