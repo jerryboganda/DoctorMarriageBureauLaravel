@@ -1,6 +1,6 @@
 # 🏥 DOCTOR MARRIAGE BUREAU (DMB) — Single Source of Truth
 
-> **Last Updated**: February 13, 2026
+> **Last Updated**: February 22, 2026
 > **Document Purpose**: THE ONLY file any AI agent or developer needs to fully understand this project.
 > **Supersedes**: `memory_bank.md`, `QUICK_START.md`, `AUTH_PRODUCTION_READY.md`, `linux vps memory file.md`, `DMB Mobile App/INTEGRATION_STATUS.md`, `DMB Mobile App/DEPLOYMENT_READY.md`, `DMB Mobile App/README.md`, `New User Panel Frontend/README.md`
 
@@ -17,7 +17,7 @@
 | **Mobile App** | ✅ 100% Feature Parity |
 | **Web Panel** | ✅ Production Live |
 | **GitHub Repo** | `github.com/jerryboganda/DoctorMarriageBureauLaravel` |
-| **Branch** | `main` |
+| **Branch** | `master` |
 
 ---
 
@@ -52,7 +52,7 @@ Three synchronized components. **Any change to Backend API responses requires im
 | **Icons** | Lucide React |
 | **State** | React Context + Local State |
 | **Build** | Docker (Node 18-alpine → Nginx) |
-| **Bundle** | ~894 KB JS (gzipped ~246 KB) |
+| **Bundle** | Route-split Vite bundles; `FamilyPortalView` reduced to ~30 KB and heavy PDF engine lazy-loaded (`html2pdf` ~985 KB chunk loaded on demand) |
 
 ### 2.3 Mobile App (React Native) — The Native Experience
 
@@ -145,25 +145,25 @@ VITE_PUSHER_SCHEME: https
 
 ```powershell
 # 1. LOCAL: Commit and push
-cd c:\laragon\www\marriagebureau
+cd e:\laragon\www\DMB
 git add -A
 git commit -m "descriptive commit message"
-git push origin main
+git push origin master
 
 # 2. VPS: Pull, rebuild, deploy (single SSH command)
-ssh root@185.252.233.186 "cd /root/doctormarriagebureau && git pull && docker exec marriagebureau-app php artisan optimize:clear && docker compose build frontend --no-cache && docker stop marriagebureau-frontend && docker rm marriagebureau-frontend && docker compose up -d frontend"
+ssh root@185.252.233.186 "cd /root/doctormarriagebureau && git pull origin master && docker exec marriagebureau-app php artisan optimize:clear && docker compose build frontend && docker compose up -d frontend"
 ```
 
 ### 5.2 Backend-Only Deploy (No frontend changes)
 
 ```powershell
-ssh root@185.252.233.186 "cd /root/doctormarriagebureau && git pull && docker exec marriagebureau-app php artisan optimize:clear"
+ssh root@185.252.233.186 "cd /root/doctormarriagebureau && git pull origin master && docker exec marriagebureau-app php artisan optimize:clear"
 ```
 
 ### 5.3 Frontend-Only Deploy
 
 ```powershell
-ssh root@185.252.233.186 "cd /root/doctormarriagebureau && git pull && docker compose build frontend --no-cache && docker stop marriagebureau-frontend && docker rm marriagebureau-frontend && docker compose up -d frontend"
+ssh root@185.252.233.186 "cd /root/doctormarriagebureau && git pull origin master && docker compose build frontend && docker compose up -d frontend"
 ```
 
 ### 5.4 Database Migrations
@@ -670,6 +670,23 @@ The `ProfileDetailModal.tsx` does **NOT** use `framer-motion`'s `motion.div` for
 
 ## 13. RECENT CHANGES LOG
 
+### February 22, 2026 - SPA Sync, Status Consistency, and Performance Hardening
+
+| Commit | Change | Files | Status |
+|--------|--------|-------|--------|
+| `e01300a` | Fixed notification `View Details` action to route into dashboard proposals view | `New User Panel Frontend/components/NotificationsView.tsx` | Deployed |
+| `54e61e9` | Added app-level sync trigger and immediate refresh wiring across App, Sidebar, Notifications, and Discovery | `New User Panel Frontend/App.tsx`, `New User Panel Frontend/components/Sidebar.tsx`, `New User Panel Frontend/components/NotificationsView.tsx`, `New User Panel Frontend/components/DiscoveryView.tsx` | Deployed |
+| `de8a975` | Introduced canonical interest-status parser and unified proposal status handling across discovery/profile/proposal flows | `New User Panel Frontend/utils/interestStatus.ts`, `New User Panel Frontend/components/DiscoveryView.tsx`, `New User Panel Frontend/components/ProfileDetailModal.tsx`, `New User Panel Frontend/components/ProposalModal.tsx` | Deployed |
+| `d0761b4` | Removed per-card member-info request pattern and switched to shared proposal status map from sent/received interests | `New User Panel Frontend/components/DiscoveryView.tsx`, `New User Panel Frontend/components/MatchIntelligenceModal.tsx` | Deployed |
+| `960e22c` | Reduced background polling/load pressure, deduped refresh cycles, and improved fallback retry without hard reloads | `New User Panel Frontend/App.tsx`, `New User Panel Frontend/components/LoadingTimeoutFallback.tsx`, `New User Panel Frontend/components/MessagesView.tsx`, `New User Panel Frontend/components/Sidebar.tsx`, `New User Panel Frontend/components/RightSidebar.tsx`, `New User Panel Frontend/components/SettingsView.tsx` | Deployed |
+| `1693d83` | Lazy-loaded biodata PDF dependencies so heavy PDF engine is no longer part of core Family Portal chunk | `New User Panel Frontend/components/FamilyPortalView.tsx` | Deployed |
+
+Key outcomes:
+- Proposal state now stays consistent after action, navigation, and reload.
+- Notification updates are lighter and no longer force unnecessary broad refresh paths.
+- Polling is visibility-aware to reduce wasted API/network work in inactive tabs.
+- Family Portal initial load is faster; `html2pdf` is loaded only when download is requested.
+
 ### February 13, 2026 — Interest Status Awareness & i18n Completion
 
 | Change | Files | Status |
@@ -873,7 +890,7 @@ The `Dockerfile` in `New User Panel Frontend/` handles:
 
 | Problem | Solution |
 |---------|----------|
-| **Frontend not updating after deploy** | Hard refresh (Ctrl+Shift+R). Nginx caches static assets for 1y |
+| **Frontend not updating after deploy** | Verify deployed git SHA on VPS, confirm new hashed `assets/index-*.js` is served, then hard refresh only if browser still has stale index |
 | **Migration fails "column already exists"** | Mark old migration as ran: insert into `migrations` table |
 | **API returns 500** | Check `docker exec marriagebureau-app tail -100 /var/www/html/storage/logs/laravel.log` |
 | **OTP not received** | Check logs: `grep "OTP\|VERIFICATION" laravel.log` (SMS not active for MVP) |
