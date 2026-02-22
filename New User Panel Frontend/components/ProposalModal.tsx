@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { X, FileText, Image, Users, Send, Wand2, Check, Loader2, AlertCircle, CheckCircle2, MessageSquare } from 'lucide-react';
 import { ProfileMatch } from '../types';
 import { api } from '../utils/api';
+import { resolveInterestState } from '../utils/interestStatus';
 
 interface ProposalModalProps {
   profile: ProfileMatch;
@@ -26,7 +27,7 @@ const ProposalModal: React.FC<ProposalModalProps> = ({ profile, onClose, onNavig
   const [alreadySent, setAlreadySent] = useState<'pending' | 'accepted' | 'received' | null>(null);
 
   // Guard: if interest already exists, don't allow sending again
-  const hasExistingInterest = profile.interestStatus === 0 || profile.interestStatus === '0' || profile.interestStatus === 'do_response';
+  const hasExistingInterest = resolveInterestState(profile.interestStatus, profile.interestText) !== 'none';
 
   // Check interest status on mount via API
   useEffect(() => {
@@ -35,19 +36,15 @@ const ProposalModal: React.FC<ProposalModalProps> = ({ profile, onClose, onNavig
         const res = await api.get(`/member/member-info/${profile.id}`);
         if (res.data?.data) {
           const info = res.data.data;
-          const status = info.interest_status;
-          const text = (info.interest_text || '').toLowerCase();
-          if (status === 'mutual' || (status === 'sent interest' && text.includes('accepted'))) {
+          const state = resolveInterestState(info.interest_status, info.interest_text);
+          if (state === 'sent_accepted' || state === 'received_accepted') {
             setAlreadySent('accepted');
-          } else if (status === 'sent interest') {
+          } else if (state === 'sent_pending') {
             setAlreadySent('pending');
-          } else if (status === 'received interest') {
+          } else if (state === 'received_pending') {
             setAlreadySent('received');
-          } else if (status === 0 || status === '0') {
-            const isAccepted = text.includes('accepted');
-            setAlreadySent(isAccepted ? 'accepted' : 'pending');
-          } else if (status === 'do_response') {
-            setAlreadySent('received');
+          } else {
+            setAlreadySent(null);
           }
         }
       } catch {

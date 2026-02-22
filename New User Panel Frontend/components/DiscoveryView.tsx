@@ -12,6 +12,7 @@ import { ProfileMatch } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { STAGGER_CONTAINER, FADE_UP_ITEM, BTN_TAP } from '../utils/motion';
 import { api } from '../utils/api';
+import { getInterestFlagsFromState, resolveInterestState } from '../utils/interestStatus';
 
 // API base URL for assets
 const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://api.doctormarriagebureau.com.pk';
@@ -29,32 +30,10 @@ interface DiscoveryViewProps {
     refreshVersion?: number;
 }
 
-const getInterestFlags = (profile: ProfileMatch, isLocallySent = false) => {
-  const rawStatus = `${profile.interestStatus ?? ''}`.toLowerCase().trim();
-  const rawText = `${profile.interestText ?? ''}`.toLowerCase();
-
-  const isAccepted =
-    rawText.includes('accepted') ||
-    rawStatus === 'accepted' ||
-    rawStatus === 'mutual' ||
-    rawStatus === 'approved';
-
-  const isReceived =
-    rawStatus === 'do_response' ||
-    rawStatus === 'received interest' ||
-    rawStatus === 'received_interest';
-
-  const isSentByMe =
-    isLocallySent ||
-    rawStatus === '0' ||
-    rawStatus === 'sent interest' ||
-    rawStatus === 'sent_interest' ||
-    rawStatus === 'pending';
-
-  const isPendingByMe = !isAccepted && isSentByMe;
-
-  return { isAccepted, isReceived, isPendingByMe };
-};
+const getInterestFlags = (profile: ProfileMatch, isLocallySent = false) =>
+  getInterestFlagsFromState(
+    resolveInterestState(profile.interestStatus, profile.interestText, { localSent: isLocallySent })
+  );
 
 const normalizeProfile = (profile: any): ProfileMatch => {
   const fullName = profile.name || [profile.first_name, profile.last_name].filter(Boolean).join(' ').trim();
@@ -128,6 +107,7 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, initialTa
   const [shortlisted, setShortlisted] = useState<Record<string, boolean>>({});
   const [superLikeProcessing, setSuperLikeProcessing] = useState<Record<string, boolean>>({});
   const [superLiked, setSuperLiked] = useState<Record<string, boolean>>({});
+  const [interestOverrides, setInterestOverrides] = useState<Record<string, { interestStatus: string | number; interestText?: string }>>({});
   const [profiles, setProfiles] = useState<{
       agent_picks: ProfileMatch[],
       high_intent: ProfileMatch[],
@@ -147,6 +127,16 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, initialTa
   }>({ current_page: 1, last_page: 1, per_page: 20, total: 0, from: null, to: null });
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
+
+  const mergeInterest = (profile: ProfileMatch): ProfileMatch => {
+    const override = interestOverrides[String(profile.id)];
+    if (!override) return profile;
+    return {
+      ...profile,
+      interestStatus: override.interestStatus,
+      interestText: override.interestText ?? profile.interestText,
+    };
+  };
 
   const fetchDiscoveryData = useCallback(async (page: number = 1) => {
       setLoading(true);
@@ -263,6 +253,15 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, initialTa
     };
 
     setSuperLiked((prev) => ({ ...prev, ...sentProposalMap }));
+    setInterestOverrides((prev) => {
+      const next = { ...prev };
+      Object.keys(sentProposalMap).forEach((id) => {
+        if (sentProposalMap[id]) {
+          next[id] = { interestStatus: 'sent interest', interestText: 'Proposal Sent' };
+        }
+      });
+      return next;
+    });
     setProfiles((prev) => ({
       agent_picks: prev.agent_picks.map(patchSentStatus),
       high_intent: prev.high_intent.map(patchSentStatus),
@@ -271,6 +270,44 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, initialTa
     setSearchResults((prev) => prev.map(patchSentStatus));
     setSelectedProfile((prev) => (prev ? patchSentStatus(prev) : prev));
   }, [sentProposalMap]);
+
+  useEffect(() => {
+    const sourceProfiles = isSearchActive
+      ? searchResults
+      : [...profiles.agent_picks, ...profiles.high_intent, ...profiles.all_profiles];
+    const ids = Array.from(new Set(sourceProfiles.map((p) => String(p.id)).filter(Boolean)));
+    const idsToFetch = ids.filter((id) => !interestOverrides[id]);
+    if (idsToFetch.length === 0) return;
+
+    let cancelled = false;
+    const hydrate = async () => {
+      const results = await Promise.allSettled(
+        idsToFetch.map((id) => api.get(`/member/member-info/${id}`))
+      );
+      if (cancelled) return;
+
+      const patch: Record<string, { interestStatus: string | number; interestText?: string }> = {};
+      results.forEach((result, idx) => {
+        if (result.status !== 'fulfilled') return;
+        const id = idsToFetch[idx];
+        const info = result.value?.data?.data;
+        if (!info) return;
+        patch[id] = {
+          interestStatus: info.interest_status,
+          interestText: info.interest_text,
+        };
+      });
+
+      if (Object.keys(patch).length > 0) {
+        setInterestOverrides((prev) => ({ ...prev, ...patch }));
+      }
+    };
+
+    hydrate();
+    return () => {
+      cancelled = true;
+    };
+  }, [profiles, searchResults, isSearchActive, interestOverrides, refreshVersion]);
 
   const handleApplyFilters = () => {
     setAppliedFilters({
@@ -647,24 +684,26 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, initialTa
                         key={activeTab} // Forces re-animation when tab changes
                      >
                         <AnimatePresence mode="popLayout">
-                            {displayedProfiles.map(profile => (
-                                <motion.div key={profile.id} variants={FADE_UP_ITEM} layout>
+                            {displayedProfiles.map(profile => {
+                                const mergedProfile = mergeInterest(profile);
+                                return (
+                                <motion.div key={mergedProfile.id} variants={FADE_UP_ITEM} layout>
                                     <ProfileGridCard 
-                                        profile={profile} 
-                                        onClick={() => setSelectedProfile(profile)}
-                                        onProposal={() => { if (!requireVerification()) onSendProposal(profile); }}
-                                        onRequestPhoto={() => handleRequestPhotoAccess(profile)}
-                                        requestingPhoto={photoRequesting[profile.id]}
-                                        requestedPhoto={photoRequested[profile.id]}
-                                        onSuperLike={() => handleSuperLike(profile)}
-                                        superLiked={superLiked[profile.id]}
-                                        superLikeProcessing={superLikeProcessing[profile.id]}
-                                        onLike={() => handleShortlist(profile)}
-                                        liked={shortlisted[profile.id]}
-                                        shortlistProcessing={shortlistProcessing[profile.id]}
+                                        profile={mergedProfile}
+                                        onClick={() => setSelectedProfile(mergedProfile)}
+                                        onProposal={() => { if (!requireVerification()) onSendProposal(mergedProfile); }}
+                                        onRequestPhoto={() => handleRequestPhotoAccess(mergedProfile)}
+                                        requestingPhoto={photoRequesting[mergedProfile.id]}
+                                        requestedPhoto={photoRequested[mergedProfile.id]}
+                                        onSuperLike={() => handleSuperLike(mergedProfile)}
+                                        superLiked={superLiked[mergedProfile.id]}
+                                        superLikeProcessing={superLikeProcessing[mergedProfile.id]}
+                                        onLike={() => handleShortlist(mergedProfile)}
+                                        liked={shortlisted[mergedProfile.id]}
+                                        shortlistProcessing={shortlistProcessing[mergedProfile.id]}
                                     />
                                 </motion.div>
-                            ))}
+                            )})}
                         </AnimatePresence>
                      </motion.div>
                  ) : (

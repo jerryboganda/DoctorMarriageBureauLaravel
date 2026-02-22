@@ -10,6 +10,7 @@ import { api } from '../utils/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { BTN_TAP } from '../utils/motion';
+import { resolveInterestState } from '../utils/interestStatus';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://api.doctormarriagebureau.com.pk';
 const DEFAULT_AVATAR = `${API_BASE}/assets/img/avatar-place.png`;
@@ -50,15 +51,7 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({ profile, onClos
   // interest_status from API: 1 = no interest, 0 = I sent interest, 'do_response' = they sent to me
   // interest_text tells us if it was accepted or pending
   const [interestState, setInterestState] = useState<'none' | 'sent_pending' | 'sent_accepted' | 'received_pending' | 'received_accepted'>(() => {
-    const status = profile.interestStatus;
-    const text = profile.interestText || '';
-    if (status === 0 || status === '0') {
-      return text.toLowerCase().includes('accepted') ? 'sent_accepted' : 'sent_pending';
-    }
-    if (status === 'do_response') {
-      return text.toLowerCase().includes('accepted') ? 'received_accepted' : 'received_pending';
-    }
-    return 'none';
+    return resolveInterestState(profile.interestStatus, profile.interestText);
   });
 
   // Lock body scroll when modal is open
@@ -86,23 +79,7 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({ profile, onClos
         // Update interest state from fresh member_info data
         if (memberInfoRes?.data?.data) {
           const info = memberInfoRes.data.data;
-          const status = info.interest_status;
-          const text = (info.interest_text || '').toLowerCase();
-          // member_info returns: 'mutual', 'sent interest', 'received interest', 'no interest'
-          // ActiveUserResource returns: 0 (sent), 1 (none), 'do_response' (received) + interest_text with 'accepted'
-          if (status === 'mutual') {
-            setInterestState('sent_accepted');
-          } else if (status === 'sent interest') {
-            setInterestState(text.includes('accepted') ? 'sent_accepted' : 'sent_pending');
-          } else if (status === 'received interest') {
-            setInterestState(text.includes('accepted') ? 'received_accepted' : 'received_pending');
-          } else if (status === 0 || status === '0') {
-            setInterestState(text.includes('accepted') ? 'sent_accepted' : 'sent_pending');
-          } else if (status === 'do_response') {
-            setInterestState(text.includes('accepted') ? 'received_accepted' : 'received_pending');
-          } else {
-            setInterestState('none');
-          }
+          setInterestState(resolveInterestState(info.interest_status, info.interest_text));
         }
       } catch (err: any) {
         console.error('Failed to fetch profile', err);
