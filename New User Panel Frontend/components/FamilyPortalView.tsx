@@ -8,9 +8,6 @@ import { useAuthStore } from '../src/stores/authStore';
 import { api } from '../utils/api';
 import { compressImage } from '../utils/compression';
 import { useTranslation } from 'react-i18next';
-import html2pdf from 'html2pdf.js';
-import { createRoot } from 'react-dom/client';
-import BiodataPDFTemplate from './BiodataPDFTemplate';
 
 interface FamilyProfile {
     description: string;
@@ -840,6 +837,11 @@ const BiodataSection: React.FC<{ onShowQr: () => void }> = ({ onShowQr }) => {
             if (response.data.result) {
                 const userData = response.data.data;
                 const fileName = `Biodata-${userData.first_name || 'User'}.pdf`;
+                const [{ createRoot }, { default: BiodataPDFTemplate }, { default: html2pdf }] = await Promise.all([
+                    import('react-dom/client'),
+                    import('./BiodataPDFTemplate'),
+                    import('html2pdf.js'),
+                ]);
 
                 const container = document.createElement('div');
                 // Off-screen but fully rendered (no display:none)
