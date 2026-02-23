@@ -56,3 +56,43 @@
   - Namespaced API image request route names to prevent cross-panel collisions:
     - `api.gallery_image_view_request_accept/reject`
     - `api.profile_picture_view_request_accept/reject`
+
+## Route Name Normalization (Stage Rollout)
+
+### Goal
+- Achieve unique route names across web/admin/api/support route files.
+- Keep existing in-use custom route names unchanged.
+- Rename only conflicting generated/default names to backward-safe `*.resource.*` or `api.*` namespaces.
+- Unblock `php artisan route:cache` in production.
+
+### Backward-Safe Mapping Strategy
+- Keep custom/legacy names used by Blade, controllers, and SPA integrations (examples: `members.index`, `members.destroy`, `education.create`, `career.edit`, `settings.update`, `support-tickets.destroy`).
+- Move conflicting resource-generated names:
+  - Pattern: `{resource}.{action}` -> `{resource}.resource.{action}` for collided actions.
+  - API member resources moved to explicit `api.member.*` names.
+- Keep Laravel framework canonical auth names where required (`logout`, `verification.resend`, `password.update`) and move custom GET/legacy variants to unique names.
+
+### Staged Deploy Plan
+1. Stage A (safe compile gate): deploy route-name changes and run `route:clear`, `route:cache` on VPS.
+2. Stage B (runtime gate): smoke-test auth/logout, password reset, verification resend, admin member routes, support ticket flows.
+3. Stage C (steady-state): keep route cache enabled and monitor logs for 30-60 minutes.
+
+### Route Mapping Ledger (Wave 1 follow-up)
+- `logout` (custom GET) -> `logout.get`
+- `verification.resend` (custom GET) -> `verification.resend.get`
+- `password.update` (custom code-reset POST) -> `password.update.email_code`
+- `password.email` (custom GET form) -> `password.email.form`
+- `api logout` -> `api.logout`
+- `upload.profile.picture` (api) -> `api.upload.profile.picture`
+- API member resource names:
+  - `gallery-image.*` -> `api.member.gallery-image.*`
+  - `career.*` -> `api.member.career.*`
+  - `education.*` -> `api.member.education.*`
+  - `support-ticket.*` -> `api.member.support-ticket.*`
+- Support tickets resource destroy:
+  - `support-tickets.destroy` (generated) -> `support-tickets.resource.destroy`
+- Admin/Web resource collision pattern:
+  - `members.index` (generated) -> `members.resource.index`
+  - `members.destroy` (generated) -> `members.resource.destroy`
+  - Similar scoped remaps applied for collided actions on:
+    - `profile`, `contact-us`, `packages`, `blog-category`, `blog`, `religions`, `castes`, `sub-castes`, `member-languages`, `countries`, `states`, `cities`, `family-status`, `family-values`, `on-behalf`, `marital-statuses`, `annual-salaries`, `profile-option-values`, `email-templates`, `languages`, `settings`, `additional-attributes`, `custom-pages`, `staffs`, `roles`, `uploaded-files`, `manual_payment_methods`, `education`, `career`.

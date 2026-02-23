@@ -1,6 +1,6 @@
 # 🏥 DOCTOR MARRIAGE BUREAU (DMB) — Single Source of Truth
 
-> **Last Updated**: February 22, 2026
+> **Last Updated**: February 23, 2026
 > **Document Purpose**: THE ONLY file any AI agent or developer needs to fully understand this project.
 > **Supersedes**: `memory_bank.md`, `QUICK_START.md`, `AUTH_PRODUCTION_READY.md`, `linux vps memory file.md`, `DMB Mobile App/INTEGRATION_STATUS.md`, `DMB Mobile App/DEPLOYMENT_READY.md`, `DMB Mobile App/README.md`, `New User Panel Frontend/README.md`
 
@@ -945,3 +945,56 @@ The `Dockerfile` in `New User Panel Frontend/` handles:
 - Frontend build passes on Wave 1 code.
 - Main app chunk remains ~266 KB; heavy PDF dependency remains lazy-loaded.
 - Runtime smoke + production observation required immediately after deploy.
+
+---
+
+## 23. ROUTE NAME NORMALIZATION (2026-02-23)
+
+### 23.1 Objective
+- Eliminate global route-name collisions across `routes/web.php`, `routes/admin.php`, `routes/api.php`, and `routes/support_tickets.php`.
+- Keep existing in-use custom route names stable for backward compatibility.
+- Normalize only conflicting generated/default names and unblock production `route:cache`.
+
+### 23.2 Backward-Safe Mapping Rules
+- Preserve existing custom names referenced by Blade/controllers/frontend (examples: `members.index`, `members.destroy`, `education.create`, `career.edit`, `settings.update`, `support-tickets.destroy`).
+- Remap conflicting generated resource names to scoped names:
+  - Pattern: `{resource}.{action}` -> `{resource}.resource.{action}` for collided actions.
+- Namespace member API resource route names under `api.member.*`.
+- Preserve Laravel auth canonical route names where required and move custom GET/legacy variants to explicit names.
+
+### 23.3 Route Mapping Ledger (Key)
+- `password.email` (custom GET form) -> `password.email.form`
+- `password.update` (custom code reset POST) -> `password.update.email_code`
+- `logout` (custom GET) -> `logout.get`
+- `verification.resend` (custom GET) -> `verification.resend.get`
+- `logout` (api) -> `api.logout`
+- `upload.profile.picture` (api) -> `api.upload.profile.picture`
+- API member resources:
+  - `gallery-image.*` -> `api.member.gallery-image.*`
+  - `career.*` -> `api.member.career.*`
+  - `education.*` -> `api.member.education.*`
+  - `support-ticket.*` -> `api.member.support-ticket.*`
+- Support ticket web resource:
+  - `support-tickets.destroy` (generated) -> `support-tickets.resource.destroy`
+- Collided admin/web resource actions remapped to `*.resource.*` for:
+  - `profile`, `contact-us`, `members`, `packages`, `blog-category`, `blog`, `religions`, `castes`, `sub-castes`, `member-languages`, `countries`, `states`, `cities`, `family-status`, `family-values`, `on-behalf`, `marital-statuses`, `annual-salaries`, `profile-option-values`, `email-templates`, `languages`, `settings`, `additional-attributes`, `custom-pages`, `staffs`, `roles`, `uploaded-files`, `manual_payment_methods`, plus web `education` and `career`.
+
+### 23.4 Cleanup Included
+- Removed duplicate trailing route block accidentally duplicated in `routes/web.php`.
+- Removed duplicate `Route::resource('/languages', ...)` declaration in `routes/admin.php`.
+
+### 23.5 Validation Gates
+- Local syntax check:
+  - `php -l routes/web.php`
+  - `php -l routes/admin.php`
+  - `php -l routes/api.php`
+  - `php -l routes/support_tickets.php`
+- Local compile gate:
+  - `php artisan route:clear`
+  - `php artisan route:cache` -> success
+
+### 23.6 Staged Deploy Procedure
+1. Deploy code only, clear route cache, and run `php artisan route:cache`.
+2. Smoke test auth/logout, password reset, verification resend, member/admin listing, support tickets.
+3. Rebuild frontend container if frontend assets changed, then monitor logs for 30-60 minutes.
+4. Rollback path: checkout prior release commit and rebuild runtime caches.

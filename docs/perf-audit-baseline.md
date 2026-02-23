@@ -31,3 +31,8 @@
 - Prevent stale response overwrite with request sequencing + cancellation.
 - Normalize unread semantics and navigation routing.
 - Reduce unnecessary polling pressure and backend row-by-row resource queries.
+
+## Route Cache Baseline/Follow-up
+- Baseline route-cache blockers were repeated named routes across API/web/admin/support resources and auth overlays.
+- Follow-up normalization introduced scoped generated names (`*.resource.*`, `api.member.*`) while preserving existing custom names in use.
+- Target state: `php artisan route:cache` compiles successfully in local and production runtime.

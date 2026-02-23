@@ -4,6 +4,15 @@
 - [x] React production build passes (`npm.cmd run build`)
 - [ ] Laravel test suite (run in container during deploy gate)
 - [ ] Laravel route sanity check on production container
+- [x] Local route cache compile passes (`php artisan route:cache`)
+
+## Route Normalization (Backward-Safe)
+- [x] Duplicate named routes removed from web/admin/api/support route sets
+- [x] Conflicting resource-generated names remapped to `*.resource.*`
+- [x] API member resource names remapped to `api.member.*`
+- [x] Auth name collisions normalized (`logout.get`, `verification.resend.get`, `password.update.email_code`)
+- [ ] Production route cache compile passes on VPS
+- [ ] Smoke-test legacy route helpers used by Blade views
 
 ## Realtime Consistency
 - [ ] Send proposal from discovery card, verify status badge updates immediately

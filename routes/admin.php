@@ -69,14 +69,21 @@ Route::get('/admin/login', [HomeController::class, 'admin_login'])->name('admin.
 Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin']], function () {
     Route::get('/dashboard', [HomeController::class, 'admin_dashboard'])->name('admin.dashboard');
 
-    Route::resource('profile', ProfileController::class);
+    Route::resource('profile', ProfileController::class)->names([
+        'edit' => 'profile.resource.edit',
+    ]);
 
     // Contact Us page
-    Route::resource('/contact-us', ContactUsController::class);
+    Route::resource('/contact-us', ContactUsController::class)->names([
+        'store' => 'contact-us.resource.store',
+    ]);
     Route::get('/contact-us/destroy/{id}', [ContactUsController::class, 'destroy'])->name('contact-us.delete');
 
     // Member Manage
-    Route::resource('members', MemberController::class);
+    Route::resource('members', MemberController::class)->names([
+        'index' => 'members.resource.index',
+        'destroy' => 'members.resource.destroy',
+    ]);
     Route::controller(MemberController::class)->group(function () {
         Route::get('/members/member_list/{id}', 'index')->name('members.index');
         Route::post('/members/block', 'block')->name('members.block');
@@ -121,7 +128,9 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin']], function 
     });
 
     // Premium Packages
-    Route::resource('/packages', PackageController::class);
+    Route::resource('/packages', PackageController::class)->names([
+        'destroy' => 'packages.resource.destroy',
+    ]);
     Route::controller(PackageController::class)->group(function () {
         Route::post('/packages/update_status', 'update_status')->name('packages.update_status');
         Route::get('/packages/destroy/{id}', 'destroy')->name('packages.destroy');
@@ -146,10 +155,14 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin']], function 
     Route::post('/happy-story/update-story-status',[HappyStoryController::class, 'approval_status'])->name('happy_story_approval.status');
 
     //Blog Section
-    Route::resource('blog-category', BlogCategoryController::class);
+    Route::resource('blog-category', BlogCategoryController::class)->names([
+        'destroy' => 'blog-category.resource.destroy',
+    ]);
     Route::get('/blog-category/destroy/{id}', [BlogCategoryController::class, 'destroy'])->name('blog-category.destroy');
 
-    Route::resource('blog', BlogController::class);
+    Route::resource('blog', BlogController::class)->names([
+        'destroy' => 'blog.resource.destroy',
+    ]);
     Route::controller(BlogController::class)->group(function () {
         Route::get('/blog/destroy/{id}', 'destroy')->name('blog.destroy');
         Route::post('/blog/change-status', 'change_status')->name('blog.change-status');
@@ -157,32 +170,42 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin']], function 
 
     // Member profile attributes
     // religions
-    Route::resource('/religions', ReligionController::class);
+    Route::resource('/religions', ReligionController::class)->names([
+        'destroy' => 'religions.resource.destroy',
+    ]);
     Route::controller(ReligionController::class)->group(function () {
         Route::get('/religions/destroy/{id}', 'destroy')->name('religions.destroy');
         Route::post('/religion/bulk_destroy', 'religion_bulk_delete')->name('religion.bulk_delete');
     });
 
     // Caste
-    Route::resource('/castes', CasteController::class);
+    Route::resource('/castes', CasteController::class)->names([
+        'destroy' => 'castes.resource.destroy',
+    ]);
     Route::controller(CasteController::class)->group(function () {
         Route::get('/castes/destroy/{id}', 'destroy')->name('castes.destroy');
         Route::post('/caste/bulk_destroy', 'caste_bulk_delete')->name('caste.bulk_delete');
     });
 
     // SubCaste
-    Route::resource('/sub-castes', SubCasteController::class);
+    Route::resource('/sub-castes', SubCasteController::class)->names([
+        'destroy' => 'sub-castes.resource.destroy',
+    ]);
     Route::controller(SubCasteController::class)->group(function () {
         Route::get('/sub-castes/destroy/{id}', 'destroy')->name('sub-castes.destroy');
         Route::post('/sub-caste/bulk_destroy', 'sub_caste_bulk_delete')->name('sub-castes.bulk_delete');
     });
 
     // Member Language
-    Route::resource('member-languages', MemberLanguageController::class);
+    Route::resource('member-languages', MemberLanguageController::class)->names([
+        'destroy' => 'member-languages.resource.destroy',
+    ]);
     Route::get('/member-language/destroy/{id}', [MemberLanguageController::class, 'destroy'])->name('member-languages.destroy');
 
     // Country
-    Route::resource('/countries', CountryController::class);
+    Route::resource('/countries', CountryController::class)->names([
+        'destroy' => 'countries.resource.destroy',
+    ]);
     Route::controller(CountryController::class)->group(function () {
         Route::post('/countries/status', 'updateStatus')->name('countries.status');
         Route::get('/countries/destroy/{id}', 'destroy')->name('countries.destroy');
@@ -190,40 +213,58 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin']], function 
 
 
     // State
-    Route::resource('/states', StateController::class);
+    Route::resource('/states', StateController::class)->names([
+        'destroy' => 'states.resource.destroy',
+    ]);
     Route::get('/states/destroy/{id}', [StateController::class,'destroy'])->name('states.destroy');
 
     // City
-    Route::resource('/cities', CityController::class);
+    Route::resource('/cities', CityController::class)->names([
+        'destroy' => 'cities.resource.destroy',
+    ]);
     Route::get('/cities/destroy/{id}', [CityController::class, 'destroy'])->name('cities.destroy');
 
     // Family Status
-    Route::resource('/family-status', FamilyStatusController::class);
+    Route::resource('/family-status', FamilyStatusController::class)->names([
+        'destroy' => 'family-status.resource.destroy',
+    ]);
     Route::get('/family-status/destroy/{id}', [FamilyStatusController::class, 'destroy'])->name('family-status.destroy');
 
     // Family Value
-    Route::resource('/family-values', FamilyValueController::class);
+    Route::resource('/family-values', FamilyValueController::class)->names([
+        'destroy' => 'family-values.resource.destroy',
+    ]);
     Route::get('/family-values/destroy/{id}', [FamilyValueController::class, 'destroy'])->name('family-values.destroy');
 
     // On Behalf
-    Route::resource('/on-behalf', OnBehalfController::class);
+    Route::resource('/on-behalf', OnBehalfController::class)->names([
+        'destroy' => 'on-behalf.resource.destroy',
+    ]);
     Route::get('/on-behalf/destroy/{id}', [OnBehalfController::class, 'destroy'])->name('on-behalf.destroy');
 
-    Route::resource('marital-statuses', MaritalStatusController::class);
+    Route::resource('marital-statuses', MaritalStatusController::class)->names([
+        'destroy' => 'marital-statuses.resource.destroy',
+    ]);
     Route::get('/marital-statuses/destroy/{id}', [MaritalStatusController::class, 'destroy'])->name('marital-statuses.destroy');
 
     // Annual Slary Range
-    Route::resource('/annual-salaries', AnnualSalaryRangeyController::class);
+    Route::resource('/annual-salaries', AnnualSalaryRangeyController::class)->names([
+        'destroy' => 'annual-salaries.resource.destroy',
+    ]);
     Route::get('/annual-salaries/destroy/{id}', [AnnualSalaryRangeyController::class, 'destroy'])->name('annual-salaries.destroy');
 
     // Profile Option Values (Lifestyle & Profile Options)
-    Route::resource('profile-option-values', ProfileOptionValueController::class);
+    Route::resource('profile-option-values', ProfileOptionValueController::class)->names([
+        'destroy' => 'profile-option-values.resource.destroy',
+    ]);
     Route::get('/profile-option-values/destroy/{id}', [ProfileOptionValueController::class, 'destroy'])->name('profile-option-values.destroy');
     Route::post('/profile-option-values/bulk-delete', [ProfileOptionValueController::class, 'bulk_delete'])->name('profile_option_values.bulk_delete');
     Route::post('/profile-option-values/toggle-active/{id}', [ProfileOptionValueController::class, 'toggle_active'])->name('profile-option-values.toggle_active');
 
     // Email Templates
-    Route::resource('/email-templates', EmailTemplateController::class);
+    Route::resource('/email-templates', EmailTemplateController::class)->names([
+        'update' => 'email-templates.resource.update',
+    ]);
     Route::post('/email-templates/update', [EmailTemplateController::class, 'update'])->name('email-templates.update');
 
     // Marketing
@@ -234,7 +275,9 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin']], function 
     });
 
     // Language
-    Route::resource('/languages', LanguageController::class);
+    Route::resource('/languages', LanguageController::class)->names([
+        'destroy' => 'languages.resource.destroy',
+    ]);
     Route::controller(LanguageController::class)->group(function () {
         Route::post('/languages/update_rtl_status', 'update_rtl_status')->name('languages.update_rtl_status');
         Route::post('/languages/key_value_store', 'key_value_store')->name('languages.key_value_store');
@@ -242,7 +285,9 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin']], function 
     });
 
     // Setting
-    Route::resource('/settings', SettingController::class);
+    Route::resource('/settings', SettingController::class)->names([
+        'update' => 'settings.resource.update',
+    ]);
     Route::controller(SettingController::class)->group(function () {
         Route::post('/settings/update', 'update')->name('settings.update');
         Route::post('/settings/activation/update', 'updateActivationSettings')->name('settings.activation.update');
@@ -274,10 +319,10 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin']], function 
         Route::get('/system/server-status', 'system_server')->name('system_server');
     });
 
-    Route::resource('/additional-attributes', AdditionalAttributeController::class);
+    Route::resource('/additional-attributes', AdditionalAttributeController::class)->names([
+        'update' => 'additional-attributes.resource.update',
+    ]);
     Route::post('/additional-attributes/update', [AdditionalAttributeController::class, 'update'])->name('additional-attributes.update');
-
-    Route::resource('/languages', LanguageController::class);
 
     // Currency settings
     Route::resource('currencies', CurrencyController::class);
@@ -294,17 +339,24 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin']], function 
             Route::get('/appearances', 'website_appearances')->name('website.appearances');
         });
 
-        Route::resource('custom-pages', PageController::class);
+        Route::resource('custom-pages', PageController::class)->names([
+            'edit' => 'custom-pages.resource.edit',
+            'destroy' => 'custom-pages.resource.destroy',
+        ]);
         Route::controller(PageController::class)->group(function () {
             Route::get('/custom-pages/edit/{id}', 'edit')->name('custom-pages.edit');
             Route::get('/custom-pages/destroy/{id}', 'destroy')->name('custom-pages.destroy');
         });
     });
 
-    Route::resource('staffs', StaffController::class);
+    Route::resource('staffs', StaffController::class)->names([
+        'destroy' => 'staffs.resource.destroy',
+    ]);
     Route::get('/staffs/destroy/{id}', [StaffController::class, 'destroy'])->name('staffs.destroy');
 
-    Route::resource('roles', RoleController::class);
+    Route::resource('roles', RoleController::class)->names([
+        'destroy' => 'roles.resource.destroy',
+    ]);
     Route::get('/roles/destroy/{id}', [RoleController::class, 'destroy'])->name('roles.destroy');
 
     // permission add
@@ -316,7 +368,9 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin']], function 
     Route::post('/addons/activation', [AddonController::class, 'activation'])->name('addons.activation');
 
     // uploaded files
-    Route::resource('/uploaded-files', AizUploadController::class);
+    Route::resource('/uploaded-files', AizUploadController::class)->names([
+        'destroy' => 'uploaded-files.resource.destroy',
+    ]);
     Route::controller(AizUploadController::class)->group(function() {
         Route::any('/uploaded-files/file-info', 'file_info')->name('uploaded-files.info');
         Route::get('/uploaded-files/destroy/{id}', 'destroy')->name('uploaded-files.destroy');
@@ -326,6 +380,8 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin']], function 
     Route::get('/cache-cache', [HomeController::class, 'clearCache'])->name('cache.clear');
 
     // Manual Payment
-    Route::resource('manual_payment_methods', ManualPaymentMethodController::class);
+    Route::resource('manual_payment_methods', ManualPaymentMethodController::class)->names([
+        'destroy' => 'manual_payment_methods.resource.destroy',
+    ]);
     Route::get('/manual_payment_methods/destroy/{id}', [ManualPaymentMethodController::class, 'destroy'])->name('manual_payment_methods.destroy');
 });

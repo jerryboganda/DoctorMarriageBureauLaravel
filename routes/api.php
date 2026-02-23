@@ -174,7 +174,7 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
         });
     });
 
-    Route::post('/logout', 'AuthController@logout')->name('logout')->middleware('auth:sanctum');
+    Route::post('/logout', 'AuthController@logout')->name('api.logout')->middleware('auth:sanctum');
     Route::get('/member-validate', 'MemberController@member_validate');
 
     Route::group(['middleware' => ['auth:sanctum', 'api_email_verified']], function () {
@@ -210,7 +210,7 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
             //Instamojo
             Route::any('pay-with-instamojo', 'InstamojoController@pay')->name('api.instamojo.pay');
         });
-        Route::post('/upload-profile-picture', 'HomeController@upload_profile_picture')->name('upload.profile.picture');
+        Route::post('/upload-profile-picture', 'HomeController@upload_profile_picture')->name('api.upload.profile.picture');
 
         // member middleware has removed for api but it exist in web
         Route::group(['prefix' => 'member'], function () {
@@ -263,11 +263,33 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
             Route::get('/home-with-login', 'HomeController@home_with_login');
             Route::get('/check-happy-story', 'HappyStoryController@happy_story_check');
             Route::post('/happy-story', 'HappyStoryController@store');
-            Route::apiResources([
-                'gallery-image' => 'GalleryImageController',
-                'career' => 'CareerController',
-                'education' => 'EducationController',
-                'support-ticket' => 'SupportTicketController',
+            Route::apiResource('gallery-image', 'GalleryImageController')->names([
+                'index' => 'api.member.gallery-image.index',
+                'store' => 'api.member.gallery-image.store',
+                'show' => 'api.member.gallery-image.show',
+                'update' => 'api.member.gallery-image.update',
+                'destroy' => 'api.member.gallery-image.destroy',
+            ]);
+            Route::apiResource('career', 'CareerController')->names([
+                'index' => 'api.member.career.index',
+                'store' => 'api.member.career.store',
+                'show' => 'api.member.career.show',
+                'update' => 'api.member.career.update',
+                'destroy' => 'api.member.career.destroy',
+            ]);
+            Route::apiResource('education', 'EducationController')->names([
+                'index' => 'api.member.education.index',
+                'store' => 'api.member.education.store',
+                'show' => 'api.member.education.show',
+                'update' => 'api.member.education.update',
+                'destroy' => 'api.member.education.destroy',
+            ]);
+            Route::apiResource('support-ticket', 'SupportTicketController')->names([
+                'index' => 'api.member.support-ticket.index',
+                'store' => 'api.member.support-ticket.store',
+                'show' => 'api.member.support-ticket.show',
+                'update' => 'api.member.support-ticket.update',
+                'destroy' => 'api.member.support-ticket.destroy',
             ]);
 
             // Gallery Image Custom Actions

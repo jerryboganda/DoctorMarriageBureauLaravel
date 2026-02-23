@@ -75,7 +75,7 @@ Route::get('/password/reset', function () {
 
 Route::get('/password/email', function () {
     return view('auth.passwords.email');
-})->name('password.email');
+})->name('password.email.form');
 
 Route::post('/password/email', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
 
@@ -98,7 +98,7 @@ Route::controller(VerificationController::class)->group(function () {
     Route::get('/email_change/callback', 'email_change_callback')->name('email_change.callback');
     // Show reset password form (GET) to avoid 405 after POST validation errors
     Route::get('/password/reset/email', function(){ return view('auth.passwords.reset'); })->name('password.reset.form');
-    Route::post('/password/reset/email/submit', 'reset_password_with_code')->name('password.update');
+    Route::post('/password/reset/email/submit', 'reset_password_with_code')->name('password.update.email_code');
     Route::get('/users/login', 'login')->name('user.login');
     Route::get('/happy-stories', 'happy_stories')->name('happy_stories');
     Route::get('/users/blocked', 'user_account_blocked')->name('user.blocked');
@@ -121,13 +121,13 @@ Route::controller(AizUploadController::class)->group(function () {
 
 Auth::routes(['verify' => true]);
 Route::controller(LoginController::class)->group(function () {
-    Route::get('/logout', 'logout')->name('logout');
+    Route::get('/logout', 'logout')->name('logout.get');
     Route::get('/social-login/redirect/{provider}', 'redirectToProvider')->name('social.login');
     Route::get('/social-login/{provider}/callback', 'handleProviderCallback')->name('social.callback');
 });
 
 Route::controller(VerificationController::class)->group(function () {
-    Route::get('/email/resend', 'resend')->name('verification.resend');
+    Route::get('/email/resend', 'resend')->name('verification.resend.get');
     Route::get('/verification-confirmation/{code}', 'verification_confirmation')->name('email.verification.confirmation');
 });
 
@@ -870,7 +870,11 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('/address', AddressController::class);
 
     // Member education
-    Route::resource('/education', EducationController::class);
+    Route::resource('/education', EducationController::class)->names([
+        'create' => 'education.resource.create',
+        'edit' => 'education.resource.edit',
+        'destroy' => 'education.resource.destroy',
+    ]);
     Route::controller(EducationController::class)->group(function () {
         Route::post('/education/create', 'create')->name('education.create');
         Route::post('/education/edit', 'edit')->name('education.edit');
@@ -882,7 +886,11 @@ Route::group(['middleware' => ['auth']], function () {
 
 
     // Member Career
-    Route::resource('/career', CareerController::class);
+    Route::resource('/career', CareerController::class)->names([
+        'create' => 'career.resource.create',
+        'edit' => 'career.resource.edit',
+        'destroy' => 'career.resource.destroy',
+    ]);
     Route::controller(CareerController::class)->group(function () {
         Route::post('/career/create', 'create')->name('career.create');
         Route::post('/career/edit', 'edit')->name('career.edit');
@@ -976,237 +984,3 @@ Route::get('/migrate/products/', 'ProfileMatchController@migrate_profiles');
 
 //Custom page
 Route::get('/{slug}', 'PageController@show_custom_page')->name('custom-pages.show_custom_page');
-
-    Route::controller(MemberController::class)->group(function () {
-
-        Route::post('/members/introduction_update/{id}', 'introduction_update')->name('member.introduction.update');
-
-        Route::post('/members/basic_info_update/{id}', 'basic_info_update')->name('member.basic_info_update');
-
-        Route::post('/members/language_info_update/{id}', 'language_info_update')->name('member.language_info_update');
-
-    });
-
-   
-
-
-
-    Route::resource('/address', AddressController::class);
-
-
-
-    // Member education
-
-    Route::resource('/education', EducationController::class);
-
-    Route::controller(EducationController::class)->group(function () {
-
-        Route::post('/education/create', 'create')->name('education.create');
-
-        Route::post('/education/edit', 'edit')->name('education.edit');
-
-        Route::post('/education/update_education_present_status', 'update_education_present_status')->name('education.update_education_present_status');
-
-        Route::post('/education/update-highest-degree', 'updateHighestDegree')->name('education.update_highest_degree');
-
-        
-
-        Route::get('/education/destroy/{id}', 'destroy')->name('education.destroy');
-
-    });
-
-
-
-
-
-    // Member Career
-
-    Route::resource('/career', CareerController::class);
-
-    Route::controller(CareerController::class)->group(function () {
-
-        Route::post('/career/create', 'create')->name('career.create');
-
-        Route::post('/career/edit', 'edit')->name('career.edit');
-
-        Route::post('/career/update_career_present_status', 'update_career_present_status')->name('career.update_career_present_status');
-
-        Route::get('/career/destroy/{id}', 'destroy')->name('career.destroy');
-
-    });
-
-
-
-    Route::resource('/physical-attribute', PhysicalAttributeController::class);
-
-    Route::resource('/hobbies', HobbyController::class);
-
-    Route::resource('/attitudes', AttitudeController::class);
-
-    Route::resource('/recidencies', RecidencyController::class);
-
-    Route::resource('/lifestyles', LifestyleController::class);
-
-    Route::resource('/astrologies', AstrologyController::class);
-
-    Route::resource('/families', FamilyController::class);
-
-    Route::resource('/spiritual_backgrounds', SpiritualBackgroundController::class);
-
-    Route::resource('/partner_expectations', PartnerExpectationController::class);
-
-    Route::post('/additional-member-info/update', [AdditionalMemberInfoController::class, 'update'])->name('additional_member_info.update');
-
-
-
-    Route::post('/states/get_state_by_country', [StateController::class, 'get_state_by_country'])->name('states.get_state_by_country');
-
-    Route::post('/cities/get_cities_by_state', [CityController::class, 'get_cities_by_state'])->name('cities.get_cities_by_state');
-
-    Route::post('/castes/get_caste_by_religion', [CasteController::class, 'get_caste_by_religion'])->name('castes.get_caste_by_religion');
-
-    Route::post('/sub-castes/get_sub_castes_by_religion', [SubCasteController::class, 'get_sub_castes_by_religion'])->name('sub_castes.get_sub_castes_by_religion');
-
-
-
-    Route::get('/package-payment-invoice/{id}', [PackagePaymentController::class, 'package_payment_invoice'])->name('package_payment.invoice');
-
-
-
-    Route::controller(NotificationController::class)->group(function () {
-
-        Route::get('/notification-view/{id}', 'notification_view')->name('notification_view');
-
-        Route::get('/notification/mark-all-as-read', 'mark_all_as_read')->name('notification.mark_all_as_read');
-
-    });
-
-    
-
-// });
-
-
-
-// Contact Us page
-
-Route::controller(ContactUsController::class)->group(function () {
-
-    Route::get('/contact-us/page', 'show_contact_us_page')->name('contact_us');
-
-    Route::post('/contact-us', 'store')->name('contact-us.store');
-
-});
-
-
-
-// Payment gateway Redirect
-
-
-
-//Paypal START
-
-Route::get('/paypal/payment/done', 'PaypalController@getDone')->name('payment.done');
-
-Route::get('/paypal/payment/cancel', 'PaypalController@getCancel')->name('payment.cancel');
-
-//Paypal END
-
-
-
-//amarpay
-
-
-
-Route::post('/aamarpay/success', 'AamarpayController@success')->name('aamarpay.success');
-
-Route::post('/aamarpay/fail', 'AamarpayController@fail')->name('aamarpay.fail');
-
-
-
-// SSLCOMMERZ Start
-
-Route::get('/sslcommerz/pay', 'SslcommerzController@index');
-
-Route::any('/sslcommerz/success', 'SslcommerzController@success')->name('sslcommerz.success');
-
-Route::any('/sslcommerz/fail', 'SslcommerzController@fail');
-
-Route::any('/sslcommerz/cancel', 'SslcommerzController@cancel');
-
-Route::post('/sslcommerz/ipn', 'SslcommerzController@ipn');
-
-
-
-
-
-Route::get('/instamojo/payment/pay-success', 'InstamojoController@success')->name('instamojo.success');
-
-Route::post('rozer/payment/pay-success', 'RazorpayController@payment')->name('payment.rozer');
-
-Route::get('/paystack/payment/callback', 'PaystackController@handleGatewayCallback');
-
-
-
-//Stipe Start
-
-Route::controller(StripeController::class)->group(function () {
-
-    Route::get('stripe', 'stripe');
-
-    Route::post('/stripe/create-checkout-session', 'create_checkout_session')->name('stripe.get_token');
-
-    Route::any('/stripe/payment/callback', 'callback')->name('stripe.callback');
-
-    Route::get('/stripe/success', 'success')->name('stripe.success');
-
-    Route::get('/stripe/cancel', 'cancel')->name('stripe.cancel');
-
-});
-
-//Stripe END
-
-
-
-//Paytm
-
-Route::get('/paytm/index', 'PaytmController@index');
-
-Route::post('/paytm/callback', 'PaytmController@callback')->name('paytm.callback');
-
-
-
-// phonepe
-
-Route::controller(PhonepeController::class)->group(function () {
-
-    Route::any('/phonepe/pay', 'pay')->name('phonepe.pay');
-
-    Route::any('/phonepe/redirecturl', 'phonepe_redirecturl')->name('phonepe.redirecturl');
-
-    Route::any('/phonepe/callbackUrl', 'phonepe_callbackUrl')->name('phonepe.callbackUrl');
-
-});
-
-
-
-Route::get('/customer-products/admin', 'HomeController@profile_edit')->name('profile.edit');
-
-Route::get('/check_for_package_invalid', 'PackageController@check_for_package_invalid')->name('member.check_for_package_invalid');
-
-
-
-Route::get('/match_profiles', 'ProfileMatchController@match_profiles')->name('match_profiles');
-
-Route::get('/migrate/products/', 'ProfileMatchController@migrate_profiles');
-
-
-
-
-
-
-
-//Custom page
-
-Route::get('/{slug}', 'PageController@show_custom_page')->name('custom-pages.show_custom_page');
-
-
