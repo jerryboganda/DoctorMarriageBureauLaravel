@@ -57,7 +57,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onLaunchOnboarding, onOpenB
 
     // Device Management State
     const [devices, setDevices] = useState<any[]>([]);
-    const [loginAlerts, setLoginAlerts] = useState({ email: true, sms: false });
+    const [loginAlerts, setLoginAlerts] = useState({ email: true });
 
     // Privacy State
     const [incognito, setIncognito] = useState(false);
@@ -183,7 +183,6 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onLaunchOnboarding, onOpenB
             if (prefsData) {
                 setLoginAlerts({
                     email: Boolean(prefsData.email_digest),
-                    sms: Boolean(prefsData.sms),
                 });
             }
 
@@ -270,13 +269,13 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onLaunchOnboarding, onOpenB
         }
     };
 
-    const handleAlertsChange = async (next: { email: boolean; sms: boolean }) => {
+    const handleAlertsChange = async (next: { email: boolean }) => {
         setLoginAlerts(next);
-        setNotificationPrefs((prev) => (prev ? { ...prev, email_digest: next.email, sms: next.sms } : prev));
+        setNotificationPrefs((prev) => (prev ? { ...prev, email_digest: next.email, sms: false } : prev));
         try {
             await api.post('/member/notifications/preferences', {
                 email_digest: next.email,
-                sms: next.sms,
+                sms: false,
                 whatsapp: notificationPrefs?.whatsapp ?? true,
                 push_notifications: notificationPrefs?.push_notifications ?? true,
                 weekly_digest: notificationPrefs?.weekly_digest ?? true,
@@ -833,15 +832,6 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onLaunchOnboarding, onOpenB
                                                         type="checkbox"
                                                         checked={loginAlerts.email}
                                                         onChange={(e) => handleAlertsChange({ ...loginAlerts, email: e.target.checked })}
-                                                        className="accent-primary size-4"
-                                                    />
-                                                </label>
-                                                <label className="flex items-center justify-between cursor-pointer group">
-                                                    <span className="text-sm text-slate-600 group-hover:text-slate-900">{t('settings.security.smsAlertUnknown')}</span>
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={loginAlerts.sms}
-                                                        onChange={(e) => handleAlertsChange({ ...loginAlerts, sms: e.target.checked })}
                                                         className="accent-primary size-4"
                                                     />
                                                 </label>
