@@ -24,18 +24,20 @@ class InterestController extends Controller
     {
         $ignoredUserIds = IgnoredUser::where('ignored_by', auth()->user()->id)->pluck('user_id');
 
-        $interestsQuery = ExpressInterest::orderBy('id', 'desc')
-            ->where('interested_by', auth()->user()->id);
+        $interestsQuery = ExpressInterest::query()
+            ->with([
+                'user.member',
+                'user.spiritual_backgrounds.religion',
+                'user.addresses.country',
+            ])
+            ->where('interested_by', auth()->user()->id)
+            ->orderByDesc('id');
 
         if ($ignoredUserIds->count() > 0) {
-            $interestsQuery->whereNotIn('express_interests.user_id', $ignoredUserIds);
+            $interestsQuery->whereNotIn('user_id', $ignoredUserIds);
         }
 
-        $interests = $interestsQuery
-            ->join('users', 'express_interests.user_id', '=', 'users.id')
-            ->select('express_interests.id')
-            ->distinct()
-            ->paginate(10);
+        $interests = $interestsQuery->paginate(10);
 
         return MyInterestResource::collection($interests)->additional([
             'result' => true
@@ -44,23 +46,57 @@ class InterestController extends Controller
 
     public function express_interest(Request $request)
     {
-        if (User::find($request->user_id)) {
-            if (!ExpressInterest::where(['user_id' => $request->user_id, 'interested_by' => auth()->user()->id])->first() || ExpressInterest::where(['user_id' => auth()->user()->id, 'interested_by' => $request->user_id])->first()) {
-                $interest = new InterestService();
-                $new_interest = $interest->store($request->user_id);
+        $targetUser = User::find($request->user_id);
+        if (!$targetUser) {
+            return $this->failure_message('Invalid member for proposal request.');
+        }
 
-                return ($new_interest) ?
-                    $this->success_message('Proposal Sent Successfully') :
-                    $this->failure_message('Something went wrong');
-            }
+        $authId = auth()->user()->id;
+        $existingSent = ExpressInterest::query()
+            ->where('user_id', $request->user_id)
+            ->where('interested_by', $authId)
+            ->first();
+
+        if ($existingSent) {
             return $this->failure_message('Proposal already sent');
         }
-        return $this->failure_message('Invalid member for proposal request.');
+
+        $receivedInterest = ExpressInterest::query()
+            ->where('user_id', $authId)
+            ->where('interested_by', $request->user_id)
+            ->first();
+
+        if ($receivedInterest) {
+            if ((int) $receivedInterest->status === 1) {
+                return $this->success_message('Proposal already accepted');
+            }
+
+            $interestService = new InterestService();
+            $accepted = $interestService->accept($receivedInterest->id);
+            return $accepted
+                ? $this->success_message('Proposal accepted successfully.')
+                : $this->failure_message('Something went wrong');
+        }
+
+        $interest = new InterestService();
+        $new_interest = $interest->store($request->user_id);
+
+        return ($new_interest) ?
+            $this->success_message('Proposal Sent Successfully') :
+            $this->failure_message('Something went wrong');
     }
 
     public function interest_requests()
     {
-        $interests = ExpressInterest::where('user_id', auth()->user()->id)->latest()->paginate(10);
+        $interests = ExpressInterest::query()
+            ->with([
+                'interestedby.member',
+                'interestedby.spiritual_backgrounds.religion',
+                'interestedby.addresses.country',
+            ])
+            ->where('user_id', auth()->user()->id)
+            ->latest()
+            ->paginate(10);
         return ExpressInterestResource::collection($interests)->additional([
             'result' => true
         ]);

@@ -24,6 +24,18 @@ class ActiveUserResource extends JsonResource
         $resolved_photo = $profile_picture_show ? (uploaded_asset($this->photo) ?? $avatar_fallback) : $avatar_fallback;
         $package_update_alert = get_setting('full_profile_show_according_to_membership') == 1 && optional(auth()->user())->membership == 1 ? true : false;
         $identity_verified = ($this->approved == 1) && !empty($this->verification_info);
+        $interestInfo = MemberUtility::member_interest_info($this->id);
+        $shortlistInfo = MemberUtility::member_shortlist_info($this->id);
+        $profileViewRequestStatus = ViewProfilePicture::query()
+            ->where('user_id', $this->id)
+            ->where('requested_by', auth()->id())
+            ->where('status', 1)
+            ->exists();
+        $galleryViewRequestStatus = ViewGalleryImage::query()
+            ->where('user_id', $this->id)
+            ->where('requested_by', auth()->id())
+            ->where('status', 1)
+            ->exists();
 
         return [
             'id'                   => $this->id,
@@ -51,10 +63,12 @@ class ActiveUserResource extends JsonResource
             'marital_status'       => !empty($this->member->marital_status->name) ? $this->member->marital_status->name : '',
             'caste'                => !empty($this->spiritual_backgrounds->caste->name) ? $this->spiritual_backgrounds->caste->name . ', ' : "",
             'package_update_alert' => $package_update_alert,
-            'interest_status'      => MemberUtility::member_interest_info($this->id)['interest_status'],
-            'interest_text'        => MemberUtility::member_interest_info($this->id)['interest_text'],
-            'shortlist_status'     => MemberUtility::member_shortlist_info($this->id)['shortlist_status'],
-            'shortlist_text'       => MemberUtility::member_shortlist_info($this->id)['shortlist_text'],
+            'interest_status'      => $interestInfo['interest_status'],
+            'interest_text'        => $interestInfo['interest_text'],
+            'proposal_status'      => $interestInfo['proposal_status'] ?? 'none',
+            'proposal_updated_at'  => $interestInfo['proposal_updated_at'] ?? null,
+            'shortlist_status'     => $shortlistInfo['shortlist_status'],
+            'shortlist_text'       => $shortlistInfo['shortlist_text'],
             'report_status'        => MemberUtility::member_report_status($this->id) ? true : false,
             'is_agent_pick'       => $this->member->is_agent_pick == 1,
             'is_high_intent'      => $this->member->is_high_intent == 1,
@@ -62,8 +76,8 @@ class ActiveUserResource extends JsonResource
             'isHighIntent'        => $this->member->is_high_intent == 1,
             'travel_mode'         => $this->member->travel_mode == 1,
             'is_visible'          => $this->member->is_visible == 1,
-            'profile_view_resquest_status' =>  ViewProfilePicture::where('user_id', $this->id)->where('requested_by', auth()->id())->where('status', 1)->first() ? true : false,
-            'gallery_view_resquest_status' =>  ViewGalleryImage::where('user_id', $this->id)->where('requested_by', auth()->id())->where('status', 1)->first() ? true : false,
+            'profile_view_resquest_status' => $profileViewRequestStatus,
+            'gallery_view_resquest_status' => $galleryViewRequestStatus,
             'education' => $this->education->count() > 0 ? [
                 'degree' => $this->education->first()->degree ?? '',
                 'institution' => $this->education->first()->institution ?? '',

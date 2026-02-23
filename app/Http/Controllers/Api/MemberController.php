@@ -262,17 +262,30 @@ class MemberController extends Controller
 
 
         if ($do_interest && $received_interest) {
-            $data['interest_status'] = 'mutual';
-            $data['interest_text'] = 'Proposal Accepted';
+            $isAccepted = ((int) $do_interest->status === 1) || ((int) $received_interest->status === 1);
+            $latestUpdatedAt = $do_interest->updated_at >= $received_interest->updated_at
+                ? $do_interest->updated_at
+                : $received_interest->updated_at;
+
+            $data['interest_status'] = $isAccepted ? 'mutual' : 'sent interest';
+            $data['interest_text'] = $isAccepted ? 'Proposal Accepted' : 'Proposal Sent';
+            $data['proposal_status'] = $isAccepted ? 'sent_accepted' : 'sent_pending';
+            $data['proposal_updated_at'] = optional($latestUpdatedAt)->toIso8601String();
         } elseif ($do_interest) {
             $data['interest_status'] = 'sent interest';
             $data['interest_text'] = $do_interest->status == 0 ? 'Proposal Sent' : 'Proposal Accepted';
+            $data['proposal_status'] = $do_interest->status == 0 ? 'sent_pending' : 'sent_accepted';
+            $data['proposal_updated_at'] = optional($do_interest->updated_at)->toIso8601String();
         } elseif ($received_interest) {
             $data['interest_status'] = 'received interest';
             $data['interest_text'] = $received_interest->status == 0 ? 'Reply to Proposal' : 'You Accepted Proposal';
+            $data['proposal_status'] = $received_interest->status == 0 ? 'received_pending' : 'received_accepted';
+            $data['proposal_updated_at'] = optional($received_interest->updated_at)->toIso8601String();
         } else {
             $data['interest_status'] = 'no interest';
             $data['interest_text'] = 'Proposal';
+            $data['proposal_status'] = 'none';
+            $data['proposal_updated_at'] = null;
         }
         $data['shortlist_status']    = $shortlist ? 1 : 0;
         $data['report_status']        = $profile_reported ? true : false;
