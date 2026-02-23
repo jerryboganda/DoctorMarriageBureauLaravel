@@ -158,7 +158,7 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
 
         // Razor Pay
         Route::controller('RazorpayController')->group(function () {
-            Route::any('razorpay/payment', 'payment')->name('api.razorpay.payment');
+            Route::any('razorpay/payment', 'payment')->name('api.razorpay.legacy_payment');
             Route::post('razorpay/success', 'success')->name('api.razorpay.success');
         });
 
@@ -208,7 +208,7 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
 
 
             //Instamojo
-            Route::any('pay-with-instamojo', 'InstamojoController@pay')->name('api.phonepe.pay');
+            Route::any('pay-with-instamojo', 'InstamojoController@pay')->name('api.instamojo.pay');
         });
         Route::post('/upload-profile-picture', 'HomeController@upload_profile_picture')->name('upload.profile.picture');
 
