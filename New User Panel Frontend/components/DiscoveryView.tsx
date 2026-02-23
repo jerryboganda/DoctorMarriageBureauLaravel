@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   Search, Sliders, MapPin, Heart, X, ChevronDown, Eye, EyeOff, Map as MapIcon, 
@@ -21,6 +21,7 @@ const DEFAULT_FEMALE_AVATAR = `${API_BASE}/assets/img/female-avatar-place.png`;
 
 interface DiscoveryViewProps {
     onSendProposal: (profile: ProfileMatch) => void;
+    onProposalStateChange?: (profileId: string, state: CanonicalInterestState) => void;
     initialTab?: 'all' | 'agent' | 'intent';
     isIdentityVerified?: boolean | null;
     onRequireVerification?: () => void;
@@ -68,7 +69,7 @@ const normalizeProfile = (profile: any): ProfileMatch => {
     intelligence: profile.intelligence,
     educations: profile.educations,
     careers: profile.careers,
-    interestStatus: profile.interest_status ?? profile.interestStatus,
+    interestStatus: profile.interest_status ?? profile.interestStatus ?? profile.proposal_status,
     interestText: profile.interest_text ?? profile.interestText,
   };
 };
@@ -89,7 +90,7 @@ const DEFAULT_FILTERS: DiscoveryFilters = {
   profession: ''
 };
 
-const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, initialTab = 'all', isIdentityVerified, onRequireVerification, onNavigate, unreadNotifCount = 0, sentProposalMap = {}, proposalStatusMap = {}, refreshVersion }) => {
+const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposalStateChange, initialTab = 'all', isIdentityVerified, onRequireVerification, onNavigate, unreadNotifCount = 0, sentProposalMap = {}, proposalStatusMap = {}, refreshVersion }) => {
   const { t } = useTranslation();
   const [showFilters, setShowFilters] = useState(false);
   const [isAnonymous, setIsAnonymous] = useState(false);
@@ -127,6 +128,10 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, initialTa
   }>({ current_page: 1, last_page: 1, per_page: 20, total: 0, from: null, to: null });
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const discoveryRequestSeqRef = useRef(0);
+  const searchRequestSeqRef = useRef(0);
+  const discoveryAbortRef = useRef<AbortController | null>(null);
+  const searchAbortRef = useRef<AbortController | null>(null);
 
   const mergeInterest = (profile: ProfileMatch): ProfileMatch => {
     const status = proposalStatusMap[String(profile.id)];
@@ -155,10 +160,32 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, initialTa
     };
   };
 
+  const applyInterestStateToProfile = useCallback((profile: ProfileMatch, state: CanonicalInterestState): ProfileMatch => {
+    switch (state) {
+      case 'sent_pending':
+        return { ...profile, interestStatus: 'sent interest', interestText: 'Proposal Sent' };
+      case 'sent_accepted':
+        return { ...profile, interestStatus: 'mutual', interestText: 'Proposal Accepted' };
+      case 'received_pending':
+        return { ...profile, interestStatus: 'do_response', interestText: 'Reply to Proposal' };
+      case 'received_accepted':
+        return { ...profile, interestStatus: 'do_response', interestText: 'You Accepted Proposal' };
+      default:
+        return profile;
+    }
+  }, []);
+
   const fetchDiscoveryData = useCallback(async (page: number = 1) => {
+      const requestSeq = ++discoveryRequestSeqRef.current;
+      discoveryAbortRef.current?.abort();
+      const controller = new AbortController();
+      discoveryAbortRef.current = controller;
+
       setLoading(true);
       try {
-          const response = await api.get('/discovery', { params: { page } });
+          const response = await api.get('/discovery', { params: { page }, signal: controller.signal });
+          if (requestSeq !== discoveryRequestSeqRef.current) return;
+
           if (response.data.result) {
               const data = response.data.data || {};
               const normalized = {
@@ -168,12 +195,10 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, initialTa
               };
               setProfiles(normalized);
 
-              // Update pagination
               if (response.data.pagination) {
                   setPagination(response.data.pagination);
               }
 
-              // Pre-populate sent-interest state from API data
               const allProfiles = [...normalized.agent_picks, ...normalized.high_intent, ...normalized.all_profiles];
               const alreadySent: Record<string, boolean> = {};
               allProfiles.forEach(p => {
@@ -184,10 +209,14 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, initialTa
               });
               setSuperLiked(prev => ({ ...prev, ...alreadySent }));
           }
-      } catch (error) {
-          console.error('Failed to fetch discovery profiles', error);
+      } catch (error: any) {
+          if (error?.name !== 'CanceledError' && error?.code !== 'ERR_CANCELED') {
+            console.error('Failed to fetch discovery profiles', error);
+          }
       } finally {
-          setLoading(false);
+          if (requestSeq === discoveryRequestSeqRef.current) {
+            setLoading(false);
+          }
       }
   }, []);
 
@@ -197,7 +226,16 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, initialTa
 
   useEffect(() => {
     fetchDiscoveryData(currentPage);
+    // refreshVersion is an explicit external invalidation signal.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshVersion]);
+
+  useEffect(() => {
+    return () => {
+      discoveryAbortRef.current?.abort();
+      searchAbortRef.current?.abort();
+    };
+  }, []);
 
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= pagination.last_page && page !== currentPage) {
@@ -207,7 +245,12 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, initialTa
     }
   };
 
-  const fetchSearchResults = async (query: string, filterSet: DiscoveryFilters) => {
+  const fetchSearchResults = useCallback(async (query: string, filterSet: DiscoveryFilters) => {
+    const requestSeq = ++searchRequestSeqRef.current;
+    searchAbortRef.current?.abort();
+    const controller = new AbortController();
+    searchAbortRef.current = controller;
+
     setLoading(true);
     try {
       const params: Record<string, string> = {};
@@ -217,12 +260,13 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, initialTa
       if (filterSet.religion) params.religion = filterSet.religion;
       if (filterSet.profession) params.profession = filterSet.profession;
 
-      const response = await api.get('/discovery/search', { params });
+      const response = await api.get('/discovery/search', { params, signal: controller.signal });
+      if (requestSeq !== searchRequestSeqRef.current) return;
+
       const results = response.data?.data || [];
       const normalized = results.map(normalizeProfile);
       setSearchResults(normalized);
 
-      // Pre-populate sent-interest state from search results
       const alreadySent: Record<string, boolean> = {};
       normalized.forEach((p: ProfileMatch) => {
         const flags = getInterestFlags(p);
@@ -231,12 +275,16 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, initialTa
         }
       });
       setSuperLiked(prev => ({ ...prev, ...alreadySent }));
-    } catch (error) {
-      console.error('Failed to search discovery profiles', error);
+    } catch (error: any) {
+      if (error?.name !== 'CanceledError' && error?.code !== 'ERR_CANCELED') {
+        console.error('Failed to search discovery profiles', error);
+      }
     } finally {
-      setLoading(false);
+      if (requestSeq === searchRequestSeqRef.current) {
+        setLoading(false);
+      }
     }
-  };
+  }, []);
 
   useEffect(() => {
     const query = searchQuery.trim();
@@ -256,17 +304,14 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, initialTa
     }, 350);
 
     return () => clearTimeout(timeoutId);
-  }, [searchQuery, appliedFilters]);
+  }, [searchQuery, appliedFilters, fetchSearchResults]);
 
   useEffect(() => {
     if (!sentProposalMap || Object.keys(sentProposalMap).length === 0) return;
     const patchSentStatus = (profile: ProfileMatch): ProfileMatch => {
       if (!sentProposalMap[String(profile.id)]) return profile;
-      return {
-        ...profile,
-        interestStatus: 'sent interest',
-        interestText: profile.interestText || 'Pending',
-      };
+      const mappedState = proposalStatusMap[String(profile.id)] ?? 'sent_pending';
+      return applyInterestStateToProfile(profile, mappedState);
     };
 
     setSuperLiked((prev) => ({ ...prev, ...sentProposalMap }));
@@ -277,7 +322,16 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, initialTa
     }));
     setSearchResults((prev) => prev.map(patchSentStatus));
     setSelectedProfile((prev) => (prev ? patchSentStatus(prev) : prev));
-  }, [sentProposalMap]);
+  }, [sentProposalMap, proposalStatusMap, applyInterestStateToProfile]);
+
+  useEffect(() => {
+    setSelectedProfile((prev) => {
+      if (!prev) return prev;
+      const state = proposalStatusMap[String(prev.id)];
+      if (!state) return prev;
+      return applyInterestStateToProfile(prev, state);
+    });
+  }, [proposalStatusMap, applyInterestStateToProfile]);
 
   const handleApplyFilters = () => {
     setAppliedFilters({
@@ -345,6 +399,16 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, initialTa
       setSuperLikeProcessing((prev) => ({ ...prev, [profileId]: true }));
       await api.post('/member/express-interest', { user_id: profileId });
       setSuperLiked((prev) => ({ ...prev, [profileId]: true }));
+      const patchProfile = (item: ProfileMatch) =>
+        String(item.id) === profileId ? applyInterestStateToProfile(item, 'sent_pending') : item;
+      setProfiles((prev) => ({
+        agent_picks: prev.agent_picks.map(patchProfile),
+        high_intent: prev.high_intent.map(patchProfile),
+        all_profiles: prev.all_profiles.map(patchProfile),
+      }));
+      setSearchResults((prev) => prev.map(patchProfile));
+      setSelectedProfile((prev) => (prev && String(prev.id) === profileId ? applyInterestStateToProfile(prev, 'sent_pending') : prev));
+      onProposalStateChange?.(profileId, 'sent_pending');
     } catch (error) {
       console.error('Failed to send super like', error);
     } finally {

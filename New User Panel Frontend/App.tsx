@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useState, useEffect, useRef } from 'react';
+import React, { lazy, Suspense, useState, useEffect, useRef, useCallback } from 'react';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { useTranslation } from 'react-i18next';
 import Sidebar from './components/Sidebar';
@@ -17,6 +17,11 @@ type IncomingInterest = {
     interestId: number;
     status?: string;
     profile: ProfileMatch;
+};
+
+type ProposalStateMapValue = {
+    state: CanonicalInterestState;
+    expiresAt: number;
 };
 
 type CheckoutItem = {
@@ -48,6 +53,17 @@ const AuthModal = lazy(() => import('./components/AuthModal'));
 const WelcomeScreen = lazy(() => import('./components/WelcomeScreen'));
 const ProfileDetailModal = lazy(() => import('./components/ProfileDetailModal'));
 const ReferralPopupModal = lazy(() => import('./components/ReferralPopupModal'));
+const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://api.doctormarriagebureau.com.pk';
+const DEFAULT_AVATAR = `${API_BASE}/assets/img/avatar-place.png`;
+
+const resolveAvatarUrl = (value?: string | null): string => {
+    const candidate = `${value ?? ''}`.trim();
+    if (!candidate) return DEFAULT_AVATAR;
+    if (candidate.startsWith('http://') || candidate.startsWith('https://')) return candidate;
+    if (candidate.startsWith('//')) return `https:${candidate}`;
+    if (candidate.startsWith('/')) return `${API_BASE}${candidate}`;
+    return `${API_BASE}/${candidate.replace(/^\/+/, '')}`;
+};
 
 const App: React.FC = () => {
     const { isAuthenticated, isLoading, checkAuth, logout, user } = useAuthStore();
@@ -69,6 +85,7 @@ const App: React.FC = () => {
     const [sentProposalMap, setSentProposalMap] = useState<Record<string, boolean>>({});
     const [proposalStatusMap, setProposalStatusMap] = useState<Record<string, CanonicalInterestState>>({});
     const [dataSyncVersion, setDataSyncVersion] = useState(0);
+    const optimisticProposalMapRef = useRef<Record<string, ProposalStateMapValue>>({});
 
     // Mobile Sidebar State
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -154,11 +171,20 @@ const App: React.FC = () => {
         return () => window.removeEventListener('popstate', handlePopState);
     }, []);
 
-    const mapInterestRow = (item: any): IncomingInterest => {
+    const mapInterestRow = (item: any, direction: 'sent' | 'received'): IncomingInterest => {
         const interestId = Number(item.id);
         const baseScore = Number.isFinite(interestId) ? 75 + (interestId % 20) : 80;
         const ageValue = Number(item.age);
         const age = Number.isFinite(ageValue) ? ageValue : 0;
+        const proposalStatus = String(item.proposal_status ?? '').toLowerCase();
+        const statusText = String(item.status ?? '').toLowerCase();
+        const isAccepted = proposalStatus.includes('accepted') || statusText === 'approved';
+        const isReceived = proposalStatus.startsWith('received') || direction === 'received';
+        const interestStatus = isReceived ? 'do_response' : (isAccepted ? 'mutual' : 'sent interest');
+        const interestText = isReceived
+            ? (isAccepted ? 'You Accepted Proposal' : 'Reply to Proposal')
+            : (isAccepted ? 'Proposal Accepted' : 'Proposal Sent');
+
         return {
             interestId,
             status: item.status,
@@ -170,8 +196,10 @@ const App: React.FC = () => {
                 location: item.country ?? '',
                 age,
                 matchPercentage: baseScore,
-                avatarUrl: item.photo ?? '',
-                isVerified: false
+                avatarUrl: resolveAvatarUrl(item.photo),
+                isVerified: false,
+                interestStatus,
+                interestText,
             }
         };
     };
@@ -190,7 +218,7 @@ const App: React.FC = () => {
         try {
             const response = await api.get('/member/interest-requests');
             const rows = response.data?.data || [];
-            setIncomingInterests(rows.map(mapInterestRow));
+            setIncomingInterests(rows.map((row: any) => mapInterestRow(row, 'received')));
         } catch (error) {
             console.error('Failed to fetch incoming interests', error);
         }
@@ -200,7 +228,7 @@ const App: React.FC = () => {
         try {
             const response = await api.get('/member/my-interests');
             const rows = response.data?.data || [];
-            setSentInterests(rows.map(mapInterestRow));
+            setSentInterests(rows.map((row: any) => mapInterestRow(row, 'sent')));
         } catch (error) {
             console.error('Failed to fetch sent interests', error);
         }
@@ -209,6 +237,29 @@ const App: React.FC = () => {
     const touchDataSync = () => {
         setDataSyncVersion((prev) => prev + 1);
     };
+
+    const upsertProposalState = useCallback(
+        (profileId: string, state: CanonicalInterestState, optimisticTtlMs: number = 0) => {
+            const normalizedId = String(profileId || '').trim();
+            if (!normalizedId) return;
+
+            if (optimisticTtlMs > 0) {
+                optimisticProposalMapRef.current[normalizedId] = {
+                    state,
+                    expiresAt: Date.now() + optimisticTtlMs,
+                };
+            } else {
+                delete optimisticProposalMapRef.current[normalizedId];
+            }
+
+            setProposalStatusMap((prev) => ({ ...prev, [normalizedId]: state }));
+            setSentProposalMap((prev) => ({
+                ...prev,
+                [normalizedId]: state === 'sent_pending' || state === 'sent_accepted',
+            }));
+        },
+        []
+    );
 
     const refreshCoreData = async ({ force = false }: { force?: boolean } = {}) => {
         const now = Date.now();
@@ -240,11 +291,18 @@ const App: React.FC = () => {
 
     const handleWithdrawInterest = async (interestId?: number) => {
         if (!interestId) return;
+        const target = sentInterests.find((item) => item.interestId === interestId);
+        if (target?.profile?.id) {
+            upsertProposalState(String(target.profile.id), 'none');
+        }
         try {
             await api.post('/member/interest-withdraw', { interest_id: interestId });
-            await refreshCoreData();
+            await refreshCoreData({ force: true });
         } catch (error) {
             console.error('Failed to withdraw interest', error);
+            if (target?.profile?.id) {
+                upsertProposalState(String(target.profile.id), 'sent_pending', 120000);
+            }
         }
     };
 
@@ -331,7 +389,27 @@ useEffect(() => {
         next[profileId] = statusText === 'approved' ? 'received_accepted' : 'received_pending';
     });
 
+    const now = Date.now();
+    Object.entries(optimisticProposalMapRef.current).forEach(([profileId, optimistic]) => {
+        if (optimistic.expiresAt < now) {
+            delete optimisticProposalMapRef.current[profileId];
+            return;
+        }
+        if (!(profileId in next)) {
+            next[profileId] = optimistic.state;
+        } else {
+            delete optimisticProposalMapRef.current[profileId];
+        }
+    });
+
     setProposalStatusMap(next);
+    setSentProposalMap((prev) => {
+        const merged: Record<string, boolean> = { ...prev };
+        Object.entries(next).forEach(([profileId, state]) => {
+            merged[profileId] = state === 'sent_pending' || state === 'sent_accepted';
+        });
+        return merged;
+    });
 }, [sentInterests, incomingInterests]);
 
 useEffect(() => {
@@ -385,6 +463,27 @@ useEffect(() => {
     };
 }, [isAuthenticated, gateState]);
 
+useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const onVisibility = () => {
+        if (document.visibilityState === 'visible') {
+            refreshCoreData();
+        }
+    };
+    const onFocus = () => {
+        refreshCoreData();
+    };
+
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('focus', onFocus);
+
+    return () => {
+        document.removeEventListener('visibilitychange', onVisibility);
+        window.removeEventListener('focus', onFocus);
+    };
+}, [isAuthenticated]);
+
     const handleSelectPlan = (id: number, name: string, amount: number) => {
         setShowSubscription(false);
         setCheckoutItem({ id, name, amount, type: 'package' });
@@ -406,11 +505,18 @@ useEffect(() => {
 
     const handleAcceptInterest = async (interestId?: number) => {
         if (!interestId) return;
+        const target = incomingInterests.find((item) => item.interestId === interestId);
+        if (target?.profile?.id) {
+            upsertProposalState(String(target.profile.id), 'received_accepted', 120000);
+        }
         try {
             await api.post('/member/interest-accept', { interest_id: interestId });
-            await refreshCoreData();
+            await refreshCoreData({ force: true });
         } catch (error) {
             console.error('Failed to accept interest', error);
+            if (target?.profile?.id) {
+                upsertProposalState(String(target.profile.id), 'received_pending', 120000);
+            }
         }
     };
 
@@ -706,7 +812,7 @@ useEffect(() => {
                                                             >
                                                                 <div
                                                                     className="size-12 sm:size-14 rounded-full bg-cover bg-center shrink-0 border-2 border-white shadow-sm hover:ring-2 hover:ring-primary/40 transition-all"
-                                                                    style={{ backgroundImage: `url('${interest.profile.avatarUrl || '/assets/img/avatar-place.png'}')` }}
+                                                                    style={{ backgroundImage: `url('${resolveAvatarUrl(interest.profile.avatarUrl)}')` }}
                                                                 />
                                                                 <div className="flex-1 min-w-0">
                                                                     <div className="flex items-center gap-2 flex-wrap">
@@ -847,6 +953,10 @@ useEffect(() => {
                                 <DiscoveryView
                                     initialTab={currentView === 'agent_picks' ? 'agent' : 'all'}
                                     onSendProposal={(p) => setProposalTarget(p)}
+                                    onProposalStateChange={(profileId, state) => {
+                                        upsertProposalState(profileId, state, 120000);
+                                        refreshCoreData({ force: true });
+                                    }}
                                     isIdentityVerified={isIdentityVerified}
                                     onRequireVerification={() => {
                                         setGateState('needsVerification');
@@ -929,9 +1039,8 @@ useEffect(() => {
                                 onClose={() => setProposalTarget(null)}
                                 onNavigate={handleNavigate}
                                 onSent={(profileId) => {
-                                    setSentProposalMap((prev) => ({ ...prev, [profileId]: true }));
-                                    setProposalStatusMap((prev) => ({ ...prev, [profileId]: 'sent_pending' }));
-                                    refreshCoreData();
+                                    upsertProposalState(profileId, 'sent_pending', 120000);
+                                    refreshCoreData({ force: true });
                                 }}
                             />
                         </Suspense>

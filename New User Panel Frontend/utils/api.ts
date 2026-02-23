@@ -9,6 +9,7 @@ if (secureUrl.startsWith('http') && !secureUrl.endsWith('/api')) {
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || secureUrl,
+  timeout: 20000,
   headers: {
     'X-Requested-With': 'XMLHttpRequest',
     'Accept': 'application/json',

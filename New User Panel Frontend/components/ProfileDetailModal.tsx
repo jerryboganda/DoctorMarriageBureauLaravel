@@ -54,6 +54,10 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({ profile, onClos
     return resolveInterestState(profile.interestStatus, profile.interestText);
   });
 
+  useEffect(() => {
+    setInterestState(resolveInterestState(profile.interestStatus, profile.interestText));
+  }, [profile.id, profile.interestStatus, profile.interestText]);
+
   // Lock body scroll when modal is open
   useEffect(() => {
     const original = document.body.style.overflow;
@@ -62,16 +66,18 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({ profile, onClos
   }, []);
 
   useEffect(() => {
+    const controller = new AbortController();
+    let isActive = true;
     const fetchProfile = async () => {
       try {
         setLoading(true);
         const [profileRes, memberInfoRes] = await Promise.all([
-          api.get(`/member/public-profile/${profile.id}`),
-          api.get(`/member/member-info/${profile.id}`).catch(() => null),
+          api.get(`/member/public-profile/${profile.id}`, { signal: controller.signal }),
+          api.get(`/member/member-info/${profile.id}`, { signal: controller.signal }).catch(() => null),
         ]);
+        if (!isActive) return;
         if (profileRes.data.result) {
           const data = profileRes.data.data;
-          console.log('Profile data received:', { id: profile.id, voice_intro_url: data?.voice_intro_url, has_voice: !!data?.voice_intro_url });
           setProfileData(data);
         } else {
           setError('Could not load profile.');
@@ -82,13 +88,18 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({ profile, onClos
           setInterestState(resolveInterestState(info.interest_status, info.interest_text));
         }
       } catch (err: any) {
+        if (err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') return;
         console.error('Failed to fetch profile', err);
         setError('Failed to load profile details.');
       } finally {
-        setLoading(false);
+        if (isActive) setLoading(false);
       }
     };
     fetchProfile();
+    return () => {
+      isActive = false;
+      controller.abort();
+    };
   }, [profile.id]);
 
   useEffect(() => {

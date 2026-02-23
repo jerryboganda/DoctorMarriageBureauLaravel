@@ -206,11 +206,14 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ onNavigateToProfile }) => {
 
   useEffect(() => {
     let isActive = true;
+    let isFetching = false;
 
     const fetchData = async () => {
+      if (isFetching) return;
       if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
         return;
       }
+      isFetching = true;
 
       try {
         const results = await Promise.allSettled([
@@ -292,6 +295,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ onNavigateToProfile }) => {
       } catch (error) {
         console.error('Failed to fetch sidebar data:', error);
       } finally {
+        isFetching = false;
         if (isActive) {
           setLoading(false);
         }
@@ -300,10 +304,18 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ onNavigateToProfile }) => {
 
     fetchData();
     const interval = setInterval(fetchData, 45000);
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') fetchData();
+    };
+    const onFocus = () => fetchData();
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('focus', onFocus);
 
     return () => {
       isActive = false;
       clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('focus', onFocus);
     };
   }, []);
 
