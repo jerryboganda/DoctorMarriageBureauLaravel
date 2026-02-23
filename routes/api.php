@@ -278,13 +278,13 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
             // Gallery Image View Request
             Route::get('/gallery-image-view-request', 'GalleryImageController@image_view_request');
             Route::post('/gallery-image-view-request', 'GalleryImageController@store_image_view_request');
-            Route::post('/gallery-image-view-request/accept', 'GalleryImageController@accept_image_view_request')->name('gallery_image_view_request_accept');
-            Route::post('/gallery-image-view-request/reject', 'GalleryImageController@reject_image_view_request')->name('gallery_image_view_request_reject');
+            Route::post('/gallery-image-view-request/accept', 'GalleryImageController@accept_image_view_request')->name('api.gallery_image_view_request_accept');
+            Route::post('/gallery-image-view-request/reject', 'GalleryImageController@reject_image_view_request')->name('api.gallery_image_view_request_reject');
             // Profile Image View Request
             Route::get('/profile-picture-view-request', 'ProfileImageController@image_view_request');
             Route::post('/profile-picture-view-request', 'ProfileImageController@store_image_view_request');
-            Route::post('/profile-picture-view-request/accept', 'ProfileImageController@accept_image_view_request')->name('gallery_image_view_request_accept');
-            Route::post('/profile-picture-view-request/reject', 'ProfileImageController@reject_image_view_request')->name('gallery_image_view_request_reject');
+            Route::post('/profile-picture-view-request/accept', 'ProfileImageController@accept_image_view_request')->name('api.profile_picture_view_request_accept');
+            Route::post('/profile-picture-view-request/reject', 'ProfileImageController@reject_image_view_request')->name('api.profile_picture_view_request_reject');
 
 
 
