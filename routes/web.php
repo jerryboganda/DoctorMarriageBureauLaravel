@@ -216,7 +216,7 @@ Route::group(['middleware' => ['member', 'verified']], function () {
                     'sender_name' => $otherUser->first_name . ' ' . $otherUser->last_name,
                     'message_preview' => $latestMessage ? substr($latestMessage->message, 0, 50) . '...' : 'No messages yet',
                     'time_ago' => $latestMessage ? $latestMessage->created_at->diffForHumans() : 'Just now',
-                    'unread_count' => $thread->chats()->where('sender_user_id', '!=', $user->id)->where('read_at', null)->count(),
+                    'unread_count' => $thread->chats()->where('sender_user_id', '!=', $user->id)->where('seen', 0)->count(),
                     'thread_id' => $thread->id
                 ];
             })->filter();

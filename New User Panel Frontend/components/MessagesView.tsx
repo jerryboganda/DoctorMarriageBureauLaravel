@@ -78,6 +78,10 @@ const MessagesView: React.FC = () => {
   const scheduleRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const threadUserIdsRef = useRef<number[]>([]);
+  const threadRequestSeqRef = useRef(0);
+  const chatRequestSeqRef = useRef(0);
+  const threadFetchInFlightRef = useRef(false);
+  const onlineFetchInFlightRef = useRef(false);
 
   const currentUserId = user?.id;
   const upsertMessage = (incoming: any) => {
@@ -135,7 +139,20 @@ const MessagesView: React.FC = () => {
     };
     fetchThreads();
     const interval = setInterval(pollThreads, 30000);
-    return () => clearInterval(interval);
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchThreads();
+      }
+    };
+    const onFocus = () => fetchThreads();
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('focus', onFocus);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('focus', onFocus);
+    };
   }, []);
 
   // Global WebSocket: listen for thread-list updates on user's personal channel
@@ -184,13 +201,18 @@ const MessagesView: React.FC = () => {
   // Online status polling every 30s
   useEffect(() => {
     const fetchOnlineStatuses = async () => {
+      if (onlineFetchInFlightRef.current) return;
       if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
       const userIds = threadUserIdsRef.current;
       if (!userIds || userIds.length === 0) return;
       try {
+        onlineFetchInFlightRef.current = true;
         const res = await api.post('/member/user-online-status', { user_ids: userIds });
         if (res.data?.data) setOnlineStatuses(res.data.data);
       } catch (e) { /* silent */ }
+      finally {
+        onlineFetchInFlightRef.current = false;
+      }
     };
     fetchOnlineStatuses();
     const interval = setInterval(fetchOnlineStatuses, 30000);
@@ -253,8 +275,12 @@ const MessagesView: React.FC = () => {
   }, [inputText]);
 
   const fetchThreads = async () => {
+    if (threadFetchInFlightRef.current) return;
+    threadFetchInFlightRef.current = true;
+    const requestSeq = ++threadRequestSeqRef.current;
     try {
       const response = await api.get('/member/chat-list');
+      if (requestSeq !== threadRequestSeqRef.current) return;
       const data = response.data?.data;
       // Only update state if we got a valid array — never wipe existing threads on error
       if (Array.isArray(data)) {
@@ -264,14 +290,17 @@ const MessagesView: React.FC = () => {
       console.error('Failed to fetch chat list', error);
       // Keep existing threads on failure — do NOT clear state
     } finally {
+      threadFetchInFlightRef.current = false;
       setLoadingList(false);
     }
   };
 
   const fetchChat = async (id: number) => {
+    const requestSeq = ++chatRequestSeqRef.current;
     try {
       setLoadingChat(true);
       const response = await api.get(`/member/chat-view/${id}`);
+      if (requestSeq !== chatRequestSeqRef.current) return;
       const data = response.data?.data;
       if (data) {
         setActiveChatData(data);

@@ -17,7 +17,16 @@ class DiscoveryController extends Controller
         $opposite_gender = ($user->member->gender == 1) ? 2 : 1;
 
         // Base query for members of opposite gender
-        $base_query = User::where('user_type', 'member')
+        $base_query = User::with([
+                'member',
+                'career',
+                'education',
+                'physical_attributes',
+                'spiritual_backgrounds.religion',
+                'spiritual_backgrounds.caste',
+                'addresses.country',
+            ])
+            ->where('user_type', 'member')
             ->where('id', '!=', $user->id)
             ->where('blocked', 0)
             ->where('deactivated', 0)
@@ -56,6 +65,7 @@ class DiscoveryController extends Controller
                 'agent_picks' => ActiveUserResource::collection($agent_picks),
                 'high_intent' => ActiveUserResource::collection($high_intent),
                 'all_profiles' => ActiveUserResource::collection($all_profiles->items()),
+                'cache_version' => now()->toIso8601String(),
             ],
             'pagination' => [
                 'current_page' => $all_profiles->currentPage(),
@@ -80,7 +90,16 @@ class DiscoveryController extends Controller
         $religion = $request->query('religion');
         $profession = $request->query('profession');
 
-        $query = User::where('user_type', 'member')
+        $query = User::with([
+                'member',
+                'career',
+                'education',
+                'physical_attributes',
+                'spiritual_backgrounds.religion',
+                'spiritual_backgrounds.caste',
+                'addresses.country',
+            ])
+            ->where('user_type', 'member')
             ->where('id', '!=', $user->id)
             ->where('blocked', 0)
             ->where('deactivated', 0)

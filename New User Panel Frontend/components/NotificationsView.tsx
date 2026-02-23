@@ -18,13 +18,19 @@ interface NotificationItem {
     type: string;
 }
 
+const normalizeNotificationType = (value: unknown): string =>
+    String(value ?? '')
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, '_');
+
 const sanitizeNotification = (item: any): NotificationItem => ({
     notification_id: String(item?.notification_id ?? Math.random().toString()),
     message: String(item?.message ?? 'No details available'),
     time: String(item?.time ?? ''),
     read_at: String(item?.read_at ?? ''),
     photo: String(item?.photo ?? ''),
-    type: String(item?.type ?? 'system')
+    type: normalizeNotificationType(item?.type ?? 'system')
 });
 
 interface NotificationsViewProps {
@@ -87,7 +93,7 @@ const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate, refre
     const handleRead = async (id: string) => {
         try {
             await api.get(`/member/notification/${id}`);
-            fetchNotifications();
+            await fetchNotifications();
             onDataChanged?.();
         } catch (error) {
             console.error('Failed to mark as read', error);
@@ -116,27 +122,38 @@ const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate, refre
         }
     };
 
-    const getNavigationTarget = (type: string): string | null => {
+    const getNavigationTarget = (type: string, message?: string): string | null => {
+        const normalizedType = normalizeNotificationType(type);
         const map: Record<string, string> = {
             // Proposals are rendered inside the dashboard view in App.tsx
             express_interest: 'dashboard',
             accept_interest: 'dashboard',
             interest_rejected: 'dashboard',
+            reject_interest: 'dashboard',
             profile_viewed: 'discovery',
+            profile_view: 'discovery',
             gallery_image_view: 'profile',
             profile_picture_view: 'profile',
             chat_message: 'messages',
             new_message: 'messages',
         };
-        return map[type] || null;
+        if (map[normalizedType]) return map[normalizedType];
+
+        const normalizedMessage = String(message ?? '').toLowerCase();
+        if (normalizedMessage.includes('proposal') || normalizedMessage.includes('interest')) return 'dashboard';
+        if (normalizedMessage.includes('message') || normalizedMessage.includes('chat')) return 'messages';
+        if (normalizedMessage.includes('view')) return 'discovery';
+        return null;
     };
 
-    const handleViewDetails = (n: NotificationItem) => {
-        handleRead(n.notification_id);
-        const target = getNavigationTarget(n.type);
+    const handleViewDetails = async (n: NotificationItem) => {
+        await handleRead(n.notification_id);
+        const target = getNavigationTarget(n.type, n.message);
         if (target && onNavigate) {
             onNavigate(target);
+            return;
         }
+        onNavigate?.('dashboard');
     };
 
     const displayedNotifications = (Array.isArray(notifications) ? notifications : []).filter(n => {

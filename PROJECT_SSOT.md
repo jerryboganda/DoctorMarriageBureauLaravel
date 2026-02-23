@@ -904,3 +904,44 @@ The `Dockerfile` in `New User Panel Frontend/` handles:
 ---
 
 > **Protocol**: This SSOT must be updated after any structural change, new feature deployment, or infrastructure modification. It is the ONLY document that matters.
+
+---
+
+## 22. PERFORMANCE WAVE 1 (2026-02-23)
+
+### 22.1 Objective
+- Eliminate stale proposal status behavior and hard-refresh dependency.
+- Improve realtime consistency and reduce polling/request waste.
+- Fix unread counter backend mismatch and add safe query/index optimizations.
+
+### 22.2 Implemented Changes
+- Frontend realtime consistency:
+  - Canonical proposal-state upsert path in `New User Panel Frontend/App.tsx`.
+  - Optimistic proposal status with TTL to avoid stale-refresh overwrite.
+  - Discovery request cancellation + sequence guards in `New User Panel Frontend/components/DiscoveryView.tsx`.
+  - Local profile state patching on send-interest actions for immediate UI coherence.
+  - Notifications `View Details` routing hardening in `New User Panel Frontend/components/NotificationsView.tsx`.
+  - Polling overlap guards and visibility/focus-triggered refresh in sidebar/message components.
+- Backend/API consistency:
+  - Unread count field fixed from `read_at` to `seen` in chat preview endpoints.
+  - Canonical `proposal_status` and `proposal_updated_at` added to profile/interest payload paths.
+  - Interest send flow hardened to avoid duplicate reverse-interest inconsistencies.
+  - Discovery and interest endpoints updated with eager loading to reduce N+1 pressure.
+  - `MemberUtility` now uses request-level caches for repeated profile metadata lookups.
+- DB performance:
+  - Added reversible additive index migration:
+    - `express_interests (user_id, interested_by, status)`
+    - `profile_viewers (user_id, viewed_by)`
+    - `ignored_users (user_id, ignored_by)`
+    - `chats (chat_thread_id, created_at)`
+    - `chat_threads (sender_user_id, receiver_user_id, updated_at)`
+
+### 22.3 Artifacts
+- `docs/perf-audit-baseline.md`
+- `docs/perf-validation-checklist.md`
+- `docs/perf-release-2026-02.md`
+
+### 22.4 Baseline/Verification Notes
+- Frontend build passes on Wave 1 code.
+- Main app chunk remains ~266 KB; heavy PDF dependency remains lazy-loaded.
+- Runtime smoke + production observation required immediately after deploy.

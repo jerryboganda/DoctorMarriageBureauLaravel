@@ -20,22 +20,34 @@ export const resolveInterestState = (
     text.includes('proposal accepted');
 
   if (
+    status === 'received_pending' ||
+    status === 'received_accepted' ||
     status === 'do_response' ||
     status === 'received interest' ||
     status === 'received_interest' ||
     status === 'received'
   ) {
+    if (status === 'received_pending') return 'received_pending';
+    if (status === 'received_accepted') return 'received_accepted';
     return isAcceptedText ? 'received_accepted' : 'received_pending';
   }
 
   if (
+    status === 'sent_pending' ||
+    status === 'sent_accepted' ||
     status === '0' ||
     status === 'sent interest' ||
     status === 'sent_interest' ||
     status === 'pending' ||
     status === 'sent'
   ) {
+    if (status === 'sent_pending') return 'sent_pending';
+    if (status === 'sent_accepted') return 'sent_accepted';
     return isAcceptedText ? 'sent_accepted' : 'sent_pending';
+  }
+
+  if (status === 'none' || status === 'no interest' || status === 'proposal') {
+    return opts?.localSent ? 'sent_pending' : 'none';
   }
 
   if (status === 'mutual' || status === 'accepted' || status === 'approved') {
@@ -57,4 +69,3 @@ export const getInterestFlagsFromState = (state: CanonicalInterestState) => {
   const isPendingByMe = state === 'sent_pending';
   return { isAccepted, isReceived, isPendingByMe };
 };
-

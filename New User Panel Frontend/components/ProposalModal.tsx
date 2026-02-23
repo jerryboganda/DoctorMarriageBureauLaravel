@@ -31,9 +31,12 @@ const ProposalModal: React.FC<ProposalModalProps> = ({ profile, onClose, onNavig
 
   // Check interest status on mount via API
   useEffect(() => {
+    const controller = new AbortController();
+    let isActive = true;
     const checkInterestStatus = async () => {
       try {
-        const res = await api.get(`/member/member-info/${profile.id}`);
+        const res = await api.get(`/member/member-info/${profile.id}`, { signal: controller.signal });
+        if (!isActive) return;
         if (res.data?.data) {
           const info = res.data.data;
           const state = resolveInterestState(info.interest_status, info.interest_text);
@@ -47,13 +50,18 @@ const ProposalModal: React.FC<ProposalModalProps> = ({ profile, onClose, onNavig
             setAlreadySent(null);
           }
         }
-      } catch {
+      } catch (err: any) {
+        if (err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') return;
         // If check fails, allow normal flow
       } finally {
-        setCheckingStatus(false);
+        if (isActive) setCheckingStatus(false);
       }
     };
     checkInterestStatus();
+    return () => {
+      isActive = false;
+      controller.abort();
+    };
   }, [profile.id]);
 
   const templates = [
@@ -63,7 +71,7 @@ const ProposalModal: React.FC<ProposalModalProps> = ({ profile, onClose, onNavig
   ];
 
   const handleSendProposal = async () => {
-    if (hasExistingInterest) return;
+    if (hasExistingInterest || alreadySent) return;
     setIsLoading(true);
     setError('');
     try {
@@ -74,6 +82,7 @@ const ProposalModal: React.FC<ProposalModalProps> = ({ profile, onClose, onNavig
 
         if (response.data.result) {
             onSent?.(String(profile.id));
+            setAlreadySent('pending');
             setIsSuccess(true);
             setTimeout(() => {
                 onClose();

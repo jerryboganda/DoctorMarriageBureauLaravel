@@ -254,7 +254,7 @@ class HomeController extends Controller
 
                                 $unreadCount = 0;
                                 try {
-                                    $unreadCount = $thread->chats()->where('sender_user_id', '!=', $user->id)->where('read_at', null)->count();
+                                    $unreadCount = $thread->chats()->where('sender_user_id', '!=', $user->id)->where('seen', 0)->count();
                                 } catch (\Exception $e) {
                                     $unreadCount = 0;
                                 }

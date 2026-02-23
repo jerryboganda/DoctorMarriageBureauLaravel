@@ -41,6 +41,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, dataSyncVers
   });
   const [uploading, setUploading] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const lastDiscoveryFetchAtRef = useRef(0);
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
@@ -81,43 +82,69 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, dataSyncVers
 
   useEffect(() => {
     let isActive = true;
+    let isFetching = false;
 
     const fetchCounts = async () => {
+      if (isFetching) return;
       if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
         return;
       }
+      isFetching = true;
 
-      const results = await Promise.allSettled([
-        api.get('/discovery'),
-        api.get('/member/interest-requests'),
-        api.get('/member/chat-list'),
-        api.get('/member/notifications/feed'),
-      ]);
+      try {
+        const now = Date.now();
+        const shouldFetchDiscovery = now - lastDiscoveryFetchAtRef.current > 120000;
+        const discoveryTask = shouldFetchDiscovery ? api.get('/discovery') : Promise.resolve({ data: null });
+        const results = await Promise.allSettled([
+          discoveryTask,
+          api.get('/member/interest-requests'),
+          api.get('/member/chat-list'),
+          api.get('/member/notifications/feed'),
+        ]);
 
-      if (!isActive) return;
+        if (!isActive) return;
 
-      const discoveryRes = results[0].status === 'fulfilled' ? results[0].value : null;
-      const interestsRes = results[1].status === 'fulfilled' ? results[1].value : null;
-      const chatsRes = results[2].status === 'fulfilled' ? results[2].value : null;
-      const notificationsRes = results[3].status === 'fulfilled' ? results[3].value : null;
+        const discoveryRes = results[0].status === 'fulfilled' ? results[0].value : null;
+        const interestsRes = results[1].status === 'fulfilled' ? results[1].value : null;
+        const chatsRes = results[2].status === 'fulfilled' ? results[2].value : null;
+        const notificationsRes = results[3].status === 'fulfilled' ? results[3].value : null;
 
-      const agentPicks = discoveryRes?.data?.data?.agent_picks?.length ?? 0;
-      const proposals = interestsRes?.data?.meta?.total ?? interestsRes?.data?.data?.length ?? 0;
-      const messages = (chatsRes?.data?.data ?? []).reduce((sum: number, thread: any) => {
-        const count = Number(thread?.unseen_message_count ?? 0);
-        return sum + (Number.isFinite(count) ? count : 0);
-      }, 0);
-      const notifications = notificationsRes?.data?.unread_count ?? 0;
+        const agentPicks = discoveryRes?.data?.data?.agent_picks?.length;
+        const proposals = interestsRes?.data?.meta?.total ?? interestsRes?.data?.data?.length ?? 0;
+        const messages = (chatsRes?.data?.data ?? []).reduce((sum: number, thread: any) => {
+          const count = Number(thread?.unseen_message_count ?? 0);
+          return sum + (Number.isFinite(count) ? count : 0);
+        }, 0);
+        const notifications = notificationsRes?.data?.unread_count ?? 0;
 
-      setCounts({ agentPicks, proposals, messages, notifications });
+        setCounts((prev) => ({
+          agentPicks: Number.isFinite(agentPicks) ? Number(agentPicks) : prev.agentPicks,
+          proposals,
+          messages,
+          notifications,
+        }));
+        if (discoveryRes?.data?.data) {
+          lastDiscoveryFetchAtRef.current = now;
+        }
+      } finally {
+        isFetching = false;
+      }
     };
 
     fetchCounts();
     const interval = setInterval(fetchCounts, 30000);
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') fetchCounts();
+    };
+    const onFocus = () => fetchCounts();
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('focus', onFocus);
 
     return () => {
       isActive = false;
       clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('focus', onFocus);
     };
   }, [dataSyncVersion]);
 
