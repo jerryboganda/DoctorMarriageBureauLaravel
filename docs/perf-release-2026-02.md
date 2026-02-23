@@ -96,3 +96,22 @@
   - `members.destroy` (generated) -> `members.resource.destroy`
   - Similar scoped remaps applied for collided actions on:
     - `profile`, `contact-us`, `packages`, `blog-category`, `blog`, `religions`, `castes`, `sub-castes`, `member-languages`, `countries`, `states`, `cities`, `family-status`, `family-values`, `on-behalf`, `marital-statuses`, `annual-salaries`, `profile-option-values`, `email-templates`, `languages`, `settings`, `additional-attributes`, `custom-pages`, `staffs`, `roles`, `uploaded-files`, `manual_payment_methods`, `education`, `career`.
+
+### Deployment Execution Log (Route Normalization)
+- Date: 2026-02-23
+- Git commit deployed: `d919618`
+- Git tag: `release/route-normalization-2026-02-23`
+- VPS pull target: `/root/doctormarriagebureau`
+- Commands executed in container:
+  - `php artisan route:clear`
+  - `php artisan route:cache` (success)
+  - `php artisan config:cache` (success)
+- Post-deploy route probes:
+  - `members.index` present at `admin/members/member_list/{id}`
+  - `logout.get` present at `GET /logout`
+  - `verification.resend.get` present at `GET /email/resend`
+  - `password.update.email_code` present at `POST /password/reset/email/submit`
+- Edge endpoint checks:
+  - `https://api.doctormarriagebureau.com.pk/admin/login` -> `200`
+  - `https://api.doctormarriagebureau.com.pk/email/resend` -> `302` (expected auth redirect)
+  - `https://panel.doctormarriagebureau.com.pk/` -> `200`

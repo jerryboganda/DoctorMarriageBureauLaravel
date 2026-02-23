@@ -11,7 +11,7 @@
 - [x] Conflicting resource-generated names remapped to `*.resource.*`
 - [x] API member resource names remapped to `api.member.*`
 - [x] Auth name collisions normalized (`logout.get`, `verification.resend.get`, `password.update.email_code`)
-- [ ] Production route cache compile passes on VPS
+- [x] Production route cache compile passes on VPS
 - [ ] Smoke-test legacy route helpers used by Blade views
 
 ## Realtime Consistency
