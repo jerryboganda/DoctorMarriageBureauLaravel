@@ -45,3 +45,6 @@
   - `2026_02_23_210000_add_performance_indexes_for_realtime_queries`
 - Frontend image rebuilt and container recreated successfully.
 - Laravel `route:cache` failed due pre-existing duplicate named route conflict (`api.razorpay.payment`), so route cache was cleared and deployment proceeded with config cache enabled.
+- Runtime hardening applied on VPS:
+  - `APP_DEBUG` switched from `true` to `false`
+  - Laravel config cache rebuilt after env update
