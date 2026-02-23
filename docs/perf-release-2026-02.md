@@ -2,6 +2,8 @@
 
 ## Branch
 - `perf/wave1-realtime-stability`
+- merged into `master` as commit `1f2c723`
+- tag: `release/perf-wave1-2026-02`
 
 ## Pre-Deploy Safety
 1. Record current commit hash on VPS.
@@ -33,3 +35,13 @@
 ## Post-Deploy Observation Window
 - 30-60 minutes active log/latency monitoring.
 - Validate stale-state regressions are resolved without hard refresh.
+
+## Deployment Execution Log (2026-02-23 UTC)
+- VPS path: `/root/doctormarriagebureau`
+- DB backup: `backups/db_20260223_014312.sql.gz`
+- Env backup: `backups/.env_20260223_014312`
+- Release marker: `backups/release_20260223_014312.txt`
+- Migration applied:
+  - `2026_02_23_210000_add_performance_indexes_for_realtime_queries`
+- Frontend image rebuilt and container recreated successfully.
+- Laravel `route:cache` failed due pre-existing duplicate named route conflict (`api.razorpay.payment`), so route cache was cleared and deployment proceeded with config cache enabled.
