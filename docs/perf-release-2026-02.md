@@ -48,3 +48,11 @@
 - Runtime hardening applied on VPS:
   - `APP_DEBUG` switched from `true` to `false`
   - Laravel config cache rebuilt after env update
+- Follow-up route collision fixes deployed:
+  - Renamed legacy callback route name to avoid Razorpay duplicate:
+    - `api.razorpay.legacy_payment` (kept `api.razorpay.payment` for `pay-with-razorpay`)
+  - Fixed Instamojo route name typo collision:
+    - `api.instamojo.pay` (was incorrectly `api.phonepe.pay`)
+  - Namespaced API image request route names to prevent cross-panel collisions:
+    - `api.gallery_image_view_request_accept/reject`
+    - `api.profile_picture_view_request_accept/reject`
