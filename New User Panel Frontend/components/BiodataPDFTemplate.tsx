@@ -52,7 +52,7 @@ const BiodataPDFTemplate: React.FC<BiodataPDFTemplateProps> = ({ userData }) => 
     const photoUrl = userData?.photo ? `${API_BASE}/${userData.photo}` : defaultAvatar;
 
     return (
-        <div id="biodata-pdf-content" className="w-[800px] h-[1120px] bg-slate-50 font-sans text-slate-800 relative overflow-hidden box-border">
+        <div id="biodata-pdf-content" className="w-[800px] h-[1130px] bg-slate-50 font-sans text-slate-800 relative overflow-hidden box-border">
             {/* Premium Mesh Gradient Orbs */}
             <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[50%] bg-primary/10 rounded-full mix-blend-multiply filter blur-[100px] pointer-events-none opacity-70"></div>
             <div className="absolute top-[20%] right-[-10%] w-[50%] h-[50%] bg-amber-400/10 rounded-full mix-blend-multiply filter blur-[120px] pointer-events-none opacity-60"></div>
@@ -64,24 +64,25 @@ const BiodataPDFTemplate: React.FC<BiodataPDFTemplateProps> = ({ userData }) => 
             {/* Glassmorphism Data Panel Backdrop */}
             <div className="absolute inset-x-5 top-[150px] bottom-5 bg-white/60 backdrop-blur-3xl rounded-3xl border border-white/50 shadow-[0_8px_32px_0_rgba(31,38,135,0.03)] pointer-events-none z-0"></div>
 
-            <div className="p-8 relative z-10 h-full flex flex-col">
-                {/* Platform Logo */}
-                <div className="mb-4 flex justify-center">
-                    <img src="/logo-v2.png" alt="Doctor Marriage Bureau" className="h-8 w-auto mix-blend-multiply" />
+            <div className="p-5 relative z-10 h-full flex flex-col">
+                {/* Dual Logo Bar */}
+                <div className="flex items-center justify-between mb-3 px-2">
+                    <img src="/logo-v2.png" alt="Doctor Marriage Bureau" className="h-7 w-auto mix-blend-multiply" />
+                    <img src="/sponsor-logo.png" alt="Sponsor" className="h-7 w-auto mix-blend-multiply" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                 </div>
 
                 {/* Header Section Matches Profile Details banner styling */}
-                <div className="relative rounded-2xl bg-slate-900 overflow-hidden mb-5 shadow-sm shrink-0">
+                <div className="relative rounded-xl bg-slate-900 overflow-hidden mb-3 shadow-sm shrink-0">
                     <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent pointer-events-none"></div>
-                    <div className="p-5 flex items-center gap-5 relative z-10">
+                    <div className="p-3.5 flex items-center gap-4 relative z-10">
                         <img
                             src={photoUrl}
                             crossOrigin="anonymous"
                             alt="Profile"
-                            className="w-24 h-24 rounded-xl border-[3px] border-white/20 object-cover shadow-lg bg-slate-800"
+                            className="w-[70px] h-[70px] rounded-lg border-2 border-white/20 object-cover shadow-lg bg-slate-800"
                         />
                         <div className="flex-1">
-                            <h1 className="text-2xl font-bold text-white mb-1">{userData.first_name} {userData.last_name}</h1>
+                            <h1 className="text-xl font-bold text-white mb-0.5">{userData.first_name} {userData.last_name}</h1>
                             <div className="text-primary font-bold text-xs mb-2">PROFILE ID: {userData.code || userData.id}</div>
 
                             <div className="flex flex-wrap gap-x-5 gap-y-1 text-slate-300 text-[11px]">
@@ -105,7 +106,7 @@ const BiodataPDFTemplate: React.FC<BiodataPDFTemplateProps> = ({ userData }) => 
                     </div>
                 </div>
 
-                <div className="flex-1 grid grid-cols-2 gap-x-6 gap-y-4 content-start">
+                <div className="flex-1 grid grid-cols-2 gap-x-4 gap-y-2.5 content-start">
                     {/* About */}
                     {member?.introduction && (
                         <div className="col-span-2">
@@ -284,13 +285,12 @@ const BiodataPDFTemplate: React.FC<BiodataPDFTemplateProps> = ({ userData }) => 
                 </div>
 
                 {/* Footer */}
-                <div className="mt-auto pt-4 border-t border-slate-200/60 pb-2">
-                    <div className="text-center mb-1">
+                <div className="mt-auto pt-2 border-t border-slate-200/60 pb-1">
+                    <div className="text-center mb-0.5">
                         <span className="text-[10px] font-bold text-slate-700">Doctor Marriage Bureau</span>
                     </div>
-                    <p className="text-[9px] text-slate-400 flex justify-between">
-                        <span>Generated securely via Doctor Marriage Bureau.</span>
-                        <span>CONFIDENTIAL DOCUMENT</span>
+                    <p className="text-[8px] text-slate-400 text-center">
+                        This document is confidential. Please respect privacy and do not distribute without permission.
                     </p>
                 </div>
             </div>
@@ -301,9 +301,9 @@ const BiodataPDFTemplate: React.FC<BiodataPDFTemplateProps> = ({ userData }) => 
 // Sub-components
 function SectionHeader({ icon, title }: { icon: React.ReactNode, title: string }) {
     return (
-        <div className="flex items-center gap-1.5 mb-2">
+        <div className="flex items-center gap-1 mb-1.5">
             <span className="text-slate-400">{icon}</span>
-            <h3 className="text-[10px] font-bold text-slate-800 uppercase tracking-wider">{title}</h3>
+            <h3 className="text-[9px] font-bold text-slate-800 uppercase tracking-wider">{title}</h3>
         </div>
     );
 }
@@ -313,10 +313,10 @@ function InfoBox({ label, value, subtext, className = '' }: { label: string, val
         value = 'N/A';
     }
     return (
-        <div className={`bg-white border border-slate-200/60 rounded-lg p-2.5 shadow-sm ${className}`}>
-            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">{label}</div>
-            <div className="text-[12px] font-bold text-slate-700">{value}</div>
-            {subtext && <div className="text-[9px] text-slate-500 mt-0.5 leading-tight line-clamp-1">{subtext}</div>}
+        <div className={`bg-white border border-slate-200/60 rounded-md p-2 shadow-sm ${className}`}>
+            <div className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">{label}</div>
+            <div className="text-[11px] font-bold text-slate-700">{value}</div>
+            {subtext && <div className="text-[8px] text-slate-500 mt-0.5 leading-tight line-clamp-1">{subtext}</div>}
         </div>
     );
 }

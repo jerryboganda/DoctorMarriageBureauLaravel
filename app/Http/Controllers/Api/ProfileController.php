@@ -1898,7 +1898,12 @@ class ProfileController extends Controller
         }
 
         try {
-            $pdf = PDF::loadView('pdf.biodata_modern', compact('user'));
+            $pdf = PDF::loadView('pdf.biodata_modern', compact('user'), [], [
+                'margin_left'   => 5,
+                'margin_right'  => 5,
+                'margin_top'    => 5,
+                'margin_bottom' => 5,
+            ]);
             $filename = 'Biodata-' . ($user->first_name ?? 'User') . '.pdf';
 
             // Use output() instead of download() to avoid mPDF calling exit()
