@@ -66,12 +66,30 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
     const [confirmNewPassword, setConfirmNewPassword] = useState('');
     const resetOtpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-    // Capture referral code from URL
+    // Capture referral code from URL (robust: check URL params, hash, and localStorage)
     React.useEffect(() => {
+        let code: string | null = null;
+
+        // 1. Check URL search params (?ref=CODE)
         const params = new URLSearchParams(window.location.search);
-        const ref = params.get('ref');
-        if (ref) {
-            setReferralCode(ref);
+        code = params.get('ref');
+
+        // 2. Check URL hash fragment (#...ref=CODE) as fallback
+        if (!code && window.location.hash) {
+            const hashParams = new URLSearchParams(window.location.hash.replace(/^#\/?/, '').split('?')[1] || '');
+            code = hashParams.get('ref');
+        }
+
+        // 3. If found in URL, persist to localStorage for durability
+        if (code) {
+            localStorage.setItem('pending_referral_code', code);
+            setReferralCode(code);
+        } else {
+            // 4. Fallback: read from localStorage (survives page reloads, redirects, etc.)
+            const stored = localStorage.getItem('pending_referral_code');
+            if (stored) {
+                setReferralCode(stored);
+            }
         }
     }, []);
 
@@ -79,12 +97,15 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
         setIsLoading(true);
         setError('');
         try {
+            const effectiveReferralCode = referralCode || localStorage.getItem('pending_referral_code');
             const response = await api.post('/social-login', {
                 social_provider: provider,
-                access_token: token
+                access_token: token,
+                referral_code: effectiveReferralCode
             });
             if (response.data.result) {
                 const { user, access_token } = response.data;
+                localStorage.removeItem('pending_referral_code');
                 localStorage.setItem('auth_token', access_token);
                 setUser(user);
                 onComplete();
@@ -223,6 +244,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
                     return;
                 }
                 const { user, access_token } = response.data;
+                localStorage.removeItem('pending_referral_code');
                 localStorage.setItem('auth_token', access_token);
                 setUser(user);
                 onComplete();
@@ -339,18 +361,25 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
                     : null;
             const email = authMethod === 'email' ? identifier : null;
 
+            // Use referralCode from state, fallback to localStorage
+            const effectiveReferralCode = referralCode || localStorage.getItem('pending_referral_code');
+
             const payload = {
                 ...formData,
                 phone: fullPhone,
                 email: email,
                 on_behalf: parseInt(formData.on_behalf),
-                referral_code: referralCode
+                referral_code: effectiveReferralCode
             };
+
+            console.log('[Referral] Signup payload referral_code:', effectiveReferralCode);
 
             const response = await api.post('/signup', payload);
 
             if (response.data.result && response.data.user) {
                 const { user, access_token } = response.data;
+                // Clear pending referral code after successful signup
+                localStorage.removeItem('pending_referral_code');
                 localStorage.setItem('auth_token', access_token);
                 setUser(user);
                 onComplete();
@@ -427,6 +456,16 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
                                     <h2 className="text-3xl font-bold text-slate-900">{t('auth.welcome.welcomeBack')}</h2>
                                     <p className="text-slate-500">{t('auth.welcome.welcomeBackSubtitle')}</p>
                                 </div>
+
+                                {/* Referral code badge on landing */}
+                                {(referralCode || localStorage.getItem('pending_referral_code')) && (
+                                    <div className="flex items-center justify-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2.5">
+                                        <CheckCircle2 className="text-emerald-600 flex-shrink-0" size={16} />
+                                        <span className="text-sm font-medium text-emerald-700">
+                                            Referral code <span className="font-bold">{referralCode || localStorage.getItem('pending_referral_code')}</span> will be applied
+                                        </span>
+                                    </div>
+                                )}
 
                                 <div className="space-y-6">
                                     <div className="space-y-4">
@@ -917,6 +956,16 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
                                     <h2 className="text-2xl font-bold text-slate-900">{t('auth.welcome.completeProfile')}</h2>
                                     <p className="text-slate-500 text-sm">{t('auth.welcome.completeProfileDesc')}</p>
                                 </div>
+
+                                {/* Referral code badge */}
+                                {(referralCode || localStorage.getItem('pending_referral_code')) && (
+                                    <div className="flex items-center justify-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2.5">
+                                        <CheckCircle2 className="text-emerald-600 flex-shrink-0" size={16} />
+                                        <span className="text-sm font-medium text-emerald-700">
+                                            Referral code <span className="font-bold">{referralCode || localStorage.getItem('pending_referral_code')}</span> applied
+                                        </span>
+                                    </div>
+                                )}
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1 col-span-2">
