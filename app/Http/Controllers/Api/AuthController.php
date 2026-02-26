@@ -119,6 +119,9 @@ class AuthController extends Controller
         
         // ===== Referral System Integration =====
         try {
+            \Log::info("=== REFERRAL SYSTEM: Processing signup for user #{$user->id} ({$user->email}) ===");
+            \Log::info("REFERRAL DEBUG: All request inputs: " . json_encode($request->all()));
+
             $referralService = new \App\Services\ReferralService();
 
             // Auto-generate referral code for the new user
@@ -126,6 +129,7 @@ class AuthController extends Controller
 
             // If a referral code was provided during signup, process the referral
             $referralCodeInput = $request->input('referral_code');
+            \Log::info("REFERRAL DEBUG: referral_code input value: " . var_export($referralCodeInput, true));
             if (!empty($referralCodeInput)) {
                 $referralResult = $referralService->createReferral(
                     $user->id,              // referredUserId - the new user who was referred
