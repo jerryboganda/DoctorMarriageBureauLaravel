@@ -48,7 +48,7 @@ class AuthRequest extends FormRequest
             ],
             'gender'               => 'required',
             'on_behalf'            => 'required|integer',
-            'date_of_birth'        => 'required|date',
+            'date_of_birth'        => 'nullable|date',
             'password'             => 'required|string|min:8|confirmed',
             'referral_code'        => 'sometimes',
             'g-recaptcha-response' => [Rule::when(get_setting('google_recaptcha_activation') == 1, ['required', new RecaptchaRule()], ['sometimes'])]
@@ -86,7 +86,7 @@ class AuthRequest extends FormRequest
         $this->merge([
             'phone' => PhoneUtility::normalize($this->phone),
             'on_behalves_id'  => $this->on_behalf,
-            'birthday'  => date('Y-m-d', strtotime($this->date_of_birth)),
+            'birthday'  => $this->date_of_birth ? date('Y-m-d', strtotime($this->date_of_birth)) : null,
             'membership'  => 1,
             'gender' => ($this->gender == 'Female') ? 2 : 1,
         ]);

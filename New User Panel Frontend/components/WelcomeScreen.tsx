@@ -15,7 +15,8 @@ import {
     CheckCircle2,
     Loader2,
     User,
-    Calendar,
+    Eye,
+    EyeOff,
     Stethoscope,
     Check
 } from 'lucide-react';
@@ -53,10 +54,11 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
         last_name: '',
         gender: 'Male',
         on_behalf: '1',
-        date_of_birth: '',
         password: '',
         password_confirmation: ''
     });
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     // Password Reset State
     const [resetOtp, setResetOtp] = useState(['', '', '', '', '', '']);
@@ -317,7 +319,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
         }
 
         // Basic validation
-        if (!formData.first_name || !formData.last_name || !formData.date_of_birth || !formData.password) {
+        if (!formData.first_name || !formData.last_name || !formData.password) {
             setError(t('errors.fillRequired'));
             return;
         }
@@ -964,30 +966,16 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1">
-                                        <label className="text-xs font-bold text-slate-400 uppercase">{t('auth.welcome.gender')}</label>
-                                        <select
-                                            value={formData.gender}
-                                            onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                                            className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 outline-none focus:border-primary focus:bg-white transition-all text-sm font-medium appearance-none"
-                                        >
-                                            <option value="Male">{t('auth.welcome.male')}</option>
-                                            <option value="Female">{t('auth.welcome.female')}</option>
-                                        </select>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-xs font-bold text-slate-400 uppercase">{t('auth.welcome.dateOfBirth')}</label>
-                                        <div className="relative">
-                                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                                            <input
-                                                type="date"
-                                                value={formData.date_of_birth}
-                                                onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
-                                                className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-4 py-3 outline-none focus:border-primary focus:bg-white transition-all text-sm font-medium"
-                                            />
-                                        </div>
-                                    </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-slate-400 uppercase">{t('auth.welcome.gender')}</label>
+                                    <select
+                                        value={formData.gender}
+                                        onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 outline-none focus:border-primary focus:bg-white transition-all text-sm font-medium appearance-none"
+                                    >
+                                        <option value="Male">{t('auth.welcome.male')}</option>
+                                        <option value="Female">{t('auth.welcome.female')}</option>
+                                    </select>
                                 </div>
 
                                 <div className="space-y-1">
@@ -995,12 +983,20 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
                                     <div className="relative">
                                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                                         <input
-                                            type="password"
+                                            type={showPassword ? "text" : "password"}
                                             value={formData.password}
                                             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                            className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-4 py-3 outline-none focus:border-primary focus:bg-white transition-all text-sm font-medium"
+                                            className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-10 py-3 outline-none focus:border-primary focus:bg-white transition-all text-sm font-medium"
                                             placeholder="••••••••"
                                         />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                                            tabIndex={-1}
+                                        >
+                                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                        </button>
                                     </div>
                                 </div>
 
@@ -1009,12 +1005,20 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
                                     <div className="relative">
                                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                                         <input
-                                            type="password"
+                                            type={showConfirmPassword ? "text" : "password"}
                                             value={formData.password_confirmation}
                                             onChange={(e) => setFormData({ ...formData, password_confirmation: e.target.value })}
-                                            className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-4 py-3 outline-none focus:border-primary focus:bg-white transition-all text-sm font-medium"
+                                            className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-10 py-3 outline-none focus:border-primary focus:bg-white transition-all text-sm font-medium"
                                             placeholder="••••••••"
                                         />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                                            tabIndex={-1}
+                                        >
+                                            {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                        </button>
                                     </div>
                                 </div>
 
