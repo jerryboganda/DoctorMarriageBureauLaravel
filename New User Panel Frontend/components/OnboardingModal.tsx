@@ -41,6 +41,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
         currentResidencyCountryId: '', currentResidencyStateId: '', currentResidencyCityId: '',
         religionId: '', sectId: '', casteId: '',
         designation: '', company: '', education: '', institution: '', incomeRangeId: '',
+        jobTitleId: '', specialityId: '',
         height: '', weight: '', complexion: '',
         introduction: '',
         avatarUrl: '',
@@ -172,6 +173,8 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                         casteId: d.family?.casteId || '',
                         designation: d.career?.designation || '',
                         company: d.career?.company || '',
+                        jobTitleId: d.career?.jobTitleId || '',
+                        specialityId: d.career?.specialityId || '',
                         education: d.career?.education || '',
                         institution: d.career?.institution || '',
                         incomeRangeId: d.career?.incomeRangeId || '',
@@ -336,6 +339,8 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                         education: data.education,
                         institution: data.institution,
                         incomeRangeId: data.incomeRangeId || null,
+                        jobTitleId: data.jobTitleId || null,
+                        specialityId: data.specialityId || null,
                         careerPresent: true,
                         isHighestDegree: true,
                     };
@@ -641,8 +646,27 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <FieldGroup label={t('auth.onboarding.designation')}>
-                                    <input type="text" className={inputClass} value={data.designation} onChange={e => updateField('designation', e.target.value)} placeholder={t('auth.onboarding.designationPlaceholder')} />
+                                    <select className={inputClass} value={data.jobTitleId || ''} onChange={e => {
+                                        const id = e.target.value;
+                                        const label = (optionSets?.jobTitles || []).find((o: any) => String(o.id) === String(id))?.name || '';
+                                        setData((prev: any) => ({ ...prev, jobTitleId: id, designation: label }));
+                                    }}>
+                                        <option value="">{t('auth.onboarding.designationPlaceholder')}</option>
+                                        {(optionSets?.jobTitles || []).map((o: any) => (
+                                            <option key={o.id} value={o.id}>{o.name}</option>
+                                        ))}
+                                    </select>
                                 </FieldGroup>
+                                <FieldGroup label="Speciality">
+                                    <select className={inputClass} value={data.specialityId || ''} onChange={e => updateField('specialityId', e.target.value)}>
+                                        <option value="">Select Speciality</option>
+                                        {(optionSets?.specialities || []).map((o: any) => (
+                                            <option key={o.id} value={o.id}>{o.name}</option>
+                                        ))}
+                                    </select>
+                                </FieldGroup>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <FieldGroup label={t('auth.onboarding.hospital')}>
                                     <input type="text" className={inputClass} value={data.company} onChange={e => updateField('company', e.target.value)} placeholder={t('auth.onboarding.hospitalPlaceholder')} />
                                 </FieldGroup>

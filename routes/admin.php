@@ -39,6 +39,8 @@ use App\Http\Controllers\StateController;
 use App\Http\Controllers\SubCasteController;
 use App\Http\Controllers\UpdateController;
 use App\Http\Controllers\ProfileOptionValueController;
+use App\Http\Controllers\JobTitleController;
+use App\Http\Controllers\SpecialityController;
 use App\Http\Controllers\WalletController;
 
 /*
@@ -271,6 +273,24 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin']], function 
     Route::get('/profile-option-values/destroy/{id}', [ProfileOptionValueController::class, 'destroy'])->name('profile-option-values.destroy');
     Route::post('/profile-option-values/bulk-delete', [ProfileOptionValueController::class, 'bulk_delete'])->name('profile_option_values.bulk_delete');
     Route::post('/profile-option-values/toggle-active/{id}', [ProfileOptionValueController::class, 'toggle_active'])->name('profile-option-values.toggle_active');
+
+    // Job Titles
+    Route::resource('/job-titles', JobTitleController::class)->names([
+        'destroy' => 'job-titles.resource.destroy',
+    ]);
+    Route::controller(JobTitleController::class)->group(function () {
+        Route::get('/job-titles/destroy/{id}', 'destroy')->name('job-titles.destroy');
+        Route::post('/job-title/bulk_destroy', 'bulk_delete')->name('job-titles.bulk_delete');
+    });
+
+    // Specialities
+    Route::resource('/specialities', SpecialityController::class)->names([
+        'destroy' => 'specialities.resource.destroy',
+    ]);
+    Route::controller(SpecialityController::class)->group(function () {
+        Route::get('/specialities/destroy/{id}', 'destroy')->name('specialities.destroy');
+        Route::post('/speciality/bulk_destroy', 'bulk_delete')->name('specialities.bulk_delete');
+    });
 
     // Email Templates
     Route::resource('/email-templates', EmailTemplateController::class)->names([

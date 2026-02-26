@@ -63,6 +63,8 @@ use App\Models\SpiritualBackground;
 use App\Models\Staff;
 use App\Models\State;
 use App\Models\SubCaste;
+use App\Models\JobTitle;
+use App\Models\Speciality;
 use App\Models\FieldVisibilitySetting;
 use App\Models\ViewContact;
 use App\Models\ViewGalleryImage;
@@ -1011,6 +1013,8 @@ class ProfileController extends Controller
                 'income' => $incomeLabel,
                 'incomeRangeId' => $member->annual_salary_range_id ?? null,
                 'workLocationType' => $career->work_location_type ?? '',
+                'jobTitleId' => $career->job_title_id ?? null,
+                'specialityId' => $career->speciality_id ?? null,
                 'careerStart' => $career->start ?? '',
                 'careerEnd' => $career->end ?? '',
                 'careerPresent' => (bool) ($career->present ?? false),
@@ -1033,6 +1037,8 @@ class ProfileController extends Controller
                         'end' => $c->end ?? '',
                         'present' => (bool) ($c->present ?? false),
                         'workLocationType' => $c->work_location_type ?? '',
+                        'jobTitleId' => $c->job_title_id,
+                        'specialityId' => $c->speciality_id,
                     ];
                 })->values()->toArray(),
             ],
@@ -1433,6 +1439,8 @@ class ProfileController extends Controller
                         'designation' => $carEntry['designation'] ?? null,
                         'company' => $carEntry['company'] ?? null,
                         'work_location_type' => $carEntry['workLocationType'] ?? null,
+                        'job_title_id' => $normalizeInt($carEntry['jobTitleId'] ?? null) ?: null,
+                        'speciality_id' => $normalizeInt($carEntry['specialityId'] ?? null) ?: null,
                         'start' => $normalizeInt($carEntry['start'] ?? null),
                         'end' => $normalizeInt($carEntry['end'] ?? null),
                         'present' => !empty($carEntry['present']) ? 1 : 0,
@@ -1469,6 +1477,8 @@ class ProfileController extends Controller
                     'designation' => $careerData['designation'] ?? null,
                     'company' => $careerData['company'] ?? null,
                     'work_location_type' => $careerData['workLocationType'] ?? null,
+                    'job_title_id' => $normalizeInt($careerData['jobTitleId'] ?? null) ?: null,
+                    'speciality_id' => $normalizeInt($careerData['specialityId'] ?? null) ?: null,
                     'start' => $normalizeInt($careerData['careerStart'] ?? null),
                     'end' => $normalizeInt($careerData['careerEnd'] ?? null),
                     'present' => !empty($careerData['careerPresent']) ? 1 : 0,
@@ -2065,6 +2075,22 @@ class ProfileController extends Controller
                 ];
             })->values()->toArray(),
             'familyValues' => FamilyValue::orderBy('name')->get(['id', 'name'])->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'name' => $item->name,
+                    'value' => $item->id,
+                    'label' => $item->name,
+                ];
+            })->values()->toArray(),
+            'jobTitles' => JobTitle::orderBy('name')->get(['id', 'name'])->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'name' => $item->name,
+                    'value' => $item->id,
+                    'label' => $item->name,
+                ];
+            })->values()->toArray(),
+            'specialities' => Speciality::orderBy('name')->get(['id', 'name'])->map(function ($item) {
                 return [
                     'id' => $item->id,
                     'name' => $item->name,

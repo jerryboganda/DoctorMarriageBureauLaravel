@@ -210,6 +210,20 @@
                                     </a>
                                 </li>
                                 @endcan
+                                @can('show_job_titles')
+                                <li class="aiz-side-nav-item">
+                                    <a href="{{ route('job-titles.index') }}" class="aiz-side-nav-link {{ areActiveRoutes(['job-titles.edit']) }}">
+                                        <span class="aiz-side-nav-text">{{ translate('Job Titles') }}</span>
+                                    </a>
+                                </li>
+                                @endcan
+                                @can('show_specialities')
+                                <li class="aiz-side-nav-item">
+                                    <a href="{{ route('specialities.index') }}" class="aiz-side-nav-link {{ areActiveRoutes(['specialities.edit']) }}">
+                                        <span class="aiz-side-nav-text">{{ translate('Specialities') }}</span>
+                                    </a>
+                                </li>
+                                @endcan
                                 @can('show_profile_option_values')
                                 <li class="aiz-side-nav-item">
                                     <a href="{{ route('profile-option-values.index') }}" class="aiz-side-nav-link {{ areActiveRoutes(['profile-option-values.index', 'profile-option-values.edit']) }}">
