@@ -38,7 +38,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
     const [data, setData] = useState<any>({
         firstName: '', lastName: '', gender: '', dateOfBirth: '', maritalStatusId: '',
         currentResidencyCountryId: '', currentResidencyStateId: '', currentResidencyCityId: '',
-        religionId: '', casteId: '',
+        religionId: '', sectId: '', casteId: '',
         designation: '', company: '', education: '', institution: '', incomeRangeId: '',
         height: '', weight: '', complexion: '',
         introduction: '',
@@ -48,6 +48,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
     const [optionSets, setOptionSets] = useState<any>({});
     const [salaryRanges, setSalaryRanges] = useState<any[]>([]);
     const [liveCastes, setLiveCastes] = useState<any[]>([]);
+    const [liveSects, setLiveSects] = useState<any[]>([]);
 
     // Photo
     const [photoFile, setPhotoFile] = useState<File | null>(null);
@@ -113,6 +114,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                         currentResidencyStateId: d.basics?.currentResidencyStateId || '',
                         currentResidencyCityId: d.basics?.currentResidencyCityId || '',
                         religionId: d.family?.religionId || '',
+                        sectId: d.family?.sectId || '',
                         casteId: d.family?.casteId || '',
                         designation: d.career?.designation || '',
                         company: d.career?.company || '',
@@ -174,6 +176,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
         };
         fetchProfile();
         fetchCastes();
+        fetchSects();
     }, []);
 
     const fetchStates = async (countryId: string | number) => {
@@ -197,6 +200,16 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
             setLiveCastes(payload);
         } catch {
             setLiveCastes([]);
+        }
+    };
+
+    const fetchSects = async () => {
+        try {
+            const res = await api.get('/member/sects');
+            const payload = Array.isArray(res.data?.data) ? res.data.data : (Array.isArray(res.data) ? res.data : []);
+            setLiveSects(payload);
+        } catch {
+            setLiveSects([]);
         }
     };
 
@@ -253,6 +266,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                     };
                     payload.family = {
                         religionId: data.religionId || null,
+                        sectId: data.sectId || null,
                         casteId: data.casteId || null,
                     };
                 } else if (step === 3) {
@@ -308,6 +322,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                     },
                     family: {
                         religionId: data.religionId || null,
+                        sectId: data.sectId || null,
                         casteId: data.casteId || null,
                     },
                     career: {
@@ -368,6 +383,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                 data.currentResidencyStateId &&
                 data.currentResidencyCityId &&
                 data.religionId &&
+                data.sectId &&
                 data.casteId
             );
         }
@@ -526,7 +542,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                                     </select>
                                 </FieldGroup>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <FieldGroup label={t('auth.onboarding.religion')}>
                                     <select className={inputClass} value={data.religionId || ''} onChange={e => { updateField('religionId', e.target.value); updateField('casteId', ''); }}>
                                         <option value="">{t('auth.onboarding.selectReligion')}</option>
@@ -535,7 +551,15 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                                         ))}
                                     </select>
                                 </FieldGroup>
-                                <FieldGroup label={t('auth.onboarding.caste')}>
+                                <FieldGroup label={t('auth.onboarding.sect')}>
+                                    <select className={inputClass} value={data.sectId || ''} onChange={e => updateField('sectId', e.target.value)} disabled={!liveSects.length}>
+                                        <option value="">{t('auth.onboarding.selectSect')}</option>
+                                        {liveSects.map((s: any) => (
+                                            <option key={s.id} value={s.id}>{s.name}</option>
+                                        ))}
+                                    </select>
+                                </FieldGroup>
+                                <FieldGroup label={t('auth.onboarding.casteClan')}>
                                     <select className={inputClass} value={data.casteId || ''} onChange={e => updateField('casteId', e.target.value)} disabled={!filteredCastes.length}>
                                         <option value="">{t('auth.onboarding.selectCaste')}</option>
                                         {filteredCastes.map((c: any) => (

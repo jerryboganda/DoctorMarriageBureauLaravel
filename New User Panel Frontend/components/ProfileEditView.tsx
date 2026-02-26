@@ -1685,6 +1685,7 @@ const CareerSection: React.FC<{ data: any, salaryRanges?: any[], optionSets?: an
 const FamilySection: React.FC<{ data: any, optionSets?: any, updateData: (field: string, val: any) => void }> = ({ data, optionSets, updateData }) => {
     const { t } = useTranslation();
     const [liveCastes, setLiveCastes] = useState<any[]>([]);
+    const [liveSects, setLiveSects] = useState<any[]>([]);
     const [loadingCastes, setLoadingCastes] = useState(false);
     const familyTypeOptions = ensureOptionValue(data?.familyType, optionSets?.familyTypeOptions ?? []);
     const religionOptions = optionSets?.religions ?? [];
@@ -1712,7 +1713,21 @@ const FamilySection: React.FC<{ data: any, optionSets?: any, updateData: (field:
                 }
             }
         };
+        const fetchLiveSects = async () => {
+            try {
+                const res = await api.get('/member/sects');
+                const payload = Array.isArray(res.data?.data) ? res.data.data : (Array.isArray(res.data) ? res.data : []);
+                if (isMounted) {
+                    setLiveSects(payload);
+                }
+            } catch (error) {
+                if (isMounted) {
+                    setLiveSects([]);
+                }
+            }
+        };
         fetchLiveCastes();
+        fetchLiveSects();
         return () => {
             isMounted = false;
         };
@@ -1818,12 +1833,22 @@ const FamilySection: React.FC<{ data: any, optionSets?: any, updateData: (field:
                             </select>
                         </InputGroup>
                         <InputGroup label={t('profile.edit.sect')} optional>
-                            <input
-                                type="text"
+                            <select
                                 className="form-input"
-                                defaultValue={data.sect}
-                                onChange={(e) => updateData('sect', e.target.value)}
-                            />
+                                value={data.sectId || ''}
+                                onChange={(e) => {
+                                    const nextValue = e.target.value ? Number(e.target.value) : null;
+                                    updateData('sectId', nextValue);
+                                    const selected = liveSects.find((item: any) => String(item.id) === e.target.value);
+                                    updateData('sect', selected?.name ?? '');
+                                }}
+                                disabled={!liveSects.length}
+                            >
+                                <option value="">{t('profile.edit.selectSect', 'Select sect')}</option>
+                                {liveSects.map((option: any) => (
+                                    <option key={option.id} value={option.id}>{option.name}</option>
+                                ))}
+                            </select>
                         </InputGroup>
                         <InputGroup label={t('profile.edit.casteClan')} optional>
                             <select

@@ -31,6 +31,7 @@ use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReligionController;
 use App\Http\Controllers\ReportedUserController;
+use App\Http\Controllers\SectController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StaffController;
@@ -177,6 +178,15 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin']], function 
     Route::controller(ReligionController::class)->group(function () {
         Route::get('/religions/destroy/{id}', 'destroy')->name('religions.destroy');
         Route::post('/religion/bulk_destroy', 'religion_bulk_delete')->name('religion.bulk_delete');
+    });
+
+    // Sect
+    Route::resource('/sects', SectController::class)->names([
+        'destroy' => 'sects.resource.destroy',
+    ]);
+    Route::controller(SectController::class)->group(function () {
+        Route::get('/sects/destroy/{id}', 'destroy')->name('sects.destroy');
+        Route::post('/sect/bulk_destroy', 'bulk_destroy')->name('sect.bulk_delete');
     });
 
     // Caste

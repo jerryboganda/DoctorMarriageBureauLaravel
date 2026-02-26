@@ -107,6 +107,7 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
             Route::get('/cities/{id}', 'ProfileDropdownController@city_list');
             Route::get('/languages', 'ProfileDropdownController@language_list');
             Route::get('/religions', 'ProfileDropdownController@religion_list');
+            Route::get('/sects', 'ProfileDropdownController@sect_list');
             Route::get('/casts/{id?}', 'ProfileDropdownController@caste_list');
             Route::get('/sub-casts/{id}', 'ProfileDropdownController@sub_caste_list');
             Route::get('/family-values', 'ProfileDropdownController@family_value_list');

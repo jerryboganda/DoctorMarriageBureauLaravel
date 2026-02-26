@@ -120,6 +120,15 @@
                                 </li>
                                 @endcan
 
+                                @can('show_sects')
+                                <li class="aiz-side-nav-item">
+                                    <a href="{{ route('sects.index') }}"
+                                        class="aiz-side-nav-link {{ areActiveRoutes(['sects.edit']) }}">
+                                        <span class="aiz-side-nav-text">{{ translate('Sect') }}</span>
+                                    </a>
+                                </li>
+                                @endcan
+
                                 @can('show_castes')
                                 <li class="aiz-side-nav-item">
                                     <a href="{{ route('castes.index') }}"

@@ -56,6 +56,7 @@ use App\Models\ProfileViewer;
 use App\Models\Recidency;
 use App\Models\Religion;
 use App\Models\ReportedUser;
+use App\Models\Sect;
 use App\Models\Setting;
 use App\Models\Shortlist;
 use App\Models\SpiritualBackground;
@@ -1046,6 +1047,8 @@ class ProfileController extends Controller
                 'religionId' => $spiritual?->religion_id,
                 'religion' => $spiritual && $spiritual->religion ? $spiritual->religion->name : '',
                 'sect' => $spiritual->ethnicity ?? '',
+                'sectId' => $spiritual?->sect_id,
+                'sectName' => $spiritual && $spiritual->sect ? $spiritual->sect->name : '',
                 'casteId' => $spiritual?->caste_id,
                 'caste' => $spiritual && $spiritual->caste ? $spiritual->caste->name : '',
             ],
@@ -1586,6 +1589,7 @@ class ProfileController extends Controller
                 [
                     'religion_id' => $religionId,
                     'caste_id' => $casteId,
+                    'sect_id' => $normalizeInt($familyData['sectId'] ?? null),
                     'ethnicity' => $familyData['sect'] ?? null,
                 ]
             );
@@ -1825,6 +1829,7 @@ class ProfileController extends Controller
             'addresses.state',
             'addresses.country',
             'spiritual_backgrounds.religion',
+            'spiritual_backgrounds.sect',
             'spiritual_backgrounds.caste',
             'spiritual_backgrounds.family_value',
             'lifestyles',
