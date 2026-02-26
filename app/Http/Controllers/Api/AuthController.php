@@ -126,10 +126,20 @@ class AuthController extends Controller
 
             // If a referral code was provided during signup, process the referral
             $referralCodeInput = $request->input('referral_code');
-            if (!empty($referralCodeInput) && !empty($user->referred_by)) {
-                $referralResult = $referralService->createReferral($user->referred_by, $user->id, $request->ip());
+            if (!empty($referralCodeInput)) {
+                $referralResult = $referralService->createReferral(
+                    $user->id,              // referredUserId - the new user who was referred
+                    $referralCodeInput,      // referralCodeString - the code they used
+                    'signup',               // source
+                    ['ip' => $request->ip()] // metadata
+                );
                 if ($referralResult['success']) {
-                    \Log::info("Referral created successfully for user {$user->id} referred by {$user->referred_by}");
+                    \Log::info("Referral created successfully for user {$user->id} with code {$referralCodeInput}");
+
+                    // User is already email-verified at this point, so check qualification immediately
+                    $referralService->checkAndQualifyReferral($user->id);
+                } else {
+                    \Log::info("Referral not created for user {$user->id}: " . ($referralResult['message'] ?? 'unknown'));
                 }
             }
         } catch (\Exception $e) {
