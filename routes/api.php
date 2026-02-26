@@ -589,7 +589,7 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
                         'name' => $match->user->first_name . ' ' . $match->user->last_name,
                         'age' => $age,
                         'location' => $location,
-                        'match_percentage' => rand(85, 98),
+                        'match_percentage' => auth()->check() ? \App\Services\MatchScoreService::score(auth()->user(), $match->user) : 50,
                         'is_online' => rand(0, 1)
                     ];
                 });

@@ -25,6 +25,7 @@ class DiscoveryController extends Controller
                 'spiritual_backgrounds.religion',
                 'spiritual_backgrounds.caste',
                 'addresses.country',
+                'partner_expectations',
             ])
             ->where('user_type', 'member')
             ->where('id', '!=', $user->id)
@@ -98,6 +99,7 @@ class DiscoveryController extends Controller
                 'spiritual_backgrounds.religion',
                 'spiritual_backgrounds.caste',
                 'addresses.country',
+                'partner_expectations',
             ])
             ->where('user_type', 'member')
             ->where('id', '!=', $user->id)

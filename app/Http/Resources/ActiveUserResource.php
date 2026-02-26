@@ -5,6 +5,7 @@ namespace App\Http\Resources;
 use App\Models\ViewGalleryImage;
 use App\Models\ViewProfilePicture;
 use App\Utility\MemberUtility;
+use App\Services\MatchScoreService;
 use Illuminate\Support\Carbon;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -53,7 +54,7 @@ class ActiveUserResource extends JsonResource
             'location'             => MemberUtility::member_country($this->id),
             'specialty'            => $this->career->first()?->designation ?? $this->member->specialization ?? 'Medical Professional',
             'hospital'             => $this->career->first()?->company ?? 'N/A',
-            'matchPercentage'      => rand(85, 98), // Placeholder for Match Tuner logic
+            'matchPercentage'      => auth()->check() ? MatchScoreService::score(auth()->user(), $this->resource) : 50,
             // Verified badge means identity verification was submitted and approved by admin.
             'isVerified'           => $identity_verified,
             'identityVerified'     => $identity_verified,
