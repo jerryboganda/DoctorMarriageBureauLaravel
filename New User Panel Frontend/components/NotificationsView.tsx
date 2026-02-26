@@ -12,7 +12,9 @@ import { useTranslation } from 'react-i18next';
 interface NotificationItem {
     notification_id: string;
     message: string;
+    body: string;
     time: string;
+    created_at: string;
     read_at: string;
     photo: string;
     type: string;
@@ -27,11 +29,42 @@ const normalizeNotificationType = (value: unknown): string =>
 const sanitizeNotification = (item: any): NotificationItem => ({
     notification_id: String(item?.notification_id ?? Math.random().toString()),
     message: String(item?.message ?? 'No details available'),
+    body: String(item?.body ?? ''),
     time: String(item?.time ?? ''),
+    created_at: String(item?.created_at ?? ''),
     read_at: String(item?.read_at ?? ''),
     photo: String(item?.photo ?? ''),
     type: normalizeNotificationType(item?.type ?? 'system')
 });
+
+const formatNotificationDate = (iso: string, relative: string): string => {
+    if (!iso) return relative;
+    try {
+        const d = new Date(iso);
+        const now = new Date();
+        const diffMs = now.getTime() - d.getTime();
+        const diffHours = diffMs / (1000 * 60 * 60);
+
+        const timeStr = d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+        if (diffHours < 1) return relative; // "X minutes ago" is fine for < 1 hour
+        if (diffHours < 24) return `${relative} · Today at ${timeStr}`;
+
+        const yesterday = new Date(now);
+        yesterday.setDate(yesterday.getDate() - 1);
+        if (d.toDateString() === yesterday.toDateString()) return `Yesterday at ${timeStr}`;
+
+        if (diffHours < 168) { // within 7 days
+            return `${dayNames[d.getDay()]} at ${timeStr}`;
+        }
+
+        return `${monthNames[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()} at ${timeStr}`;
+    } catch {
+        return relative;
+    }
+};
 
 interface NotificationsViewProps {
     onNavigate?: (view: string) => void;
@@ -136,6 +169,7 @@ const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate, refre
             profile_picture_view: 'profile',
             chat_message: 'messages',
             new_message: 'messages',
+            admin_notification: 'notifications',
         };
         if (map[normalizedType]) return map[normalizedType];
 
@@ -143,7 +177,7 @@ const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate, refre
         if (normalizedMessage.includes('proposal') || normalizedMessage.includes('interest')) return 'dashboard';
         if (normalizedMessage.includes('message') || normalizedMessage.includes('chat')) return 'messages';
         if (normalizedMessage.includes('view')) return 'discovery';
-        return null;
+        return 'notifications';
     };
 
     const handleViewDetails = async (n: NotificationItem) => {
@@ -222,7 +256,7 @@ const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate, refre
                     displayedNotifications.map((n) => (
                         <div
                             key={n.notification_id}
-                            onClick={() => handleRead(n.notification_id)}
+                            onClick={() => handleViewDetails(n)}
                             className={`bg-white rounded-2xl p-4 md:p-6 border transition-all cursor-pointer group ${n.read_at === 'New' ? 'border-primary/20 shadow-sm' : 'border-slate-100 opacity-80'}`}
                         >
                             <div className="flex items-start gap-4">
@@ -241,11 +275,11 @@ const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate, refre
                                             {n.message}
                                         </h3>
                                         <span className="text-[10px] md:text-xs text-slate-400 font-medium whitespace-nowrap ml-2">
-                                            {n.time}
+                                            {formatNotificationDate(n.created_at, n.time)}
                                         </span>
                                     </div>
                                     <p className="text-xs md:text-sm text-slate-500 line-clamp-2">
-                                        {t('notifications.checkList', { type: getNotificationTypeLabel(n.type) })}
+                                        {n.body || t('notifications.checkList', { type: getNotificationTypeLabel(n.type) })}
                                     </p>
 
                                     <div className="mt-4 flex items-center gap-3">

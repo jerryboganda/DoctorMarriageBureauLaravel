@@ -40,7 +40,9 @@ class NotificationResource extends JsonResource
             'notify_by'       => $notify_data->notify_by,
             'photo'           => ($profile_picture_show && $user) ? uploaded_asset($user->photo) : static_asset($avatar_image),
             'message'         => $notify_data->title ?? $notify_data->message,
+            'body'            => $notify_data->message ?? '',
             'time'            => Carbon::parse($this->created_at)->diffForHumans(),
+            'created_at'      => $this->created_at->toIso8601String(),
             'read_at'         => $this->read_at == null ? 'New' : 'read',
         ];
     }
