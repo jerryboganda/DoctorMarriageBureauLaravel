@@ -28,7 +28,7 @@ class NotificationResource extends JsonResource
 
         $avatar_image = 'assets/img/avatar-place.png';
         $profile_picture_show = false;
-        if ($user) {
+        if ($user && $user->member) {
             $avatar_image = $user->member->gender == 1 ? 'assets/img/avatar-place.png' : 'assets/img/female-avatar-place.png';
             $profile_picture_show = show_profile_picture($user);
         }
@@ -38,8 +38,8 @@ class NotificationResource extends JsonResource
             'notification_id' => $this->id,
             'type'            => $notify_data->type,
             'notify_by'       => $notify_data->notify_by,
-            'photo'           => $profile_picture_show ? uploaded_asset($user->photo) : static_asset($avatar_image),
-            'message'         => $notify_data->message,
+            'photo'           => ($profile_picture_show && $user) ? uploaded_asset($user->photo) : static_asset($avatar_image),
+            'message'         => $notify_data->title ?? $notify_data->message,
             'time'            => Carbon::parse($this->created_at)->diffForHumans(),
             'read_at'         => $this->read_at == null ? 'New' : 'read',
         ];

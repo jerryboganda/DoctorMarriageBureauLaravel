@@ -5,51 +5,33 @@ $app->make('Illuminate\Contracts\Console\Kernel')->bootstrap();
 
 $u = App\Models\User::where('email', 'mindreader420123@gmail.com')->first();
 echo "User ID: " . $u->id . "\n";
-echo "Has member: " . ($u->member ? 'yes' : 'no') . "\n";
 
-$notifications = App\Models\Notification::where('notifiable_id', $u->id)
-    ->latest()
-    ->take(10)
-    ->get();
+// Fix existing broken notification: update data to include title, fix notify_by, and reset read_at
+$existingNotif = App\Models\Notification::where('notifiable_id', $u->id)
+    ->where('id', 1678)
+    ->first();
 
-echo "Total notifications: " . $notifications->count() . "\n\n";
-
-foreach ($notifications as $n) {
-    echo "---\n";
-    echo "ID: " . $n->id . "\n";
-    echo "Type: " . $n->type . "\n";
-    echo "Data: " . $n->data . "\n";
-    echo "Read: " . ($n->read_at ?? 'NULL') . "\n";
-    echo "Created: " . $n->created_at . "\n";
+if ($existingNotif) {
+    $data = json_decode($existingNotif->data, true);
+    // Fix: set notify_by to user's own ID (so their photo displays), set title
+    $data['notify_by'] = $u->id;
+    $data['title'] = $data['title'] ?? 'Admin Notification';
+    $existingNotif->data = json_encode($data);
+    $existingNotif->read_at = null; // Mark as unread so user can see it
+    $existingNotif->save();
+    echo "Fixed notification 1678: updated notify_by to {$u->id}, added title, reset read_at\n";
 }
 
-// Check admin user (ID 6 = notify_by)
-$admin = App\Models\User::find(6);
-echo "\nAdmin user (ID 6): " . ($admin ? $admin->email : 'NOT FOUND') . "\n";
-echo "Admin has member: " . ($admin && $admin->member ? 'yes (gender=' . $admin->member->gender . ')' : 'NO MEMBER RECORD') . "\n";
-
-// Try to call the NotificationResource on the notification to see if it crashes
-echo "\n=== Testing NotificationResource ===\n";
+// Verify the fix by testing NotificationResource
 $testNotif = App\Models\Notification::find(1678);
 if ($testNotif) {
     try {
         $resource = new App\Http\Resources\NotificationResource($testNotif);
-        echo "Resource output: " . json_encode($resource->resolve()) . "\n";
+        $resolved = $resource->resolve();
+        echo "Resource OK: " . json_encode($resolved, JSON_PRETTY_PRINT) . "\n";
     } catch (\Throwable $e) {
-        echo "CRASH: " . $e->getMessage() . "\n";
-        echo "File: " . $e->getFile() . ":" . $e->getLine() . "\n";
+        echo "STILL CRASHING: " . $e->getMessage() . "\n";
     }
 }
 
-// Check error log for admin_notification or NotificationResource errors
-echo "\n=== Laravel Log errors (last 200 lines, filtered) ===\n";
-$logFile = storage_path('logs/laravel.log');
-if (file_exists($logFile)) {
-    $lines = file($logFile);
-    $last200 = array_slice($lines, -200);
-    foreach ($last200 as $line) {
-        if (stripos($line, 'notification') !== false || stripos($line, 'Error') !== false || stripos($line, 'exception') !== false) {
-            echo $line;
-        }
-    }
-}
+echo "Done.\n";

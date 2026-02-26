@@ -1023,10 +1023,11 @@ class MemberController extends Controller
                 \Illuminate\Support\Facades\Notification::send($user, new \App\Notifications\DbStoreNotification(
                     'admin_notification',
                     $notifyId,
-                    auth()->id(),
-                    $user->id,
+                    $user->id,       // notify_by = target user (so their photo shows in notification list)
+                    auth()->id(),    // info_id  = admin who sent it
                     $body,
-                    'notifications'
+                    'notifications',
+                    $title           // title field for display
                 ));
 
                 // 2. Broadcast via Soketi so user gets real-time popup
