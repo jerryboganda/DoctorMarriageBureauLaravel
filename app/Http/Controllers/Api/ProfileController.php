@@ -1953,6 +1953,10 @@ class ProfileController extends Controller
             'lifestyles',
             'physical_attributes',
             'partner_expectations.religion',
+            'partner_expectations.caste',
+            'partner_expectations.family_value',
+            'partner_expectations.member_language',
+            'partner_expectations.marital_status',
             'hobbies'
         ]);
 

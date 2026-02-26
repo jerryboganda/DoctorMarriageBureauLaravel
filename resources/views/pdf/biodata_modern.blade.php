@@ -156,6 +156,17 @@
     @endphp
 
     <div class="header">
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px;">
+            <tr>
+                <td style="text-align: center;">
+                    @if(file_exists(public_path('assets/img/logo-light.png')))
+                        <img src="{{ public_path('assets/img/logo-light.png') }}" style="height: 35px; width: auto;" alt="Doctor Marriage Bureau">
+                    @else
+                        <span style="font-size: 16px; font-weight: bold; color: #fda4af; letter-spacing: 1px;">DOCTOR MARRIAGE BUREAU</span>
+                    @endif
+                </td>
+            </tr>
+        </table>
         <table class="header-table">
             <tr>
                 <td style="width: 120px;">
@@ -168,7 +179,7 @@
                 <td style="vertical-align: middle;">
                     <h1 class="name">{{ $user->first_name }} {{ $user->last_name }}</h1>
                     <div style="font-size: 11px; color: #fda4af; font-weight: bold; margin-bottom: 5px;">
-                        PROFILE ID: {{ $user->id }}
+                        PROFILE ID: {{ $user->code ?? $user->id }}
                     </div>
                     <div class="quick-info">
                         Age: <span class="highlight">{{ $age ? $age . ' yrs' : 'N/A' }}</span> &nbsp;|&nbsp; 
@@ -372,21 +383,27 @@
             <div class="card">
                 <table class="grid-table">
                     <tr>
-                        <td width="33%">
-                            <span class="item-label">Father</span>
+                        <td width="50%">
+                            <span class="item-label">Father's Name</span>
                             <span class="item-value">{{ $family->father_name ?? 'N/A' }}</span>
-                            @if($family && $family->father_occupation)
-                                <span style="font-size: 10px; color: #64748b;">{{ $family->father_occupation }}</span>
-                            @endif
                         </td>
-                        <td width="33%">
-                            <span class="item-label">Mother</span>
+                        <td width="50%">
+                            <span class="item-label">Father's Occupation</span>
+                            <span class="item-value">{{ $family->father_occupation ?? 'N/A' }}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td width="50%">
+                            <span class="item-label">Mother's Name</span>
                             <span class="item-value">{{ $family->mother_name ?? 'N/A' }}</span>
-                            @if($family && $family->mother_occupation)
-                                <span style="font-size: 10px; color: #64748b;">{{ $family->mother_occupation }}</span>
-                            @endif
                         </td>
-                        <td width="33%">
+                        <td width="50%">
+                            <span class="item-label">Mother's Occupation</span>
+                            <span class="item-value">{{ $family->mother_occupation ?? 'N/A' }}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
                             <span class="item-label">Siblings</span>
                             <span class="item-value">
                                 @if($family)
@@ -399,12 +416,12 @@
                                 @endif
                             </span>
                         </td>
-                    </tr>
-                    <tr>
                         <td>
                             <span class="item-label">Family Type</span>
                             <span class="item-value">{{ $family->family_type ?? 'N/A' }}</span>
                         </td>
+                    </tr>
+                    <tr>
                         <td colspan="2">
                             <span class="item-label">Family Values</span>
                             <span class="item-value">{{ $spiritual->family_value->name ?? 'N/A' }}</span>
@@ -440,6 +457,16 @@
                                     <td>
                                         <span class="item-label">Drink</span>
                                         <span class="item-value">{{ $lifestyle->drink ?? 'N/A' }}</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <span class="item-label">Sleep Schedule</span>
+                                        <span class="item-value">{{ $lifestyle->sleep_schedule ?? 'N/A' }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="item-label">Property / House</span>
+                                        <span class="item-value">{{ $lifestyle->property ?? 'N/A' }}</span>
                                     </td>
                                 </tr>
                             </table>
@@ -508,11 +535,25 @@
                             <span class="item-value partner-value">{{ optional(\App\Models\Country::find($partner->residence_country_id))->name ?? 'Any' }}</span>
                         </td>
                     </tr>
+                    <tr>
+                        <td>
+                            <span class="item-label partner-label">Education</span>
+                            <span class="item-value partner-value">{{ $partner->education ?? 'Any' }}</span>
+                        </td>
+                        <td>
+                            <span class="item-label partner-label">Language</span>
+                            <span class="item-value partner-value">{{ $partner->member_language->name ?? 'Any' }}</span>
+                        </td>
+                        <td>
+                            <span class="item-label partner-label">Family Values</span>
+                            <span class="item-value partner-value">{{ $partner->family_value->name ?? 'Any' }}</span>
+                        </td>
+                    </tr>
                     @if($partner->general)
                     <tr>
                         <td colspan="3" style="padding-top: 15px;">
-                            <span class="item-label partner-label">Ideal Partner Overview</span>
-                            <span class="item-value partner-value" style="font-style: italic;">"{{ $partner->general }}"</span>
+                            <span class="item-label partner-label">Describe Your Ideal Partner</span>
+                            <span class="item-value partner-value" style="font-style: italic; line-height: 1.6;">"{{ $partner->general }}"</span>
                         </td>
                     </tr>
                     @endif
@@ -522,8 +563,21 @@
         @endif
 
         <div class="footer">
-            Generated securely by the Family Portal. This document contains highly confidential profile information.<br>
-            Please respect the user's privacy and do not distribute without explicitly granted permission.
+            <div style="font-size: 11px; font-weight: bold; color: #334155; margin-bottom: 5px;">
+                Doctor Marriage Bureau
+            </div>
+            @php
+                $whatsapp = get_setting('system_whatsapp') ?: get_setting('whatsapp_number');
+            @endphp
+            @if($whatsapp)
+                <div style="font-size: 11px; font-weight: bold; color: #0f172a; margin-bottom: 5px;">
+                    WhatsApp: {{ $whatsapp }}
+                </div>
+            @endif
+            <div style="font-size: 9px; color: #94a3b8; margin-top: 5px;">
+                Generated securely by Doctor Marriage Bureau. This document contains confidential profile information.<br>
+                Please respect the user's privacy and do not distribute without explicitly granted permission.
+            </div>
         </div>
     </div>
 </body>

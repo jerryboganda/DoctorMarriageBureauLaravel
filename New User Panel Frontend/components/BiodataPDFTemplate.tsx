@@ -82,7 +82,7 @@ const BiodataPDFTemplate: React.FC<BiodataPDFTemplateProps> = ({ userData }) => 
                         />
                         <div className="flex-1">
                             <h1 className="text-2xl font-bold text-white mb-1">{userData.first_name} {userData.last_name}</h1>
-                            <div className="text-primary font-bold text-xs mb-2">PROFILE ID: {userData.id}</div>
+                            <div className="text-primary font-bold text-xs mb-2">PROFILE ID: {userData.code || userData.id}</div>
 
                             <div className="flex flex-wrap gap-x-5 gap-y-1 text-slate-300 text-[11px]">
                                 <div className="flex items-center gap-1.5">
@@ -197,8 +197,10 @@ const BiodataPDFTemplate: React.FC<BiodataPDFTemplateProps> = ({ userData }) => 
                     <div>
                         <SectionHeader icon={<Home size={14} />} title="Family Details" />
                         <div className="grid grid-cols-2 gap-2">
-                            <InfoBox className="col-span-2" label="Father" value={families?.father_name} subtext={families?.father_occupation} />
-                            <InfoBox label="Mother" value={families?.mother_name} />
+                            <InfoBox label="Father's Name" value={families?.father_name} />
+                            <InfoBox label="Father's Occupation" value={families?.father_occupation} />
+                            <InfoBox label="Mother's Name" value={families?.mother_name} />
+                            <InfoBox label="Mother's Occupation" value={families?.mother_occupation} />
                             <InfoBox label="Siblings" value={
                                 families ? (
                                     (families.no_of_brothers > 0 ? `${families.no_of_brothers} Bro` : '') +
@@ -206,6 +208,20 @@ const BiodataPDFTemplate: React.FC<BiodataPDFTemplateProps> = ({ userData }) => 
                                     (families.no_of_sisters > 0 ? `${families.no_of_sisters} Sis` : '') || 'None'
                                 ) : null
                             } />
+                            <InfoBox label="Family Type" value={families?.family_type} />
+                        </div>
+                    </div>
+
+                    {/* Lifestyle */}
+                    <div>
+                        <SectionHeader icon={<Star size={14} />} title="Lifestyle" />
+                        <div className="grid grid-cols-2 gap-2">
+                            <InfoBox label="Diet" value={lifestyles?.diet} />
+                            <InfoBox label="Living With" value={lifestyles?.living_with} />
+                            <InfoBox label="Smoke" value={lifestyles?.smoke} />
+                            <InfoBox label="Drink" value={lifestyles?.drink} />
+                            <InfoBox label="Sleep Schedule" value={lifestyles?.sleep_schedule} />
+                            <InfoBox label="Property / House" value={lifestyles?.property} />
                         </div>
                     </div>
 
@@ -216,24 +232,50 @@ const BiodataPDFTemplate: React.FC<BiodataPDFTemplateProps> = ({ userData }) => 
                                 <Heart size={14} className="text-primary" />
                                 <h3 className="text-[10px] font-bold text-primary uppercase tracking-wider">Partner Expectations</h3>
                             </div>
-                            <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl grid grid-cols-4 gap-3 shadow-sm">
-                                <div>
-                                    <div className="text-[9px] font-bold text-rose-500 uppercase tracking-wider mb-0.5">Age Range</div>
-                                    <div className="text-[11px] font-semibold text-rose-950">{partner_expectations.min_age || 'Any'} - {partner_expectations.max_age || 'Any'} yrs</div>
-                                </div>
-                                <div>
-                                    <div className="text-[9px] font-bold text-rose-500 uppercase tracking-wider mb-0.5">Height</div>
-                                    <div className="text-[11px] font-semibold text-rose-950">{partner_expectations.height || 'Any'} - {partner_expectations.height_max || 'Any'}</div>
-                                </div>
-                                <div className="col-span-2">
-                                    <div className="text-[9px] font-bold text-rose-500 uppercase tracking-wider mb-0.5">Religion</div>
-                                    <div className="text-[11px] font-semibold text-rose-950">{partner_expectations.religion?.name || 'Any'}</div>
+                            <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl shadow-sm">
+                                <div className="grid grid-cols-3 gap-3">
+                                    <div>
+                                        <div className="text-[9px] font-bold text-rose-500 uppercase tracking-wider mb-0.5">Age Range</div>
+                                        <div className="text-[11px] font-semibold text-rose-950">{partner_expectations.min_age || 'Any'} - {partner_expectations.max_age || 'Any'} yrs</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-[9px] font-bold text-rose-500 uppercase tracking-wider mb-0.5">Height</div>
+                                        <div className="text-[11px] font-semibold text-rose-950">{partner_expectations.height || 'Any'} - {partner_expectations.height_max || 'Any'}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-[9px] font-bold text-rose-500 uppercase tracking-wider mb-0.5">Religion</div>
+                                        <div className="text-[11px] font-semibold text-rose-950">{partner_expectations.religion?.name || 'Any'}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-[9px] font-bold text-rose-500 uppercase tracking-wider mb-0.5">Marital Status</div>
+                                        <div className="text-[11px] font-semibold text-rose-950">{partner_expectations.marital_status?.name || 'Any'}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-[9px] font-bold text-rose-500 uppercase tracking-wider mb-0.5">Caste</div>
+                                        <div className="text-[11px] font-semibold text-rose-950">{partner_expectations.caste?.name || 'Any'}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-[9px] font-bold text-rose-500 uppercase tracking-wider mb-0.5">Residence</div>
+                                        <div className="text-[11px] font-semibold text-rose-950">{partner_expectations.residence_country?.name || 'Any'}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-[9px] font-bold text-rose-500 uppercase tracking-wider mb-0.5">Education</div>
+                                        <div className="text-[11px] font-semibold text-rose-950">{partner_expectations.education || 'Any'}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-[9px] font-bold text-rose-500 uppercase tracking-wider mb-0.5">Language</div>
+                                        <div className="text-[11px] font-semibold text-rose-950">{partner_expectations.member_language?.name || 'Any'}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-[9px] font-bold text-rose-500 uppercase tracking-wider mb-0.5">Family Values</div>
+                                        <div className="text-[11px] font-semibold text-rose-950">{partner_expectations.family_value?.name || 'Any'}</div>
+                                    </div>
                                 </div>
 
                                 {partner_expectations.general && (
-                                    <div className="col-span-4 mt-1 border-t border-rose-200/50 pt-2 flex gap-2">
-                                        <div className="text-[9px] font-bold text-rose-500 uppercase tracking-wider shrink-0 mt-0.5">Note:</div>
-                                        <div className="text-[10px] italic text-rose-900/80 leading-snug line-clamp-2">"{partner_expectations.general}"</div>
+                                    <div className="mt-2 border-t border-rose-200/50 pt-2">
+                                        <div className="text-[9px] font-bold text-rose-500 uppercase tracking-wider mb-1">Describe Your Ideal Partner</div>
+                                        <div className="text-[10px] italic text-rose-900/80 leading-snug">"{partner_expectations.general}"</div>
                                     </div>
                                 )}
                             </div>
@@ -243,6 +285,9 @@ const BiodataPDFTemplate: React.FC<BiodataPDFTemplateProps> = ({ userData }) => 
 
                 {/* Footer */}
                 <div className="mt-auto pt-4 border-t border-slate-200/60 pb-2">
+                    <div className="text-center mb-1">
+                        <span className="text-[10px] font-bold text-slate-700">Doctor Marriage Bureau</span>
+                    </div>
                     <p className="text-[9px] text-slate-400 flex justify-between">
                         <span>Generated securely via Doctor Marriage Bureau.</span>
                         <span>CONFIDENTIAL DOCUMENT</span>
