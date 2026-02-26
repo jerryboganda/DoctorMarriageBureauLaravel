@@ -949,6 +949,7 @@ class MemberController extends Controller
 
     /**
      * Send notification to a specific member via selected channels (email, sms, whatsapp, push).
+     * Returns JSON so the frontend can handle WhatsApp link opening without popup-blocker issues.
      */
     public function sendNotification(Request $request)
     {
@@ -979,7 +980,7 @@ class MemberController extends Controller
                     $results['email'] = 'sent';
                 } catch (\Throwable $e) {
                     Log::error('Admin notification email failed: ' . $e->getMessage());
-                    $results['email'] = 'failed: ' . $e->getMessage();
+                    $results['email'] = 'failed';
                 }
             } else {
                 $results['email'] = 'skipped: no email address';
@@ -995,7 +996,7 @@ class MemberController extends Controller
                     $results['sms'] = 'sent';
                 } catch (\Throwable $e) {
                     Log::error('Admin notification SMS failed: ' . $e->getMessage());
-                    $results['sms'] = 'failed: ' . $e->getMessage();
+                    $results['sms'] = 'failed';
                 }
             } else {
                 $results['sms'] = 'skipped: no phone number';
@@ -1014,28 +1015,37 @@ class MemberController extends Controller
             }
         }
 
-        // --- PUSH NOTIFICATION ---
+        // --- PUSH NOTIFICATION (via Soketi WebSocket + Database) ---
         if (in_array('push', $channels)) {
-            if (!empty($user->fcm_token)) {
-                try {
-                    $data = (object)[
-                        'fcm_token' => $user->fcm_token,
-                        'title'     => $title,
-                        'text'      => $body,
-                        'notify_by' => auth()->id(),
-                    ];
-                    \App\Services\FirbaseNotification::send($data);
-                    $results['push'] = 'sent';
-                } catch (\Throwable $e) {
-                    Log::error('Admin notification push failed: ' . $e->getMessage());
-                    $results['push'] = 'failed: ' . $e->getMessage();
-                }
-            } else {
-                $results['push'] = 'skipped: no FCM token registered';
+            try {
+                // 1. Store in database notifications table so it appears in user's notification list
+                $notifyId = unique_notify_id();
+                \Illuminate\Support\Facades\Notification::send($user, new \App\Notifications\DbStoreNotification(
+                    'admin_notification',
+                    $notifyId,
+                    auth()->id(),
+                    $user->id,
+                    $body,
+                    'notifications'
+                ));
+
+                // 2. Broadcast via Soketi so user gets real-time popup
+                broadcast(new \App\Events\NotificationReceived($user->id, [
+                    'type'    => 'admin_notification',
+                    'title'   => $title,
+                    'body'    => $body,
+                    'message' => $body,
+                    'sent_by' => auth()->user()->first_name . ' ' . auth()->user()->last_name,
+                ]));
+
+                $results['push'] = 'sent';
+            } catch (\Throwable $e) {
+                Log::error('Admin notification push (Soketi) failed: ' . $e->getMessage());
+                $results['push'] = 'failed';
             }
         }
 
-        // Build flash message
+        // Build result summary
         $successChannels = [];
         $failedChannels  = [];
         $skippedChannels = [];
@@ -1060,6 +1070,17 @@ class MemberController extends Controller
             $msg .= 'Failed: ' . implode(', ', $failedChannels) . '.';
         }
 
+        // Return JSON for AJAX handling (WhatsApp link + results)
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success'       => empty($failedChannels),
+                'message'       => trim($msg),
+                'results'       => $results,
+                'whatsapp_link' => $whatsappLink,
+            ]);
+        }
+
+        // Fallback for non-AJAX
         if (!empty($failedChannels)) {
             flash($msg)->error();
         } elseif (!empty($skippedChannels) && empty($successChannels)) {
@@ -1067,11 +1088,6 @@ class MemberController extends Controller
         } else {
             flash($msg)->success();
         }
-
-        if ($whatsappLink) {
-            return back()->with('whatsapp_redirect', $whatsappLink);
-        }
-
         return back();
     }
 

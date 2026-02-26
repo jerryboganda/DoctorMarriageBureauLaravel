@@ -408,20 +408,47 @@
         $('#sendNotificationModal').modal('show');
     }
 
-    // Validate at least one channel is selected
+    // AJAX submit for Send Notification form
     $('#sendNotificationForm').on('submit', function(e) {
+        e.preventDefault();
         if ($('input[name="channels[]"]:checked').length === 0) {
-            e.preventDefault();
-            alert('Please select at least one notification channel.');
+            AIZ.plugins.notify('warning', 'Please select at least one notification channel.');
             return false;
         }
-        $('#sendNotificationBtn').prop('disabled', true).html('<i class="las la-spinner la-spin mr-1"></i> Sending...');
-    });
+        var $btn = $('#sendNotificationBtn');
+        $btn.prop('disabled', true).html('<i class="las la-spinner la-spin mr-1"></i> Sending...');
 
-    // Handle WhatsApp redirect after page load
-    @if(session('whatsapp_redirect'))
-        window.open("{{ session('whatsapp_redirect') }}", '_blank');
-    @endif
+        $.ajax({
+            url: $(this).attr('action'),
+            method: 'POST',
+            data: $(this).serialize(),
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            success: function(resp) {
+                $('#sendNotificationModal').modal('hide');
+                $btn.prop('disabled', false).html('<i class="las la-paper-plane mr-1"></i> Send Notification');
+
+                // Show result message
+                if (resp.success) {
+                    AIZ.plugins.notify('success', resp.message);
+                } else {
+                    AIZ.plugins.notify('warning', resp.message);
+                }
+
+                // Open WhatsApp in new tab (works because it's in user-click callback chain)
+                if (resp.whatsapp_link) {
+                    window.open(resp.whatsapp_link, '_blank');
+                }
+            },
+            error: function(xhr) {
+                $btn.prop('disabled', false).html('<i class="las la-paper-plane mr-1"></i> Send Notification');
+                var msg = 'An error occurred.';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    msg = xhr.responseJSON.message;
+                }
+                AIZ.plugins.notify('danger', msg);
+            }
+        });
+    });
 
 </script>
 
