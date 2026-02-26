@@ -114,6 +114,7 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin']], function 
         Route::post('/members/get_package', 'get_package')->name('members.get_package');
         Route::post('/members/package_do_update/{id}', 'package_do_update')->name('members.package_do_update');
         Route::post('/members/wallet-balance-update', 'member_wallet_balance_update')->name('member.wallet_balance_update');
+        Route::post('/members/send-notification', 'sendNotification')->name('members.send_notification');
 
         Route::get('/member-list/{status}', 'filterbyStatus')->name('filterbyStatus');
     });

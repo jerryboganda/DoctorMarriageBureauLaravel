@@ -947,6 +947,134 @@ class MemberController extends Controller
         return view('admin.members.member_types', compact('members', 'sort_search', 'type'));
     }
 
+    /**
+     * Send notification to a specific member via selected channels (email, sms, whatsapp, push).
+     */
+    public function sendNotification(Request $request)
+    {
+        $request->validate([
+            'member_id' => 'required|integer|exists:users,id',
+            'title'     => 'required|string|max:255',
+            'body'      => 'required|string|max:5000',
+            'channels'  => 'required|array|min:1',
+            'channels.*'=> 'in:email,sms,whatsapp,push',
+        ]);
+
+        $user = User::findOrFail($request->member_id);
+        $title   = $request->title;
+        $body    = $request->body;
+        $channels = $request->channels;
+        $results = [];
+        $whatsappLink = null;
+
+        // --- EMAIL ---
+        if (in_array('email', $channels)) {
+            if (!empty($user->email)) {
+                try {
+                    \Mail::send('emails.index', ['email_body' => $body], function ($message) use ($user, $title) {
+                        $message->to($user->email, $user->first_name . ' ' . $user->last_name)
+                                ->subject($title)
+                                ->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
+                    });
+                    $results['email'] = 'sent';
+                } catch (\Throwable $e) {
+                    Log::error('Admin notification email failed: ' . $e->getMessage());
+                    $results['email'] = 'failed: ' . $e->getMessage();
+                }
+            } else {
+                $results['email'] = 'skipped: no email address';
+            }
+        }
+
+        // --- SMS ---
+        if (in_array('sms', $channels)) {
+            if (!empty($user->phone)) {
+                try {
+                    $smsText = $title . "\n\n" . $body;
+                    sendSMS($user->phone, env('APP_NAME'), $smsText, '');
+                    $results['sms'] = 'sent';
+                } catch (\Throwable $e) {
+                    Log::error('Admin notification SMS failed: ' . $e->getMessage());
+                    $results['sms'] = 'failed: ' . $e->getMessage();
+                }
+            } else {
+                $results['sms'] = 'skipped: no phone number';
+            }
+        }
+
+        // --- WHATSAPP ---
+        if (in_array('whatsapp', $channels)) {
+            $waDigits = $this->normalizeWhatsappPhone($user->phone);
+            if ($waDigits) {
+                $waMessage = "*{$title}*\n\n{$body}";
+                $whatsappLink = 'https://web.whatsapp.com/send?phone=' . $waDigits . '&text=' . urlencode($waMessage);
+                $results['whatsapp'] = 'link_generated';
+            } else {
+                $results['whatsapp'] = 'skipped: invalid or missing phone number';
+            }
+        }
+
+        // --- PUSH NOTIFICATION ---
+        if (in_array('push', $channels)) {
+            if (!empty($user->fcm_token)) {
+                try {
+                    $data = (object)[
+                        'fcm_token' => $user->fcm_token,
+                        'title'     => $title,
+                        'text'      => $body,
+                        'notify_by' => auth()->id(),
+                    ];
+                    \App\Services\FirbaseNotification::send($data);
+                    $results['push'] = 'sent';
+                } catch (\Throwable $e) {
+                    Log::error('Admin notification push failed: ' . $e->getMessage());
+                    $results['push'] = 'failed: ' . $e->getMessage();
+                }
+            } else {
+                $results['push'] = 'skipped: no FCM token registered';
+            }
+        }
+
+        // Build flash message
+        $successChannels = [];
+        $failedChannels  = [];
+        $skippedChannels = [];
+        foreach ($results as $ch => $status) {
+            if ($status === 'sent' || $status === 'link_generated') {
+                $successChannels[] = ucfirst($ch);
+            } elseif (str_starts_with($status, 'skipped')) {
+                $skippedChannels[] = ucfirst($ch) . ' (' . substr($status, 9) . ')';
+            } else {
+                $failedChannels[] = ucfirst($ch);
+            }
+        }
+
+        $msg = '';
+        if (!empty($successChannels)) {
+            $msg .= 'Notification sent via: ' . implode(', ', $successChannels) . '. ';
+        }
+        if (!empty($skippedChannels)) {
+            $msg .= 'Skipped: ' . implode(', ', $skippedChannels) . '. ';
+        }
+        if (!empty($failedChannels)) {
+            $msg .= 'Failed: ' . implode(', ', $failedChannels) . '.';
+        }
+
+        if (!empty($failedChannels)) {
+            flash($msg)->error();
+        } elseif (!empty($skippedChannels) && empty($successChannels)) {
+            flash($msg)->warning();
+        } else {
+            flash($msg)->success();
+        }
+
+        if ($whatsappLink) {
+            return back()->with('whatsapp_redirect', $whatsappLink);
+        }
+
+        return back();
+    }
+
     private function appendWhatsappMetadataToMembers($members, string $context = 'general'): void
     {
         if (!method_exists($members, 'getCollection')) {

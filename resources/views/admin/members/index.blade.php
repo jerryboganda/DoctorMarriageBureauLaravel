@@ -148,6 +148,7 @@
                                                 @can ('login_as_member')
                                                     <a href="{{ route('members.login', encrypt($member->id)) }}" class="dropdown-item">{{translate('Log in as this Member')}}</a>
                                                 @endcan
+                                                    <a class="dropdown-item" onclick="openSendNotification({{$member->id}}, '{{ addslashes($member->first_name . ' ' . $member->last_name) }}')" href="javascript:void(0);"><i class="las la-bell text-info mr-1"></i>{{translate('Send Notification')}}</a>
                                                 @can ('delete_member')
                                                     <a class="dropdown-item confirm-delete" data-href="{{route('members.destroy', $member->id)}}">{{translate('Delete')}}</a>
                                                 @endcan
@@ -279,6 +280,72 @@
 
     @include('modals.create_edit_modal')
     @include('modals.delete_modal')
+
+    {{-- Send Notification Modal --}}
+    <div class="modal fade" id="sendNotificationModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <form id="sendNotificationForm" action="{{ route('members.send_notification') }}" method="POST">
+                    @csrf
+                    <input type="hidden" name="member_id" id="notify_member_id" value="">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="las la-bell mr-1"></i>{{translate('Send Notification')}}</h5>
+                        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted mb-3">{{translate('Sending to:')}} <strong id="notify_member_name"></strong></p>
+                        <div class="form-group">
+                            <label class="font-weight-bold">{{translate('Title')}} <span class="text-danger">*</span></label>
+                            <input type="text" name="title" class="form-control" placeholder="{{translate('Notification title')}}" required maxlength="255">
+                        </div>
+                        <div class="form-group">
+                            <label class="font-weight-bold">{{translate('Message Body')}} <span class="text-danger">*</span></label>
+                            <textarea name="body" class="form-control" rows="4" placeholder="{{translate('Write your message here...')}}" required maxlength="5000"></textarea>
+                        </div>
+                        <div class="form-group mb-0">
+                            <label class="font-weight-bold d-block">{{translate('Send Via')}} <span class="text-danger">*</span></label>
+                            <div class="row">
+                                <div class="col-6">
+                                    <label class="aiz-checkbox">
+                                        <input type="checkbox" name="channels[]" value="sms">
+                                        <span class="aiz-square-check"></span>
+                                        <span><i class="las la-sms mr-1"></i>{{translate('SMS')}}</span>
+                                    </label>
+                                </div>
+                                <div class="col-6">
+                                    <label class="aiz-checkbox">
+                                        <input type="checkbox" name="channels[]" value="email">
+                                        <span class="aiz-square-check"></span>
+                                        <span><i class="las la-envelope mr-1"></i>{{translate('Email')}}</span>
+                                    </label>
+                                </div>
+                                <div class="col-6">
+                                    <label class="aiz-checkbox">
+                                        <input type="checkbox" name="channels[]" value="whatsapp">
+                                        <span class="aiz-square-check"></span>
+                                        <span><i class="lab la-whatsapp mr-1"></i>{{translate('WhatsApp')}}</span>
+                                    </label>
+                                </div>
+                                <div class="col-6">
+                                    <label class="aiz-checkbox">
+                                        <input type="checkbox" name="channels[]" value="push">
+                                        <span class="aiz-square-check"></span>
+                                        <span><i class="las la-mobile mr-1"></i>{{translate('Push Notification')}}</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-dismiss="modal">{{translate('Cancel')}}</button>
+                        <button type="submit" class="btn btn-primary" id="sendNotificationBtn">
+                            <i class="las la-paper-plane mr-1"></i>{{translate('Send Notification')}}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @section('script')
@@ -340,6 +407,27 @@
             $('#toggle-activation-form').submit();
         }
     }
+
+    function openSendNotification(id, name) {
+        $('#notify_member_id').val(id);
+        $('#notify_member_name').text(name);
+        $('#sendNotificationForm')[0].reset();
+        $('#notify_member_id').val(id);
+        $('#sendNotificationModal').modal('show');
+    }
+
+    $('#sendNotificationForm').on('submit', function(e) {
+        if ($('input[name="channels[]"]:checked').length === 0) {
+            e.preventDefault();
+            alert('Please select at least one notification channel.');
+            return false;
+        }
+        $('#sendNotificationBtn').prop('disabled', true).html('<i class="las la-spinner la-spin mr-1"></i> Sending...');
+    });
+
+    @if(session('whatsapp_redirect'))
+        window.open("{{ session('whatsapp_redirect') }}", '_blank');
+    @endif
 
 </script>
 
