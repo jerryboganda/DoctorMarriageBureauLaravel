@@ -23,11 +23,33 @@ foreach ($notifications as $n) {
     echo "Created: " . $n->created_at . "\n";
 }
 
-// Also check Laravel log for recent errors
-echo "\n=== Recent Laravel Log (last 50 lines) ===\n";
+// Check admin user (ID 6 = notify_by)
+$admin = App\Models\User::find(6);
+echo "\nAdmin user (ID 6): " . ($admin ? $admin->email : 'NOT FOUND') . "\n";
+echo "Admin has member: " . ($admin && $admin->member ? 'yes (gender=' . $admin->member->gender . ')' : 'NO MEMBER RECORD') . "\n";
+
+// Try to call the NotificationResource on the notification to see if it crashes
+echo "\n=== Testing NotificationResource ===\n";
+$testNotif = App\Models\Notification::find(1678);
+if ($testNotif) {
+    try {
+        $resource = new App\Http\Resources\NotificationResource($testNotif);
+        echo "Resource output: " . json_encode($resource->resolve()) . "\n";
+    } catch (\Throwable $e) {
+        echo "CRASH: " . $e->getMessage() . "\n";
+        echo "File: " . $e->getFile() . ":" . $e->getLine() . "\n";
+    }
+}
+
+// Check error log for admin_notification or NotificationResource errors
+echo "\n=== Laravel Log errors (last 200 lines, filtered) ===\n";
 $logFile = storage_path('logs/laravel.log');
 if (file_exists($logFile)) {
     $lines = file($logFile);
-    $last50 = array_slice($lines, -50);
-    echo implode('', $last50);
+    $last200 = array_slice($lines, -200);
+    foreach ($last200 as $line) {
+        if (stripos($line, 'notification') !== false || stripos($line, 'Error') !== false || stripos($line, 'exception') !== false) {
+            echo $line;
+        }
+    }
 }
