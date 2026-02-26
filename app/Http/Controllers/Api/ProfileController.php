@@ -949,6 +949,9 @@ class ProfileController extends Controller
             $member->save();
         }
 
+        // Calculate real-time profile completion data
+        $profileCompletion = $this->getProfileCompletionData($user, $member);
+
         return response()->json([
             'result' => true,
             'basics' => [
@@ -1086,7 +1089,8 @@ class ProfileController extends Controller
                 'intro_video_url' => $member->intro_video_path ? uploaded_asset($member->intro_video_path) : null,
             ],
             'salaryRanges' => $salaryRanges,
-            'visibility' => $visibility
+            'visibility' => $visibility,
+            'profileCompletion' => $profileCompletion,
         ]);
     }
 
@@ -1699,9 +1703,15 @@ class ProfileController extends Controller
             $member->save();
         }
 
+        // Return updated profile completion data after save
+        $user = $user->fresh();
+        $member = $user->member;
+        $profileCompletion = $this->getProfileCompletionData($user, $member);
+
         return response()->json([
             'result' => true,
-            'message' => 'Profile updated successfully'
+            'message' => 'Profile updated successfully',
+            'profileCompletion' => $profileCompletion,
         ]);
     }
 
@@ -1770,6 +1780,114 @@ class ProfileController extends Controller
     private function isOnboardingDataComplete(User $user, Member $member): bool
     {
         return empty($this->getOnboardingMissingFields($user, $member));
+    }
+
+    /**
+     * Get per-step completion data for profile completion tracking.
+     * Returns step completion booleans, filled/total fields per step,
+     * overall percentage, and the first incomplete step number.
+     */
+    private function getProfileCompletionData(User $user, Member $member): array
+    {
+        $presentAddress = Address::where('user_id', $user->id)->where('type', 'present')->first();
+        $spiritual = SpiritualBackground::where('user_id', $user->id)->first();
+        $career = DB::table('careers')
+            ->where('user_id', $user->id)
+            ->whereNull('deleted_at')
+            ->orderByDesc('present')
+            ->orderByDesc('updated_at')
+            ->first();
+        $education = DB::table('education')
+            ->where('user_id', $user->id)
+            ->whereNull('deleted_at')
+            ->orderByDesc('is_highest_degree')
+            ->orderByDesc('updated_at')
+            ->first();
+        $physical = PhysicalAttribute::where('user_id', $user->id)->first();
+
+        // Step 1: Personal (5 fields)
+        $step1Fields = [
+            'firstName' => trim((string) $user->first_name) !== '',
+            'lastName' => trim((string) $user->last_name) !== '',
+            'gender' => !empty($member->gender),
+            'dateOfBirth' => !empty($member->birthday),
+            'maritalStatus' => !empty($member->marital_status_id),
+        ];
+
+        // Step 2: Location & Religion (5 fields)
+        $step2Fields = [
+            'country' => $presentAddress && !empty($presentAddress->country_id),
+            'state' => $presentAddress && !empty($presentAddress->state_id),
+            'city' => $presentAddress && !empty($presentAddress->city_id),
+            'religion' => $spiritual && !empty($spiritual->religion_id),
+            'caste' => $spiritual && !empty($spiritual->caste_id),
+        ];
+
+        // Step 3: Career & Education (5 fields)
+        $step3Fields = [
+            'designation' => $career && trim((string) ($career->designation ?? '')) !== '',
+            'company' => $career && trim((string) ($career->company ?? '')) !== '',
+            'degree' => $education && trim((string) ($education->degree ?? '')) !== '',
+            'institution' => $education && trim((string) ($education->institution ?? '')) !== '',
+            'incomeRange' => !empty($member->annual_salary_range_id),
+        ];
+
+        // Step 4: Appearance (3 fields)
+        $step4Fields = [
+            'height' => $physical && $physical->height !== null && $physical->height !== '',
+            'weight' => $physical && $physical->weight !== null && $physical->weight !== '',
+            'complexion' => $physical && trim((string) ($physical->complexion ?? '')) !== '',
+        ];
+
+        // Step 5: About Me (1 field)
+        $step5Fields = [
+            'introduction' => trim((string) ($member->introduction ?? '')) !== '',
+        ];
+
+        // Step 6: Photo (1 field)
+        $step6Fields = [
+            'profilePhoto' => !empty($user->photo),
+        ];
+
+        $allSteps = [$step1Fields, $step2Fields, $step3Fields, $step4Fields, $step5Fields, $step6Fields];
+
+        // Calculate per-step completion
+        $stepStatuses = [];
+        $totalFields = 0;
+        $filledFields = 0;
+        $firstIncompleteStep = null;
+
+        foreach ($allSteps as $i => $stepFields) {
+            $stepFilled = count(array_filter($stepFields));
+            $stepTotal = count($stepFields);
+            $isComplete = $stepFilled === $stepTotal;
+
+            $totalFields += $stepTotal;
+            $filledFields += $stepFilled;
+
+            $stepStatuses[] = [
+                'step' => $i + 1,
+                'complete' => $isComplete,
+                'filled' => $stepFilled,
+                'total' => $stepTotal,
+                'fields' => $stepFields,
+            ];
+
+            if (!$isComplete && $firstIncompleteStep === null) {
+                $firstIncompleteStep = $i + 1;
+            }
+        }
+
+        $percentage = $totalFields > 0 ? round(($filledFields / $totalFields) * 100) : 0;
+
+        return [
+            'percentage' => (int) $percentage,
+            'totalFields' => $totalFields,
+            'filledFields' => $filledFields,
+            'firstIncompleteStep' => $firstIncompleteStep ?? 1,
+            'allComplete' => $filledFields === $totalFields,
+            'steps' => $stepStatuses,
+        ];
     }
 
     public function download_biodata(Request $request)

@@ -30,6 +30,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
         { label: t('auth.onboarding.stepPhoto'), icon: STEPS_ICONS[5] },
     ];
     const [step, setStep] = useState(1);
+    const [initialStepSet, setInitialStepSet] = useState(false);
     const totalSteps = STEPS.length;
     const onboardingTitleText = "Complete Profile";
     const finishSetupText = t("modals.twoFactor.completeSetup");
@@ -54,6 +55,59 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
     const [photoFile, setPhotoFile] = useState<File | null>(null);
     const [photoPreview, setPhotoPreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Real-time profile completion calculation (mirrors backend logic)
+    const computeLocalCompletion = () => {
+        const step1 = [
+            data.firstName?.trim(),
+            data.lastName?.trim(),
+            data.gender,
+            data.dateOfBirth,
+            data.maritalStatusId,
+        ];
+        const step2 = [
+            data.currentResidencyCountryId,
+            data.currentResidencyStateId,
+            data.currentResidencyCityId,
+            data.religionId,
+            data.casteId,
+        ];
+        const step3 = [
+            data.designation?.trim(),
+            data.company?.trim(),
+            data.education?.trim(),
+            data.institution?.trim(),
+            data.incomeRangeId,
+        ];
+        const step4 = [
+            data.height,
+            data.weight,
+            data.complexion?.trim(),
+        ];
+        const step5 = [
+            (data.introduction || '').trim(),
+        ];
+        const step6 = [
+            photoFile || data.hasProfilePhoto ? 'yes' : '',
+        ];
+
+        const allSteps = [step1, step2, step3, step4, step5, step6];
+        let totalFields = 0;
+        let filledFields = 0;
+        const stepComplete: boolean[] = [];
+
+        allSteps.forEach(fields => {
+            const filled = fields.filter(v => v !== '' && v !== null && v !== undefined && v !== false && v !== 0).length;
+            totalFields += fields.length;
+            filledFields += filled;
+            stepComplete.push(filled === fields.length);
+        });
+
+        const percentage = totalFields > 0 ? Math.round((filledFields / totalFields) * 100) : 0;
+        return { percentage, stepComplete, filledFields, totalFields };
+    };
+
+    const { percentage: livePercentage, stepComplete: liveStepComplete } = computeLocalCompletion();
 
     // States & cities for location
     const [states, setStates] = useState<any[]>([]);
@@ -128,6 +182,12 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                         avatarUrl: d.basics?.avatarUrl || '',
                         hasProfilePhoto: !!d.basics?.hasProfilePhoto,
                     });
+
+                    // Auto-navigate to the first incomplete step
+                    if (d.profileCompletion?.firstIncompleteStep && !initialStepSet) {
+                        setStep(d.profileCompletion.firstIncompleteStep);
+                        setInitialStepSet(true);
+                    }
                     const incomingOptionSets = d.optionSets || {};
                     let maritalStatuses = normalizeMaritalStatuses(
                         incomingOptionSets?.maritalStatuses || incomingOptionSets?.marital_statuses
@@ -434,24 +494,25 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                             </p>
                         </div>
                         <div className="text-right">
-                            <span className="text-2xl font-black text-primary">{Math.round((step / totalSteps) * 100)}%</span>
+                            <span className={`text-2xl font-black ${livePercentage === 100 ? 'text-emerald-600' : 'text-primary'}`}>{livePercentage}%</span>
                             <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">{t('auth.onboarding.complete')}</p>
                         </div>
                     </div>
 
-                    {/* Step progress bars */}
+                    {/* Step progress bars — clickable to navigate */}
                     <div className="flex gap-1.5">
                         {STEPS.map((s, i) => (
-                            <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                            <button key={i} className="flex-1 flex flex-col items-center gap-1 cursor-pointer group" onClick={() => !saving && setStep(i + 1)}>
                                 <div className={`h-1.5 w-full rounded-full transition-all duration-300 ${
-                                    i + 1 < step ? 'bg-emerald-500' :
+                                    liveStepComplete[i] ? 'bg-emerald-500' :
                                     i + 1 === step ? 'bg-primary' :
-                                    'bg-slate-200'
+                                    'bg-slate-200 group-hover:bg-slate-300'
                                 }`} />
                                 <span className={`text-[9px] font-semibold hidden sm:block ${
-                                    i + 1 <= step ? 'text-slate-600' : 'text-slate-400'
+                                    liveStepComplete[i] ? 'text-emerald-600' :
+                                    i + 1 === step ? 'text-slate-600' : 'text-slate-400'
                                 }`}>{s.label}</span>
-                            </div>
+                            </button>
                         ))}
                     </div>
                 </div>
