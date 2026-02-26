@@ -89,6 +89,7 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin']], function 
         Route::post('/members/block', 'block')->name('members.block');
         Route::post('/members/blocking_reason', 'blocking_reason')->name('members.blocking_reason');
         Route::post('/members/toggle-activation', 'toggleActivation')->name('members.toggle_activation');
+        Route::post('/members/{id}/set-password', 'setMemberPassword')->middleware('throttle:10,1')->name('members.set_password');
         Route::get('/members/login/{id}', 'login')->name('members.login');
 
         Route::get('/deleted_members', 'deleted_members')->name('deleted_members');

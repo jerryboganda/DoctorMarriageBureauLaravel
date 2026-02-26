@@ -16,12 +16,31 @@ use PDF;
 
 class ChatController extends Controller
 {
+    private function ensureMessagingEntitlement()
+    {
+        $user = auth()->user();
+
+        if (!$user || (int) $user->membership !== 2) {
+            return response()->json([
+                'result' => false,
+                'code' => 'SUBSCRIPTION_REQUIRED',
+                'message' => 'Messaging is a premium feature. Please subscribe to a premium package.',
+            ], 403);
+        }
+
+        return null;
+    }
+
     /**
      * List all chat threads for the authenticated user.
      * OPTIMISED: only loads the LAST message per thread (not all messages).
      */
     public function chat_list()
     {
+        if ($entitlementError = $this->ensureMessagingEntitlement()) {
+            return $entitlementError;
+        }
+
         $userId = auth()->id();
 
         $chatThreads = ChatThread::with([
@@ -68,6 +87,10 @@ class ChatController extends Controller
      */
     public function chat_view($id)
     {
+        if ($entitlementError = $this->ensureMessagingEntitlement()) {
+            return $entitlementError;
+        }
+
         $chatThread = ChatThread::with([
             'sender:id,first_name,last_name,photo',
             'receiver:id,first_name,last_name,photo',
@@ -104,6 +127,10 @@ class ChatController extends Controller
      */
     public function get_old_messages(Request $request)
     {
+        if ($entitlementError = $this->ensureMessagingEntitlement()) {
+            return $entitlementError;
+        }
+
         $chat = Chat::findOrFail($request->first_message_id);
 
         $chats = Chat::where('chat_thread_id', $chat->chat_thread_id)
@@ -141,6 +168,10 @@ class ChatController extends Controller
      */
     public function chat_reply(ChatRequest $request)
     {
+        if ($entitlementError = $this->ensureMessagingEntitlement()) {
+            return $entitlementError;
+        }
+
         $chatThread = ChatThread::findOrFail($request->chat_thread_id);
         if (auth()->id() !== $chatThread->sender_user_id && auth()->id() !== $chatThread->receiver_user_id) {
             return response()->json([
@@ -171,6 +202,10 @@ class ChatController extends Controller
      */
     public function share_biodata(Request $request)
     {
+        if ($entitlementError = $this->ensureMessagingEntitlement()) {
+            return $entitlementError;
+        }
+
         $request->validate([
             'chat_thread_id' => 'required|exists:chat_threads,id',
         ]);

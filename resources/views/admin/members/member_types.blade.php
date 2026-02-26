@@ -20,7 +20,7 @@
                         <div class="input-group input-group-sm">
                             <input type="text" class="form-control" id="search" name="search"
                                 @isset($sort_search) value="{{ $sort_search }}" @endisset
-                                placeholder="{{ translate('Type first name / last name / Phone / ID & Enter') }}">
+                                placeholder="{{ translate('Search by Name / Email / Phone / Member Code / User ID') }}">
                         </div>
                     </form>
 
@@ -96,11 +96,21 @@
                                                 <i class="las la-ellipsis-v"></i>
                                             </button>
                                             <div class="dropdown-menu dropdown-menu-right">
+                                                @if(($member->whatsapp_available ?? false) && !empty($member->whatsapp_link))
+                                                    <a class="dropdown-item" href="{{ $member->whatsapp_link }}" target="_blank" rel="noopener noreferrer">
+                                                        <i class="lab la-whatsapp text-success mr-1"></i>{{ translate('Contact on WhatsApp') }}
+                                                    </a>
+                                                @else
+                                                    <a class="dropdown-item disabled text-muted" href="javascript:void(0);" onclick="return false;" title="{{ $member->whatsapp_unavailable_reason ?? translate('WhatsApp unavailable: invalid or missing phone number') }}">
+                                                        <i class="lab la-whatsapp mr-1"></i>{{ translate('Contact on WhatsApp') }}
+                                                    </a>
+                                                @endif
                                                 @can ('view_member_profile')
                                                     <a class="dropdown-item" href="{{ route('members.show', encrypt($member->id)) }}">{{translate('View')}}</a>
                                                 @endcan
                                                 @can('edit_member')
                                                     <a class="dropdown-item" href="{{ route('members.edit', encrypt($member->id)) }}">{{translate('Edit')}}</a>
+                                                    <a class="dropdown-item" href="{{ route('members.edit', encrypt($member->id)) }}#basic_information">{{translate('Set Password')}}</a>
                                                 @endcan
                                                 @can ('block_member')
                                                     @if($member->blocked == 0)

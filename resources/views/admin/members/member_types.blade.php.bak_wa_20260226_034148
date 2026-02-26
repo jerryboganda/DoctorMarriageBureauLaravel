@@ -5,11 +5,7 @@
         <div class="col-md-6">
             <h1 class="h3">{{translate('Members')}}</h1>
         </div>
-        @can('create_member')
-            <div class="col-md-6 text-right">
-                <a href="{{route('members.create')}}" class="btn btn-circle btn-primary">{{translate('Add New Member')}}</a>
-            </div>
-        @endcan
+        
     </div>
 </div>
 <div class="row">
@@ -17,14 +13,17 @@
         <div class="card">
             <div class="card-header row gutters-5">
   				<div class="col text-center text-md-left">
-  					<h5 class="mb-md-0 h6 text-capitalize">{{ translate('All members') }}</h5>
+                  <h5 class="mb-md-0 h6 text-capitalize">{{ translate("All {$type} members") }}</h5>
   				</div>
   				<div class="col-md-3">
-  					<form class="" id="sort_members" action="" method="GET">
-  						<div class="input-group input-group-sm">
-  					  		<input type="text" class="form-control" id="search" name="search"@isset($sort_search) value="{{ $sort_search }}" @endisset placeholder="{{ translate('Search by Name / Email / Phone / Member Code / User ID') }}">
-  						</div>
-  					</form>
+  					<form id="sort_members" action="{{ route('filterbyStatus', $type) }}" method="GET">
+                        <div class="input-group input-group-sm">
+                            <input type="text" class="form-control" id="search" name="search"
+                                @isset($sort_search) value="{{ $sort_search }}" @endisset
+                                placeholder="{{ translate('Search by Name / Email / Phone / Member Code / User ID') }}">
+                        </div>
+                    </form>
+
   				</div>
 		    </div>
             <div class="card-body">
@@ -34,14 +33,11 @@
                             <th>#</th>
                             <th>{{translate('Image')}}</th>
                             <th>{{translate('Member Code')}}</th>
-                            <th data-breakpoints="md">{{translate('Name / Phone')}}</th>
+                            <th data-breakpoints="md">{{translate('Name')}}</th>
                             <th data-breakpoints="md">{{translate('Gender')}}</th>
-                            @if(get_setting('member_verification') == 1)
-                                <th data-breakpoints="md">{{translate('Verification Status')}}</th>
-                            @endif
+                            <th data-breakpoints="md">{{translate('Status')}}</th>
                             <th data-breakpoints="md">{{translate('Profile Reported')}}</th>
                             <th data-breakpoints="md">{{translate('Member Since')}}</th>
-                            <th data-breakpoints="md">{{translate('Member Status')}}</th>
                             <th class="text-right">{{translate('Options')}}</th>
                         </tr>
                     </thead>
@@ -57,10 +53,7 @@
                                     @endif
                                 </td>
                                 <td>{{ $member->code }}</td>
-                               <td>
-                                    {{ $member->first_name.' '.$member->last_name }}
-                                    <p>{{ $member->phone ? $member->phone : '' }}</p>
-                                </td>
+                                <td>{{ $member->first_name.' '.$member->last_name }}</td>
                                 <td>
                                     @if ($member->member != null && $member->member->gender == 1)
                                         {{ translate('Male') }}
@@ -70,17 +63,22 @@
                                         {{ ' ' }}
                                     @endif
                                 </td>
-                                @if(get_setting('member_verification') == 1)
-                                    <td>
-                                        @if($member->approved == 1)
-                                            <span class="badge badge-inline badge-success">{{translate('Approved')}}</span>
-                                        @elseif($member->verification_info != null)
-                                            <span class="badge badge-inline badge-info">{{translate('Pending')}}</span>
+                                <td>
+                                    @if($type == 'blocked')
+                                        <span class="badge badge-inline badge-danger">{{translate('Blocked')}}</span>
+                                    @elseif($type == 'approved')
+                                        <span class="badge badge-inline badge-success">{{translate('Approved')}}</span>
+                                    @elseif($type == 'pending')
+                                         @if(get_setting('member_verification') == 1 && $member->verification_info != null)
+                                        <span class="badge badge-inline badge-info">{{translate('Applied')}}</span>
                                         @else
-                                            <span class="badge badge-inline badge-warning">{{translate('No Request')}}</span>
+                                         <span class="badge badge-inline badge-secondary">{{translate('Not Applied')}}</span>
                                         @endif
-                                    </td>
-                                @endif
+                                    @else
+                                        <span class="badge badge-inline badge-warning">{{translate('Deactivated')}}</span>
+                                    @endif
+                                </td>
+                               
                                 <td>
                                   @if($member->reported_users->count() > 0)
                                     <a href="@can('view_reported_profile'){{ route('reported_members', $member->id) }}@endcan" class="badge badge-inline badge-danger" title="{{ translate('View Reports') }}">{{ $member->reported_users->count() }}</a>
@@ -89,13 +87,7 @@
                                   @endif
                                 </td>
                                 <td>{{ date('d-m-Y', strtotime($member->created_at)) }}</td>
-                                <td>
-                                    @if($member->deactivated == 0)
-                                        <span class="badge badge-inline badge-success">{{translate('Active')}}</span>
-                                    @else
-                                        <span class="badge badge-inline badge-danger">{{translate('Deactivated')}}</span>
-                                    @endif
-                                </td>
+                                
                                 <td class="text-right">
                                     <div class="btn-group mb-2">
                                         <div class="btn-group">
@@ -104,15 +96,6 @@
                                                 <i class="las la-ellipsis-v"></i>
                                             </button>
                                             <div class="dropdown-menu dropdown-menu-right">
-                                                @if(($member->whatsapp_available ?? false) && !empty($member->whatsapp_link))
-                                                    <a class="dropdown-item" href="{{ $member->whatsapp_link }}" target="_blank" rel="noopener noreferrer">
-                                                        <i class="lab la-whatsapp text-success mr-1"></i>{{ translate('Contact on WhatsApp') }}
-                                                    </a>
-                                                @else
-                                                    <a class="dropdown-item disabled text-muted" href="javascript:void(0);" onclick="return false;" title="{{ $member->whatsapp_unavailable_reason ?? translate('WhatsApp unavailable: invalid or missing phone number') }}">
-                                                        <i class="lab la-whatsapp mr-1"></i>{{ translate('Contact on WhatsApp') }}
-                                                    </a>
-                                                @endif
                                                 @can ('view_member_profile')
                                                     <a class="dropdown-item" href="{{ route('members.show', encrypt($member->id)) }}">{{translate('View')}}</a>
                                                 @endcan

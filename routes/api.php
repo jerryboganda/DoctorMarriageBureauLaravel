@@ -68,7 +68,7 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
     Route::get('/home/packages', 'HomeController@home_packages');
     Route::get('/home/reviews', 'HomeController@home_reviews');
 
-    Route::group(['middleware' => ['auth:sanctum']], function () {
+    Route::group(['middleware' => ['auth:sanctum', 'api_require_password_change']], function () {
         Route::get('/discovery', 'DiscoveryController@index');
         Route::get('/discovery/search', 'DiscoveryController@search');
         Route::get('/match-intelligence/{id}', 'MatchIntelligenceController@show');
@@ -177,7 +177,7 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
     Route::post('/logout', 'AuthController@logout')->name('api.logout')->middleware('auth:sanctum');
     Route::get('/member-validate', 'MemberController@member_validate');
 
-    Route::group(['middleware' => ['auth:sanctum', 'api_email_verified']], function () {
+    Route::group(['middleware' => ['auth:sanctum', 'api_email_verified', 'api_require_password_change']], function () {
         Route::get('/member/dashboard', 'HomeController@member_dashboard');
         Route::get('/member/verification_form', 'MemberController@getVerifyForm');
         Route::get('/member/is-approved', 'MemberController@isApproved');
@@ -185,7 +185,7 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
     });
 
 
-    Route::group(['middleware' => ['auth:sanctum', 'api_email_verified', 'api_member']], function () {
+    Route::group(['middleware' => ['auth:sanctum', 'api_email_verified', 'api_member', 'api_require_password_change']], function () {
         Route::post('/update-device-token', 'AuthController@update_device_token');
         Route::get('/app-check', 'AuthController@checkedData');
         //Payment Gateways
@@ -312,11 +312,11 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
 
 
             //chat routes
-            Route::get('/chat-list', 'ChatController@chat_list');
-            Route::get('/chat-view/{id}', 'ChatController@chat_view');
-            Route::post('/chat-reply', 'ChatController@chat_reply');
-            Route::post('/chat/old-messages', 'ChatController@get_old_messages');
-            Route::post('/chat/share-biodata', 'ChatController@share_biodata');
+            Route::get('/chat-list', 'ChatController@chat_list')->middleware('api_premium_messaging');
+            Route::get('/chat-view/{id}', 'ChatController@chat_view')->middleware('api_premium_messaging');
+            Route::post('/chat-reply', 'ChatController@chat_reply')->middleware('api_premium_messaging');
+            Route::post('/chat/old-messages', 'ChatController@get_old_messages')->middleware('api_premium_messaging');
+            Route::post('/chat/share-biodata', 'ChatController@share_biodata')->middleware('api_premium_messaging');
 
             // Heartbeat & Online Status
             Route::post('/heartbeat', function () {
@@ -467,7 +467,7 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
     });
 
     // Dashboard API Routes - Web Authentication
-    Route::group(['middleware' => ['auth:sanctum', 'api_email_verified', 'api_member']], function () {
+    Route::group(['middleware' => ['auth:sanctum', 'api_email_verified', 'api_member', 'api_require_password_change']], function () {
 
         // Dashboard Stats
         Route::get('/dashboard/stats', function (Request $request) {

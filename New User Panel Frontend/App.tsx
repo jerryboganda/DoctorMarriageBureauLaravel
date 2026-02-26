@@ -33,26 +33,52 @@ type CheckoutItem = {
 
 type GateState = 'gateLoading' | 'needsOnboarding' | 'needsVerification' | 'verificationPending' | 'gateUnlocked';
 
-const RightSidebar = lazy(() => import('./components/RightSidebar'));
-const SettingsView = lazy(() => import('./components/SettingsView'));
-const OnboardingModal = lazy(() => import('./components/OnboardingModal'));
-const VerificationModal = lazy(() => import('./components/VerificationModal'));
-const ProfileEditView = lazy(() => import('./components/ProfileEditView'));
-const DiscoveryView = lazy(() => import('./components/DiscoveryView'));
-const ProposalModal = lazy(() => import('./components/ProposalModal'));
-const DeclineModal = lazy(() => import('./components/DeclineModal'));
-const MessagesView = lazy(() => import('./components/MessagesView'));
-const SubscriptionModal = lazy(() => import('./components/SubscriptionModal'));
-const PaymentModal = lazy(() => import('./components/PaymentModal'));
-const FamilyPortalView = lazy(() => import('./components/FamilyPortalView'));
-const CommunityView = lazy(() => import('./components/CommunityView'));
-const ProgressionView = lazy(() => import('./components/ProgressionView'));
-const NotificationsView = lazy(() => import('./components/NotificationsView'));
-const ReferralView = lazy(() => import('./components/ReferralView'));
-const AuthModal = lazy(() => import('./components/AuthModal'));
-const WelcomeScreen = lazy(() => import('./components/WelcomeScreen'));
-const ProfileDetailModal = lazy(() => import('./components/ProfileDetailModal'));
-const ReferralPopupModal = lazy(() => import('./components/ReferralPopupModal'));
+const lazyRetry = <T extends React.ComponentType<any>>(
+    importer: () => Promise<{ default: T }>
+) => {
+    return () =>
+        importer().catch((error) => {
+            const message = String(error?.message || '');
+            const isDynamicChunkError =
+                message.includes('Failed to fetch dynamically imported module') ||
+                message.includes('Importing a module script failed') ||
+                message.includes('Loading chunk');
+
+            if (isDynamicChunkError && typeof window !== 'undefined') {
+                const reloadKey = 'dmb_chunk_reload_once';
+                const alreadyReloaded = sessionStorage.getItem(reloadKey) === '1';
+                if (!alreadyReloaded) {
+                    sessionStorage.setItem(reloadKey, '1');
+                    window.location.reload();
+                    return new Promise<never>(() => {});
+                }
+            }
+
+            throw error;
+        });
+};
+
+const RightSidebar = lazy(lazyRetry(() => import('./components/RightSidebar')));
+const SettingsView = lazy(lazyRetry(() => import('./components/SettingsView')));
+const OnboardingModal = lazy(lazyRetry(() => import('./components/OnboardingModal')));
+const VerificationModal = lazy(lazyRetry(() => import('./components/VerificationModal')));
+const ProfileEditView = lazy(lazyRetry(() => import('./components/ProfileEditView')));
+const DiscoveryView = lazy(lazyRetry(() => import('./components/DiscoveryView')));
+const ProposalModal = lazy(lazyRetry(() => import('./components/ProposalModal')));
+const DeclineModal = lazy(lazyRetry(() => import('./components/DeclineModal')));
+const MessagesView = lazy(lazyRetry(() => import('./components/MessagesView')));
+const SubscriptionModal = lazy(lazyRetry(() => import('./components/SubscriptionModal')));
+const PremiumMessagingModal = lazy(lazyRetry(() => import('./components/PremiumMessagingModal')));
+const PaymentModal = lazy(lazyRetry(() => import('./components/PaymentModal')));
+const FamilyPortalView = lazy(lazyRetry(() => import('./components/FamilyPortalView')));
+const CommunityView = lazy(lazyRetry(() => import('./components/CommunityView')));
+const ProgressionView = lazy(lazyRetry(() => import('./components/ProgressionView')));
+const NotificationsView = lazy(lazyRetry(() => import('./components/NotificationsView')));
+const ReferralView = lazy(lazyRetry(() => import('./components/ReferralView')));
+const AuthModal = lazy(lazyRetry(() => import('./components/AuthModal')));
+const WelcomeScreen = lazy(lazyRetry(() => import('./components/WelcomeScreen')));
+const ProfileDetailModal = lazy(lazyRetry(() => import('./components/ProfileDetailModal')));
+const ReferralPopupModal = lazy(lazyRetry(() => import('./components/ReferralPopupModal')));
 const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://api.doctormarriagebureau.com.pk';
 const DEFAULT_AVATAR = `${API_BASE}/assets/img/avatar-place.png`;
 
@@ -98,9 +124,17 @@ const App: React.FC = () => {
 
     // Billing & Subscription State
     const [showSubscription, setShowSubscription] = useState(false);
+    const [showPremiumMessagingModal, setShowPremiumMessagingModal] = useState(false);
     const [checkoutItem, setCheckoutItem] = useState<CheckoutItem | null>(null);
     const [appliedCouponCode, setAppliedCouponCode] = useState<string | null>(null);
     const [profileTargetSection, setProfileTargetSection] = useState<string | null>(null);
+    const isPremiumMessagingMember = Number(user?.membership) === 2;
+    const mustChangePassword = isAuthenticated && Boolean(Number(user?.must_change_password ?? 0));
+    const [forcePasswordOld, setForcePasswordOld] = useState('');
+    const [forcePasswordNew, setForcePasswordNew] = useState('');
+    const [forcePasswordConfirm, setForcePasswordConfirm] = useState('');
+    const [forcePasswordSubmitting, setForcePasswordSubmitting] = useState(false);
+    const [forcePasswordError, setForcePasswordError] = useState('');
     const [unreadNotifCount, setUnreadNotifCount] = useState(0);
     const refreshInFlightRef = useRef<Promise<void> | null>(null);
     const lastRefreshAtRef = useRef<number>(0);
@@ -362,6 +396,13 @@ const scheduleVerificationPrompt = () => {
 
 useEffect(() => {
     if (isAuthenticated) {
+        if (mustChangePassword) {
+            setGateState('gateUnlocked');
+            setShowOnboarding(false);
+            setShowVerificationPrompt(false);
+            setIsIdentityVerified(true);
+            return;
+        }
         refreshCoreData({ force: true });
         evaluateGate();
     } else {
@@ -370,7 +411,7 @@ useEffect(() => {
         setShowVerificationPrompt(false);
         setIsIdentityVerified(false);
     }
-}, [isAuthenticated]);
+}, [isAuthenticated, mustChangePassword]);
 
 useEffect(() => {
     const next: Record<string, CanonicalInterestState> = {};
@@ -463,6 +504,7 @@ useEffect(() => {
     };
 }, [isAuthenticated, gateState]);
 
+
 useEffect(() => {
     if (!isAuthenticated) return;
 
@@ -484,6 +526,15 @@ useEffect(() => {
     };
 }, [isAuthenticated]);
 
+    const openPremiumMessagingModal = () => {
+        setShowPremiumMessagingModal(true);
+    };
+
+    const handleUpgradeMessaging = () => {
+        setShowPremiumMessagingModal(false);
+        setShowSubscription(true);
+    };
+
     const handleSelectPlan = (id: number, name: string, amount: number) => {
         setShowSubscription(false);
         setCheckoutItem({ id, name, amount, type: 'package' });
@@ -502,6 +553,39 @@ useEffect(() => {
         await logout();
         setCurrentView('dashboard');
     }
+
+    const handleForcedPasswordChange = async () => {
+        if (!forcePasswordOld || !forcePasswordNew || !forcePasswordConfirm) {
+            setForcePasswordError('Please fill all password fields.');
+            return;
+        }
+        if (forcePasswordNew.length < 8) {
+            setForcePasswordError('New password must be at least 8 characters.');
+            return;
+        }
+        if (forcePasswordNew !== forcePasswordConfirm) {
+            setForcePasswordError('New password and confirm password do not match.');
+            return;
+        }
+
+        try {
+            setForcePasswordSubmitting(true);
+            setForcePasswordError('');
+            await api.post('/member/change/password', {
+                old_password: forcePasswordOld,
+                password: forcePasswordNew,
+                password_confirmation: forcePasswordConfirm,
+            });
+            await checkAuth();
+            setForcePasswordOld('');
+            setForcePasswordNew('');
+            setForcePasswordConfirm('');
+        } catch (error: any) {
+            setForcePasswordError(error?.response?.data?.message || 'Failed to update password.');
+        } finally {
+            setForcePasswordSubmitting(false);
+        }
+    };
 
     const handleAcceptInterest = async (interestId?: number) => {
         if (!interestId) return;
@@ -529,13 +613,14 @@ useEffect(() => {
     const handleNavigate = (view: string) => {
         if (view === 'signout') {
             handleSignOut();
-        } else {
-            setCurrentView(view);
-            // Push state to browser history to enable back button
-            window.history.pushState({ view }, '', window.location.pathname);
-            // Keep navigation light to preserve SPA responsiveness
-            fetchNotificationCount();
+            return;
         }
+
+        setCurrentView(view);
+        // Push state to browser history to enable back button
+        window.history.pushState({ view }, '', window.location.pathname);
+        // Keep navigation light to preserve SPA responsiveness
+        fetchNotificationCount();
         setIsMobileMenuOpen(false); // Close mobile menu on navigate
     };
 
@@ -588,6 +673,49 @@ useEffect(() => {
     return (
         <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID_PLACEHOLDER"}>
             <div className="flex h-screen w-full bg-background-light overflow-hidden">
+                {mustChangePassword && (
+                    <div className="fixed inset-0 z-[120] bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
+                        <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-6">
+                            <h2 className="text-xl font-bold text-slate-900 mb-2">Change Password Required</h2>
+                            <p className="text-sm text-slate-600 mb-4">
+                                For security, please change your password to continue.
+                            </p>
+                            {forcePasswordError && (
+                                <div className="mb-3 rounded-lg bg-red-50 text-red-700 text-sm px-3 py-2">{forcePasswordError}</div>
+                            )}
+                            <div className="space-y-3">
+                                <input
+                                    type="password"
+                                    value={forcePasswordOld}
+                                    onChange={(e) => setForcePasswordOld(e.target.value)}
+                                    placeholder="Current password"
+                                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm"
+                                />
+                                <input
+                                    type="password"
+                                    value={forcePasswordNew}
+                                    onChange={(e) => setForcePasswordNew(e.target.value)}
+                                    placeholder="New password"
+                                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm"
+                                />
+                                <input
+                                    type="password"
+                                    value={forcePasswordConfirm}
+                                    onChange={(e) => setForcePasswordConfirm(e.target.value)}
+                                    placeholder="Confirm new password"
+                                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm"
+                                />
+                            </div>
+                            <button
+                                onClick={handleForcedPasswordChange}
+                                disabled={forcePasswordSubmitting}
+                                className="mt-4 w-full bg-primary text-white rounded-xl py-2.5 text-sm font-semibold disabled:opacity-60"
+                            >
+                                {forcePasswordSubmitting ? 'Updating...' : 'Update Password'}
+                            </button>
+                        </div>
+                    </div>
+                )}
                 {/* Mobile Sidebar Overlay */}
                 <AnimatePresence>
                     {isMobileMenuOpen && (
@@ -613,7 +741,7 @@ useEffect(() => {
                             onNavigate={handleNavigate}
                             dataSyncVersion={dataSyncVersion}
                             onUpgrade={() => {
-                                setShowSubscription(true);
+                                openPremiumMessagingModal();
                                 setIsMobileMenuOpen(false);
                             }}
                             onCloseMobile={() => setIsMobileMenuOpen(false)}
@@ -868,7 +996,7 @@ useEffect(() => {
                                                                     {isApproved && (
                                                                         <motion.button
                                                                             whileTap={{ scale: 0.9 }}
-                                                                            onClick={() => setCurrentView('messages')}
+                                                                            onClick={() => handleNavigate('messages')}
                                                                             className="flex items-center gap-1.5 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold hover:bg-emerald-100 transition-colors"
                                                                         >
                                                                             {t('dashboard.message')}
@@ -909,7 +1037,7 @@ useEffect(() => {
                                                                 {isApproved && (
                                                                     <motion.button
                                                                         whileTap={{ scale: 0.9 }}
-                                                                        onClick={() => setCurrentView('messages')}
+                                                                        onClick={() => handleNavigate('messages')}
                                                                         className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold hover:bg-emerald-100 transition-colors"
                                                                     >
                                                                         {t('dashboard.message')}
@@ -948,7 +1076,7 @@ useEffect(() => {
                                     onDataChanged={refreshCoreData}
                                 />
                             ) : currentView === 'messages' ? (
-                                <MessagesView />
+                                <MessagesView onSubscriptionRequired={() => { setCurrentView('discovery'); }} />
                             ) : (
                                 <DiscoveryView
                                     initialTab={currentView === 'agent_picks' ? 'agent' : 'all'}
@@ -1042,6 +1170,18 @@ useEffect(() => {
                                     upsertProposalState(profileId, 'sent_pending', 120000);
                                     refreshCoreData({ force: true });
                                 }}
+                            />
+                        </Suspense>
+                    )}
+                </AnimatePresence>
+
+                <AnimatePresence>
+                    {showPremiumMessagingModal && (
+                        <Suspense fallback={null}>
+                            <PremiumMessagingModal
+                                open={showPremiumMessagingModal}
+                                onClose={() => setShowPremiumMessagingModal(false)}
+                                onUpgrade={handleUpgradeMessaging}
                             />
                         </Suspense>
                     )}
@@ -1177,4 +1317,3 @@ useEffect(() => {
 };
 
 export default App;
-

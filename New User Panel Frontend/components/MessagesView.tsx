@@ -48,7 +48,15 @@ const formatMessageTime = (dateStr: string) => {
   }
 };
 
-const MessagesView: React.FC = () => {
+interface MessagesViewProps {
+  onSubscriptionRequired?: () => void;
+}
+
+const isSubscriptionRequiredError = (error: any): boolean => {
+  return error?.response?.status === 403 && error?.response?.data?.code === 'SUBSCRIPTION_REQUIRED';
+};
+
+const MessagesView: React.FC<MessagesViewProps> = ({ onSubscriptionRequired }) => {
   const { t } = useTranslation();
   const { user } = useAuthStore();
 
@@ -286,7 +294,11 @@ const MessagesView: React.FC = () => {
       if (Array.isArray(data)) {
         setThreads(data);
       }
-    } catch (error) {
+    } catch (error: any) {
+      if (isSubscriptionRequiredError(error)) {
+        onSubscriptionRequired?.();
+        return;
+      }
       console.error('Failed to fetch chat list', error);
       // Keep existing threads on failure — do NOT clear state
     } finally {
@@ -305,7 +317,11 @@ const MessagesView: React.FC = () => {
       if (data) {
         setActiveChatData(data);
       }
-    } catch (error) {
+    } catch (error: any) {
+      if (isSubscriptionRequiredError(error)) {
+        onSubscriptionRequired?.();
+        return;
+      }
       console.error('Failed to fetch chat', error);
       // Keep existing chat data on failure — do NOT clear
     } finally {
@@ -370,7 +386,11 @@ const MessagesView: React.FC = () => {
         await fetchChat(selectedChatId);
       }
       await fetchThreads();
-    } catch (error) {
+    } catch (error: any) {
+      if (isSubscriptionRequiredError(error)) {
+        onSubscriptionRequired?.();
+        return;
+      }
       console.error('Failed to send message', error);
       await fetchChat(selectedChatId);
     } finally {
@@ -409,7 +429,11 @@ const MessagesView: React.FC = () => {
       });
       await fetchChat(selectedChatId);
       await fetchThreads();
-    } catch (error) {
+    } catch (error: any) {
+      if (isSubscriptionRequiredError(error)) {
+        onSubscriptionRequired?.();
+        return;
+      }
       console.error('Failed to share biodata', error);
     } finally {
       setSharingBiodata(false);

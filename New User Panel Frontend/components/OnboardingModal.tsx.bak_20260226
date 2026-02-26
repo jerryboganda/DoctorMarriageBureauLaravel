@@ -32,7 +32,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
     const [step, setStep] = useState(1);
     const totalSteps = STEPS.length;
     const onboardingTitleText = "Complete Profile";
-    const finishSetupText = t("modals.twoFactor.completeSetup");
+    const finishSetupText = t("settings.security.completeSetup");
 
     // All form data
     const [data, setData] = useState<any>({

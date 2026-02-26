@@ -224,6 +224,9 @@ class LoginController extends Controller
             return redirect()->route('admin.dashboard');
 
         } else {
+            if (auth()->user()->must_change_password == 1) {
+                return redirect()->route('member.change_password');
+            }
             if (auth()->user()->email_verified_at == null) {
                 return redirect()->route('otp.initiation');
             }

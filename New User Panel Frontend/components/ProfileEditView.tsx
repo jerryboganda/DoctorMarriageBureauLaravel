@@ -23,6 +23,46 @@ const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialTab }) => {
     const [saving, setSaving] = useState(false);
     const [qualityScore, setQualityScore] = useState<any | null>(null);
 
+    const normalizeMaritalStatuses = (raw: any): Array<{ id: string | number; name: string }> => {
+        const items = Array.isArray(raw) ? raw : [];
+        return items
+            .map((item: any) => {
+                const id = item?.id ?? item?.value ?? '';
+                const name = item?.name ?? item?.label ?? item?.value ?? '';
+                return { id, name: String(name).trim() };
+            })
+            .filter((item) => item.id !== '' && item.name !== '');
+    };
+
+    const fetchMaritalStatusesFallback = async (): Promise<Array<{ id: string | number; name: string }>> => {
+        try {
+            const res = await api.get('/member/maritial-status');
+            const payload = res?.data;
+            const candidates = [payload?.data, payload?.marital_statuses, payload];
+            for (const candidate of candidates) {
+                const normalized = normalizeMaritalStatuses(candidate);
+                if (normalized.length) return normalized;
+            }
+        } catch (e) {
+            console.error('Failed to fetch marital statuses fallback', e);
+        }
+        return [];
+    };
+
+    const emptyProfile = () => ({
+        basics: {},
+        lifestyle: {},
+        career: {},
+        family: {},
+        expectations: {},
+        media: {},
+        salaryRanges: [],
+        visibility: {},
+        optionSets: {
+            maritalStatuses: [],
+        },
+    });
+
     useEffect(() => {
         if (initialTab) {
             setActiveTab(initialTab);
@@ -42,12 +82,55 @@ const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialTab }) => {
             ]);
             const profileRes = results[0].status === 'fulfilled' ? results[0].value : null;
             const qualityRes = results[1].status === 'fulfilled' ? results[1].value : null;
-            if (profileRes?.data) {
-                setProfileData(profileRes.data);
+            const payload = profileRes?.data ?? {};
+            const sourceOptionSets = payload?.optionSets ?? {};
+            let maritalStatuses = normalizeMaritalStatuses(sourceOptionSets?.maritalStatuses || sourceOptionSets?.marital_statuses);
+            if (!maritalStatuses.length) {
+                maritalStatuses = await fetchMaritalStatusesFallback();
             }
+
+            const normalizedProfile = {
+                ...emptyProfile(),
+                ...(payload && typeof payload === 'object' ? payload : {}),
+                basics: {
+                    ...emptyProfile().basics,
+                    ...(payload?.basics || {}),
+                },
+                lifestyle: {
+                    ...emptyProfile().lifestyle,
+                    ...(payload?.lifestyle || {}),
+                },
+                career: {
+                    ...emptyProfile().career,
+                    ...(payload?.career || {}),
+                },
+                family: {
+                    ...emptyProfile().family,
+                    ...(payload?.family || {}),
+                },
+                expectations: {
+                    ...emptyProfile().expectations,
+                    ...(payload?.expectations || {}),
+                },
+                media: {
+                    ...emptyProfile().media,
+                    ...(payload?.media || {}),
+                },
+                salaryRanges: Array.isArray(payload?.salaryRanges) ? payload.salaryRanges : [],
+                visibility: {
+                    ...emptyProfile().visibility,
+                    ...(payload?.visibility || {}),
+                },
+                optionSets: {
+                    ...(sourceOptionSets || {}),
+                    maritalStatuses,
+                },
+            };
+            setProfileData(normalizedProfile);
             setQualityScore(qualityRes?.data?.data ?? null);
         } catch (error) {
             console.error('Failed to fetch profile', error);
+            setProfileData(emptyProfile());
         } finally {
             setLoading(false);
         }

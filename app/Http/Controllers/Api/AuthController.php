@@ -149,13 +149,18 @@ class AuthController extends Controller
     {
         // Accept both 'email_or_phone' and 'email' for backward compatibility
         $identifier = $request->email_or_phone ?? $request->email ?? $request->phone;
+        $password = (string) ($request->password ?? '');
+
+        if (empty($identifier) || $password === '') {
+            return response()->json([
+                'result' => false,
+                'code' => 'MISSING_LOGIN_FIELDS',
+                'message' => 'Please enter both your email or phone and password.',
+                'user' => null,
+            ], 422);
+        }
 
         $normalizedPhone = PhoneUtility::normalize($identifier);
-
-        // Debug logging
-        \Log::info('=== SIGNIN ATTEMPT ===');
-        \Log::info('Identifier: ' . $identifier);
-        \Log::info('Normalized Phone: ' . $normalizedPhone);
 
         $user = User::where(function ($query) use ($identifier, $normalizedPhone) {
             $query->where('email', $identifier)
@@ -164,11 +169,16 @@ class AuthController extends Controller
         })->whereNull('deleted_at')->first();
 
         if ($user != null) {
-            \Log::info('User found: ID=' . $user->id . ', Email=' . $user->email . ', Phone=' . $user->phone);
-            \Log::info('Password hash in DB: ' . substr($user->password, 0, 20) . '...');
+            if (empty($user->password)) {
+                return response()->json([
+                    'result' => false,
+                    'code' => 'PASSWORD_NOT_SET',
+                    'message' => 'This account was created with social login. Please use Google login or ask admin to set a password for your account.',
+                    'user' => null
+                ], 401);
+            }
 
-            if (Hash::check($request->password, $user->password)) {
-                \Log::info('Password check PASSED');
+            if (Hash::check($password, $user->password)) {
                 $twoFactor = UserTwoFactorSetting::getOrCreate($user->id);
                 if ($twoFactor->is_enabled) {
                     $user->two_factor_pending = true;
@@ -186,11 +196,19 @@ class AuthController extends Controller
                 }
                 return $this->authResponse($user, $request);
             }
-            \Log::warning('Password check FAILED for user ID=' . $user->id);
-            return response()->json(['result' => false, 'message' => translate('Unauthorized'), 'user' => null], 401);
+            return response()->json([
+                'result' => false,
+                'code' => 'INVALID_PASSWORD',
+                'message' => 'The password you entered is incorrect. Please try again.',
+                'user' => null
+            ], 401);
         }
-        \Log::warning('No user found for identifier: ' . $identifier);
-        return response()->json(['result' => false, 'message' => translate('User not found'), 'user' => null], 401);
+        return response()->json([
+            'result' => false,
+            'code' => 'ACCOUNT_NOT_FOUND',
+            'message' => 'No account was found with this email or phone number.',
+            'user' => null
+        ], 401);
     }
 
     /**
@@ -242,7 +260,12 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             \Log::error('Social Login Error: ' . $e->getMessage());
             \Log::error('Social Login Stack: ' . $e->getTraceAsString());
-            return response()->json(['result' => false, 'message' => translate('Unauthorized: Invalid Token'), 'user' => null], 401);
+            return response()->json([
+                'result' => false,
+                'code' => 'INVALID_OR_EXPIRED_TOKEN',
+                'message' => 'Your login session is invalid or expired. Please sign in again.',
+                'user' => null
+            ], 401);
         }
 
         // 1. Try to find by Provider ID
@@ -354,6 +377,7 @@ class AuthController extends Controller
                 'blocked' => $user->blocked,
                 'deactivated' => $user->deactivated,
                 'approved' => $user->approved,
+                'must_change_password' => (bool) $user->must_change_password,
                 'email' => $user->email,
                 'birthday' => $age,
                 'height' => $user->physical_attributes ? $user->physical_attributes->height : 0,
@@ -605,7 +629,7 @@ class AuthController extends Controller
         }
 
         if (!$user) {
-            return $this->failure_message('User not found!!');
+            return $this->failure_message('No account was found with the provided details.');
         }
 
         if ($user->verification_code == $code) {
@@ -669,8 +693,9 @@ class AuthController extends Controller
     public function authData($user)
     {
         // $user = auth()->user();
-        $maritial_status = MaritalStatus::where('id', $user->member->marital_status_id)->first();
-        $age = Carbon::parse($user->member->birthday)->age;
+        $member = $user->member;
+        $maritial_status = $member ? MaritalStatus::where('id', $member->marital_status_id)->first() : null;
+        $age = ($member && !empty($member->birthday)) ? Carbon::parse($member->birthday)->age : null;
         return response()->json(
             [
                 'id' => $user->id,
@@ -682,6 +707,7 @@ class AuthController extends Controller
                 'blocked' => $user->blocked,
                 'deactivated' => $user->deactivated,
                 'approved' => $user->approved,
+                'must_change_password' => (bool) ($user->must_change_password ?? false),
                 'email' => $user->email,
                 'birthday' => $age,
                 'height' => $user->physical_attributes ? $user->physical_attributes->height : 0,

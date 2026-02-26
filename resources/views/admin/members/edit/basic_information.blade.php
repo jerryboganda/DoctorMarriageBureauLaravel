@@ -134,4 +134,50 @@
             <button type="submit" class="btn btn-primary btn-sm">{{translate('Update')}}</button>
         </div>
     </form>
+
+    <hr class="my-4">
+
+    <div class="border rounded p-3 bg-light">
+        <h6 class="mb-3">{{ translate('Set Login Password') }}</h6>
+        <div class="form-group row">
+            <div class="col-md-6">
+                <label class="d-block mb-1">{{ translate('Social Linked') }}</label>
+                <span class="badge badge-{{ !empty($member->provider_id) ? 'info' : 'secondary' }}">
+                    {{ !empty($member->provider_id) ? translate('Yes') : translate('No') }}
+                </span>
+            </div>
+            <div class="col-md-6">
+                <label class="d-block mb-1">{{ translate('Local Password Set') }}</label>
+                <span class="badge badge-{{ $member->hasUsablePassword() ? 'success' : 'warning' }}">
+                    {{ $member->hasUsablePassword() ? translate('Yes') : translate('No') }}
+                </span>
+            </div>
+        </div>
+
+        <form action="{{ route('members.set_password', $member->id) }}#basic_information" method="POST" autocomplete="off">
+            @csrf
+            <div class="form-group row">
+                <div class="col-md-6">
+                    <label>{{ translate('New Password') }} <span class="text-danger">*</span></label>
+                    <input type="password" name="new_password" class="form-control" placeholder="{{ translate('Enter password') }}" required>
+                    @error('new_password')
+                        <small class="form-text text-danger">{{ $message }}</small>
+                    @enderror
+                </div>
+                <div class="col-md-6">
+                    <label>{{ translate('Confirm Password') }} <span class="text-danger">*</span></label>
+                    <input type="password" name="new_password_confirmation" class="form-control" placeholder="{{ translate('Confirm password') }}" required>
+                    @error('new_password_confirmation')
+                        <small class="form-text text-danger">{{ $message }}</small>
+                    @enderror
+                </div>
+            </div>
+            <small class="text-muted d-block mb-3">
+                {{ translate('User will be forced to change this password at next login.') }}
+            </small>
+            <div class="text-right">
+                <button type="submit" class="btn btn-dark btn-sm">{{ translate('Set Password') }}</button>
+            </div>
+        </form>
+    </div>
 </div>

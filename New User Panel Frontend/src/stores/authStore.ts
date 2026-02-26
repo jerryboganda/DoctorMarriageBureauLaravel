@@ -16,6 +16,7 @@ interface User {
   avatar_original?: string;
   phone?: string;
   birthday?: number | string;
+  must_change_password?: boolean | number;
 }
 
 interface AuthState {

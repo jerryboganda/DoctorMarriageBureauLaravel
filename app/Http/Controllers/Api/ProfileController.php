@@ -188,7 +188,7 @@ class ProfileController extends Controller
         } else {
             return $this->failure_data($present_address);
 
-            // return $this->failure_message('No Data Found!!');
+            // return $this->failure_message('No information has been added for this section yet.');
         }
     }
     public function permanent_address()
@@ -199,7 +199,7 @@ class ProfileController extends Controller
                 'result' => true
             ]);
         } else {
-            // return $this->failure_message('No Data Found!!');
+            // return $this->failure_message('No information has been added for this section yet.');
             return $this->failure_data($permanent_address);
         }
     }
@@ -233,7 +233,7 @@ class ProfileController extends Controller
                 'result' => true
             ]);
         } else {
-            return $this->failure_message('No Data Found!!');
+            return $this->failure_message('No information has been added for this section yet.');
         }
     }
     public function physical_attributes_update(Request $request)
@@ -303,7 +303,7 @@ class ProfileController extends Controller
                 'result' => true
             ]);
         } else {
-            return $this->failure_message('No Data Found!!');
+            return $this->failure_message('No information has been added for this section yet.');
         }
     }
     public function hobbies_interest_update(Request $request)
@@ -333,7 +333,7 @@ class ProfileController extends Controller
                 'result' => true
             ]);
         } else {
-            return $this->failure_message('No Data Found!!');
+            return $this->failure_message('No information has been added for this section yet.');
         }
     }
     public function attitude_behavior_update(Request $request)
@@ -357,7 +357,7 @@ class ProfileController extends Controller
                 'result' => true
             ]);
         } else {
-            return $this->failure_message('No Data Found!!');
+            return $this->failure_message('No information has been added for this section yet.');
         }
     }
     public function residency_info_update(Request $request)
@@ -381,7 +381,7 @@ class ProfileController extends Controller
                 'result' => true
             ]);
         } else {
-            return $this->failure_message('No Data Found!!');
+            return $this->failure_message('No information has been added for this section yet.');
         }
     }
 
@@ -409,7 +409,7 @@ class ProfileController extends Controller
                 'result' => true
             ]);
         } else {
-            return $this->failure_message('No Data Found!!');
+            return $this->failure_message('No information has been added for this section yet.');
         }
     }
     public function life_style_update(Request $request)
@@ -433,7 +433,7 @@ class ProfileController extends Controller
                 'result' => true
             ]);
         } else {
-            // return $this->failure_message('No Data Found!!');
+            // return $this->failure_message('No information has been added for this section yet.');
             return $this->failure_data(auth()->user()->astrologies);
         }
     }
@@ -461,7 +461,7 @@ class ProfileController extends Controller
                 'result' => true
             ]);
         } else {
-            return $this->failure_message('No Data Found!!');
+            return $this->failure_message('No information has been added for this section yet.');
         }
     }
 
@@ -486,7 +486,7 @@ class ProfileController extends Controller
                 'result' => true
             ]);
         } else {
-            return $this->failure_message('No Data Found!!');
+            return $this->failure_message('No information has been added for this section yet.');
         }
     }
 
@@ -546,7 +546,14 @@ class ProfileController extends Controller
 
         if (Hash::check($request->old_password, $user->password)) {
             $user->password = Hash::make($request->password);
+            $user->must_change_password = 0;
             $user->save();
+            $currentTokenId = auth()->user()?->currentAccessToken()?->id;
+            if ($currentTokenId) {
+                $user->tokens()->where('id', '!=', $currentTokenId)->delete();
+            } else {
+                $user->tokens()->delete();
+            }
             return $this->success_message('Passwoed Updated successfully.');
         }
 
@@ -732,7 +739,7 @@ class ProfileController extends Controller
         if ($user->save()) {
             return $this->success_message('Contact Info has been updated successfully');
         } else {
-            return $this->failure_message('Something went wrong');
+            return $this->failure_message('We could not update your contact information right now. Please try again.');
         }
     }
 
@@ -827,7 +834,10 @@ class ProfileController extends Controller
     {
         $user = auth()->user();
         if (!$user) {
-            return response()->json(['result' => false, 'message' => 'Unauthorized'], 401);
+            return response()->json([
+                'result' => false,
+                'message' => 'Your session has expired. Please sign in again.',
+            ], 401);
         }
 
         $member = $user->member;
@@ -1081,7 +1091,10 @@ class ProfileController extends Controller
     {
         $user = auth()->user();
         if (!$user) {
-            return response()->json(['result' => false, 'message' => 'Unauthorized'], 401);
+            return response()->json([
+                'result' => false,
+                'message' => 'Your session has expired. Please sign in again.',
+            ], 401);
         }
 
         $member = $user->member;
@@ -1791,7 +1804,10 @@ class ProfileController extends Controller
     {
         $user = auth()->user();
         if (!$user) {
-            return response()->json(['result' => false, 'message' => 'Unauthorized'], 401);
+            return response()->json([
+                'result' => false,
+                'message' => 'Your session has expired. Please sign in again.',
+            ], 401);
         }
 
         // Return user with all necessary related models, just like how the frontend uses it or how get_full_profile_react provides it.
@@ -1844,6 +1860,24 @@ class ProfileController extends Controller
             }
         };
 
+        $maritalStatuses = MaritalStatus::orderBy('name')->get(['id', 'name']);
+        if ($maritalStatuses->isEmpty()) {
+            // Safety net: ensure onboarding always has usable marital-status options.
+            foreach (['Single', 'Divorced', 'Widowed', 'Separated'] as $defaultStatus) {
+                MaritalStatus::firstOrCreate(['name' => $defaultStatus]);
+            }
+            $maritalStatuses = MaritalStatus::orderBy('name')->get(['id', 'name']);
+        }
+
+        $maritalStatusOptions = $maritalStatuses->map(function ($item) {
+            return [
+                'id' => $item->id,
+                'name' => $item->name,
+                'value' => $item->name, // Added value for compatibility
+                'label' => $item->name, // Added label for compatibility
+            ];
+        })->values()->toArray();
+
         return [
             'genders' => $optionGroup('gender'),
             'marriageTimeline' => $optionGroup('marriage_timeline'),
@@ -1861,14 +1895,9 @@ class ProfileController extends Controller
             'personalityTags' => $optionGroup('personality_tags'),
             'personalValues' => $optionGroup('personal_values'),
             'communityValues' => $optionGroup('community_values'),
-            'maritalStatuses' => MaritalStatus::orderBy('name')->get(['id', 'name'])->map(function ($item) {
-                return [
-                    'id' => $item->id,
-                    'name' => $item->name,
-                    'value' => $item->name, // Added value for compatibility
-                    'label' => $item->name, // Added label for compatibility
-                ];
-            })->values()->toArray(),
+            // Keep both keys for backward compatibility with older frontend builds.
+            'maritalStatuses' => $maritalStatusOptions,
+            'marital_statuses' => $maritalStatusOptions,
             'religions' => Religion::orderBy('name')->get(['id', 'name'])->map(function ($item) {
                 return [
                     'id' => $item->id,
@@ -1914,3 +1943,4 @@ class ProfileController extends Controller
         ];
     }
 }
+

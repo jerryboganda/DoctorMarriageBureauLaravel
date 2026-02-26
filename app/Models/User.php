@@ -76,9 +76,15 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'must_change_password' => 'boolean',
         // phone_verified_at is handled by accessor getPhoneVerifiedAtAttribute()
         // It returns a Carbon instance from verification_codes.updated_at
     ];
+
+    public function hasUsablePassword(): bool
+    {
+        return !empty($this->password) && strlen((string) $this->password) >= 40;
+    }
 
     public function member()
     {

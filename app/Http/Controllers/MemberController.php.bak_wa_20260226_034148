@@ -127,7 +127,6 @@ class MemberController extends Controller
 
 
         $members = $members->paginate(10);
-        $this->appendWhatsappMetadataToMembers($members, 'general');
         return view('admin.members.index', compact('members', 'sort_search'));
     }
 
@@ -806,7 +805,6 @@ class MemberController extends Controller
         }
 
         $members = $members->latest()->paginate(15);
-        $this->appendWhatsappMetadataToMembers($members, 'verification');
         return view('admin.members.verification_requests', compact('members', 'sort_search', 'filter_status'));
     }
 
@@ -942,106 +940,8 @@ class MemberController extends Controller
 
     // Finally paginate
     $members = $query->paginate(10);
-    $this->appendWhatsappMetadataToMembers($members, 'general');
 
         return view('admin.members.member_types', compact('members', 'sort_search', 'type'));
-    }
-
-    private function appendWhatsappMetadataToMembers($members, string $context = 'general'): void
-    {
-        if (!method_exists($members, 'getCollection')) {
-            return;
-        }
-
-        $members->getCollection()->transform(function ($member) use ($context) {
-            $whatsapp = $this->buildWhatsappLink($member, $context);
-
-            $member->whatsapp_available = $whatsapp['available'];
-            $member->whatsapp_link = $whatsapp['link'];
-            $member->whatsapp_unavailable_reason = $whatsapp['reason'];
-
-            return $member;
-        });
-    }
-
-    private function normalizeWhatsappPhone(?string $rawPhone): ?string
-    {
-        $phone = trim((string) $rawPhone);
-        if ($phone === '') {
-            return null;
-        }
-
-        $phone = str_replace([' ', '-', '(', ')', '.'], '', $phone);
-        if (strpos($phone, '00') === 0) {
-            $phone = '+' . substr($phone, 2);
-        }
-
-        $normalized = null;
-        if (strpos($phone, '+') === 0) {
-            $digits = preg_replace('/\D+/', '', substr($phone, 1));
-            $normalized = $digits !== '' ? ('+' . $digits) : null;
-        } else {
-            $digits = preg_replace('/\D+/', '', $phone);
-
-            if (strlen($digits) === 11 && strpos($digits, '03') === 0) {
-                $normalized = '+92' . substr($digits, 1);
-            } elseif (strlen($digits) === 10 && strpos($digits, '3') === 0) {
-                $normalized = '+92' . $digits;
-            } elseif (strlen($digits) === 11 && strpos($digits, '0') === 0) {
-                $normalized = '+92' . substr($digits, 1);
-            } elseif (strlen($digits) === 10) {
-                $normalized = '+92' . $digits;
-            } elseif (strlen($digits) > 10 && strlen($digits) <= 15) {
-                $normalized = '+' . $digits;
-            }
-        }
-
-        if ($normalized === null) {
-            return null;
-        }
-
-        $waDigits = ltrim($normalized, '+');
-        if (!ctype_digit($waDigits)) {
-            return null;
-        }
-
-        $length = strlen($waDigits);
-        if ($length < 10 || $length > 15) {
-            return null;
-        }
-
-        return $waDigits;
-    }
-
-    private function buildWhatsappLink(User $member, string $context = 'general'): array
-    {
-        $name = trim(($member->first_name ?? '') . ' ' . ($member->last_name ?? ''));
-        if ($name === '') {
-            $name = translate('Member');
-        }
-
-        $code = $member->code ?? (string) $member->id;
-
-        $message = $context === 'verification'
-            ? "Hello {$name}, this is Doctor Marriage Bureau verification team. Your submitted verification document(s) for profile ({$code}) need correction. Please upload clear and correct documents in your Complete Profile section."
-            : "Hello {$name}, this is Doctor Marriage Bureau support team. We are contacting you regarding your profile ({$code}). Please reply here for assistance.";
-
-        $waDigits = $this->normalizeWhatsappPhone($member->phone);
-        if ($waDigits === null) {
-            return [
-                'available' => false,
-                'link' => null,
-                'reason' => translate('WhatsApp unavailable: invalid or missing phone number'),
-                'message' => $message,
-            ];
-        }
-
-        return [
-            'available' => true,
-            'link' => 'https://web.whatsapp.com/send?phone=' . $waDigits . '&text=' . urlencode($message),
-            'reason' => null,
-            'message' => $message,
-        ];
     }
 
     private function applyMemberSearch($query, string $search)

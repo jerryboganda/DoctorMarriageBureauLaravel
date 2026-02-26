@@ -6,6 +6,7 @@ use App\Http\Middleware\AppLanguage;
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
 use App\Http\Middleware\IsAdmin;
 use App\Http\Middleware\IsMember;
+use App\Http\Middleware\ApiMessagingEntitlement;
 
 class Kernel extends HttpKernel
 {
@@ -78,6 +79,8 @@ class Kernel extends HttpKernel
         'permission' => \Spatie\Permission\Middlewares\PermissionMiddleware::class,
         'role_or_permission' => \Spatie\Permission\Middlewares\RoleOrPermissionMiddleware::class,
         'app_language' => AppLanguage::class,
+        'api_premium_messaging' => ApiMessagingEntitlement::class,
+        'api_require_password_change' => \App\Http\Middleware\RequirePasswordChangeApi::class,
     ];
 
     /**
