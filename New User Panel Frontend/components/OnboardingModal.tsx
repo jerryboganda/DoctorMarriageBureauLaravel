@@ -396,6 +396,8 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                         education: data.education,
                         institution: data.institution,
                         incomeRangeId: data.incomeRangeId || null,
+                        jobTitleId: data.jobTitleId || null,
+                        specialityId: data.specialityId || null,
                         careerPresent: true,
                         isHighestDegree: true,
                     },
