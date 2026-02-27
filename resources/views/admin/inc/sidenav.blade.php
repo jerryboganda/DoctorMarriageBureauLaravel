@@ -383,6 +383,11 @@
                                 <span class="aiz-side-nav-text">{{ translate('Newsletter') }}</span>
                             </a>
                         </li>
+                        <li class="aiz-side-nav-item">
+                            <a href="{{ route('admin.profile_completion_reminders.index') }}" class="aiz-side-nav-link {{ areActiveRoutes(['admin.profile_completion_reminders.index']) }}">
+                                <span class="aiz-side-nav-text">{{ translate('Profile Reminders') }}</span>
+                            </a>
+                        </li>
                     </ul>
                 </li>
                 @endcan

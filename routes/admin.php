@@ -41,6 +41,7 @@ use App\Http\Controllers\UpdateController;
 use App\Http\Controllers\ProfileOptionValueController;
 use App\Http\Controllers\JobTitleController;
 use App\Http\Controllers\SpecialityController;
+use App\Http\Controllers\ProfileCompletionReminderController;
 use App\Http\Controllers\WalletController;
 
 /*
@@ -304,6 +305,14 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin']], function 
         Route::get('/newsletter', 'index')->name('newsletters.index');
         Route::post('/newsletter/send', 'send')->name('newsletters.send');
         Route::post('/newsletter/test/smtp', 'testEmail')->name('test.smtp');
+    });
+
+    // Profile Completion Reminders
+    Route::controller(ProfileCompletionReminderController::class)->prefix('profile-completion-reminders')->group(function () {
+        Route::get('/', 'index')->name('admin.profile_completion_reminders.index');
+        Route::post('/update', 'update')->name('admin.profile_completion_reminders.update');
+        Route::post('/send-now', 'sendNow')->name('admin.profile_completion_reminders.send_now');
+        Route::post('/clear-logs', 'clearLogs')->name('admin.profile_completion_reminders.clear_logs');
     });
 
     // Language

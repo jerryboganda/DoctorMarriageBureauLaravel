@@ -33,4 +33,23 @@ api.interceptors.request.use((config) => {
   return Promise.reject(error);
 });
 
+// Response interceptor: auto-logout on deactivated/blocked account
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const data = error?.response?.data;
+    const code = data?.code;
+    if (code === 'ACCOUNT_DEACTIVATED' || code === 'ACCOUNT_BLOCKED' || data?.status === 'deactivated' || data?.status === 'blocked') {
+      localStorage.removeItem('auth_token');
+      const message = data?.message || 'Your account has been deactivated. Please contact support.';
+      // Redirect to login with error message
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('auth_error', message);
+        window.location.href = '/';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default api;

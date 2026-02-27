@@ -749,6 +749,11 @@ class MemberController extends Controller
         $user->deactivated = $user->deactivated ? 0 : 1;
         $user->save();
 
+        // If deactivated, revoke all API tokens so they are immediately logged out
+        if ($user->deactivated == 1) {
+            $user->tokens()->delete();
+        }
+
         $status = $user->deactivated ? translate('deactivated') : translate('activated');
         flash(translate('Member has been ') . $status . ' ' . translate('successfully!'))->success();
         return back();

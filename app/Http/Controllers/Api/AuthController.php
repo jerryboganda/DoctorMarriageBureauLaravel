@@ -189,6 +189,26 @@ class AuthController extends Controller
             }
 
             if (Hash::check($password, $user->password)) {
+                // Block deactivated users from logging in
+                if ($user->deactivated == 1) {
+                    return response()->json([
+                        'result' => false,
+                        'code' => 'ACCOUNT_DEACTIVATED',
+                        'message' => 'Your account has been deactivated by the administrator. Please contact support for assistance.',
+                        'user' => null
+                    ], 403);
+                }
+
+                // Block blocked users from logging in
+                if ($user->blocked == 1) {
+                    return response()->json([
+                        'result' => false,
+                        'code' => 'ACCOUNT_BLOCKED',
+                        'message' => 'Your account has been blocked. Please contact support for assistance.',
+                        'user' => null
+                    ], 403);
+                }
+
                 $twoFactor = UserTwoFactorSetting::getOrCreate($user->id);
                 if ($twoFactor->is_enabled) {
                     $user->two_factor_pending = true;
@@ -298,6 +318,22 @@ class AuthController extends Controller
 
         if ($user) {
             // Login existing user
+            if ($user->deactivated == 1) {
+                return response()->json([
+                    'result' => false,
+                    'code' => 'ACCOUNT_DEACTIVATED',
+                    'message' => 'Your account has been deactivated by the administrator. Please contact support for assistance.',
+                    'user' => null
+                ], 403);
+            }
+            if ($user->blocked == 1) {
+                return response()->json([
+                    'result' => false,
+                    'code' => 'ACCOUNT_BLOCKED',
+                    'message' => 'Your account has been blocked. Please contact support for assistance.',
+                    'user' => null
+                ], 403);
+            }
             if ($user->approved == 0) {
                 return response()->json(['result' => false, 'message' => translate('Please wait for admin approval'), 'user' => null], 401);
             }
