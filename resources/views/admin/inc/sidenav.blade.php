@@ -388,11 +388,6 @@
                                 <span class="aiz-side-nav-text">{{ translate('Profile Reminders') }}</span>
                             </a>
                         </li>
-                        <li class="aiz-side-nav-item">
-                            <a href="{{ route('newsletters.index') }}" class="aiz-side-nav-link {{ areActiveRoutes(['newsletters.index']) }}">
-                                <span class="aiz-side-nav-text">{{ translate('Newsletter') }}</span>
-                            </a>
-                        </li>
                     </ul>
                 </li>
                 @endcan
@@ -774,33 +769,7 @@
                 </li>
                 @endif
 
-                <!-- System -->
-                @if (auth()->user()->can('system_update') ||
-                auth()->user()->can('server_status'))
-                <li class="aiz-side-nav-item">
-                    <a href="#" class="aiz-side-nav-link">
-                        <i class="las la-dharmachakra aiz-side-nav-icon"></i>
-                        <span class="aiz-side-nav-text">{{ translate('System') }}</span>
-                        <span class="aiz-side-nav-arrow"></span>
-                    </a>
-                    <ul class="aiz-side-nav-list level-2">
-                        @can('system_update')
-                        <li class="aiz-side-nav-item">
-                            <a href="{{ route('system_update') }}" class="aiz-side-nav-link">
-                                <span class="aiz-side-nav-text">{{ translate('Update') }}</span>
-                            </a>
-                        </li>
-                        @endcan
-                        @can('server_status')
-                        <li class="aiz-side-nav-item">
-                            <a href="{{ route('system_server') }}" class="aiz-side-nav-link">
-                                <span class="aiz-side-nav-text">{{ translate('Server status') }}</span>
-                            </a>
-                        </li>
-                        @endcan
-                    </ul>
-                </li>
-                @endif
+
 
                 <!-- Addon Manager -->
                 @can('addon_manager')

@@ -22,7 +22,6 @@ use App\Http\Controllers\MaritalStatusController;
 use App\Http\Controllers\MemberBulkAddController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\MemberLanguageController;
-use App\Http\Controllers\NewsletterController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnBehalfController;
 use App\Http\Controllers\PackageController;
@@ -301,12 +300,8 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin']], function 
     ]);
     Route::post('/email-templates/update', [EmailTemplateController::class, 'update'])->name('email-templates.update');
 
-    // Marketing — Bulk Notifications (replaces old newsletter)
-    Route::controller(NewsletterController::class)->group(function () {
-        Route::get('/newsletter', 'index')->name('newsletters.index');
-        Route::post('/newsletter/send', 'send')->name('newsletters.send');
-        Route::post('/newsletter/test/smtp', 'testEmail')->name('test.smtp');
-    });
+    // SMTP Test (moved from newsletter)
+    Route::post('/test/smtp', [SettingController::class, 'testSmtp'])->name('test.smtp');
 
     Route::controller(BulkNotificationController::class)->prefix('bulk-notifications')->group(function () {
         Route::get('/', 'index')->name('admin.bulk_notifications.index');
@@ -365,8 +360,7 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin']], function 
         Route::get('/verification/form', 'member_verification_form')->name('member_verification_form.index');
         Route::post('/verification/form/update', 'member_verification_form_update')->name('member_verification_form.update');
 
-        Route::get('/system/update', 'system_update')->name('system_update');
-        Route::get('/system/server-status', 'system_server')->name('system_server');
+
     });
 
     Route::resource('/additional-attributes', AdditionalAttributeController::class)->names([
