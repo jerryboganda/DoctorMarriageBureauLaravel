@@ -738,9 +738,15 @@ class AuthController extends Controller
 
     public function authData($user)
     {
-        // $user = auth()->user();
+        if (!$user) {
+            return response()->json([
+                'result' => false,
+                'message' => translate('Session expired. Please log in again.'),
+            ], 401);
+        }
+
         $member = $user->member;
-        $maritial_status = $member ? MaritalStatus::where('id', $member->marital_status_id)->first() : null;
+        $maritial_status = ($member && $member->marital_status_id) ? MaritalStatus::where('id', $member->marital_status_id)->first() : null;
         $age = ($member && !empty($member->birthday)) ? Carbon::parse($member->birthday)->age : null;
         return response()->json(
             [
@@ -756,8 +762,8 @@ class AuthController extends Controller
                 'must_change_password' => (bool) ($user->must_change_password ?? false),
                 'email' => $user->email,
                 'birthday' => $age,
-                'height' => $user->physical_attributes ? $user->physical_attributes->height : 0,
-                'marital_status_id' => $maritial_status ? new MaritialStatusResource($maritial_status) : new MaritialStatusResource($maritial_status),
+                'height' => ($user->physical_attributes) ? $user->physical_attributes->height : 0,
+                'marital_status_id' => $maritial_status ? new MaritialStatusResource($maritial_status) : null,
                 'avatar' => uploaded_asset($user->photo) ?? '',
                 'avatar_original' => uploaded_asset($user->photo) ?? '',
                 'phone' => $user->phone ?? '',
@@ -780,15 +786,31 @@ class AuthController extends Controller
 
     public function getUserByToken()
     {
-        $token = PersonalAccessToken::findToken(request()->bearerToken());
-        $user = null;
-        if ($token) {
-            $user = $token->tokenable;
-            return $this->authData($user);
+        $bearerToken = request()->bearerToken();
+        if (!$bearerToken) {
+            return response()->json([
+                'result' => false,
+                'message' => translate('No authentication token provided. Please log in again.'),
+            ], 401);
         }
-        return response()->json(
-            ['user' => $user]
-        );
+
+        $token = PersonalAccessToken::findToken($bearerToken);
+        if (!$token) {
+            return response()->json([
+                'result' => false,
+                'message' => translate('Your session has expired. Please log in again.'),
+            ], 401);
+        }
+
+        $user = $token->tokenable;
+        if (!$user) {
+            return response()->json([
+                'result' => false,
+                'message' => translate('Your account could not be found. It may have been deleted. Please contact support.'),
+            ], 401);
+        }
+
+        return $this->authData($user);
     }
 
     public function update_device_token(Request $request)

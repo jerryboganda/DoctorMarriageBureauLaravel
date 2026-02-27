@@ -1093,7 +1093,9 @@
       "proposalAcceptedDesc": "Great news! {{name}} has accepted your proposal. You can now start a conversation.",
       "receivedProposal": "Proposal Received",
       "receivedProposalDesc": "{{name}} has already sent you a proposal. Check your proposals to respond.",
-      "sendMessage": "Send Message"
+      "sendMessage": "Send Message",
+      "upgradePackage": "Upgrade Package",
+      "goToSettings": "Go to Settings"
     },
     "decline": {
       "title": "Decline Proposal",

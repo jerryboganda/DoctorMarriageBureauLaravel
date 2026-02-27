@@ -14,6 +14,15 @@ class DiscoveryController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
+
+        if (!$user->member) {
+            return response()->json([
+                'result' => false,
+                'error_code' => 'profile_incomplete',
+                'message' => translate('Please complete your profile setup before browsing profiles.'),
+            ], 400);
+        }
+
         $opposite_gender = ($user->member->gender == 1) ? 2 : 1;
 
         // Base query for members of opposite gender
@@ -82,6 +91,15 @@ class DiscoveryController extends Controller
     public function search(Request $request)
     {
         $user = auth()->user();
+
+        if (!$user->member) {
+            return response()->json([
+                'result' => false,
+                'error_code' => 'profile_incomplete',
+                'message' => translate('Please complete your profile setup before searching profiles.'),
+            ], 400);
+        }
+
         $opposite_gender = ($user->member->gender == 1) ? 2 : 1;
         $q = $request->query('q');
         

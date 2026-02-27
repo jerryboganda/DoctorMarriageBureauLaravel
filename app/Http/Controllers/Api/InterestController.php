@@ -46,19 +46,54 @@ class InterestController extends Controller
 
     public function express_interest(Request $request)
     {
-        $targetUser = User::find($request->user_id);
-        if (!$targetUser) {
-            return $this->failure_message('Invalid member for proposal request.');
+        $user = auth()->user();
+
+        // Pre-flight checks with clear error messages
+        if ($user->blocked) {
+            return response()->json([
+                'result' => false,
+                'error_code' => 'account_blocked',
+                'message' => translate('Your account has been blocked by the administration. Please contact support for assistance.'),
+            ]);
         }
 
-        $authId = auth()->user()->id;
+        if ($user->deactivated) {
+            return response()->json([
+                'result' => false,
+                'error_code' => 'account_deactivated',
+                'message' => translate('Your account is currently deactivated. Please reactivate your account from Settings before sending proposals.'),
+            ]);
+        }
+
+        $targetUser = User::find($request->user_id);
+        if (!$targetUser) {
+            return response()->json([
+                'result' => false,
+                'error_code' => 'invalid_target',
+                'message' => translate('This profile could not be found. It may have been removed.'),
+            ]);
+        }
+
+        if ($targetUser->deactivated) {
+            return response()->json([
+                'result' => false,
+                'error_code' => 'target_deactivated',
+                'message' => translate('This profile is currently unavailable. The user may have deactivated their account.'),
+            ]);
+        }
+
+        $authId = $user->id;
         $existingSent = ExpressInterest::query()
             ->where('user_id', $request->user_id)
             ->where('interested_by', $authId)
             ->first();
 
         if ($existingSent) {
-            return $this->failure_message('Proposal already sent');
+            return response()->json([
+                'result' => false,
+                'error_code' => 'already_sent',
+                'message' => translate('You have already sent a proposal to this person.'),
+            ]);
         }
 
         $receivedInterest = ExpressInterest::query()
@@ -75,15 +110,28 @@ class InterestController extends Controller
             $accepted = $interestService->accept($receivedInterest->id);
             return $accepted
                 ? $this->success_message('Proposal accepted successfully.')
-                : $this->failure_message('Something went wrong');
+                : $this->failure_message('Could not accept proposal at this time. Please try again.');
         }
 
         $interest = new InterestService();
-        $new_interest = $interest->store($request->user_id);
+        $result = $interest->store($request->user_id);
 
-        return ($new_interest) ?
-            $this->success_message('Proposal Sent Successfully') :
-            $this->failure_message('Something went wrong');
+        // InterestService now returns an array with structured error info
+        if (is_array($result)) {
+            if ($result['success']) {
+                return $this->success_message('Proposal Sent Successfully');
+            }
+            return response()->json([
+                'result' => false,
+                'error_code' => $result['error_code'] ?? 'unknown',
+                'message' => $result['message'] ?? translate('Could not send proposal. Please try again.'),
+            ]);
+        }
+
+        // Legacy fallback (should not reach here)
+        return $result
+            ? $this->success_message('Proposal Sent Successfully')
+            : $this->failure_message('Could not send proposal. Please try again.');
     }
 
     public function interest_requests()

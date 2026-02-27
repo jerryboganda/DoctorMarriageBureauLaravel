@@ -137,6 +137,14 @@ class EmailUtility
 
     public static function password_reset_email($user = '', $code = '')
     {
+        // Guard: ensure we have a valid user with an email address
+        if (!$user || empty($user->email)) {
+            \Log::warning('Password reset email skipped: user is null or has no email address.', [
+                'user_id' => $user ? ($user->id ?? 'unknown') : 'null',
+            ]);
+            return false;
+        }
+
         // Bypass Notification system check forced to TRUE for debugging
         // MOVED TO TOP to avoid any DB/ENV hangs before this point
         if (config('mail.default') === 'log' || env('MAIL_MAILER') === 'log') {
@@ -149,7 +157,7 @@ class EmailUtility
 
         $subject = get_email_template('password_reset_email', 'subject');
         $email_body = get_email_template('password_reset_email', 'body');
-        $email_body = str_replace('[[name]]', $user->first_name . ' ' . $user->last_name, $email_body);
+        $email_body = str_replace('[[name]]', ($user->first_name ?? '') . ' ' . ($user->last_name ?? ''), $email_body);
         $email_body = str_replace('[[code]]', $code, $email_body);
         $email_body = str_replace('[[from]]', env('MAIL_FROM_NAME'), $email_body);
 
@@ -167,7 +175,7 @@ class EmailUtility
             \Mail::send('emails.index', ['email_body' => $email_body], function ($message) use ($user, $subject) {
                 $fromEmail = env('MAIL_FROM_ADDRESS');
                 $fromName = env('MAIL_FROM_NAME');
-                $message->to($user->email, $user->first_name . ' ' . $user->last_name)
+                $message->to($user->email, ($user->first_name ?? '') . ' ' . ($user->last_name ?? ''))
                     ->subject($subject)
                     ->from($fromEmail, $fromName);
             });

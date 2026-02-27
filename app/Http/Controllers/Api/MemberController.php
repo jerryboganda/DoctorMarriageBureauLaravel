@@ -372,39 +372,98 @@ class MemberController extends Controller
 
     public function store_verification_info(Request $request)
     {
-        $data = array();
-        $i = 0;
-        foreach (json_decode(Setting::where('type', 'verification_form')->first()->value) as $key => $element) {
-            $item = array();
-            if ($element->type == 'text') {
-                $item['type'] = 'text';
-                $item['label'] = $element->label;
-                $item['value'] = $request['element_' . $i];
-            } elseif ($element->type == 'select' || $element->type == 'radio') {
-                $item['type'] = 'select';
-                $item['label'] = $element->label;
-                $item['value'] = $request['element_' . $i];
-            } elseif ($element->type == 'multi_select') {
-                $item['type'] = 'multi_select';
-                $item['label'] = $element->label;
-                $item['value'] = json_encode(explode(',', $request['element_' . $i]));
-            } 
-            elseif ($element->type == 'file') {
-                $item['type'] = 'file';
-                $item['label'] = $element->label;
-                $item['value'] = $request['element_' . $i]->store('uploads/verification_form');
-            }
-            array_push($data, $item);
-            $i++;
-        }
         $user = auth()->user();
-        $user->verification_info = json_encode($data);
-        $user->approved = 0;
-        if ($user->save()) {
-            return $this->success_message(translate('Your verification request has been submitted successfully!'));
-        } 
 
-        return $this->failure_message(translate('Something Wenr Wrong!'));
+        // Check if already submitted and pending/approved
+        if ($user->verification_info !== null) {
+            if ($user->approved == 1) {
+                return response()->json([
+                    'result' => false,
+                    'error_code' => 'already_approved',
+                    'message' => translate('Your identity has already been verified and approved. No further action is needed.'),
+                ]);
+            }
+            return response()->json([
+                'result' => false,
+                'error_code' => 'already_pending',
+                'message' => translate('Your verification is already under review. Please wait for the administration to process your submission.'),
+            ]);
+        }
+
+        try {
+            $setting = Setting::where('type', 'verification_form')->first();
+            if (!$setting || !$setting->value) {
+                return response()->json([
+                    'result' => false,
+                    'error_code' => 'form_unavailable',
+                    'message' => translate('Verification form is not configured. Please contact support.'),
+                ]);
+            }
+
+            $formFields = json_decode($setting->value);
+            if (!$formFields || !is_array($formFields)) {
+                return response()->json([
+                    'result' => false,
+                    'error_code' => 'form_invalid',
+                    'message' => translate('Verification form configuration is invalid. Please contact support.'),
+                ]);
+            }
+
+            $data = array();
+            $i = 0;
+            foreach ($formFields as $key => $element) {
+                $item = array();
+                if ($element->type == 'text') {
+                    $item['type'] = 'text';
+                    $item['label'] = $element->label;
+                    $item['value'] = $request['element_' . $i] ?? '';
+                } elseif ($element->type == 'select' || $element->type == 'radio') {
+                    $item['type'] = 'select';
+                    $item['label'] = $element->label;
+                    $item['value'] = $request['element_' . $i] ?? '';
+                } elseif ($element->type == 'multi_select') {
+                    $item['type'] = 'multi_select';
+                    $item['label'] = $element->label;
+                    $item['value'] = json_encode(explode(',', $request['element_' . $i] ?? ''));
+                } elseif ($element->type == 'file') {
+                    $item['type'] = 'file';
+                    $item['label'] = $element->label;
+                    $file = $request->file('element_' . $i);
+                    if (!$file) {
+                        return response()->json([
+                            'result' => false,
+                            'error_code' => 'missing_document',
+                            'message' => translate('Please upload the required document: :label', ['label' => $element->label]),
+                        ]);
+                    }
+                    $item['value'] = $file->store('uploads/verification_form');
+                }
+                array_push($data, $item);
+                $i++;
+            }
+
+            $user->verification_info = json_encode($data);
+            $user->approved = 0;
+            if ($user->save()) {
+                return $this->success_message(translate('Your verification request has been submitted successfully! We will review it shortly.'));
+            }
+
+            return response()->json([
+                'result' => false,
+                'error_code' => 'save_failed',
+                'message' => translate('Could not save your verification data. Please try again.'),
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Verification submission error: ' . $e->getMessage(), [
+                'user_id' => $user->id,
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'result' => false,
+                'error_code' => 'server_error',
+                'message' => translate('An unexpected error occurred while processing your verification. Please try again or contact support.'),
+            ], 500);
+        }
     }
 
 }
