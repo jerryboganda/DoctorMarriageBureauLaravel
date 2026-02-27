@@ -201,7 +201,7 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
             //Paytm
             Route::get('/paytm/index', 'PaytmController@index');
             // Razor Pay
-            Route::any('pay-with-razorpay', 'RazorpayController@payWithRazorpay')->name('api.razorpay.payment');
+            Route::any('pay-with-razorpay', 'RazorpayController@payWithRazorpay')->name('api.razorpay.pay');
 
             // PhonePe
             Route::any('pay-with-phonepe', 'PhonepeController@pay')->name('api.phonepe.pay');

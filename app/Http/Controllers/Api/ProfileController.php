@@ -844,6 +844,14 @@ class ProfileController extends Controller
         }
 
         $member = $user->member;
+        if (!$member) {
+            return response()->json([
+                'result' => false,
+                'error_code' => 'profile_incomplete',
+                'message' => 'Your profile has not been set up yet. Please complete the registration process first.',
+            ], 400);
+        }
+
         $optionSets = $this->getMarriageIntentOptionSets();
 
         $physical_attributes = PhysicalAttribute::where('user_id', $user->id)->first();
