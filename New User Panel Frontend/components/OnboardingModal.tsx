@@ -33,7 +33,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
     const [initialStepSet, setInitialStepSet] = useState(false);
     const totalSteps = STEPS.length;
     const onboardingTitleText = "Complete Profile";
-    const finishSetupText = t("modals.twoFactor.completeSetup");
+    const finishSetupText = t("modals.twoFactor.completeSetup") || "Complete Setup";
 
     // All form data
     const [data, setData] = useState<any>({
@@ -359,12 +359,21 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                 await api.post('/full-profile/update', payload);
             }
 
+            // Upload photo first (if on photo step and a file was selected).
+            // If the upload fails, log but still attempt to save the full payload
+            // so the user doesn't lose all other data.
+            let photoUploadError: string | null = null;
             if (step === 6 && photoFile) {
-                const formData = new FormData();
-                formData.append('photo', photoFile);
-                await api.post('/upload-profile-picture', formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' },
-                });
+                try {
+                    const formData = new FormData();
+                    formData.append('photo', photoFile);
+                    await api.post('/upload-profile-picture', formData, {
+                        headers: { 'Content-Type': 'multipart/form-data' },
+                    });
+                } catch (uploadErr: any) {
+                    photoUploadError = uploadErr?.response?.data?.message || 'Photo upload failed';
+                    console.warn('Photo upload failed, continuing with profile save:', photoUploadError);
+                }
             }
 
             // On the final step, re-send ALL accumulated data + mark complete.
@@ -404,6 +413,13 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                     onboardingCompleted: true,
                 };
                 await api.post('/full-profile/update', fullPayload);
+            }
+
+            // If photo upload failed but profile save succeeded, show a specific message
+            if (photoUploadError) {
+                setError(photoUploadError);
+                setSaving(false);
+                return false;
             }
 
             setSaving(false);

@@ -102,8 +102,14 @@ if (!function_exists('getFileBaseURL')) {
     }
 }
 
-function translate($key, $lang = null)
+function translate($key, $lang = null, $replace = [])
 {
+    // Support translate('key', ['placeholder' => 'value']) short-hand
+    if (is_array($lang)) {
+        $replace = $lang;
+        $lang = null;
+    }
+
     if ($lang == null) {
         $lang = App::getLocale();
     }
@@ -129,12 +135,21 @@ function translate($key, $lang = null)
 
     //Check for session lang
     if (isset($translation_locale[$lang_key])) {
-        return $translation_locale[$lang_key];
+        $result = $translation_locale[$lang_key];
     } elseif (isset($translations_default[$lang_key])) {
-        return $translations_default[$lang_key];
+        $result = $translations_default[$lang_key];
     } else {
-        return $key;
+        $result = $key;
     }
+
+    // Apply placeholder replacements (:key → value)
+    if (!empty($replace)) {
+        foreach ($replace as $k => $v) {
+            $result = str_replace(':' . $k, (string) $v, $result);
+        }
+    }
+
+    return $result;
 }
 
 if (!function_exists('formatBytes')) {

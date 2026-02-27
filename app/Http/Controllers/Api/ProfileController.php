@@ -1123,6 +1123,8 @@ class ProfileController extends Controller
             return response()->json(['result' => false, 'message' => 'Member profile not found'], 404);
         }
 
+        try {
+
         $normalizeStringList = function ($value) {
             if (is_array($value)) {
                 $items = array_map(function ($item) {
@@ -1731,6 +1733,17 @@ class ProfileController extends Controller
             'message' => 'Profile updated successfully',
             'profileCompletion' => $profileCompletion,
         ]);
+
+        } catch (\Exception $e) {
+            \Log::error('update_full_profile_react failed for user ' . ($user->id ?? '?'), [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile() . ':' . $e->getLine(),
+            ]);
+            return response()->json([
+                'result' => false,
+                'message' => 'Failed to save profile: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
