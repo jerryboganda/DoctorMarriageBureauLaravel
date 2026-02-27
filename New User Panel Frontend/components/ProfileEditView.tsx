@@ -1549,18 +1549,23 @@ const CareerSection: React.FC<{ data: any, salaryRanges?: any[], optionSets?: an
                                 <InputGroup label={t('profile.edit.professionDesignation')}>
                                     <select
                                         className="form-input"
-                                        value={career.jobTitleId || ''}
+                                        value={String(career.jobTitleId ?? '')}
                                         onChange={(e) => {
                                             const val = e.target.value;
-                                            updateCareer(index, 'jobTitleId', val ? Number(val) : '');
-                                            // Also set designation text from selected option label for backward compat
                                             const selected = (optionSets?.jobTitles ?? []).find((jt: any) => String(jt.id) === val);
-                                            if (selected) updateCareer(index, 'designation', selected.name);
+                                            // Update both fields in a single call to avoid stale-state race condition
+                                            const updated = [...careers];
+                                            updated[index] = {
+                                                ...updated[index],
+                                                jobTitleId: val ? Number(val) : '',
+                                                ...(selected ? { designation: selected.name } : {}),
+                                            };
+                                            syncCareers(updated);
                                         }}
                                     >
                                         <option value="">{t('profile.edit.professionPlaceholder')}</option>
                                         {(optionSets?.jobTitles ?? []).map((jt: any) => (
-                                            <option key={jt.id} value={jt.id}>{jt.name}</option>
+                                            <option key={jt.id} value={String(jt.id)}>{jt.name}</option>
                                         ))}
                                     </select>
                                 </InputGroup>
@@ -1568,14 +1573,14 @@ const CareerSection: React.FC<{ data: any, salaryRanges?: any[], optionSets?: an
                                 <InputGroup label={t('profile.edit.speciality', 'Speciality')}>
                                     <select
                                         className="form-input"
-                                        value={career.specialityId || ''}
+                                        value={String(career.specialityId ?? '')}
                                         onChange={(e) => {
                                             updateCareer(index, 'specialityId', e.target.value ? Number(e.target.value) : '');
                                         }}
                                     >
                                         <option value="">{t('profile.edit.selectSpeciality', 'Select Speciality')}</option>
                                         {(optionSets?.specialities ?? []).map((sp: any) => (
-                                            <option key={sp.id} value={sp.id}>{sp.name}</option>
+                                            <option key={sp.id} value={String(sp.id)}>{sp.name}</option>
                                         ))}
                                     </select>
                                 </InputGroup>

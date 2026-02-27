@@ -648,22 +648,22 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <FieldGroup label={t('auth.onboarding.designation')}>
-                                    <select className={inputClass} value={data.jobTitleId || ''} onChange={e => {
+                                    <select className={inputClass} value={String(data.jobTitleId ?? '')} onChange={e => {
                                         const id = e.target.value;
-                                        const label = (optionSets?.jobTitles || []).find((o: any) => String(o.id) === String(id))?.name || '';
+                                        const label = (optionSets?.jobTitles || []).find((o: any) => String(o.id) === id)?.name || '';
                                         setData((prev: any) => ({ ...prev, jobTitleId: id, designation: label }));
                                     }}>
                                         <option value="">{t('auth.onboarding.designationPlaceholder')}</option>
                                         {(optionSets?.jobTitles || []).map((o: any) => (
-                                            <option key={o.id} value={o.id}>{o.name}</option>
+                                            <option key={o.id} value={String(o.id)}>{o.name}</option>
                                         ))}
                                     </select>
                                 </FieldGroup>
                                 <FieldGroup label="Speciality">
-                                    <select className={inputClass} value={data.specialityId || ''} onChange={e => updateField('specialityId', e.target.value)}>
+                                    <select className={inputClass} value={String(data.specialityId ?? '')} onChange={e => updateField('specialityId', e.target.value)}>
                                         <option value="">Select Speciality</option>
                                         {(optionSets?.specialities || []).map((o: any) => (
-                                            <option key={o.id} value={o.id}>{o.name}</option>
+                                            <option key={o.id} value={String(o.id)}>{o.name}</option>
                                         ))}
                                     </select>
                                 </FieldGroup>
