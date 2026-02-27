@@ -379,13 +379,18 @@
                     </a>
                     <ul class="aiz-side-nav-list level-2">
                         <li class="aiz-side-nav-item">
-                            <a href="{{ route('newsletters.index') }}" class="aiz-side-nav-link">
-                                <span class="aiz-side-nav-text">{{ translate('Newsletter') }}</span>
+                            <a href="{{ route('admin.bulk_notifications.index') }}" class="aiz-side-nav-link {{ areActiveRoutes(['admin.bulk_notifications.index']) }}">
+                                <span class="aiz-side-nav-text">{{ translate('Send Notification') }}</span>
                             </a>
                         </li>
                         <li class="aiz-side-nav-item">
                             <a href="{{ route('admin.profile_completion_reminders.index') }}" class="aiz-side-nav-link {{ areActiveRoutes(['admin.profile_completion_reminders.index']) }}">
                                 <span class="aiz-side-nav-text">{{ translate('Profile Reminders') }}</span>
+                            </a>
+                        </li>
+                        <li class="aiz-side-nav-item">
+                            <a href="{{ route('newsletters.index') }}" class="aiz-side-nav-link {{ areActiveRoutes(['newsletters.index']) }}">
+                                <span class="aiz-side-nav-text">{{ translate('Newsletter') }}</span>
                             </a>
                         </li>
                     </ul>

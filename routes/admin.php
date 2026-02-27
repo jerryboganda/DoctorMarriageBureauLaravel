@@ -42,6 +42,7 @@ use App\Http\Controllers\ProfileOptionValueController;
 use App\Http\Controllers\JobTitleController;
 use App\Http\Controllers\SpecialityController;
 use App\Http\Controllers\ProfileCompletionReminderController;
+use App\Http\Controllers\BulkNotificationController;
 use App\Http\Controllers\WalletController;
 
 /*
@@ -300,11 +301,19 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin']], function 
     ]);
     Route::post('/email-templates/update', [EmailTemplateController::class, 'update'])->name('email-templates.update');
 
-    // Marketing
+    // Marketing — Bulk Notifications (replaces old newsletter)
     Route::controller(NewsletterController::class)->group(function () {
         Route::get('/newsletter', 'index')->name('newsletters.index');
         Route::post('/newsletter/send', 'send')->name('newsletters.send');
         Route::post('/newsletter/test/smtp', 'testEmail')->name('test.smtp');
+    });
+
+    Route::controller(BulkNotificationController::class)->prefix('bulk-notifications')->group(function () {
+        Route::get('/', 'index')->name('admin.bulk_notifications.index');
+        Route::post('/send', 'send')->name('admin.bulk_notifications.send');
+        Route::post('/preview-count', 'previewCount')->name('admin.bulk_notifications.preview_count');
+        Route::get('/get-states', 'getStates')->name('admin.bulk_notifications.get_states');
+        Route::get('/get-cities', 'getCities')->name('admin.bulk_notifications.get_cities');
     });
 
     // Profile Completion Reminders

@@ -19,35 +19,51 @@
 <!-- Stats Cards -->
 <div class="row gutters-10 mb-4">
     <div class="col-md-3">
-        <div class="card bg-grad-1">
-            <div class="card-body text-center text-white">
-                <h2 class="mb-1">{{ $stats['total_sent'] }}</h2>
-                <p class="mb-0">{{ translate('Total Emails Sent') }}</p>
+        <div class="bg-grad-1 text-white rounded-lg mb-4 overflow-hidden">
+            <div class="px-3 pt-3">
+                <div class="opacity-50">
+                    <span class="fs-12 d-block">{{ translate('Total Emails') }}</span>
+                    {{ translate('Sent') }}
+                </div>
+                <div class="h3 fw-700 mb-3">{{ $stats['total_sent'] }}</div>
             </div>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 120"><path opacity="0.2" fill="#fff" d="M0,64L60,58.7C120,53,240,43,360,48C480,53,600,75,720,80C840,85,960,75,1080,64C1200,53,1320,43,1380,37.3L1440,32L1440,120L1380,120C1320,120,1200,120,1080,120C960,120,840,120,720,120C600,120,480,120,360,120C240,120,120,120,60,120L0,120Z"></path></svg>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card bg-grad-2">
-            <div class="card-body text-center text-white">
-                <h2 class="mb-1">{{ $stats['sent_today'] }}</h2>
-                <p class="mb-0">{{ translate('Sent Today') }}</p>
+        <div class="bg-grad-2 text-white rounded-lg mb-4 overflow-hidden">
+            <div class="px-3 pt-3">
+                <div class="opacity-50">
+                    <span class="fs-12 d-block">{{ translate('Sent') }}</span>
+                    {{ translate('Today') }}
+                </div>
+                <div class="h3 fw-700 mb-3">{{ $stats['sent_today'] }}</div>
             </div>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 120"><path opacity="0.2" fill="#fff" d="M0,64L60,58.7C120,53,240,43,360,48C480,53,600,75,720,80C840,85,960,75,1080,64C1200,53,1320,43,1380,37.3L1440,32L1440,120L1380,120C1320,120,1200,120,1080,120C960,120,840,120,720,120C600,120,480,120,360,120C240,120,120,120,60,120L0,120Z"></path></svg>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card bg-grad-3">
-            <div class="card-body text-center text-white">
-                <h2 class="mb-1">{{ $stats['unique_users_reminded'] }}</h2>
-                <p class="mb-0">{{ translate('Unique Members Reminded') }}</p>
+        <div class="bg-grad-3 text-white rounded-lg mb-4 overflow-hidden">
+            <div class="px-3 pt-3">
+                <div class="opacity-50">
+                    <span class="fs-12 d-block">{{ translate('Unique Members') }}</span>
+                    {{ translate('Reminded') }}
+                </div>
+                <div class="h3 fw-700 mb-3">{{ $stats['unique_users_reminded'] }}</div>
             </div>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 120"><path opacity="0.2" fill="#fff" d="M0,64L60,58.7C120,53,240,43,360,48C480,53,600,75,720,80C840,85,960,75,1080,64C1200,53,1320,43,1380,37.3L1440,32L1440,120L1380,120C1320,120,1200,120,1080,120C960,120,840,120,720,120C600,120,480,120,360,120C240,120,120,120,60,120L0,120Z"></path></svg>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card bg-grad-4">
-            <div class="card-body text-center text-white">
-                <h2 class="mb-1">{{ $stats['total_failed'] }}</h2>
-                <p class="mb-0">{{ translate('Failed Emails') }}</p>
+        <div class="bg-grad-4 text-white rounded-lg mb-4 overflow-hidden">
+            <div class="px-3 pt-3">
+                <div class="opacity-50">
+                    <span class="fs-12 d-block">{{ translate('Failed') }}</span>
+                    {{ translate('Emails') }}
+                </div>
+                <div class="h3 fw-700 mb-3">{{ $stats['total_failed'] }}</div>
             </div>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 120"><path opacity="0.2" fill="#fff" d="M0,64L60,58.7C120,53,240,43,360,48C480,53,600,75,720,80C840,85,960,75,1080,64C1200,53,1320,43,1380,37.3L1440,32L1440,120L1380,120C1320,120,1200,120,1080,120C960,120,840,120,720,120C600,120,480,120,360,120C240,120,120,120,60,120L0,120Z"></path></svg>
         </div>
     </div>
 </div>
