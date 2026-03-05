@@ -87,6 +87,13 @@ class ReferralService
             ]),
         ]);
 
+        // Keep legacy referral flows in sync with the new referral table
+        $referredUser = User::find($referredUserId);
+        if ($referredUser && (empty($referredUser->referred_by) || (int) $referredUser->referred_by !== (int) $referrerUserId)) {
+            $referredUser->referred_by = $referrerUserId;
+            $referredUser->save();
+        }
+
         ReferralAuditLog::log('system', null, 'referral_created', 'referral', $referral->id, null, [
             'referrer_user_id' => $referrerUserId,
             'referred_user_id' => $referredUserId,
@@ -188,6 +195,9 @@ class ReferralService
             case 'active_days':
                 $days = $rule->qualification_params['active_days'] ?? 7;
                 return $user->created_at && $user->created_at->addDays($days)->isPast();
+
+            case 'identity_verified':
+                return (int) $user->approved === 1 && !empty($user->verification_info);
 
             default:
                 return $user->email_verified_at !== null;

@@ -467,6 +467,12 @@ class MemberController extends Controller
         $user->approved   = 1;
         if ($user->save()) {
 
+            try {
+                (new \App\Services\ReferralService())->checkAndQualifyReferral($user->id);
+            } catch (\Exception $e) {
+                \Log::error('Referral qualification check failed after verification approval: ' . $e->getMessage(), ['user_id' => $user->id]);
+            }
+
             $status = 'Approved';
             
             // Member verification email send to members

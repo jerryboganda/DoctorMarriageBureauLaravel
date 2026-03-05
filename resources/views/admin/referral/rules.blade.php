@@ -119,6 +119,7 @@
                                     <option value="email_verified" selected>{{ translate('Email Verified') }}</option>
                                     <option value="phone_verified">{{ translate('Phone Verified') }}</option>
                                     <option value="email_and_phone_verified">{{ translate('Email & Phone Verified') }}</option>
+                                    <option value=identity_verified>{{ translate('Identity Verification Approved') }}</option>
                                     <option value="paid_subscription">{{ translate('Paid Subscription') }}</option>
                                     <option value="active_days">{{ translate('Active Days') }}</option>
                                 </select>
@@ -239,6 +240,7 @@
                                     <option value="email_verified">{{ translate('Email Verified') }}</option>
                                     <option value="phone_verified">{{ translate('Phone Verified') }}</option>
                                     <option value="email_and_phone_verified">{{ translate('Email & Phone Verified') }}</option>
+                                    <option value=identity_verified>{{ translate('Identity Verification Approved') }}</option>
                                     <option value="paid_subscription">{{ translate('Paid Subscription') }}</option>
                                     <option value="active_days">{{ translate('Active Days') }}</option>
                                 </select>

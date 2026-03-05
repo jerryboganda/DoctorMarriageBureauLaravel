@@ -114,6 +114,15 @@ function translate($key, $lang = null, $replace = [])
         $lang = App::getLocale();
     }
 
+    if (!is_string($key)) {
+        if (is_scalar($key)) {
+            $key = (string) $key;
+        } else {
+            \Log::warning('translate called with non-string key', ['type' => gettype($key)]);
+            $key = json_encode($key, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '';
+        }
+    }
+
     $lang_key = preg_replace('/[^A-Za-z0-9\_]/', '', str_replace(' ', '_', strtolower($key)));
 
     $translations_default = Cache::rememberForever('translations-' . env('DEFAULT_LANGUAGE', 'en'), function () {
