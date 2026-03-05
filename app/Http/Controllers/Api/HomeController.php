@@ -501,16 +501,43 @@ class HomeController extends Controller
     public function upload_profile_picture(Request $request)
     {
         try {
+            $maxPhotoSizeKb = 10240; // 10MB
             $validator = \Validator::make($request->all(), [
-                'photo' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120', // 5MB max
+                'photo' => [
+                    'required',
+                    'file',
+                    'max:' . $maxPhotoSizeKb,
+                    function ($attribute, $value, $fail) {
+                        $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif'];
+                        $extension = strtolower((string) $value->getClientOriginalExtension());
+                        $mimeType = strtolower((string) $value->getMimeType());
+                        $isImageMime = str_starts_with($mimeType, 'image/');
+                        $isHeicMime = in_array($mimeType, ['application/octet-stream', 'application/x-heic'], true);
+
+                        if (!in_array($extension, $allowedExtensions, true)) {
+                            $fail(translate('Photo must be JPG, JPEG, PNG, GIF, WEBP, HEIC, or HEIF format'));
+                            return;
+                        }
+
+                        if (!$isImageMime && !$isHeicMime) {
+                            $fail(translate('File must be a valid image'));
+                        }
+                    },
+                ],
             ], [
                 'photo.required' => translate('Photo is required'),
-                'photo.image' => translate('File must be an image'),
-                'photo.mimes' => translate('Photo must be jpeg, png, jpg, gif, or webp format'),
-                'photo.max' => translate('Photo size must not exceed 5MB'),
+                'photo.file' => translate('File must be an image'),
+                'photo.max' => translate('Photo size must not exceed 10MB'),
             ]);
 
             if ($validator->fails()) {
+                \Log::warning('Profile picture validation failed', [
+                    'user_id' => auth()->id(),
+                    'size_bytes' => $request->hasFile('photo') ? $request->file('photo')->getSize() : null,
+                    'mime_type' => $request->hasFile('photo') ? $request->file('photo')->getMimeType() : null,
+                    'extension' => $request->hasFile('photo') ? $request->file('photo')->getClientOriginalExtension() : null,
+                    'errors' => $validator->errors()->toArray(),
+                ]);
                 return response()->json([
                     'result' => false,
                     'success' => false,
@@ -573,7 +600,12 @@ class HomeController extends Controller
             ], 400);
 
         } catch (\Exception $e) {
-            \Log::error('Profile picture upload error: ' . $e->getMessage());
+            \Log::error('Profile picture upload error: ' . $e->getMessage(), [
+                'user_id' => auth()->id(),
+                'size_bytes' => $request->hasFile('photo') ? $request->file('photo')->getSize() : null,
+                'mime_type' => $request->hasFile('photo') ? $request->file('photo')->getMimeType() : null,
+                'extension' => $request->hasFile('photo') ? $request->file('photo')->getClientOriginalExtension() : null,
+            ]);
             return response()->json([
                 'result' => false,
                 'success' => false,

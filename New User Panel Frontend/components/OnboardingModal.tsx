@@ -21,6 +21,7 @@ const inputClass = "w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text
 
 const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
     const { t } = useTranslation();
+    const MAX_PROFILE_PHOTO_BYTES = 10 * 1024 * 1024; // 10MB
     const STEPS = [
         { label: t('auth.onboarding.stepPersonal'), icon: STEPS_ICONS[0] },
         { label: t('auth.onboarding.stepLocation'), icon: STEPS_ICONS[1] },
@@ -299,6 +300,25 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
     const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            const extension = file.name.split('.').pop()?.toLowerCase() || '';
+            const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif'];
+            const isAllowedType = file.type.startsWith('image/') || file.type === '' || file.type === 'application/octet-stream';
+
+            if (!allowedExtensions.includes(extension) || !isAllowedType) {
+                setError('Unsupported file type. Please upload JPG, PNG, GIF, WEBP, HEIC, or HEIF.');
+                setPhotoFile(null);
+                setPhotoPreview(null);
+                return;
+            }
+
+            if (file.size > MAX_PROFILE_PHOTO_BYTES) {
+                setError('Photo is too large. Maximum allowed size is 10MB.');
+                setPhotoFile(null);
+                setPhotoPreview(null);
+                return;
+            }
+
+            setError(null);
             setPhotoFile(file);
             const reader = new FileReader();
             reader.onload = () => setPhotoPreview(reader.result as string);
@@ -360,9 +380,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
             }
 
             // Upload photo first (if on photo step and a file was selected).
-            // If the upload fails, log but still attempt to save the full payload
-            // so the user doesn't lose all other data.
-            let photoUploadError: string | null = null;
+            // Do not continue onboarding completion when photo upload fails.
             if (step === 6 && photoFile) {
                 try {
                     const formData = new FormData();
@@ -371,8 +389,15 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                         headers: { 'Content-Type': 'multipart/form-data' },
                     });
                 } catch (uploadErr: any) {
-                    photoUploadError = uploadErr?.response?.data?.message || 'Photo upload failed';
-                    console.warn('Photo upload failed, continuing with profile save:', photoUploadError);
+                    const status = uploadErr?.response?.status;
+                    const serverMessage = uploadErr?.response?.data?.message;
+                    const uploadErrorMessage =
+                        status === 413
+                            ? 'Photo is too large for upload. Please upload an image up to 10MB.'
+                            : (serverMessage || 'Photo upload failed. Please upload JPG, PNG, GIF, WEBP, HEIC, or HEIF and try again.');
+                    setError(uploadErrorMessage);
+                    setSaving(false);
+                    return false;
                 }
             }
 
@@ -413,13 +438,6 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                     onboardingCompleted: true,
                 };
                 await api.post('/full-profile/update', fullPayload);
-            }
-
-            // If photo upload failed but profile save succeeded, show a specific message
-            if (photoUploadError) {
-                setError(photoUploadError);
-                setSaving(false);
-                return false;
             }
 
             setSaving(false);

@@ -777,8 +777,8 @@ if (!function_exists('show_profile_picture')) {
 if (!function_exists('upload_api_file')) {
     function upload_api_file($image)
     {
-        $extension = $image->getClientOriginalExtension();
-        $allowed_extensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+        $extension = strtolower((string) $image->getClientOriginalExtension());
+        $convertible_extensions = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif'];
 
         $filename = time() . '_' . uniqid();
         $destinationPath = public_path('uploads/all');
@@ -787,30 +787,48 @@ if (!function_exists('upload_api_file')) {
             mkdir($destinationPath, 0777, true);
         }
 
-        if (in_array(strtolower($extension), $allowed_extensions)) {
-            // Optimize image
-            $img = Image::make($image->path());
+        if (in_array($extension, $convertible_extensions, true)) {
+            try {
+                // Optimize image
+                $img = Image::make($image->path());
 
-            // Resize if too large
-            if ($img->width() > 1200 || $img->height() > 1200) {
-                $img->resize(1200, 1200, function ($constraint) {
-                    $constraint->aspectRatio();
-                    $constraint->upsize();
-                });
+                // Resize if too large
+                if ($img->width() > 1200 || $img->height() > 1200) {
+                    $img->resize(1200, 1200, function ($constraint) {
+                        $constraint->aspectRatio();
+                        $constraint->upsize();
+                    });
+                }
+
+                // Convert to webp for better compression
+                $filename .= '.webp';
+                $path = 'uploads/all/' . $filename;
+                $fullPath = $destinationPath . '/' . $filename;
+
+                $img->encode('webp', 80)->save($fullPath);
+                $extension = 'webp';
+            } catch (\Throwable $e) {
+                // Fallback to original file when optimization/conversion fails.
+                \Log::warning('Image optimization failed; storing original file', [
+                    'user_id' => auth()->id(),
+                    'original_name' => $image->getClientOriginalName(),
+                    'extension' => $extension,
+                    'error' => $e->getMessage(),
+                ]);
+
+                $safeExtension = $extension !== '' ? $extension : 'bin';
+                $filename .= '.' . $safeExtension;
+                $path = 'uploads/all/' . $filename;
+                $image->move($destinationPath, $filename);
+                $extension = $safeExtension;
             }
-
-            // Convert to webp for better compression
-            $filename .= '.webp';
-            $path = 'uploads/all/' . $filename;
-            $fullPath = $destinationPath . '/' . $filename;
-
-            $img->encode('webp', 80)->save($fullPath);
-            $extension = 'webp';
         } else {
             // Non-image or non-optimizable file
-            $filename .= '.' . $extension;
+            $safeExtension = $extension !== '' ? $extension : 'bin';
+            $filename .= '.' . $safeExtension;
             $path = 'uploads/all/' . $filename;
             $image->move($destinationPath, $filename);
+            $extension = $safeExtension;
         }
 
         $upload = new App\Models\Upload();
