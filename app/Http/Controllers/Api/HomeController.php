@@ -583,4 +583,31 @@ class HomeController extends Controller
         }
     }
 
+    /**
+     * Public endpoint – returns 10 random proposals for the landing page.
+     * No authentication required.
+     */
+    public function randomProposals()
+    {
+        $users = User::whereHas('member', function ($q) {
+                $q->where('onboarding_completed', 1);
+            })
+            ->where('approved', 1)
+            ->where('user_type', 'member')
+            ->whereNull('deleted_at')
+            ->with([
+                'member.marital_status',
+                'physical_attributes',
+                'education',
+                'career',
+            ])
+            ->inRandomOrder()
+            ->limit(10)
+            ->get();
+
+        return $this->response_data(
+            \App\Http\Resources\PublicProposalResource::collection($users)
+        );
+    }
+
 }

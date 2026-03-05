@@ -68,6 +68,9 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
     Route::get('/home/packages', 'HomeController@home_packages');
     Route::get('/home/reviews', 'HomeController@home_reviews');
 
+    // Public landing page – 10 random proposals (no auth)
+    Route::get('/home/random-proposals', 'HomeController@randomProposals');
+
     Route::group(['middleware' => ['auth:sanctum', 'api_require_password_change']], function () {
         Route::get('/discovery', 'DiscoveryController@index');
         Route::get('/discovery/search', 'DiscoveryController@search');
