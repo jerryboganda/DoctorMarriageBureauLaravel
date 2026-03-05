@@ -47,6 +47,12 @@ New User Panel Frontend/dist/
 New User Panel Frontend/.env.local
 New User Panel Frontend/.env.production
 
+# ---- Admin Panel Frontend build artifacts ----
+Admin Panel Frontend/node_modules/
+Admin Panel Frontend/dist/
+Admin Panel Frontend/.env.local
+Admin Panel Frontend/.env.production
+
 # ---- Mobile App build artifacts ----
 DMB Mobile App/node_modules/
 DMB Mobile App/.expo/

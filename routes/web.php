@@ -983,4 +983,13 @@ Route::get('/migrate/products/', 'ProfileMatchController@migrate_profiles');
 
 
 //Custom page
+Route::get('/admin-react/{any?}', function () {
+    $path = public_path('admin-panel/index.html');
+    if (!file_exists($path)) {
+        abort(404, 'Admin React build not found. Please run npm run build in Admin Panel Frontend.');
+    }
+
+    return response()->file($path);
+})->where('any', '.*');
+
 Route::get('/{slug}', 'PageController@show_custom_page')->name('custom-pages.show_custom_page');
