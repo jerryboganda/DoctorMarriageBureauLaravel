@@ -288,8 +288,19 @@ const VerificationModal: React.FC<VerificationModalProps> = ({
       const response = await api.post('/member/verification-info-store', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
+      const errorCode = response.data?.error_code;
       if (response.data?.result === false) {
         setSubmitError(response.data?.message || t('modals.verification.submissionFailed'));
+        return;
+      }
+      if (errorCode === 'already_pending' || response.data?.verification_status === 'pending') {
+        setVerificationStatus('pending');
+        setLoadError(response.data?.message || t('modals.verification.submittedDesc'));
+        return;
+      }
+      if (errorCode === 'already_approved' || response.data?.verification_status === 'approved') {
+        setVerificationStatus('approved');
+        setLoadError(response.data?.message || t('modals.verification.identityVerified'));
         return;
       }
       if (lockMode) {
@@ -299,7 +310,11 @@ const VerificationModal: React.FC<VerificationModalProps> = ({
         setStep(4);
       }
     } catch (err: any) {
-      setSubmitError(err.response?.data?.message || t('modals.verification.submissionFailed'));
+      if (err.response?.status === 413) {
+        setSubmitError(t('modals.verification.fileTooLarge', 'Uploaded files are too large. Please upload smaller files and try again.'));
+      } else {
+        setSubmitError(err.response?.data?.message || t('modals.verification.submissionFailed'));
+      }
     } finally {
       setSubmitting(false);
     }

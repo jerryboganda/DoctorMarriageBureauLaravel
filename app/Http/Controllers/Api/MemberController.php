@@ -378,14 +378,16 @@ class MemberController extends Controller
         if ($user->verification_info !== null) {
             if ($user->approved == 1) {
                 return response()->json([
-                    'result' => false,
+                    'result' => true,
                     'error_code' => 'already_approved',
+                    'verification_status' => 'approved',
                     'message' => translate('Your identity has already been verified and approved. No further action is needed.'),
                 ]);
             }
             return response()->json([
-                'result' => false,
+                'result' => true,
                 'error_code' => 'already_pending',
+                'verification_status' => 'pending',
                 'message' => translate('Your verification is already under review. Please wait for the administration to process your submission.'),
             ]);
         }
@@ -435,6 +437,13 @@ class MemberController extends Controller
                             'error_code' => 'missing_document',
                             'message' => translate('Please upload the required document: :label', ['label' => $element->label]),
                         ]);
+                    }
+                    if (!$file->isValid()) {
+                        return response()->json([
+                            'result' => false,
+                            'error_code' => 'invalid_document_upload',
+                            'message' => translate('The uploaded file for :label is invalid or exceeded upload limits. Please retry with a smaller file.', ['label' => $element->label]),
+                        ], 422);
                     }
                     $item['value'] = $file->store('uploads/verification_form');
                 }
