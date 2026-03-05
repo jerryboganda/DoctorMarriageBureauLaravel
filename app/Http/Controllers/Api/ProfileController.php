@@ -1704,6 +1704,33 @@ class ProfileController extends Controller
             // Reload user and member from DB to get latest state (e.g. photo just uploaded)
             $user = $user->fresh();
             $member = $user->member;
+
+            // Backward-compatible fallback for users who uploaded to gallery
+            // but still have an empty primary profile photo.
+            if (empty($user->photo)) {
+                $candidatePhoto = GalleryImage::where('user_id', $user->id)
+                    ->where('is_main_photo', true)
+                    ->orderByDesc('id')
+                    ->value('image');
+
+                if (empty($candidatePhoto)) {
+                    $candidatePhoto = GalleryImage::where('user_id', $user->id)
+                        ->orderByDesc('id')
+                        ->value('image');
+                }
+
+                if (!empty($candidatePhoto)) {
+                    $user->photo = $candidatePhoto;
+                    if (get_setting('profile_picture_approval_by_admin') && $user->user_type == 'member') {
+                        $user->photo_approved = 0;
+                    } else {
+                        $user->photo_approved = 1;
+                    }
+                    $user->save();
+                    $user = $user->fresh();
+                }
+            }
+
             $missingFields = $this->getOnboardingMissingFields($user, $member);
             if (!empty($missingFields)) {
                 \Log::warning('Onboarding incomplete for user ' . $user->id, ['missing' => $missingFields]);
