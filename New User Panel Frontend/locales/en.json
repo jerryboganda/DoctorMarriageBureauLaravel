@@ -348,7 +348,15 @@
     "pendingResponse": "Waiting for Reply",
     "browseAnonymouslyTitle": "Browse Without Being Seen",
     "notifications": "Notifications",
-    "showingResults": "Showing {{from}}-{{to}} of {{total}} profiles"
+    "showingResults": "Showing {{from}}-{{to}} of {{total}} profiles",
+    "travelingTo": "Visiting",
+    "travelModalTitle": "Enable Travel Mode",
+    "travelModalDesc": "Set your travel destination to appear in local search results",
+    "cityPlaceholder": "City",
+    "countryPlaceholder": "Country",
+    "enableTravelMode": "Enable Travel Mode",
+    "disableTravelMode": "Disable Travel Mode",
+    "cancel": "Cancel"
   },
   "messages": {
     "title": "Messages",

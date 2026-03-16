@@ -47,6 +47,9 @@ export interface ProfileMatch {
   isHighIntent?: boolean;
   interestStatus?: number | string;
   interestText?: string;
+  travel_mode?: boolean;
+  travel_city?: string;
+  travel_country?: string;
 }
 
 export interface CompatibilityMetric {

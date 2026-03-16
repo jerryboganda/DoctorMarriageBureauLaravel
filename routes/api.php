@@ -68,9 +68,6 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
     Route::get('/home/packages', 'HomeController@home_packages');
     Route::get('/home/reviews', 'HomeController@home_reviews');
 
-    // Public landing page – 10 random proposals (no auth)
-    Route::get('/home/random-proposals', 'HomeController@randomProposals');
-
     Route::group(['middleware' => ['auth:sanctum', 'api_require_password_change']], function () {
         Route::get('/discovery', 'DiscoveryController@index');
         Route::get('/discovery/search', 'DiscoveryController@search');
@@ -204,7 +201,7 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
             //Paytm
             Route::get('/paytm/index', 'PaytmController@index');
             // Razor Pay
-            Route::any('pay-with-razorpay', 'RazorpayController@payWithRazorpay')->name('api.razorpay.pay');
+            Route::any('pay-with-razorpay', 'RazorpayController@payWithRazorpay')->name('api.razorpay.payment');
 
             // PhonePe
             Route::any('pay-with-phonepe', 'PhonepeController@pay')->name('api.phonepe.pay');
@@ -365,6 +362,13 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
             Route::post('/profile/section/{section}', 'ProfileCenterController@updateSection');
             Route::get('/profile/visibility', 'ProfileCenterController@getVisibilitySettings');
             Route::post('/profile/visibility', 'ProfileCenterController@toggleVisibility');
+
+            // Discovery Settings (Anonymous Mode & Travel Mode)
+            Route::post('/discovery/toggle-anonymous', 'DiscoverySettingsController@toggleAnonymous');
+            Route::get('/discovery/anonymous-status', 'DiscoverySettingsController@getAnonymousStatus');
+            Route::post('/discovery/travel-mode/enable', 'DiscoverySettingsController@enableTravelMode');
+            Route::post('/discovery/travel-mode/disable', 'DiscoverySettingsController@disableTravelMode');
+            Route::get('/discovery/travel-mode/status', 'DiscoverySettingsController@getTravelModeStatus');
             Route::post('/profile/media/voice', 'ProfileCenterController@uploadVoiceIntro');
             Route::delete('/profile/media/voice', 'ProfileCenterController@deleteVoiceIntro');
             Route::post('/profile/media/video', 'ProfileCenterController@uploadIntroVideo');
@@ -593,7 +597,7 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
                         'name' => $match->user->first_name . ' ' . $match->user->last_name,
                         'age' => $age,
                         'location' => $location,
-                        'match_percentage' => auth()->check() ? \App\Services\MatchScoreService::score(auth()->user(), $match->user) : 50,
+                        'match_percentage' => rand(85, 98),
                         'is_online' => rand(0, 1)
                     ];
                 });

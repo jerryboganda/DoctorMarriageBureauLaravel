@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import ProfileDetailModal from './ProfileDetailModal';
 import MatchTunerModal from './MatchTunerModal';
+import TravelModeModal from './TravelModeModal';
 import LanguageToggle from './LanguageToggle';
 import { ProfileMatch } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -81,6 +82,9 @@ const normalizeProfile = (profile: any): ProfileMatch => {
     careers: profile.careers,
     interestStatus: profile.interest_status ?? profile.interestStatus ?? profile.proposal_status,
     interestText: profile.interest_text ?? profile.interestText,
+    travel_mode: profile.travel_mode ?? false,
+    travel_city: profile.travel_city ?? '',
+    travel_country: profile.travel_country ?? '',
   };
 };
 
@@ -102,13 +106,18 @@ const DEFAULT_FILTERS: DiscoveryFilters = {
 
 const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposalStateChange, initialTab = 'all', isIdentityVerified, onRequireVerification, onNavigate, unreadNotifCount = 0, sentProposalMap = {}, proposalStatusMap = {}, refreshVersion }) => {
   const { t } = useTranslation();
-  const { user } = useAuthStore();
+  const { user, setUser } = useAuthStore();
   const userAvatarUrl = resolveAvatarUrl(user?.avatar_original || user?.avatar);
   const userDisplayName = user?.name ?? t('nav.defaultName');
   const userMembershipLabel = user?.membership === 2 ? t('nav.premiumMember') : t('nav.basicMember');
   const [showFilters, setShowFilters] = useState(false);
-  const [isAnonymous, setIsAnonymous] = useState(false);
-  const [isTravelMode, setIsTravelMode] = useState(false);
+  const [isAnonymous, setIsAnonymous] = useState(() => user?.is_visible === false);
+  const [anonymousLoading, setAnonymousLoading] = useState(false);
+  const [isTravelMode, setIsTravelMode] = useState(() => user?.travel_mode === true);
+  const [travelCity, setTravelCity] = useState(() => user?.travel_city || '');
+  const [travelCountry, setTravelCountry] = useState(() => user?.travel_country || '');
+  const [travelLoading, setTravelLoading] = useState(false);
+  const [showTravelModal, setShowTravelModal] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
   const [selectedProfile, setSelectedProfile] = useState<ProfileMatch | null>(null);
   const [showTuner, setShowTuner] = useState(false);
@@ -188,6 +197,73 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
         return profile;
     }
   }, []);
+
+  // ── Anonymous/Visible Toggle ───────────────────────────────────
+  const handleToggleAnonymous = useCallback(async () => {
+    if (anonymousLoading) return;
+    setAnonymousLoading(true);
+    try {
+      const res = await api.post('/member/discovery/toggle-anonymous');
+      if (res.data.success) {
+        const newVisible = res.data.is_visible;
+        setIsAnonymous(!newVisible);
+        // Sync auth store
+        if (user) setUser({ ...user, is_visible: newVisible });
+      }
+    } catch (err) {
+      console.error('Failed to toggle anonymous mode', err);
+    } finally {
+      setAnonymousLoading(false);
+    }
+  }, [anonymousLoading, user, setUser]);
+
+  // ── Travel Mode Handlers ───────────────────────────────────────
+  const handleTravelModeClick = useCallback(() => {
+    if (isTravelMode) {
+      // Disable travel mode
+      handleDisableTravelMode();
+    } else {
+      // Show modal to pick destination
+      setShowTravelModal(true);
+    }
+  }, [isTravelMode]);
+
+  const handleEnableTravelMode = useCallback(async (city: string, country: string) => {
+    if (travelLoading) return;
+    setTravelLoading(true);
+    try {
+      const res = await api.post('/member/discovery/travel-mode/enable', { city, country });
+      if (res.data.success) {
+        setIsTravelMode(true);
+        setTravelCity(city);
+        setTravelCountry(country);
+        setShowTravelModal(false);
+        if (user) setUser({ ...user, travel_mode: true, travel_city: city, travel_country: country });
+      }
+    } catch (err) {
+      console.error('Failed to enable travel mode', err);
+    } finally {
+      setTravelLoading(false);
+    }
+  }, [travelLoading, user, setUser]);
+
+  const handleDisableTravelMode = useCallback(async () => {
+    if (travelLoading) return;
+    setTravelLoading(true);
+    try {
+      const res = await api.post('/member/discovery/travel-mode/disable');
+      if (res.data.success) {
+        setIsTravelMode(false);
+        setTravelCity('');
+        setTravelCountry('');
+        if (user) setUser({ ...user, travel_mode: false, travel_city: null, travel_country: null });
+      }
+    } catch (err) {
+      console.error('Failed to disable travel mode', err);
+    } finally {
+      setTravelLoading(false);
+    }
+  }, [travelLoading, user, setUser]);
 
   const fetchDiscoveryData = useCallback(async (page: number = 1) => {
       const requestSeq = ++discoveryRequestSeqRef.current;
@@ -469,25 +545,28 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
          <div className="flex items-center gap-2 md:gap-3 overflow-x-auto pb-1 md:pb-0 scrollbar-hide">
              
              {/* Travel Mode */}
-             <motion.button 
-                whileTap={BTN_TAP}
-                onClick={() => setIsTravelMode(!isTravelMode)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-full text-xs font-bold transition-all border whitespace-nowrap ${isTravelMode ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
-             >
-                <Plane size={16} />
-                <span className="hidden xl:inline">{t('discovery.travelMode')}</span>
-             </motion.button>
+              <motion.button 
+                 whileTap={BTN_TAP}
+                 onClick={handleTravelModeClick}
+                 disabled={travelLoading}
+                 className={`flex items-center gap-2 px-3 py-2 rounded-full text-xs font-bold transition-all border whitespace-nowrap ${isTravelMode ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'} ${travelLoading ? 'opacity-60 cursor-wait' : ''}`}
+                 title={isTravelMode ? `${t('discovery.travelingTo')} ${travelCity}, ${travelCountry}` : t('discovery.travelMode')}
+              >
+                 {travelLoading ? <Loader2 size={16} className="animate-spin" /> : <Plane size={16} />}
+                 <span className="hidden xl:inline">{isTravelMode ? `${travelCity}` : t('discovery.travelMode')}</span>
+              </motion.button>
 
-             {/* Anonymous Toggle */}
-             <motion.button 
-                whileTap={BTN_TAP}
-                onClick={() => setIsAnonymous(!isAnonymous)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-full text-xs font-bold transition-all border whitespace-nowrap ${isAnonymous ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
-                title={t('discovery.browseAnonymouslyTitle')}
-             >
-                {isAnonymous ? <EyeOff size={16} /> : <Eye size={16} />}
-                <span className="hidden xl:inline">{isAnonymous ? t('discovery.anonymous') : t('discovery.visible')}</span>
-             </motion.button>
+              {/* Anonymous Toggle */}
+              <motion.button 
+                 whileTap={BTN_TAP}
+                 onClick={handleToggleAnonymous}
+                 disabled={anonymousLoading}
+                 className={`flex items-center gap-2 px-3 py-2 rounded-full text-xs font-bold transition-all border whitespace-nowrap ${isAnonymous ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'} ${anonymousLoading ? 'opacity-60 cursor-wait' : ''}`}
+                 title={t('discovery.browseAnonymouslyTitle')}
+              >
+                 {anonymousLoading ? <Loader2 size={16} className="animate-spin" /> : (isAnonymous ? <EyeOff size={16} /> : <Eye size={16} />)}
+                 <span className="hidden xl:inline">{isAnonymous ? t('discovery.anonymous') : t('discovery.visible')}</span>
+              </motion.button>
 
              <div className="h-6 w-px bg-slate-200 mx-1 hidden md:block"></div>
 
@@ -831,6 +910,19 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
             <MatchTunerModal onClose={() => setShowTuner(false)} />
         )}
       </AnimatePresence>
+
+      {/* Travel Mode Modal */}
+      <AnimatePresence>
+        {showTravelModal && (
+          <TravelModeModal
+            onClose={() => setShowTravelModal(false)}
+            onEnable={handleEnableTravelMode}
+            loading={travelLoading}
+            currentCity={travelCity}
+            currentCountry={travelCountry}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -894,6 +986,11 @@ const ProfileGridCard: React.FC<{
                     {profile.isVerified ? <CheckCircle2 size={10} /> : <AlertCircle size={10} />}
                     {profile.isVerified ? t('modals.verification.verified', 'Verified') : t('profile.unverified', 'Unverified')}
                  </div>
+                 {profile.travel_mode && profile.travel_city && (
+                    <div className="bg-blue-500/90 text-white backdrop-blur-md rounded-full px-2 py-1 text-[10px] font-bold shadow-sm flex items-center gap-1">
+                       <Plane size={10} /> {t('discovery.travelingTo', 'Visiting')} {profile.travel_city}
+                    </div>
+                 )}
             </div>
 
             <div className="aspect-[4/5] bg-slate-200 relative" onClick={onClick}>

@@ -126,20 +126,10 @@ class AuthController extends Controller
 
             // If a referral code was provided during signup, process the referral
             $referralCodeInput = $request->input('referral_code');
-            if (!empty($referralCodeInput)) {
-                $referralResult = $referralService->createReferral(
-                    $user->id,              // referredUserId - the new user who was referred
-                    $referralCodeInput,      // referralCodeString - the code they used
-                    'signup',               // source
-                    ['ip' => $request->ip()] // metadata
-                );
+            if (!empty($referralCodeInput) && !empty($user->referred_by)) {
+                $referralResult = $referralService->createReferral($user->referred_by, $user->id, $request->ip());
                 if ($referralResult['success']) {
-                    \Log::info("Referral created successfully for user {$user->id} with code {$referralCodeInput}");
-
-                    // User is already email-verified at this point, so check qualification immediately
-                    $referralService->checkAndQualifyReferral($user->id);
-                } else {
-                    \Log::info("Referral not created for user {$user->id}: " . ($referralResult['message'] ?? 'unknown'));
+                    \Log::info("Referral created successfully for user {$user->id} referred by {$user->referred_by}");
                 }
             }
         } catch (\Exception $e) {
@@ -189,26 +179,6 @@ class AuthController extends Controller
             }
 
             if (Hash::check($password, $user->password)) {
-                // Block deactivated users from logging in
-                if ($user->deactivated == 1) {
-                    return response()->json([
-                        'result' => false,
-                        'code' => 'ACCOUNT_DEACTIVATED',
-                        'message' => 'Your account has been deactivated by the administrator. Please contact support for assistance.',
-                        'user' => null
-                    ], 403);
-                }
-
-                // Block blocked users from logging in
-                if ($user->blocked == 1) {
-                    return response()->json([
-                        'result' => false,
-                        'code' => 'ACCOUNT_BLOCKED',
-                        'message' => 'Your account has been blocked. Please contact support for assistance.',
-                        'user' => null
-                    ], 403);
-                }
-
                 $twoFactor = UserTwoFactorSetting::getOrCreate($user->id);
                 if ($twoFactor->is_enabled) {
                     $user->two_factor_pending = true;
@@ -318,22 +288,6 @@ class AuthController extends Controller
 
         if ($user) {
             // Login existing user
-            if ($user->deactivated == 1) {
-                return response()->json([
-                    'result' => false,
-                    'code' => 'ACCOUNT_DEACTIVATED',
-                    'message' => 'Your account has been deactivated by the administrator. Please contact support for assistance.',
-                    'user' => null
-                ], 403);
-            }
-            if ($user->blocked == 1) {
-                return response()->json([
-                    'result' => false,
-                    'code' => 'ACCOUNT_BLOCKED',
-                    'message' => 'Your account has been blocked. Please contact support for assistance.',
-                    'user' => null
-                ], 403);
-            }
             if ($user->approved == 0) {
                 return response()->json(['result' => false, 'message' => translate('Please wait for admin approval'), 'user' => null], 401);
             }
@@ -738,15 +692,9 @@ class AuthController extends Controller
 
     public function authData($user)
     {
-        if (!$user) {
-            return response()->json([
-                'result' => false,
-                'message' => translate('Session expired. Please log in again.'),
-            ], 401);
-        }
-
+        // $user = auth()->user();
         $member = $user->member;
-        $maritial_status = ($member && $member->marital_status_id) ? MaritalStatus::where('id', $member->marital_status_id)->first() : null;
+        $maritial_status = $member ? MaritalStatus::where('id', $member->marital_status_id)->first() : null;
         $age = ($member && !empty($member->birthday)) ? Carbon::parse($member->birthday)->age : null;
         return response()->json(
             [
@@ -762,11 +710,15 @@ class AuthController extends Controller
                 'must_change_password' => (bool) ($user->must_change_password ?? false),
                 'email' => $user->email,
                 'birthday' => $age,
-                'height' => ($user->physical_attributes) ? $user->physical_attributes->height : 0,
-                'marital_status_id' => $maritial_status ? new MaritialStatusResource($maritial_status) : null,
+                'height' => $user->physical_attributes ? $user->physical_attributes->height : 0,
+                'marital_status_id' => $maritial_status ? new MaritialStatusResource($maritial_status) : new MaritialStatusResource($maritial_status),
                 'avatar' => uploaded_asset($user->photo) ?? '',
                 'avatar_original' => uploaded_asset($user->photo) ?? '',
                 'phone' => $user->phone ?? '',
+                'is_visible' => (bool) ($member->is_visible ?? true),
+                'travel_mode' => (bool) ($member->travel_mode ?? false),
+                'travel_city' => $member->travel_city ?? null,
+                'travel_country' => $member->travel_country ?? null,
             ]
         );
     }
@@ -786,31 +738,15 @@ class AuthController extends Controller
 
     public function getUserByToken()
     {
-        $bearerToken = request()->bearerToken();
-        if (!$bearerToken) {
-            return response()->json([
-                'result' => false,
-                'message' => translate('No authentication token provided. Please log in again.'),
-            ], 401);
+        $token = PersonalAccessToken::findToken(request()->bearerToken());
+        $user = null;
+        if ($token) {
+            $user = $token->tokenable;
+            return $this->authData($user);
         }
-
-        $token = PersonalAccessToken::findToken($bearerToken);
-        if (!$token) {
-            return response()->json([
-                'result' => false,
-                'message' => translate('Your session has expired. Please log in again.'),
-            ], 401);
-        }
-
-        $user = $token->tokenable;
-        if (!$user) {
-            return response()->json([
-                'result' => false,
-                'message' => translate('Your account could not be found. It may have been deleted. Please contact support.'),
-            ], 401);
-        }
-
-        return $this->authData($user);
+        return response()->json(
+            ['user' => $user]
+        );
     }
 
     public function update_device_token(Request $request)

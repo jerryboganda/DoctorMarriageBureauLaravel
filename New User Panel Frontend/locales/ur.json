@@ -348,7 +348,15 @@
     "pendingResponse": "جواب کا انتظار",
     "browseAnonymouslyTitle": "بغیر نام دیکھیں",
     "notifications": "اطلاعات",
-    "showingResults": "{{total}} میں سے {{from}}-{{to}} پروفائلز دکھائے جا رہے ہیں"
+    "showingResults": "{{total}} میں سے {{from}}-{{to}} پروفائلز دکھائے جا رہے ہیں",
+    "travelingTo": "دورہ",
+    "travelModalTitle": "ٹریول موڈ فعال کریں",
+    "travelModalDesc": "مقامی تلاش کے نتائج میں ظاہر ہونے کے لیے اپنی منزل مقرر کریں",
+    "cityPlaceholder": "شہر",
+    "countryPlaceholder": "ملک",
+    "enableTravelMode": "ٹریول موڈ فعال کریں",
+    "disableTravelMode": "ٹریول موڈ غیر فعال کریں",
+    "cancel": "منسوخ"
   },
   "messages": {
     "title": "پیغامات",
