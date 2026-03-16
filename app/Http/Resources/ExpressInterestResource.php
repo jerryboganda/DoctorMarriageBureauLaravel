@@ -33,6 +33,7 @@ class ExpressInterestResource extends JsonResource
                 'mothere_tongue'       => MemberUtility::member_mothere_tongue($this->interested_by),
                 'proposal_status'      => $this->status == 1 ? 'received_accepted' : 'received_pending',
                 'proposal_updated_at'  => optional($this->updated_at)->toIso8601String(),
+                'is_verified'          => ($interestedBy->approved == 1 && !empty($interestedBy->verification_info)),
             ];
         }
 

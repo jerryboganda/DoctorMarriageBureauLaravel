@@ -260,8 +260,8 @@
   "dashboard": {
     "tabs": {
       "allProposals": "تمام تجاویز",
-      "highCompatibility": "اعلیٰ مطابقت",
-      "recent": "حالیہ"
+      "verifiedProposals": "تصدیق شدہ تجاویز",
+      "unverifiedProposals": "غیر تصدیق شدہ تجاویز"
     },
     "received": "موصول شدہ",
     "sent": "بھیجی گئیں",
@@ -1130,9 +1130,7 @@
       "proposalAcceptedDesc": "اچھی خبر! {{name}} نے آپ کی تجویز قبول کر لی ہے۔ اب آپ بات چیت شروع کر سکتے ہیں۔",
       "receivedProposal": "تجویز موصول ہوئی",
       "receivedProposalDesc": "{{name}} نے آپ کو پہلے ہی تجویز بھیجی ہے۔ جواب دینے کے لیے اپنی تجاویز چیک کریں۔",
-      "sendMessage": "پیغام بھیجیں",
-      "upgradePackage": "پیکیج اپ گریڈ کریں",
-      "goToSettings": "ترتیبات پر جائیں"
+      "sendMessage": "پیغام بھیجیں"
     },
     "decline": {
       "title": "تجویز مسترد کریں",

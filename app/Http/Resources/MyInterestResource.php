@@ -43,6 +43,7 @@ class MyInterestResource extends JsonResource
             'status'               => $interest->status == 1 ? 'Approved' : 'Pending',
             'proposal_status'      => $interest->status == 1 ? 'sent_accepted' : 'sent_pending',
             'proposal_updated_at'  => optional($interest->updated_at)->toIso8601String(),
+            'is_verified'          => ($user->approved == 1 && !empty($user->verification_info)),
         ];
     }
 }

@@ -231,7 +231,7 @@
       "photoSubtitle": "Profiles with photos get 10× more proposals",
       "changePhoto": "Change Photo",
       "uploadPhoto": "Upload Photo",
-      "photoHint": "Upload a clear, recent photo of yourself. Supported formats: JPG, JPEG, PNG, GIF, WEBP, HEIC, HEIF. Max size: 10 MB.",
+      "photoHint": "Upload a clear, recent photo of yourself. Supported formats: JPG, PNG. Max size: 5 MB.",
       "back": "Back",
       "caste": "Caste / Sect",
       "completeProfile": "Complete Profile",
@@ -260,8 +260,8 @@
   "dashboard": {
     "tabs": {
       "allProposals": "All Proposals",
-      "highCompatibility": "High Compatibility",
-      "recent": "Recent"
+      "verifiedProposals": "Verified Proposals",
+      "unverifiedProposals": "Unverified Proposals"
     },
     "received": "Received",
     "sent": "Sent",
@@ -1130,9 +1130,7 @@
       "proposalAcceptedDesc": "Great news! {{name}} has accepted your proposal. You can now start a conversation.",
       "receivedProposal": "Proposal Received",
       "receivedProposalDesc": "{{name}} has already sent you a proposal. Check your proposals to respond.",
-      "sendMessage": "Send Message",
-      "upgradePackage": "Upgrade Package",
-      "goToSettings": "Go to Settings"
+      "sendMessage": "Send Message"
     },
     "decline": {
       "title": "Decline Proposal",
