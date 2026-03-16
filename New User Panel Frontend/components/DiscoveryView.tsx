@@ -265,7 +265,7 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
     }
   }, [travelLoading, user, setUser]);
 
-  const fetchDiscoveryData = useCallback(async (page: number = 1) => {
+  const fetchDiscoveryData = useCallback(async (page: number = 1, tab: 'all' | 'verified' | 'unverified' = 'all') => {
       const requestSeq = ++discoveryRequestSeqRef.current;
       discoveryAbortRef.current?.abort();
       const controller = new AbortController();
@@ -273,7 +273,11 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
 
       setLoading(true);
       try {
-          const response = await api.get('/discovery', { params: { page }, signal: controller.signal });
+          const params: Record<string, string | number> = { page };
+          if (tab === 'verified') params.verified = 'yes';
+          else if (tab === 'unverified') params.verified = 'no';
+
+          const response = await api.get('/discovery', { params, signal: controller.signal });
           if (requestSeq !== discoveryRequestSeqRef.current) return;
 
           if (response.data.result) {
@@ -311,11 +315,11 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
   }, []);
 
   useEffect(() => {
-    fetchDiscoveryData(currentPage);
-  }, [currentPage, fetchDiscoveryData]);
+    fetchDiscoveryData(currentPage, activeTab);
+  }, [currentPage, activeTab, fetchDiscoveryData]);
 
   useEffect(() => {
-    fetchDiscoveryData(currentPage);
+    fetchDiscoveryData(currentPage, activeTab);
     // refreshVersion is an explicit external invalidation signal.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshVersion]);
@@ -507,10 +511,8 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
   };
 
   const getDisplayedProfiles = () => {
-    const all = profiles.all_profiles;
-    if (activeTab === 'verified') return all.filter(p => p.isVerified === true);
-    if (activeTab === 'unverified') return all.filter(p => p.isVerified !== true);
-    return all;
+    // Backend now handles verified/unverified filtering via ?verified= param
+    return profiles.all_profiles;
   };
 
   const filtersActive = appliedFilters.familyApprovedOnly ||
@@ -618,9 +620,9 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
             
             {/* Discovery Tabs */}
             <div className="flex bg-slate-100 p-1 rounded-lg shrink-0">
-                <TabButton label={t('discovery.allProfiles')} active={activeTab === 'all'} onClick={() => setActiveTab('all')} />
-                <TabButton label={t('discovery.verifiedProfiles')} active={activeTab === 'verified'} onClick={() => setActiveTab('verified')} icon={<UserCheck size={14} />} />
-                <TabButton label={t('discovery.unverifiedProfiles')} active={activeTab === 'unverified'} onClick={() => setActiveTab('unverified')} icon={<AlertCircle size={14} />} />
+                <TabButton label={t('discovery.allProfiles')} active={activeTab === 'all'} onClick={() => { setActiveTab('all'); setCurrentPage(1); }} />
+                <TabButton label={t('discovery.verifiedProfiles')} active={activeTab === 'verified'} onClick={() => { setActiveTab('verified'); setCurrentPage(1); }} icon={<UserCheck size={14} />} />
+                <TabButton label={t('discovery.unverifiedProfiles')} active={activeTab === 'unverified'} onClick={() => { setActiveTab('unverified'); setCurrentPage(1); }} icon={<AlertCircle size={14} />} />
              </div>
           </div>
       </div>
@@ -798,7 +800,7 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
             </div>
 
             {/* Pagination Controls */}
-            {!isSearchActive && activeTab === 'all' && pagination.last_page > 1 && (
+            {!isSearchActive && pagination.last_page > 1 && (
               <div className="mt-8 flex flex-col items-center gap-3">
                 <div className="flex items-center gap-2">
                   <button
