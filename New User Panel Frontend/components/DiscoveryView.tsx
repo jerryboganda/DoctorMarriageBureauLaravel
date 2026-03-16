@@ -12,12 +12,22 @@ import { ProfileMatch } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { STAGGER_CONTAINER, FADE_UP_ITEM, BTN_TAP } from '../utils/motion';
 import { api } from '../utils/api';
+import { useAuthStore } from '../src/stores/authStore';
 import { CanonicalInterestState, getInterestFlagsFromState, resolveInterestState } from '../utils/interestStatus';
 
 // API base URL for assets
 const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://api.doctormarriagebureau.com.pk';
 const DEFAULT_AVATAR = `${API_BASE}/assets/img/avatar-place.png`;
 const DEFAULT_FEMALE_AVATAR = `${API_BASE}/assets/img/female-avatar-place.png`;
+
+const resolveAvatarUrl = (value?: string | null): string => {
+  const candidate = `${value ?? ''}`.trim();
+  if (!candidate) return DEFAULT_AVATAR;
+  if (candidate.startsWith('http://') || candidate.startsWith('https://')) return candidate;
+  if (candidate.startsWith('//')) return `https:${candidate}`;
+  if (candidate.startsWith('/')) return `${API_BASE}${candidate}`;
+  return `${API_BASE}/${candidate.replace(/^\/+/, '')}`;
+};
 
 interface DiscoveryViewProps {
     onSendProposal: (profile: ProfileMatch) => void;
@@ -92,6 +102,10 @@ const DEFAULT_FILTERS: DiscoveryFilters = {
 
 const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposalStateChange, initialTab = 'all', isIdentityVerified, onRequireVerification, onNavigate, unreadNotifCount = 0, sentProposalMap = {}, proposalStatusMap = {}, refreshVersion }) => {
   const { t } = useTranslation();
+  const { user } = useAuthStore();
+  const userAvatarUrl = resolveAvatarUrl(user?.avatar_original || user?.avatar);
+  const userDisplayName = user?.name ?? t('nav.defaultName');
+  const userMembershipLabel = user?.membership === 2 ? t('nav.premiumMember') : t('nav.basicMember');
   const [showFilters, setShowFilters] = useState(false);
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [isTravelMode, setIsTravelMode] = useState(false);
@@ -453,14 +467,7 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
 
          {/* Actions */}
          <div className="flex items-center gap-2 md:gap-3 overflow-x-auto pb-1 md:pb-0 scrollbar-hide">
-             <motion.button 
-                whileTap={BTN_TAP}
-                onClick={() => setShowTuner(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-md whitespace-nowrap"
-             >
-                <Sliders size={14} /> {t('discovery.matchTuner')}
-             </motion.button>
-
+             
              {/* Travel Mode */}
              <motion.button 
                 whileTap={BTN_TAP}
@@ -490,18 +497,31 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
              </div>
 
              {/* Notifications */}
-             <button 
-                onClick={() => onNavigate?.('notifications')}
-                className="p-2 text-slate-500 hover:text-primary transition-colors relative hidden md:block"
-                title={t('discovery.notifications')}
-             >
-                <Bell size={20} />
-                {unreadNotifCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5 border-2 border-white">
-                    {unreadNotifCount > 99 ? '99+' : unreadNotifCount}
-                  </span>
-                )}
-             </button>
+              <button 
+                 onClick={() => onNavigate?.('notifications')}
+                 className="p-2 text-slate-500 hover:text-primary transition-colors relative hidden md:block"
+                 title={t('discovery.notifications')}
+              >
+                 <Bell size={20} />
+                 {unreadNotifCount > 0 && (
+                   <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5 border-2 border-white">
+                     {unreadNotifCount > 99 ? '99+' : unreadNotifCount}
+                   </span>
+                 )}
+              </button>
+
+              {/* User Info */}
+              <div className="h-6 w-px bg-slate-200 mx-1 hidden md:block"></div>
+              <div className="hidden md:flex items-center gap-2.5 pl-1 cursor-pointer" onClick={() => onNavigate?.('profile')}>
+                <div
+                  className="size-8 rounded-full bg-slate-200 bg-cover bg-center border border-white shadow-sm shrink-0"
+                  style={userAvatarUrl ? { backgroundImage: `url(${userAvatarUrl})` } : undefined}
+                />
+                <div className="overflow-hidden max-w-[120px]">
+                  <p className="text-xs font-bold text-slate-900 truncate leading-tight">{userDisplayName}</p>
+                  <p className="text-[10px] text-slate-500 truncate leading-tight">{userMembershipLabel}</p>
+                </div>
+              </div>
          </div>
       </div>
 
