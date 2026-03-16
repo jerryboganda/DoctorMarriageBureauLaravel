@@ -454,6 +454,7 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
             Route::get('/referral-check', 'ReferralController@referral_check');
             // Notifications
             Route::get('/notifications', 'NotificationController@notifications');
+            Route::get('/notifications/{id}', 'NotificationController@show');
             Route::get('/notification/{id}', 'NotificationController@single_notification_read');
             Route::get('/mark-all-as-read', 'NotificationController@mark_all_as_read');
             // Happy tory

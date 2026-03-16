@@ -14,6 +14,7 @@ export default defineConfig(({ mode }) => {
     : undefined;
 
   return {
+    base: env.VITE_BASE_PATH || '/',
     server: {
       port: 5173,
       host: '0.0.0.0',
