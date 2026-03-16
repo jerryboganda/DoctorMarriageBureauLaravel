@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   Search, Sliders, MapPin, Heart, X, ChevronDown, Eye, EyeOff, Map as MapIcon, 
-  Grid, Zap, Star, Plane, Filter, ArrowUpDown, Bell, Crown, UserCheck, Send, Loader2, MessageSquare, Clock, CheckCircle2, Camera, Bookmark, Sparkles, AlertCircle,
+  Grid, Zap, Plane, Filter, ArrowUpDown, Bell, Crown, UserCheck, Send, Loader2, MessageSquare, Clock, CheckCircle2, Camera, Bookmark, Sparkles, AlertCircle,
   ChevronLeft, ChevronRight
 } from 'lucide-react';
 import ProfileDetailModal from './ProfileDetailModal';
@@ -22,7 +22,7 @@ const DEFAULT_FEMALE_AVATAR = `${API_BASE}/assets/img/female-avatar-place.png`;
 interface DiscoveryViewProps {
     onSendProposal: (profile: ProfileMatch) => void;
     onProposalStateChange?: (profileId: string, state: CanonicalInterestState) => void;
-    initialTab?: 'all' | 'agent' | 'intent';
+    initialTab?: 'all' | 'verified' | 'unverified';
     isIdentityVerified?: boolean | null;
     onRequireVerification?: () => void;
     onNavigate?: (view: string) => void;
@@ -98,7 +98,7 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
   const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
   const [selectedProfile, setSelectedProfile] = useState<ProfileMatch | null>(null);
   const [showTuner, setShowTuner] = useState(false);
-  const [activeTab, setActiveTab] = useState<'all' | 'agent' | 'intent'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'all' | 'verified' | 'unverified'>(initialTab);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<ProfileMatch[]>([]);
   const [filters, setFilters] = useState<DiscoveryFilters>(DEFAULT_FILTERS);
@@ -417,9 +417,10 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
   };
 
   const getDisplayedProfiles = () => {
-    if (activeTab === 'agent') return profiles.agent_picks;
-    if (activeTab === 'intent') return profiles.high_intent;
-    return profiles.all_profiles;
+    const all = profiles.all_profiles;
+    if (activeTab === 'verified') return all.filter(p => p.isVerified === true);
+    if (activeTab === 'unverified') return all.filter(p => p.isVerified !== true);
+    return all;
   };
 
   const filtersActive = appliedFilters.familyApprovedOnly ||
@@ -519,8 +520,8 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
             {/* Discovery Tabs */}
             <div className="flex bg-slate-100 p-1 rounded-lg shrink-0">
                 <TabButton label={t('discovery.allProfiles')} active={activeTab === 'all'} onClick={() => setActiveTab('all')} />
-                <TabButton label={t('discovery.matchmakerPicks')} active={activeTab === 'agent'} onClick={() => setActiveTab('agent')} icon={<UserCheck size={14} />} />
-                <TabButton label={t('discovery.highIntent')} active={activeTab === 'intent'} onClick={() => setActiveTab('intent')} icon={<Crown size={14} />} />
+                <TabButton label={t('discovery.verifiedProfiles')} active={activeTab === 'verified'} onClick={() => setActiveTab('verified')} icon={<UserCheck size={14} />} />
+                <TabButton label={t('discovery.unverifiedProfiles')} active={activeTab === 'unverified'} onClick={() => setActiveTab('unverified')} icon={<Crown size={14} />} />
             </div>
          </div>
 
@@ -667,38 +668,6 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
                 </div>
             ) : (
                 <>
-                    {/* Top Picks / Header */}
-                    {!isSearchActive && activeTab === 'all' && (
-                    <div className="mb-8">
-                        <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-                            <Star size={18} className="text-yellow-500 fill-yellow-500" /> 
-                            {t('discovery.matchmakerPicks')}
-                        </h3>
-                        <motion.div 
-                            className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide"
-                            variants={STAGGER_CONTAINER}
-                            initial="hidden"
-                            animate="visible"
-                        >
-                            {profiles.agent_picks.map(profile => (
-                                <motion.div 
-                                    variants={FADE_UP_ITEM}
-                                    key={profile.id} 
-                                    onClick={() => setSelectedProfile(profile)}
-                                    className="min-w-[280px] bg-white rounded-xl p-3 border border-slate-100 shadow-sm hover:shadow-md transition-shadow cursor-pointer flex gap-3 items-center"
-                                >
-                                    <div className="size-16 rounded-full bg-cover bg-center shrink-0" style={{backgroundImage: `url(${profile.avatarUrl})`}}></div>
-                                    <div>
-                                        <h4 className="font-bold text-slate-900">{profile.name}</h4>
-                                        <p className="text-xs text-slate-500">{profile.specialty}</p>
-                                        <span className="text-xs font-bold text-primary mt-1 block">{profile.matchPercentage}% {t('discovery.match')}</span>
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </motion.div>
-                    </div>
-            )}
-
             {/* Main Grid */}
             <div>
                  <h3 className="text-lg font-bold text-slate-900 mb-4">
@@ -706,7 +675,7 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
                         ? (searchQuery.trim()
                             ? t('discovery.searchResultsFor', { query: searchQuery.trim() })
                             : t('discovery.filteredResults'))
-                        : activeTab === 'agent' ? t('discovery.matchmakerRecommendations') : activeTab === 'intent' ? t('discovery.highIntentProfiles') : t('discovery.exploreProfiles')
+                        : activeTab === 'verified' ? t('discovery.verifiedProfiles') : activeTab === 'unverified' ? t('discovery.unverifiedProfiles') : t('discovery.exploreProfiles')
                     }
                  </h3>
                  {viewMode === 'grid' ? (

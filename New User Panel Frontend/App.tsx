@@ -1104,7 +1104,7 @@ useEffect(() => {
                                 />
                             ) : (
                                 <DiscoveryView
-                                    initialTab={currentView === 'agent_picks' ? 'agent' : 'all'}
+                                    initialTab={'all'}
                                     onSendProposal={(p) => setProposalTarget(p)}
                                     onProposalStateChange={(profileId, state) => {
                                         upsertProposalState(profileId, state, 120000);
