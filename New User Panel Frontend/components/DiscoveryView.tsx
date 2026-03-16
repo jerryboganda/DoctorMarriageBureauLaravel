@@ -521,31 +521,9 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
             <div className="flex bg-slate-100 p-1 rounded-lg shrink-0">
                 <TabButton label={t('discovery.allProfiles')} active={activeTab === 'all'} onClick={() => setActiveTab('all')} />
                 <TabButton label={t('discovery.verifiedProfiles')} active={activeTab === 'verified'} onClick={() => setActiveTab('verified')} icon={<UserCheck size={14} />} />
-                <TabButton label={t('discovery.unverifiedProfiles')} active={activeTab === 'unverified'} onClick={() => setActiveTab('unverified')} icon={<Crown size={14} />} />
-            </div>
-         </div>
-
-         <div className="flex items-center justify-between md:justify-end gap-4">
-             <div className="flex items-center gap-1 text-sm font-medium text-slate-600 cursor-pointer hover:text-slate-900">
-                <ArrowUpDown size={14} />
-                <span>{t('discovery.sortRelevance')}</span>
+                <TabButton label={t('discovery.unverifiedProfiles')} active={activeTab === 'unverified'} onClick={() => setActiveTab('unverified')} icon={<AlertCircle size={14} />} />
              </div>
-             
-             <div className="flex bg-slate-100 p-1 rounded-lg">
-                <button 
-                    onClick={() => setViewMode('grid')}
-                    className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white shadow text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
-                >
-                    <Grid size={16} />
-                </button>
-                <button 
-                    onClick={() => setViewMode('map')}
-                    className={`p-1.5 rounded-md transition-all ${viewMode === 'map' ? 'bg-white shadow text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
-                >
-                    <MapIcon size={16} />
-                </button>
-             </div>
-         </div>
+          </div>
       </div>
 
       <div className="flex-1 flex min-h-0 relative overflow-hidden">
