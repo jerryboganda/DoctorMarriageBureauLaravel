@@ -128,6 +128,7 @@ const App: React.FC = () => {
     const [checkoutItem, setCheckoutItem] = useState<CheckoutItem | null>(null);
     const [appliedCouponCode, setAppliedCouponCode] = useState<string | null>(null);
     const [profileTargetSection, setProfileTargetSection] = useState<string | null>(null);
+    const [messageTargetMemberId, setMessageTargetMemberId] = useState<string | null>(null);
     const isPremiumMessagingMember = Number(user?.membership) === 2;
     const mustChangePassword = isAuthenticated && Boolean(Number(user?.must_change_password ?? 0));
     const [forcePasswordOld, setForcePasswordOld] = useState('');
@@ -535,6 +536,11 @@ useEffect(() => {
         setShowSubscription(true);
     };
 
+    const handleUpgradeMessagingViaReferral = () => {
+        setShowPremiumMessagingModal(false);
+        handleNavigate('referral');
+    };
+
     const handleSelectPlan = (id: number, name: string, amount: number) => {
         setShowSubscription(false);
         setCheckoutItem({ id, name, amount, type: 'package' });
@@ -616,12 +622,29 @@ useEffect(() => {
             return;
         }
 
+        if (view !== 'messages') {
+            setMessageTargetMemberId(null);
+        }
+
         setCurrentView(view);
         // Push state to browser history to enable back button
         window.history.pushState({ view }, '', window.location.pathname);
         // Keep navigation light to preserve SPA responsiveness
         fetchNotificationCount();
         setIsMobileMenuOpen(false); // Close mobile menu on navigate
+    };
+
+    const handleProposalMessageClick = (profileId?: string) => {
+        const normalizedProfileId = String(profileId || '').trim();
+
+        if (!isPremiumMessagingMember) {
+            setMessageTargetMemberId(null);
+            openPremiumMessagingModal();
+            return;
+        }
+
+        setMessageTargetMemberId(normalizedProfileId || null);
+        handleNavigate('messages');
     };
 
     if (isLoading) {
@@ -996,7 +1019,7 @@ useEffect(() => {
                                                                     {isApproved && (
                                                                         <motion.button
                                                                             whileTap={{ scale: 0.9 }}
-                                                                            onClick={() => handleNavigate('messages')}
+                                                                            onClick={() => handleProposalMessageClick(interest.profile.id)}
                                                                             className="flex items-center gap-1.5 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold hover:bg-emerald-100 transition-colors"
                                                                         >
                                                                             {t('dashboard.message')}
@@ -1037,7 +1060,7 @@ useEffect(() => {
                                                                 {isApproved && (
                                                                     <motion.button
                                                                         whileTap={{ scale: 0.9 }}
-                                                                        onClick={() => handleNavigate('messages')}
+                                                                        onClick={() => handleProposalMessageClick(interest.profile.id)}
                                                                         className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold hover:bg-emerald-100 transition-colors"
                                                                     >
                                                                         {t('dashboard.message')}
@@ -1076,7 +1099,11 @@ useEffect(() => {
                                     onDataChanged={refreshCoreData}
                                 />
                             ) : currentView === 'messages' ? (
-                                <MessagesView onSubscriptionRequired={() => { setCurrentView('discovery'); }} />
+                                <MessagesView
+                                    onSubscriptionRequired={openPremiumMessagingModal}
+                                    initialMemberId={messageTargetMemberId}
+                                    onInitialMemberIdConsumed={() => setMessageTargetMemberId(null)}
+                                />
                             ) : (
                                 <DiscoveryView
                                     initialTab={currentView === 'agent_picks' ? 'agent' : 'all'}
@@ -1181,7 +1208,8 @@ useEffect(() => {
                             <PremiumMessagingModal
                                 open={showPremiumMessagingModal}
                                 onClose={() => setShowPremiumMessagingModal(false)}
-                                onUpgrade={handleUpgradeMessaging}
+                                onChooseReferral={handleUpgradeMessagingViaReferral}
+                                onChoosePackage={handleUpgradeMessaging}
                             />
                         </Suspense>
                     )}

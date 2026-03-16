@@ -50,13 +50,19 @@ const formatMessageTime = (dateStr: string) => {
 
 interface MessagesViewProps {
   onSubscriptionRequired?: () => void;
+  initialMemberId?: string | number | null;
+  onInitialMemberIdConsumed?: () => void;
 }
 
 const isSubscriptionRequiredError = (error: any): boolean => {
   return error?.response?.status === 403 && error?.response?.data?.code === 'SUBSCRIPTION_REQUIRED';
 };
 
-const MessagesView: React.FC<MessagesViewProps> = ({ onSubscriptionRequired }) => {
+const MessagesView: React.FC<MessagesViewProps> = ({
+  onSubscriptionRequired,
+  initialMemberId,
+  onInitialMemberIdConsumed,
+}) => {
   const { t } = useTranslation();
   const { user } = useAuthStore();
 
@@ -250,6 +256,19 @@ const MessagesView: React.FC<MessagesViewProps> = ({ onSubscriptionRequired }) =
   useEffect(() => {
     if (selectedChatId) fetchChat(selectedChatId);
   }, [selectedChatId]);
+
+  useEffect(() => {
+    if (initialMemberId == null) return;
+    if (loadingList) return;
+
+    const targetThread = threads.find((thread) => String(thread.user_id) === String(initialMemberId));
+
+    if (targetThread?.id) {
+      setSelectedChatId(targetThread.id);
+    }
+
+    onInitialMemberIdConsumed?.();
+  }, [initialMemberId, loadingList, threads, onInitialMemberIdConsumed]);
 
   // Auto-scroll to bottom
   useEffect(() => {
