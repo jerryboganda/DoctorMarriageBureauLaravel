@@ -82,6 +82,19 @@ services:
       - marriagebureau-network
       - nginx-proxy-manager_default
 
+  flutter-app:
+    build:
+      context: ./dmb_app
+      dockerfile: Dockerfile
+    image: marriagebureau-flutter-app
+    container_name: marriagebureau-flutter-app
+    restart: unless-stopped
+    ports:
+      - 3001:80
+    networks:
+      - marriagebureau-network
+      - nginx-proxy-manager_default
+
 networks:
   marriagebureau-network:
     driver: bridge

@@ -25,20 +25,20 @@ dependencies:
   # Secure Storage
   flutter_secure_storage: ^9.2.2
 
-  # Real-time
-  pusher_channels_flutter: ^2.3.1
+  # Real-time (disable pusher for web build - uses soketi websocket)
+  # pusher_channels_flutter: ^2.3.1
 
-  # Push Notifications
-  firebase_core: ^3.1.0
-  firebase_messaging: ^15.0.1
+  # Push Notifications (disable for web build - uncomment after adding google-services.json)
+  # firebase_core: ^3.1.0
+  # firebase_messaging: ^15.0.1
 
-  # Social Login
-  google_sign_in: ^6.2.1
+  # Social Login (disable for web build - uncomment after setup)
+  # google_sign_in: ^6.2.1
 
   # Images
   cached_network_image: ^3.3.1
   image_picker: ^1.1.2
-  flutter_image_compress: ^2.3.0
+  # flutter_image_compress: ^2.3.0  # Not supported on web — enable for mobile builds only
 
   # Icons (Lucide parity)
   lucide_icons: ^0.257.0
