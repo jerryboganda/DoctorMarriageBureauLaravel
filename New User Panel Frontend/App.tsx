@@ -105,7 +105,7 @@ const App: React.FC = () => {
     const [incomingInterests, setIncomingInterests] = useState<IncomingInterest[]>([]);
     const [sentInterests, setSentInterests] = useState<IncomingInterest[]>([]);
     const [declineInterestId, setDeclineInterestId] = useState<number | null>(null);
-    const [dashboardTab, setDashboardTab] = useState<'all' | 'compatible' | 'recent'>('all');
+    const [dashboardTab, setDashboardTab] = useState<'all' | 'verified' | 'unverified'>('all');
     const [proposalDirection, setProposalDirection] = useState<'received' | 'sent'>('received');
     const [selectedProposalProfile, setSelectedProposalProfile] = useState<ProfileMatch | null>(null);
     const [sentProposalMap, setSentProposalMap] = useState<Record<string, boolean>>({});
@@ -232,7 +232,7 @@ const App: React.FC = () => {
                 age,
                 matchPercentage: baseScore,
                 avatarUrl: resolveAvatarUrl(item.photo),
-                isVerified: false,
+                isVerified: !!item.is_verified,
                 interestStatus,
                 interestText,
             }
@@ -826,25 +826,25 @@ useEffect(() => {
                                             </motion.button>
                                             <motion.button 
                                                 whileTap={{ scale: 0.95 }} 
-                                                onClick={() => setDashboardTab('compatible')}
+                                                onClick={() => setDashboardTab('verified')}
                                                 className={`px-4 lg:px-6 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
-                                                    dashboardTab === 'compatible' 
+                                                    dashboardTab === 'verified' 
                                                         ? 'bg-slate-900 text-white font-bold shadow-md' 
                                                         : 'text-slate-500 hover:text-slate-900'
                                                 }`}
                                             >
-                                                {t('dashboard.tabs.highCompatibility')}
+                                                {t('dashboard.tabs.verifiedProposals')}
                                             </motion.button>
                                             <motion.button 
                                                 whileTap={{ scale: 0.95 }} 
-                                                onClick={() => setDashboardTab('recent')}
+                                                onClick={() => setDashboardTab('unverified')}
                                                 className={`px-4 lg:px-6 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
-                                                    dashboardTab === 'recent' 
+                                                    dashboardTab === 'unverified' 
                                                         ? 'bg-slate-900 text-white font-bold shadow-md' 
                                                         : 'text-slate-500 hover:text-slate-900'
                                                 }`}
                                             >
-                                                {t('dashboard.tabs.recent')}
+                                                {t('dashboard.tabs.unverifiedProposals')}
                                             </motion.button>
                                         </div>
 
@@ -910,12 +910,10 @@ useEffect(() => {
                                                 const isReceived = proposalDirection === 'received';
                                                 const source = isReceived ? incomingInterests : sentInterests;
                                                 let filtered = [...source];
-                                                if (dashboardTab === 'compatible') {
-                                                    filtered = filtered.sort((a, b) => 
-                                                        (b.profile.matchPercentage || 0) - (a.profile.matchPercentage || 0)
-                                                    );
-                                                } else if (dashboardTab === 'recent') {
-                                                    filtered = filtered.sort((a, b) => b.interestId - a.interestId);
+                                                if (dashboardTab === 'verified') {
+                                                    filtered = filtered.filter((a) => a.profile.isVerified === true);
+                                                } else if (dashboardTab === 'unverified') {
+                                                    filtered = filtered.filter((a) => a.profile.isVerified !== true);
                                                 }
                                                 
                                                 if (filtered.length === 0) {
@@ -1106,7 +1104,7 @@ useEffect(() => {
                                 />
                             ) : (
                                 <DiscoveryView
-                                    initialTab={currentView === 'agent_picks' ? 'agent' : 'all'}
+                                    initialTab={'all'}
                                     onSendProposal={(p) => setProposalTarget(p)}
                                     onProposalStateChange={(profileId, state) => {
                                         upsertProposalState(profileId, state, 120000);

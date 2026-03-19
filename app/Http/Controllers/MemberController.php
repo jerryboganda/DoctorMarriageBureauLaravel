@@ -467,6 +467,12 @@ class MemberController extends Controller
         $user->approved   = 1;
         if ($user->save()) {
 
+            try {
+                (new \App\Services\ReferralService())->checkAndQualifyReferral($user->id);
+            } catch (\Exception $e) {
+                \Log::error('Referral qualification check failed after verification approval: ' . $e->getMessage(), ['user_id' => $user->id]);
+            }
+
             $status = 'Approved';
             
             // Member verification email send to members
@@ -749,6 +755,11 @@ class MemberController extends Controller
         $user->deactivated = $user->deactivated ? 0 : 1;
         $user->save();
 
+        // If deactivated, revoke all API tokens so they are immediately logged out
+        if ($user->deactivated == 1) {
+            $user->tokens()->delete();
+        }
+
         $status = $user->deactivated ? translate('deactivated') : translate('activated');
         flash(translate('Member has been ') . $status . ' ' . translate('successfully!'))->success();
         return back();
@@ -945,6 +956,151 @@ class MemberController extends Controller
     $this->appendWhatsappMetadataToMembers($members, 'general');
 
         return view('admin.members.member_types', compact('members', 'sort_search', 'type'));
+    }
+
+    /**
+     * Send notification to a specific member via selected channels (email, sms, whatsapp, push).
+     * Returns JSON so the frontend can handle WhatsApp link opening without popup-blocker issues.
+     */
+    public function sendNotification(Request $request)
+    {
+        $request->validate([
+            'member_id' => 'required|integer|exists:users,id',
+            'title'     => 'required|string|max:255',
+            'body'      => 'required|string|max:5000',
+            'channels'  => 'required|array|min:1',
+            'channels.*'=> 'in:email,sms,whatsapp,push',
+        ]);
+
+        $user = User::findOrFail($request->member_id);
+        $title   = $request->title;
+        $body    = $request->body;
+        $channels = $request->channels;
+        $results = [];
+        $whatsappLink = null;
+
+        // --- EMAIL ---
+        if (in_array('email', $channels)) {
+            if (!empty($user->email)) {
+                try {
+                    \Mail::send('emails.index', ['email_body' => $body], function ($message) use ($user, $title) {
+                        $message->to($user->email, $user->first_name . ' ' . $user->last_name)
+                                ->subject($title)
+                                ->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
+                    });
+                    $results['email'] = 'sent';
+                } catch (\Throwable $e) {
+                    Log::error('Admin notification email failed: ' . $e->getMessage());
+                    $results['email'] = 'failed';
+                }
+            } else {
+                $results['email'] = 'skipped: no email address';
+            }
+        }
+
+        // --- SMS ---
+        if (in_array('sms', $channels)) {
+            if (!empty($user->phone)) {
+                try {
+                    $smsText = $title . "\n\n" . $body;
+                    sendSMS($user->phone, env('APP_NAME'), $smsText, '');
+                    $results['sms'] = 'sent';
+                } catch (\Throwable $e) {
+                    Log::error('Admin notification SMS failed: ' . $e->getMessage());
+                    $results['sms'] = 'failed';
+                }
+            } else {
+                $results['sms'] = 'skipped: no phone number';
+            }
+        }
+
+        // --- WHATSAPP ---
+        if (in_array('whatsapp', $channels)) {
+            $waDigits = $this->normalizeWhatsappPhone($user->phone);
+            if ($waDigits) {
+                $waMessage = "*{$title}*\n\n{$body}";
+                $whatsappLink = 'https://web.whatsapp.com/send?phone=' . $waDigits . '&text=' . urlencode($waMessage);
+                $results['whatsapp'] = 'link_generated';
+            } else {
+                $results['whatsapp'] = 'skipped: invalid or missing phone number';
+            }
+        }
+
+        // --- PUSH NOTIFICATION (via Soketi WebSocket + Database) ---
+        if (in_array('push', $channels)) {
+            try {
+                // 1. Store in database notifications table so it appears in user's notification list
+                $notifyId = unique_notify_id();
+                \Illuminate\Support\Facades\Notification::send($user, new \App\Notifications\DbStoreNotification(
+                    'admin_notification',
+                    $notifyId,
+                    $user->id,       // notify_by = target user (so their photo shows in notification list)
+                    auth()->id(),    // info_id  = admin who sent it
+                    $body,
+                    'notifications',
+                    $title           // title field for display
+                ));
+
+                // 2. Broadcast via Soketi so user gets real-time popup
+                broadcast(new \App\Events\NotificationReceived($user->id, [
+                    'type'    => 'admin_notification',
+                    'title'   => $title,
+                    'body'    => $body,
+                    'message' => $body,
+                    'sent_by' => auth()->user()->first_name . ' ' . auth()->user()->last_name,
+                ]));
+
+                $results['push'] = 'sent';
+            } catch (\Throwable $e) {
+                Log::error('Admin notification push (Soketi) failed: ' . $e->getMessage());
+                $results['push'] = 'failed';
+            }
+        }
+
+        // Build result summary
+        $successChannels = [];
+        $failedChannels  = [];
+        $skippedChannels = [];
+        foreach ($results as $ch => $status) {
+            if ($status === 'sent' || $status === 'link_generated') {
+                $successChannels[] = ucfirst($ch);
+            } elseif (str_starts_with($status, 'skipped')) {
+                $skippedChannels[] = ucfirst($ch) . ' (' . substr($status, 9) . ')';
+            } else {
+                $failedChannels[] = ucfirst($ch);
+            }
+        }
+
+        $msg = '';
+        if (!empty($successChannels)) {
+            $msg .= 'Notification sent via: ' . implode(', ', $successChannels) . '. ';
+        }
+        if (!empty($skippedChannels)) {
+            $msg .= 'Skipped: ' . implode(', ', $skippedChannels) . '. ';
+        }
+        if (!empty($failedChannels)) {
+            $msg .= 'Failed: ' . implode(', ', $failedChannels) . '.';
+        }
+
+        // Return JSON for AJAX handling (WhatsApp link + results)
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success'       => empty($failedChannels),
+                'message'       => trim($msg),
+                'results'       => $results,
+                'whatsapp_link' => $whatsappLink,
+            ]);
+        }
+
+        // Fallback for non-AJAX
+        if (!empty($failedChannels)) {
+            flash($msg)->error();
+        } elseif (!empty($skippedChannels) && empty($successChannels)) {
+            flash($msg)->warning();
+        } else {
+            flash($msg)->success();
+        }
+        return back();
     }
 
     private function appendWhatsappMetadataToMembers($members, string $context = 'general'): void

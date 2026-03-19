@@ -715,6 +715,10 @@ class AuthController extends Controller
                 'avatar' => uploaded_asset($user->photo) ?? '',
                 'avatar_original' => uploaded_asset($user->photo) ?? '',
                 'phone' => $user->phone ?? '',
+                'is_visible' => (bool) ($member->is_visible ?? true),
+                'travel_mode' => (bool) ($member->travel_mode ?? false),
+                'travel_city' => $member->travel_city ?? null,
+                'travel_country' => $member->travel_country ?? null,
             ]
         );
     }

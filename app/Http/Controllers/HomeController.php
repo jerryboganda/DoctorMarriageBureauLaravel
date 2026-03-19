@@ -337,7 +337,7 @@ class HomeController extends Controller
                                     'age' => $age,
                                     'location' => $location,
                                     'photo' => $matchUser->photo ? uploaded_asset($matchUser->photo) : null,
-                                    'match_percentage' => rand(85, 98),
+                                    'match_percentage' => auth()->check() ? \App\Services\MatchScoreService::score(auth()->user(), $matchUser) : 50,
                                     'is_online' => $isOnline
                                 ];
                             } catch (\Exception $e) {
@@ -1330,7 +1330,7 @@ class HomeController extends Controller
                             'age' => $age,
                             'location' => $location,
                             'photo' => $matchUser->photo ? uploaded_asset($matchUser->photo) : null,
-                            'match_percentage' => rand(85, 98),
+                            'match_percentage' => auth()->check() ? \App\Services\MatchScoreService::score(auth()->user(), $matchUser) : 50,
                             'is_online' => $isOnline
                         ];
                     } catch (\Exception $e) {

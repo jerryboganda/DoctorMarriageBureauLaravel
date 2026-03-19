@@ -63,6 +63,8 @@ use App\Models\SpiritualBackground;
 use App\Models\Staff;
 use App\Models\State;
 use App\Models\SubCaste;
+use App\Models\JobTitle;
+use App\Models\Speciality;
 use App\Models\FieldVisibilitySetting;
 use App\Models\ViewContact;
 use App\Models\ViewGalleryImage;
@@ -842,6 +844,14 @@ class ProfileController extends Controller
         }
 
         $member = $user->member;
+        if (!$member) {
+            return response()->json([
+                'result' => false,
+                'error_code' => 'profile_incomplete',
+                'message' => 'Your profile has not been set up yet. Please complete the registration process first.',
+            ], 400);
+        }
+
         $optionSets = $this->getMarriageIntentOptionSets();
 
         $physical_attributes = PhysicalAttribute::where('user_id', $user->id)->first();
@@ -949,6 +959,9 @@ class ProfileController extends Controller
             $member->save();
         }
 
+        // Calculate real-time profile completion data
+        $profileCompletion = $this->getProfileCompletionData($user, $member);
+
         return response()->json([
             'result' => true,
             'basics' => [
@@ -1008,6 +1021,8 @@ class ProfileController extends Controller
                 'income' => $incomeLabel,
                 'incomeRangeId' => $member->annual_salary_range_id ?? null,
                 'workLocationType' => $career->work_location_type ?? '',
+                'jobTitleId' => $career->job_title_id ?? null,
+                'specialityId' => $career->speciality_id ?? null,
                 'careerStart' => $career->start ?? '',
                 'careerEnd' => $career->end ?? '',
                 'careerPresent' => (bool) ($career->present ?? false),
@@ -1030,6 +1045,8 @@ class ProfileController extends Controller
                         'end' => $c->end ?? '',
                         'present' => (bool) ($c->present ?? false),
                         'workLocationType' => $c->work_location_type ?? '',
+                        'jobTitleId' => $c->job_title_id,
+                        'specialityId' => $c->speciality_id,
                     ];
                 })->values()->toArray(),
             ],
@@ -1086,7 +1103,8 @@ class ProfileController extends Controller
                 'intro_video_url' => $member->intro_video_path ? uploaded_asset($member->intro_video_path) : null,
             ],
             'salaryRanges' => $salaryRanges,
-            'visibility' => $visibility
+            'visibility' => $visibility,
+            'profileCompletion' => $profileCompletion,
         ]);
     }
 
@@ -1104,6 +1122,8 @@ class ProfileController extends Controller
         if (!$member) {
             return response()->json(['result' => false, 'message' => 'Member profile not found'], 404);
         }
+
+        try {
 
         $normalizeStringList = function ($value) {
             if (is_array($value)) {
@@ -1429,6 +1449,8 @@ class ProfileController extends Controller
                         'designation' => $carEntry['designation'] ?? null,
                         'company' => $carEntry['company'] ?? null,
                         'work_location_type' => $carEntry['workLocationType'] ?? null,
+                        'job_title_id' => $normalizeInt($carEntry['jobTitleId'] ?? null) ?: null,
+                        'speciality_id' => $normalizeInt($carEntry['specialityId'] ?? null) ?: null,
                         'start' => $normalizeInt($carEntry['start'] ?? null),
                         'end' => $normalizeInt($carEntry['end'] ?? null),
                         'present' => !empty($carEntry['present']) ? 1 : 0,
@@ -1465,6 +1487,8 @@ class ProfileController extends Controller
                     'designation' => $careerData['designation'] ?? null,
                     'company' => $careerData['company'] ?? null,
                     'work_location_type' => $careerData['workLocationType'] ?? null,
+                    'job_title_id' => $normalizeInt($careerData['jobTitleId'] ?? null) ?: null,
+                    'speciality_id' => $normalizeInt($careerData['specialityId'] ?? null) ?: null,
                     'start' => $normalizeInt($careerData['careerStart'] ?? null),
                     'end' => $normalizeInt($careerData['careerEnd'] ?? null),
                     'present' => !empty($careerData['careerPresent']) ? 1 : 0,
@@ -1680,6 +1704,33 @@ class ProfileController extends Controller
             // Reload user and member from DB to get latest state (e.g. photo just uploaded)
             $user = $user->fresh();
             $member = $user->member;
+
+            // Backward-compatible fallback for users who uploaded to gallery
+            // but still have an empty primary profile photo.
+            if (empty($user->photo)) {
+                $candidatePhoto = GalleryImage::where('user_id', $user->id)
+                    ->where('is_main_photo', true)
+                    ->orderByDesc('id')
+                    ->value('image');
+
+                if (empty($candidatePhoto)) {
+                    $candidatePhoto = GalleryImage::where('user_id', $user->id)
+                        ->orderByDesc('id')
+                        ->value('image');
+                }
+
+                if (!empty($candidatePhoto)) {
+                    $user->photo = $candidatePhoto;
+                    if (get_setting('profile_picture_approval_by_admin') && $user->user_type == 'member') {
+                        $user->photo_approved = 0;
+                    } else {
+                        $user->photo_approved = 1;
+                    }
+                    $user->save();
+                    $user = $user->fresh();
+                }
+            }
+
             $missingFields = $this->getOnboardingMissingFields($user, $member);
             if (!empty($missingFields)) {
                 \Log::warning('Onboarding incomplete for user ' . $user->id, ['missing' => $missingFields]);
@@ -1699,10 +1750,27 @@ class ProfileController extends Controller
             $member->save();
         }
 
+        // Return updated profile completion data after save
+        $user = $user->fresh();
+        $member = $user->member;
+        $profileCompletion = $this->getProfileCompletionData($user, $member);
+
         return response()->json([
             'result' => true,
-            'message' => 'Profile updated successfully'
+            'message' => 'Profile updated successfully',
+            'profileCompletion' => $profileCompletion,
         ]);
+
+        } catch (\Exception $e) {
+            \Log::error('update_full_profile_react failed for user ' . ($user->id ?? '?'), [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile() . ':' . $e->getLine(),
+            ]);
+            return response()->json([
+                'result' => false,
+                'message' => 'Failed to save profile: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -1772,6 +1840,114 @@ class ProfileController extends Controller
         return empty($this->getOnboardingMissingFields($user, $member));
     }
 
+    /**
+     * Get per-step completion data for profile completion tracking.
+     * Returns step completion booleans, filled/total fields per step,
+     * overall percentage, and the first incomplete step number.
+     */
+    private function getProfileCompletionData(User $user, Member $member): array
+    {
+        $presentAddress = Address::where('user_id', $user->id)->where('type', 'present')->first();
+        $spiritual = SpiritualBackground::where('user_id', $user->id)->first();
+        $career = DB::table('careers')
+            ->where('user_id', $user->id)
+            ->whereNull('deleted_at')
+            ->orderByDesc('present')
+            ->orderByDesc('updated_at')
+            ->first();
+        $education = DB::table('education')
+            ->where('user_id', $user->id)
+            ->whereNull('deleted_at')
+            ->orderByDesc('is_highest_degree')
+            ->orderByDesc('updated_at')
+            ->first();
+        $physical = PhysicalAttribute::where('user_id', $user->id)->first();
+
+        // Step 1: Personal (5 fields)
+        $step1Fields = [
+            'firstName' => trim((string) $user->first_name) !== '',
+            'lastName' => trim((string) $user->last_name) !== '',
+            'gender' => !empty($member->gender),
+            'dateOfBirth' => !empty($member->birthday),
+            'maritalStatus' => !empty($member->marital_status_id),
+        ];
+
+        // Step 2: Location & Religion (5 fields)
+        $step2Fields = [
+            'country' => $presentAddress && !empty($presentAddress->country_id),
+            'state' => $presentAddress && !empty($presentAddress->state_id),
+            'city' => $presentAddress && !empty($presentAddress->city_id),
+            'religion' => $spiritual && !empty($spiritual->religion_id),
+            'caste' => $spiritual && !empty($spiritual->caste_id),
+        ];
+
+        // Step 3: Career & Education (5 fields)
+        $step3Fields = [
+            'designation' => $career && trim((string) ($career->designation ?? '')) !== '',
+            'company' => $career && trim((string) ($career->company ?? '')) !== '',
+            'degree' => $education && trim((string) ($education->degree ?? '')) !== '',
+            'institution' => $education && trim((string) ($education->institution ?? '')) !== '',
+            'incomeRange' => !empty($member->annual_salary_range_id),
+        ];
+
+        // Step 4: Appearance (3 fields)
+        $step4Fields = [
+            'height' => $physical && $physical->height !== null && $physical->height !== '',
+            'weight' => $physical && $physical->weight !== null && $physical->weight !== '',
+            'complexion' => $physical && trim((string) ($physical->complexion ?? '')) !== '',
+        ];
+
+        // Step 5: About Me (1 field)
+        $step5Fields = [
+            'introduction' => trim((string) ($member->introduction ?? '')) !== '',
+        ];
+
+        // Step 6: Photo (1 field)
+        $step6Fields = [
+            'profilePhoto' => !empty($user->photo),
+        ];
+
+        $allSteps = [$step1Fields, $step2Fields, $step3Fields, $step4Fields, $step5Fields, $step6Fields];
+
+        // Calculate per-step completion
+        $stepStatuses = [];
+        $totalFields = 0;
+        $filledFields = 0;
+        $firstIncompleteStep = null;
+
+        foreach ($allSteps as $i => $stepFields) {
+            $stepFilled = count(array_filter($stepFields));
+            $stepTotal = count($stepFields);
+            $isComplete = $stepFilled === $stepTotal;
+
+            $totalFields += $stepTotal;
+            $filledFields += $stepFilled;
+
+            $stepStatuses[] = [
+                'step' => $i + 1,
+                'complete' => $isComplete,
+                'filled' => $stepFilled,
+                'total' => $stepTotal,
+                'fields' => $stepFields,
+            ];
+
+            if (!$isComplete && $firstIncompleteStep === null) {
+                $firstIncompleteStep = $i + 1;
+            }
+        }
+
+        $percentage = $totalFields > 0 ? round(($filledFields / $totalFields) * 100) : 0;
+
+        return [
+            'percentage' => (int) $percentage,
+            'totalFields' => $totalFields,
+            'filledFields' => $filledFields,
+            'firstIncompleteStep' => $firstIncompleteStep ?? 1,
+            'allComplete' => $filledFields === $totalFields,
+            'steps' => $stepStatuses,
+        ];
+    }
+
     public function download_biodata(Request $request)
     {
         $user = auth()->user();
@@ -1780,7 +1956,12 @@ class ProfileController extends Controller
         }
 
         try {
-            $pdf = PDF::loadView('pdf.biodata_modern', compact('user'));
+            $pdf = PDF::loadView('pdf.biodata_modern', compact('user'), [], [
+                'margin_left'   => 5,
+                'margin_right'  => 5,
+                'margin_top'    => 5,
+                'margin_bottom' => 5,
+            ]);
             $filename = 'Biodata-' . ($user->first_name ?? 'User') . '.pdf';
 
             // Use output() instead of download() to avoid mPDF calling exit()
@@ -1835,6 +2016,10 @@ class ProfileController extends Controller
             'lifestyles',
             'physical_attributes',
             'partner_expectations.religion',
+            'partner_expectations.caste',
+            'partner_expectations.family_value',
+            'partner_expectations.member_language',
+            'partner_expectations.marital_status',
             'hobbies'
         ]);
 
@@ -1938,6 +2123,22 @@ class ProfileController extends Controller
                 ];
             })->values()->toArray(),
             'familyValues' => FamilyValue::orderBy('name')->get(['id', 'name'])->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'name' => $item->name,
+                    'value' => $item->id,
+                    'label' => $item->name,
+                ];
+            })->values()->toArray(),
+            'jobTitles' => JobTitle::orderBy('name')->get(['id', 'name'])->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'name' => $item->name,
+                    'value' => $item->id,
+                    'label' => $item->name,
+                ];
+            })->values()->toArray(),
+            'specialities' => Speciality::orderBy('name')->get(['id', 'name'])->map(function ($item) {
                 return [
                     'id' => $item->id,
                     'name' => $item->name,

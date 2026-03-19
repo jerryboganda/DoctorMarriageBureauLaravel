@@ -7,6 +7,7 @@ import { echo } from '../utils/echo';
 import { api } from '../utils/api';
 
 interface NotificationItem extends NotificationDetailItem {
+  body?: string;
   created_at?: string;
   is_read?: boolean;
   notify_by?: string | number | null;
@@ -34,6 +35,7 @@ const sanitizeNotification = (item: any): NotificationItem => {
     notification_id: String(item?.notification_id ?? item?.id ?? Math.random().toString()),
     title,
     message,
+    body: String(item?.body ?? item?.message ?? item?.full_message ?? ''),
     full_message: String(item?.full_message ?? item?.message ?? 'No details available'),
     time: String(item?.time ?? ''),
     created_at: item?.created_at ? String(item.created_at) : undefined,
@@ -47,6 +49,34 @@ const sanitizeNotification = (item: any): NotificationItem => {
     info_id: item?.info_id ?? null,
     raw_data: item?.raw_data && typeof item.raw_data === 'object' ? item.raw_data : undefined,
   };
+};
+
+const formatNotificationDate = (iso: string, relative: string): string => {
+  if (!iso) return relative;
+  try {
+    const date = new Date(iso);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffHours = diffMs / (1000 * 60 * 60);
+    const timeStr = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    if (diffHours < 1) return relative;
+    if (diffHours < 24) return `${relative} · Today at ${timeStr}`;
+
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (date.toDateString() === yesterday.toDateString()) return `Yesterday at ${timeStr}`;
+
+    if (diffHours < 168) {
+      return `${dayNames[date.getDay()]} at ${timeStr}`;
+    }
+
+    return `${monthNames[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()} at ${timeStr}`;
+  } catch {
+    return relative;
+  }
 };
 
 const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate, refreshVersion, onDataChanged }) => {
@@ -361,12 +391,12 @@ const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate, refre
                           {notification.title}
                         </h3>
                         <span className="ml-2 whitespace-nowrap text-[10px] font-medium text-slate-400 md:text-xs">
-                          {notification.time}
+                          {formatNotificationDate(notification.created_at ?? '', notification.time)}
                         </span>
                       </div>
 
                       <p className="line-clamp-2 text-xs text-slate-500 md:text-sm">
-                        {getNotificationSummary(notification)}
+                        {notification.body?.trim() || getNotificationSummary(notification)}
                       </p>
 
                       <div className="mt-4 flex items-center gap-3">

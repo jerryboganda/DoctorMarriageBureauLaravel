@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, FileText, Image, Users, Send, Wand2, Check, Loader2, AlertCircle, CheckCircle2, MessageSquare } from 'lucide-react';
+import { X, FileText, Image, Users, Send, Wand2, Check, Loader2, AlertCircle, CheckCircle2, MessageSquare, ArrowUpCircle, Settings, ShieldOff } from 'lucide-react';
 import { ProfileMatch } from '../types';
 import { api } from '../utils/api';
 import { resolveInterestState } from '../utils/interestStatus';
@@ -22,6 +22,7 @@ const ProposalModal: React.FC<ProposalModalProps> = ({ profile, onClose, onNavig
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [errorCode, setErrorCode] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(true);
   const [alreadySent, setAlreadySent] = useState<'pending' | 'accepted' | 'received' | null>(null);
@@ -74,6 +75,7 @@ const ProposalModal: React.FC<ProposalModalProps> = ({ profile, onClose, onNavig
     if (hasExistingInterest || alreadySent) return;
     setIsLoading(true);
     setError('');
+    setErrorCode(null);
     try {
         const response = await api.post('/member/express-interest', {
             user_id: profile.id,
@@ -88,10 +90,13 @@ const ProposalModal: React.FC<ProposalModalProps> = ({ profile, onClose, onNavig
                 onClose();
             }, 2000);
         } else {
+            setErrorCode(response.data.error_code || null);
             setError(response.data.message || t('errors.couldNotSendProposal'));
         }
     } catch (err: any) {
-        setError(err.response?.data?.message || t('errors.couldNotSendProposal'));
+        const data = err.response?.data;
+        setErrorCode(data?.error_code || null);
+        setError(data?.message || t('errors.couldNotSendProposal'));
     } finally {
         setIsLoading(false);
     }
@@ -271,9 +276,37 @@ const ProposalModal: React.FC<ProposalModalProps> = ({ profile, onClose, onNavig
         {/* Footer */}
         <div className="p-6 border-t border-slate-100 bg-slate-50">
             {error && (
-                <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-xl text-xs flex items-center gap-2">
-                    <AlertCircle size={14} />
-                    <span>{error}</span>
+                <div className={`mb-4 p-4 rounded-xl text-xs ${
+                    errorCode === 'quota_exhausted' ? 'bg-amber-50 text-amber-800 border border-amber-200' :
+                    errorCode === 'account_deactivated' ? 'bg-orange-50 text-orange-800 border border-orange-200' :
+                    errorCode === 'account_blocked' ? 'bg-red-50 text-red-800 border border-red-200' :
+                    'bg-red-50 text-red-600 border border-red-100'
+                }`}>
+                    <div className="flex items-start gap-2">
+                        {errorCode === 'quota_exhausted' ? <ArrowUpCircle size={16} className="shrink-0 mt-0.5" /> :
+                         errorCode === 'account_deactivated' ? <Settings size={16} className="shrink-0 mt-0.5" /> :
+                         errorCode === 'account_blocked' ? <ShieldOff size={16} className="shrink-0 mt-0.5" /> :
+                         <AlertCircle size={14} className="shrink-0 mt-0.5" />}
+                        <div className="flex-1">
+                            <span>{error}</span>
+                            {errorCode === 'quota_exhausted' && (
+                                <button
+                                    onClick={() => { onClose(); onNavigate?.('packages'); }}
+                                    className="mt-2 block w-full text-center py-2 bg-amber-600 text-white rounded-lg font-bold text-xs hover:bg-amber-700 transition-colors"
+                                >
+                                    {t('modals.proposal.upgradePackage', 'Upgrade Package')}
+                                </button>
+                            )}
+                            {errorCode === 'account_deactivated' && (
+                                <button
+                                    onClick={() => { onClose(); onNavigate?.('settings'); }}
+                                    className="mt-2 block w-full text-center py-2 bg-orange-600 text-white rounded-lg font-bold text-xs hover:bg-orange-700 transition-colors"
+                                >
+                                    {t('modals.proposal.goToSettings', 'Go to Settings')}
+                                </button>
+                            )}
+                        </div>
+                    </div>
                 </div>
             )}
             <div className="flex items-center justify-between">

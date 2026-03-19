@@ -260,8 +260,8 @@
   "dashboard": {
     "tabs": {
       "allProposals": "تمام تجاویز",
-      "highCompatibility": "اعلیٰ مطابقت",
-      "recent": "حالیہ"
+      "verifiedProposals": "تصدیق شدہ تجاویز",
+      "unverifiedProposals": "غیر تصدیق شدہ تجاویز"
     },
     "received": "موصول شدہ",
     "sent": "بھیجی گئیں",
@@ -304,8 +304,8 @@
     "visible": "نظر آنے والا",
     "filters": "فلٹرز",
     "allProfiles": "تمام پروفائلز",
-    "matchmakerPicks": "رشتہ ساز کے انتخاب",
-    "highIntent": "اعلیٰ ارادہ",
+    "verifiedProfiles": "تصدیق شدہ پروفائلز",
+    "unverifiedProfiles": "غیر تصدیق شدہ پروفائلز",
     "sortRelevance": "ترتیب: مطابقت",
     "advancedFilters": "ایڈوانسڈ فلٹرز",
     "specialFilter": "خصوصی فلٹر",
@@ -326,8 +326,8 @@
     "findingMatches": "آپ کے لیے بہترین رشتے تلاش ہو رہے ہیں...",
     "searchResultsFor": "\"{{query}}\" کے لیے تلاش کے نتائج",
     "filteredResults": "فلٹر شدہ نتائج",
-    "matchmakerRecommendations": "رشتہ ساز کی سفارشات",
-    "highIntentProfiles": "اعلیٰ ارادے والی پروفائلز",
+    "matchmakerRecommendations": "تصدیق شدہ پروفائلز",
+    "highIntentProfiles": "غیر تصدیق شدہ پروفائلز",
     "exploreProfiles": "پروفائلز دیکھیں",
     "match": "% مطابقت",
     "mapViewPlaceholder": "نقشہ کا منظر",
@@ -348,7 +348,15 @@
     "pendingResponse": "جواب کا انتظار",
     "browseAnonymouslyTitle": "بغیر نام دیکھیں",
     "notifications": "اطلاعات",
-    "showingResults": "{{total}} میں سے {{from}}-{{to}} پروفائلز دکھائے جا رہے ہیں"
+    "showingResults": "{{total}} میں سے {{from}}-{{to}} پروفائلز دکھائے جا رہے ہیں",
+    "travelingTo": "دورہ",
+    "travelModalTitle": "ٹریول موڈ فعال کریں",
+    "travelModalDesc": "مقامی تلاش کے نتائج میں ظاہر ہونے کے لیے اپنی منزل مقرر کریں",
+    "cityPlaceholder": "شہر",
+    "countryPlaceholder": "ملک",
+    "enableTravelMode": "ٹریول موڈ فعال کریں",
+    "disableTravelMode": "ٹریول موڈ غیر فعال کریں",
+    "cancel": "منسوخ"
   },
   "messages": {
     "title": "پیغامات",

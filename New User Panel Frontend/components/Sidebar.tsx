@@ -148,9 +148,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, dataSyncVers
     };
   }, [dataSyncVersion]);
 
-  const avatarUrl = resolveAvatarUrl(user?.avatar_original || user?.avatar);
-  const displayName = user?.name ?? t('nav.defaultName');
-  const membershipLabel = user?.membership === 2 ? t('nav.premiumMember') : t('nav.basicMember');
+  const avatarUrl = resolveAvatarUrl(user?.avatar_original || user?.avatar); // kept for potential future use
   const isPremiumMessagingMember = Number(user?.membership) === 2;
 
   // Scroll indicator state
@@ -188,42 +186,6 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, dataSyncVers
       </div>
 
       <nav ref={navRef} className="flex-1 flex flex-col px-4 gap-1 py-4 overflow-y-auto scrollbar-hide relative">
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8 p-4 bg-slate-50/80 rounded-2xl flex items-center gap-3 border border-slate-100"
-        >
-          <div className="relative group">
-            <div
-              className={`size-10 rounded-full bg-slate-200 bg-cover bg-center border border-white shadow-sm transition-all cursor-pointer ${uploading ? 'opacity-50' : 'group-hover:brightness-90'}`}
-              style={avatarUrl ? { backgroundImage: `url(${avatarUrl})` } : undefined}
-              onClick={handleAvatarClick}
-            />
-            <div
-              onClick={handleAvatarClick}
-              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity bg-black/20 rounded-full"
-            >
-              <Camera size={14} className="text-white" />
-            </div>
-            {uploading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-white/40 rounded-full">
-                <Loader2 size={14} className="animate-spin text-primary" />
-              </div>
-            )}
-            <input
-              type="file"
-              ref={fileInputRef}
-              className="hidden"
-              accept="image/*"
-              onChange={handleFileChange}
-            />
-          </div>
-          <div className="overflow-hidden">
-            <h2 className="text-sm font-bold text-slate-900 truncate">{displayName}</h2>
-            <p className="text-xs text-slate-500 truncate">{membershipLabel}</p>
-          </div>
-        </motion.div>
-
         <div className="space-y-1">
           <NavItem icon={<Compass size={20} />} label={t('nav.exploreProfiles')} active={currentView === 'discovery'} onClick={() => onNavigate('discovery')} />
           <NavItem icon={<UserCheck size={20} />} label={t('nav.matchmakerProposals')} active={currentView === 'agent_picks'} onClick={() => onNavigate('agent_picks')} badge={counts.agentPicks || undefined} />
@@ -231,19 +193,19 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, dataSyncVers
           <NavItem icon={<MessageSquare size={20} />} label={t('nav.messages')} active={currentView === 'messages'} onClick={() => { if (isPremiumMessagingMember) { onNavigate('messages'); } else { onUpgrade?.(); } }} badge={isPremiumMessagingMember ? (counts.messages || undefined) : undefined} />
         </div>
 
-        <p className="px-4 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 mt-8">{t('nav.familySocial')}</p>
+        <p className="px-4 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 mt-4">{t('nav.familySocial')}</p>
         <div className="space-y-1">
           <NavItem icon={<Users size={20} />} label={t('nav.familyPortal')} sublabel={t('nav.familyPortalSublabel')} active={currentView === 'family'} onClick={() => onNavigate('family')} />
           <NavItem icon={<Globe size={20} />} label={t('nav.communities')} active={currentView === 'communities'} onClick={() => onNavigate('communities')} />
           <NavItem icon={<Route size={20} />} label={t('nav.journeyTracking')} active={currentView === 'progression'} onClick={() => onNavigate('progression')} />
         </div>
 
-        <p className="px-4 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 mt-8">{t('nav.referralHeader')}</p>
+        <p className="px-4 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 mt-4">{t('nav.referralHeader')}</p>
         <div className="space-y-1">
           <NavItem icon={<Gift size={20} />} label={t('nav.referralSystem')} sublabel={t('nav.referralSublabel')} active={currentView === 'referral'} onClick={() => onNavigate('referral')} />
         </div>
 
-        <p className="px-4 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 mt-8">{t('nav.settingsHeader')}</p>
+        <p className="px-4 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 mt-4">{t('nav.settingsHeader')}</p>
         <div className="space-y-1">
           <NavItem icon={<Bell size={20} />} label={t('nav.notifications')} active={currentView === 'notifications'} onClick={() => onNavigate('notifications')} badge={counts.notifications || undefined} />
           <NavItem icon={<UserCircle size={20} />} label={t('nav.myProfile')} active={currentView === 'profile'} onClick={() => onNavigate('profile')} />

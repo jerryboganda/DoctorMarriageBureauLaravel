@@ -64,6 +64,7 @@ class NotificationResource extends JsonResource
             'photo' => $profilePictureShow ? uploaded_asset($user->photo) : static_asset($avatarImage),
             'title' => $title,
             'message' => $message !== '' ? $message : 'No details available',
+            'body' => $message !== '' ? $message : '',
             'full_message' => $message !== '' ? $message : 'No details available',
             'time' => Carbon::parse($this->created_at)->diffForHumans(),
             'created_at' => optional($this->created_at)->toIso8601String(),

@@ -22,7 +22,6 @@ use App\Http\Controllers\MaritalStatusController;
 use App\Http\Controllers\MemberBulkAddController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\MemberLanguageController;
-use App\Http\Controllers\NewsletterController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnBehalfController;
 use App\Http\Controllers\PackageController;
@@ -39,6 +38,10 @@ use App\Http\Controllers\StateController;
 use App\Http\Controllers\SubCasteController;
 use App\Http\Controllers\UpdateController;
 use App\Http\Controllers\ProfileOptionValueController;
+use App\Http\Controllers\JobTitleController;
+use App\Http\Controllers\SpecialityController;
+use App\Http\Controllers\ProfileCompletionReminderController;
+use App\Http\Controllers\BulkNotificationController;
 use App\Http\Controllers\WalletController;
 
 /*
@@ -112,6 +115,7 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin']], function 
         Route::post('/members/get_package', 'get_package')->name('members.get_package');
         Route::post('/members/package_do_update/{id}', 'package_do_update')->name('members.package_do_update');
         Route::post('/members/wallet-balance-update', 'member_wallet_balance_update')->name('member.wallet_balance_update');
+        Route::post('/members/send-notification', 'sendNotification')->name('members.send_notification');
 
         Route::get('/member-list/{status}', 'filterbyStatus')->name('filterbyStatus');
     });
@@ -272,17 +276,47 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin']], function 
     Route::post('/profile-option-values/bulk-delete', [ProfileOptionValueController::class, 'bulk_delete'])->name('profile_option_values.bulk_delete');
     Route::post('/profile-option-values/toggle-active/{id}', [ProfileOptionValueController::class, 'toggle_active'])->name('profile-option-values.toggle_active');
 
+    // Job Titles
+    Route::resource('/job-titles', JobTitleController::class)->names([
+        'destroy' => 'job-titles.resource.destroy',
+    ]);
+    Route::controller(JobTitleController::class)->group(function () {
+        Route::get('/job-titles/destroy/{id}', 'destroy')->name('job-titles.destroy');
+        Route::post('/job-title/bulk_destroy', 'bulk_delete')->name('job-titles.bulk_delete');
+    });
+
+    // Specialities
+    Route::resource('/specialities', SpecialityController::class)->names([
+        'destroy' => 'specialities.resource.destroy',
+    ]);
+    Route::controller(SpecialityController::class)->group(function () {
+        Route::get('/specialities/destroy/{id}', 'destroy')->name('specialities.destroy');
+        Route::post('/speciality/bulk_destroy', 'bulk_delete')->name('specialities.bulk_delete');
+    });
+
     // Email Templates
     Route::resource('/email-templates', EmailTemplateController::class)->names([
         'update' => 'email-templates.resource.update',
     ]);
     Route::post('/email-templates/update', [EmailTemplateController::class, 'update'])->name('email-templates.update');
 
-    // Marketing
-    Route::controller(NewsletterController::class)->group(function () {
-        Route::get('/newsletter', 'index')->name('newsletters.index');
-        Route::post('/newsletter/send', 'send')->name('newsletters.send');
-        Route::post('/newsletter/test/smtp', 'testEmail')->name('test.smtp');
+    // SMTP Test (moved from newsletter)
+    Route::post('/test/smtp', [SettingController::class, 'testSmtp'])->name('test.smtp');
+
+    Route::controller(BulkNotificationController::class)->prefix('bulk-notifications')->group(function () {
+        Route::get('/', 'index')->name('admin.bulk_notifications.index');
+        Route::post('/send', 'send')->name('admin.bulk_notifications.send');
+        Route::post('/preview-count', 'previewCount')->name('admin.bulk_notifications.preview_count');
+        Route::get('/get-states', 'getStates')->name('admin.bulk_notifications.get_states');
+        Route::get('/get-cities', 'getCities')->name('admin.bulk_notifications.get_cities');
+    });
+
+    // Profile Completion Reminders
+    Route::controller(ProfileCompletionReminderController::class)->prefix('profile-completion-reminders')->group(function () {
+        Route::get('/', 'index')->name('admin.profile_completion_reminders.index');
+        Route::post('/update', 'update')->name('admin.profile_completion_reminders.update');
+        Route::post('/send-now', 'sendNow')->name('admin.profile_completion_reminders.send_now');
+        Route::post('/clear-logs', 'clearLogs')->name('admin.profile_completion_reminders.clear_logs');
     });
 
     // Language
@@ -326,8 +360,7 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin']], function 
         Route::get('/verification/form', 'member_verification_form')->name('member_verification_form.index');
         Route::post('/verification/form/update', 'member_verification_form_update')->name('member_verification_form.update');
 
-        Route::get('/system/update', 'system_update')->name('system_update');
-        Route::get('/system/server-status', 'system_server')->name('system_server');
+
     });
 
     Route::resource('/additional-attributes', AdditionalAttributeController::class)->names([

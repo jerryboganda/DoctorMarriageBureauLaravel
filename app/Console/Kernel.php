@@ -24,7 +24,8 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')->hourly();
+        // Send profile completion reminder emails daily at 9 AM
+        $schedule->command('reminders:profile-completion')->dailyAt('09:00');
     }
 
     /**

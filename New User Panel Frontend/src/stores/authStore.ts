@@ -17,6 +17,10 @@ interface User {
   phone?: string;
   birthday?: number | string;
   must_change_password?: boolean | number;
+  is_visible?: boolean;
+  travel_mode?: boolean;
+  travel_city?: string | null;
+  travel_country?: string | null;
 }
 
 interface AuthState {

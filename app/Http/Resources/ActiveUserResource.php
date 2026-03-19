@@ -76,6 +76,8 @@ class ActiveUserResource extends JsonResource
             'isHighIntent'        => $this->member->is_high_intent == 1,
             'travel_mode'         => $this->member->travel_mode == 1,
             'is_visible'          => $this->member->is_visible == 1,
+            'travel_city'         => $this->member->travel_city,
+            'travel_country'      => $this->member->travel_country,
             'profile_view_resquest_status' => $profileViewRequestStatus,
             'gallery_view_resquest_status' => $galleryViewRequestStatus,
             'education' => $this->education->count() > 0 ? [

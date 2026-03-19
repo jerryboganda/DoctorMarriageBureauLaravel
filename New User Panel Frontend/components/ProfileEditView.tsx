@@ -1361,9 +1361,11 @@ const CareerSection: React.FC<{ data: any, salaryRanges?: any[], optionSets?: an
                 end: data.careerEnd || '',
                 present: data.careerPresent || false,
                 workLocationType: data.workLocationType || '',
+                jobTitleId: data.jobTitleId || '',
+                specialityId: data.specialityId || '',
             }];
         }
-        return [{ id: null, designation: '', company: '', start: '', end: '', present: false, workLocationType: '' }];
+        return [{ id: null, designation: '', company: '', start: '', end: '', present: false, workLocationType: '', jobTitleId: '', specialityId: '' }];
     });
 
     // Sync educations array to parent data on change
@@ -1392,6 +1394,8 @@ const CareerSection: React.FC<{ data: any, salaryRanges?: any[], optionSets?: an
             updateData('careerEnd', updated[0].end);
             updateData('careerPresent', updated[0].present);
             updateData('workLocationType', updated[0].workLocationType);
+            updateData('jobTitleId', updated[0].jobTitleId);
+            updateData('specialityId', updated[0].specialityId);
         }
     }, [updateData]);
 
@@ -1418,7 +1422,7 @@ const CareerSection: React.FC<{ data: any, salaryRanges?: any[], optionSets?: an
     };
 
     const addCareer = () => {
-        syncCareers([...careers, { id: null, designation: '', company: '', start: '', end: '', present: false, workLocationType: '' }]);
+        syncCareers([...careers, { id: null, designation: '', company: '', start: '', end: '', present: false, workLocationType: '', jobTitleId: '', specialityId: '' }]);
     };
 
     const removeCareer = (index: number) => {
@@ -1543,15 +1547,46 @@ const CareerSection: React.FC<{ data: any, salaryRanges?: any[], optionSets?: an
                             )}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <InputGroup label={t('profile.edit.professionDesignation')}>
-                                    <input
-                                        type="text"
+                                    <select
                                         className="form-input"
-                                        placeholder={t('profile.edit.professionPlaceholder')}
-                                        defaultValue={career.designation}
-                                        onBlur={(e) => updateCareer(index, 'designation', e.target.value)}
-                                    />
+                                        value={String(career.jobTitleId ?? '')}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            const selected = (optionSets?.jobTitles ?? []).find((jt: any) => String(jt.id) === val);
+                                            // Update both fields in a single call to avoid stale-state race condition
+                                            const updated = [...careers];
+                                            updated[index] = {
+                                                ...updated[index],
+                                                jobTitleId: val ? Number(val) : '',
+                                                ...(selected ? { designation: selected.name } : {}),
+                                            };
+                                            syncCareers(updated);
+                                        }}
+                                    >
+                                        <option value="">{t('profile.edit.professionPlaceholder')}</option>
+                                        {(optionSets?.jobTitles ?? []).map((jt: any) => (
+                                            <option key={jt.id} value={String(jt.id)}>{jt.name}</option>
+                                        ))}
+                                    </select>
                                 </InputGroup>
 
+                                <InputGroup label={t('profile.edit.speciality', 'Speciality')}>
+                                    <select
+                                        className="form-input"
+                                        value={String(career.specialityId ?? '')}
+                                        onChange={(e) => {
+                                            updateCareer(index, 'specialityId', e.target.value ? Number(e.target.value) : '');
+                                        }}
+                                    >
+                                        <option value="">{t('profile.edit.selectSpeciality', 'Select Speciality')}</option>
+                                        {(optionSets?.specialities ?? []).map((sp: any) => (
+                                            <option key={sp.id} value={String(sp.id)}>{sp.name}</option>
+                                        ))}
+                                    </select>
+                                </InputGroup>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <InputGroup label={t('profile.edit.employerHospital')}>
                                     <div className="flex gap-2">
                                         <input

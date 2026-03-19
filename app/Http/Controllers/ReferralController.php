@@ -121,7 +121,7 @@ class ReferralController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'trigger_threshold' => 'required|integer|min:1|max:1000',
-            'qualification_mode' => 'required|in:registration_only,email_verified,phone_verified,email_and_phone_verified,paid_subscription,active_days',
+            'qualification_mode' => 'required|in:registration_only,email_verified,phone_verified,email_and_phone_verified,identity_verified,paid_subscription,active_days',
             'active_days' => 'nullable|integer|min:1|max:365',
             'reward_type' => 'required|in:package_upgrade',
             'target_package_id' => 'required|exists:packages,id',
@@ -166,7 +166,7 @@ class ReferralController extends Controller
             'name' => 'required|string|max:255',
             'is_active' => 'required|boolean',
             'trigger_threshold' => 'required|integer|min:1|max:1000',
-            'qualification_mode' => 'required|in:registration_only,email_verified,phone_verified,email_and_phone_verified,paid_subscription,active_days',
+            'qualification_mode' => 'required|in:registration_only,email_verified,phone_verified,email_and_phone_verified,identity_verified,paid_subscription,active_days',
             'active_days' => 'nullable|integer|min:1|max:365',
             'target_package_id' => 'required|exists:packages,id',
             'upgrade_duration_days' => 'required|integer|min:1|max:3650',

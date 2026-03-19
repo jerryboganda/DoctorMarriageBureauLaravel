@@ -223,7 +223,12 @@ class ChatController extends Controller
             abort(401);
         }
 
-        $pdf = PDF::loadView('pdf.biodata_modern', compact('user'));
+        $pdf = PDF::loadView('pdf.biodata_modern', compact('user'), [], [
+            'margin_left'   => 5,
+            'margin_right'  => 5,
+            'margin_top'    => 5,
+            'margin_bottom' => 5,
+        ]);
         $pdfContent = $pdf->output();
 
         $filename = 'biodata_' . $user->id . '_' . time() . '_' . uniqid() . '.pdf';

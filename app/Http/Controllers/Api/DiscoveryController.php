@@ -15,6 +15,7 @@ class DiscoveryController extends Controller
     {
         $user = auth()->user();
         $opposite_gender = ($user->member->gender == 1) ? 2 : 1;
+        $verified_filter = $request->query('verified'); // 'yes', 'no', or null (all)
 
         // Base query for members of opposite gender
         $base_query = User::with([
@@ -36,23 +37,38 @@ class DiscoveryController extends Controller
                   ->where('is_visible', 1);
             });
 
-        // Matchmaker Picks (featured section, limit 10)
-        $agent_picks = (clone $base_query)
-            ->whereHas('member', function($q) {
-                $q->where('is_agent_pick', 1);
-            })
-            ->orderBy('created_at', 'desc')
-            ->limit(10)
-            ->get();
+        // Apply verified/unverified filter at database level
+        // "Verified" means approved=1 AND verification_info is non-empty
+        if ($verified_filter === 'yes') {
+            $base_query->where('verification_info', '!=', '')
+                       ->whereNotNull('verification_info');
+        } elseif ($verified_filter === 'no') {
+            $base_query->where(function($q) {
+                $q->whereNull('verification_info')
+                  ->orWhere('verification_info', '');
+            });
+        }
 
-        // High Intent (featured section, limit 10)
-        $high_intent = (clone $base_query)
-            ->whereHas('member', function($q) {
-                $q->where('is_high_intent', 1);
-            })
-            ->orderBy('created_at', 'desc')
-            ->limit(10)
-            ->get();
+        // Matchmaker Picks (featured section, limit 10) — only on "all" tab
+        $agent_picks = collect();
+        $high_intent = collect();
+        if (!$verified_filter) {
+            $agent_picks = (clone $base_query)
+                ->whereHas('member', function($q) {
+                    $q->where('is_agent_pick', 1);
+                })
+                ->orderBy('created_at', 'desc')
+                ->limit(10)
+                ->get();
+
+            $high_intent = (clone $base_query)
+                ->whereHas('member', function($q) {
+                    $q->where('is_high_intent', 1);
+                })
+                ->orderBy('created_at', 'desc')
+                ->limit(10)
+                ->get();
+        }
 
         // All Profiles - paginated, 20 per page, consistent ordering
         $all_profiles = (clone $base_query)

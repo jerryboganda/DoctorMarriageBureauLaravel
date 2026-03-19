@@ -362,6 +362,13 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
             Route::post('/profile/section/{section}', 'ProfileCenterController@updateSection');
             Route::get('/profile/visibility', 'ProfileCenterController@getVisibilitySettings');
             Route::post('/profile/visibility', 'ProfileCenterController@toggleVisibility');
+
+            // Discovery Settings (Anonymous Mode & Travel Mode)
+            Route::post('/discovery/toggle-anonymous', 'DiscoverySettingsController@toggleAnonymous');
+            Route::get('/discovery/anonymous-status', 'DiscoverySettingsController@getAnonymousStatus');
+            Route::post('/discovery/travel-mode/enable', 'DiscoverySettingsController@enableTravelMode');
+            Route::post('/discovery/travel-mode/disable', 'DiscoverySettingsController@disableTravelMode');
+            Route::get('/discovery/travel-mode/status', 'DiscoverySettingsController@getTravelModeStatus');
             Route::post('/profile/media/voice', 'ProfileCenterController@uploadVoiceIntro');
             Route::delete('/profile/media/voice', 'ProfileCenterController@deleteVoiceIntro');
             Route::post('/profile/media/video', 'ProfileCenterController@uploadIntroVideo');

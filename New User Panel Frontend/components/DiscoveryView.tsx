@@ -2,16 +2,18 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   Search, Sliders, MapPin, Heart, X, ChevronDown, Eye, EyeOff, Map as MapIcon, 
-  Grid, Zap, Star, Plane, Filter, ArrowUpDown, Bell, Crown, UserCheck, Send, Loader2, MessageSquare, Clock, CheckCircle2, Camera, Bookmark, Sparkles, AlertCircle,
+  Grid, Zap, Plane, Filter, ArrowUpDown, Bell, Crown, UserCheck, Send, Loader2, MessageSquare, Clock, CheckCircle2, Camera, Bookmark, Sparkles, AlertCircle,
   ChevronLeft, ChevronRight
 } from 'lucide-react';
 import ProfileDetailModal from './ProfileDetailModal';
 import MatchTunerModal from './MatchTunerModal';
+import TravelModeModal from './TravelModeModal';
 import LanguageToggle from './LanguageToggle';
 import { ProfileMatch } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { STAGGER_CONTAINER, FADE_UP_ITEM, BTN_TAP } from '../utils/motion';
 import { api } from '../utils/api';
+import { useAuthStore } from '../src/stores/authStore';
 import { CanonicalInterestState, getInterestFlagsFromState, resolveInterestState } from '../utils/interestStatus';
 
 // API base URL for assets
@@ -19,10 +21,19 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http
 const DEFAULT_AVATAR = `${API_BASE}/assets/img/avatar-place.png`;
 const DEFAULT_FEMALE_AVATAR = `${API_BASE}/assets/img/female-avatar-place.png`;
 
+const resolveAvatarUrl = (value?: string | null): string => {
+  const candidate = `${value ?? ''}`.trim();
+  if (!candidate) return DEFAULT_AVATAR;
+  if (candidate.startsWith('http://') || candidate.startsWith('https://')) return candidate;
+  if (candidate.startsWith('//')) return `https:${candidate}`;
+  if (candidate.startsWith('/')) return `${API_BASE}${candidate}`;
+  return `${API_BASE}/${candidate.replace(/^\/+/, '')}`;
+};
+
 interface DiscoveryViewProps {
     onSendProposal: (profile: ProfileMatch) => void;
     onProposalStateChange?: (profileId: string, state: CanonicalInterestState) => void;
-    initialTab?: 'all' | 'agent' | 'intent';
+    initialTab?: 'all' | 'verified' | 'unverified';
     isIdentityVerified?: boolean | null;
     onRequireVerification?: () => void;
     onNavigate?: (view: string) => void;
@@ -71,6 +82,9 @@ const normalizeProfile = (profile: any): ProfileMatch => {
     careers: profile.careers,
     interestStatus: profile.interest_status ?? profile.interestStatus ?? profile.proposal_status,
     interestText: profile.interest_text ?? profile.interestText,
+    travel_mode: profile.travel_mode ?? false,
+    travel_city: profile.travel_city ?? '',
+    travel_country: profile.travel_country ?? '',
   };
 };
 
@@ -92,13 +106,22 @@ const DEFAULT_FILTERS: DiscoveryFilters = {
 
 const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposalStateChange, initialTab = 'all', isIdentityVerified, onRequireVerification, onNavigate, unreadNotifCount = 0, sentProposalMap = {}, proposalStatusMap = {}, refreshVersion }) => {
   const { t } = useTranslation();
+  const { user, setUser } = useAuthStore();
+  const userAvatarUrl = resolveAvatarUrl(user?.avatar_original || user?.avatar);
+  const userDisplayName = user?.name ?? t('nav.defaultName');
+  const userMembershipLabel = user?.membership === 2 ? t('nav.premiumMember') : t('nav.basicMember');
   const [showFilters, setShowFilters] = useState(false);
-  const [isAnonymous, setIsAnonymous] = useState(false);
-  const [isTravelMode, setIsTravelMode] = useState(false);
+  const [isAnonymous, setIsAnonymous] = useState(() => user?.is_visible === false);
+  const [anonymousLoading, setAnonymousLoading] = useState(false);
+  const [isTravelMode, setIsTravelMode] = useState(() => user?.travel_mode === true);
+  const [travelCity, setTravelCity] = useState(() => user?.travel_city || '');
+  const [travelCountry, setTravelCountry] = useState(() => user?.travel_country || '');
+  const [travelLoading, setTravelLoading] = useState(false);
+  const [showTravelModal, setShowTravelModal] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
   const [selectedProfile, setSelectedProfile] = useState<ProfileMatch | null>(null);
   const [showTuner, setShowTuner] = useState(false);
-  const [activeTab, setActiveTab] = useState<'all' | 'agent' | 'intent'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'all' | 'verified' | 'unverified'>(initialTab);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<ProfileMatch[]>([]);
   const [filters, setFilters] = useState<DiscoveryFilters>(DEFAULT_FILTERS);
@@ -175,7 +198,74 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
     }
   }, []);
 
-  const fetchDiscoveryData = useCallback(async (page: number = 1) => {
+  // ── Anonymous/Visible Toggle ───────────────────────────────────
+  const handleToggleAnonymous = useCallback(async () => {
+    if (anonymousLoading) return;
+    setAnonymousLoading(true);
+    try {
+      const res = await api.post('/member/discovery/toggle-anonymous');
+      if (res.data.success) {
+        const newVisible = res.data.is_visible;
+        setIsAnonymous(!newVisible);
+        // Sync auth store
+        if (user) setUser({ ...user, is_visible: newVisible });
+      }
+    } catch (err) {
+      console.error('Failed to toggle anonymous mode', err);
+    } finally {
+      setAnonymousLoading(false);
+    }
+  }, [anonymousLoading, user, setUser]);
+
+  // ── Travel Mode Handlers ───────────────────────────────────────
+  const handleTravelModeClick = useCallback(() => {
+    if (isTravelMode) {
+      // Disable travel mode
+      handleDisableTravelMode();
+    } else {
+      // Show modal to pick destination
+      setShowTravelModal(true);
+    }
+  }, [isTravelMode]);
+
+  const handleEnableTravelMode = useCallback(async (city: string, country: string) => {
+    if (travelLoading) return;
+    setTravelLoading(true);
+    try {
+      const res = await api.post('/member/discovery/travel-mode/enable', { city, country });
+      if (res.data.success) {
+        setIsTravelMode(true);
+        setTravelCity(city);
+        setTravelCountry(country);
+        setShowTravelModal(false);
+        if (user) setUser({ ...user, travel_mode: true, travel_city: city, travel_country: country });
+      }
+    } catch (err) {
+      console.error('Failed to enable travel mode', err);
+    } finally {
+      setTravelLoading(false);
+    }
+  }, [travelLoading, user, setUser]);
+
+  const handleDisableTravelMode = useCallback(async () => {
+    if (travelLoading) return;
+    setTravelLoading(true);
+    try {
+      const res = await api.post('/member/discovery/travel-mode/disable');
+      if (res.data.success) {
+        setIsTravelMode(false);
+        setTravelCity('');
+        setTravelCountry('');
+        if (user) setUser({ ...user, travel_mode: false, travel_city: null, travel_country: null });
+      }
+    } catch (err) {
+      console.error('Failed to disable travel mode', err);
+    } finally {
+      setTravelLoading(false);
+    }
+  }, [travelLoading, user, setUser]);
+
+  const fetchDiscoveryData = useCallback(async (page: number = 1, tab: 'all' | 'verified' | 'unverified' = 'all') => {
       const requestSeq = ++discoveryRequestSeqRef.current;
       discoveryAbortRef.current?.abort();
       const controller = new AbortController();
@@ -183,7 +273,11 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
 
       setLoading(true);
       try {
-          const response = await api.get('/discovery', { params: { page }, signal: controller.signal });
+          const params: Record<string, string | number> = { page };
+          if (tab === 'verified') params.verified = 'yes';
+          else if (tab === 'unverified') params.verified = 'no';
+
+          const response = await api.get('/discovery', { params, signal: controller.signal });
           if (requestSeq !== discoveryRequestSeqRef.current) return;
 
           if (response.data.result) {
@@ -221,11 +315,11 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
   }, []);
 
   useEffect(() => {
-    fetchDiscoveryData(currentPage);
-  }, [currentPage, fetchDiscoveryData]);
+    fetchDiscoveryData(currentPage, activeTab);
+  }, [currentPage, activeTab, fetchDiscoveryData]);
 
   useEffect(() => {
-    fetchDiscoveryData(currentPage);
+    fetchDiscoveryData(currentPage, activeTab);
     // refreshVersion is an explicit external invalidation signal.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshVersion]);
@@ -417,8 +511,7 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
   };
 
   const getDisplayedProfiles = () => {
-    if (activeTab === 'agent') return profiles.agent_picks;
-    if (activeTab === 'intent') return profiles.high_intent;
+    // Backend now handles verified/unverified filtering via ?verified= param
     return profiles.all_profiles;
   };
 
@@ -452,34 +545,30 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
 
          {/* Actions */}
          <div className="flex items-center gap-2 md:gap-3 overflow-x-auto pb-1 md:pb-0 scrollbar-hide">
-             <motion.button 
-                whileTap={BTN_TAP}
-                onClick={() => setShowTuner(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-md whitespace-nowrap"
-             >
-                <Sliders size={14} /> {t('discovery.matchTuner')}
-             </motion.button>
-
+             
              {/* Travel Mode */}
-             <motion.button 
-                whileTap={BTN_TAP}
-                onClick={() => setIsTravelMode(!isTravelMode)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-full text-xs font-bold transition-all border whitespace-nowrap ${isTravelMode ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
-             >
-                <Plane size={16} />
-                <span className="hidden xl:inline">{t('discovery.travelMode')}</span>
-             </motion.button>
+              <motion.button 
+                 whileTap={BTN_TAP}
+                 onClick={handleTravelModeClick}
+                 disabled={travelLoading}
+                 className={`flex items-center gap-2 px-3 py-2 rounded-full text-xs font-bold transition-all border whitespace-nowrap ${isTravelMode ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'} ${travelLoading ? 'opacity-60 cursor-wait' : ''}`}
+                 title={isTravelMode ? `${t('discovery.travelingTo')} ${travelCity}, ${travelCountry}` : t('discovery.travelMode')}
+              >
+                 {travelLoading ? <Loader2 size={16} className="animate-spin" /> : <Plane size={16} />}
+                 <span className="hidden xl:inline">{isTravelMode ? `${travelCity}` : t('discovery.travelMode')}</span>
+              </motion.button>
 
-             {/* Anonymous Toggle */}
-             <motion.button 
-                whileTap={BTN_TAP}
-                onClick={() => setIsAnonymous(!isAnonymous)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-full text-xs font-bold transition-all border whitespace-nowrap ${isAnonymous ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
-                title={t('discovery.browseAnonymouslyTitle')}
-             >
-                {isAnonymous ? <EyeOff size={16} /> : <Eye size={16} />}
-                <span className="hidden xl:inline">{isAnonymous ? t('discovery.anonymous') : t('discovery.visible')}</span>
-             </motion.button>
+              {/* Anonymous Toggle */}
+              <motion.button 
+                 whileTap={BTN_TAP}
+                 onClick={handleToggleAnonymous}
+                 disabled={anonymousLoading}
+                 className={`flex items-center gap-2 px-3 py-2 rounded-full text-xs font-bold transition-all border whitespace-nowrap ${isAnonymous ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'} ${anonymousLoading ? 'opacity-60 cursor-wait' : ''}`}
+                 title={t('discovery.browseAnonymouslyTitle')}
+              >
+                 {anonymousLoading ? <Loader2 size={16} className="animate-spin" /> : (isAnonymous ? <EyeOff size={16} /> : <Eye size={16} />)}
+                 <span className="hidden xl:inline">{isAnonymous ? t('discovery.anonymous') : t('discovery.visible')}</span>
+              </motion.button>
 
              <div className="h-6 w-px bg-slate-200 mx-1 hidden md:block"></div>
 
@@ -489,18 +578,31 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
              </div>
 
              {/* Notifications */}
-             <button 
-                onClick={() => onNavigate?.('notifications')}
-                className="p-2 text-slate-500 hover:text-primary transition-colors relative hidden md:block"
-                title={t('discovery.notifications')}
-             >
-                <Bell size={20} />
-                {unreadNotifCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5 border-2 border-white">
-                    {unreadNotifCount > 99 ? '99+' : unreadNotifCount}
-                  </span>
-                )}
-             </button>
+              <button 
+                 onClick={() => onNavigate?.('notifications')}
+                 className="p-2 text-slate-500 hover:text-primary transition-colors relative hidden md:block"
+                 title={t('discovery.notifications')}
+              >
+                 <Bell size={20} />
+                 {unreadNotifCount > 0 && (
+                   <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5 border-2 border-white">
+                     {unreadNotifCount > 99 ? '99+' : unreadNotifCount}
+                   </span>
+                 )}
+              </button>
+
+              {/* User Info */}
+              <div className="h-6 w-px bg-slate-200 mx-1 hidden md:block"></div>
+              <div className="hidden md:flex items-center gap-2.5 pl-1 cursor-pointer" onClick={() => onNavigate?.('profile')}>
+                <div
+                  className="size-8 rounded-full bg-slate-200 bg-cover bg-center border border-white shadow-sm shrink-0"
+                  style={userAvatarUrl ? { backgroundImage: `url(${userAvatarUrl})` } : undefined}
+                />
+                <div className="overflow-hidden max-w-[120px]">
+                  <p className="text-xs font-bold text-slate-900 truncate leading-tight">{userDisplayName}</p>
+                  <p className="text-[10px] text-slate-500 truncate leading-tight">{userMembershipLabel}</p>
+                </div>
+              </div>
          </div>
       </div>
 
@@ -518,33 +620,11 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
             
             {/* Discovery Tabs */}
             <div className="flex bg-slate-100 p-1 rounded-lg shrink-0">
-                <TabButton label={t('discovery.allProfiles')} active={activeTab === 'all'} onClick={() => setActiveTab('all')} />
-                <TabButton label={t('discovery.matchmakerPicks')} active={activeTab === 'agent'} onClick={() => setActiveTab('agent')} icon={<UserCheck size={14} />} />
-                <TabButton label={t('discovery.highIntent')} active={activeTab === 'intent'} onClick={() => setActiveTab('intent')} icon={<Crown size={14} />} />
-            </div>
-         </div>
-
-         <div className="flex items-center justify-between md:justify-end gap-4">
-             <div className="flex items-center gap-1 text-sm font-medium text-slate-600 cursor-pointer hover:text-slate-900">
-                <ArrowUpDown size={14} />
-                <span>{t('discovery.sortRelevance')}</span>
+                <TabButton label={t('discovery.allProfiles')} active={activeTab === 'all'} onClick={() => { setActiveTab('all'); setCurrentPage(1); }} />
+                <TabButton label={t('discovery.verifiedProfiles')} active={activeTab === 'verified'} onClick={() => { setActiveTab('verified'); setCurrentPage(1); }} icon={<UserCheck size={14} />} />
+                <TabButton label={t('discovery.unverifiedProfiles')} active={activeTab === 'unverified'} onClick={() => { setActiveTab('unverified'); setCurrentPage(1); }} icon={<AlertCircle size={14} />} />
              </div>
-             
-             <div className="flex bg-slate-100 p-1 rounded-lg">
-                <button 
-                    onClick={() => setViewMode('grid')}
-                    className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white shadow text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
-                >
-                    <Grid size={16} />
-                </button>
-                <button 
-                    onClick={() => setViewMode('map')}
-                    className={`p-1.5 rounded-md transition-all ${viewMode === 'map' ? 'bg-white shadow text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
-                >
-                    <MapIcon size={16} />
-                </button>
-             </div>
-         </div>
+          </div>
       </div>
 
       <div className="flex-1 flex min-h-0 relative overflow-hidden">
@@ -667,38 +747,6 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
                 </div>
             ) : (
                 <>
-                    {/* Top Picks / Header */}
-                    {!isSearchActive && activeTab === 'all' && (
-                    <div className="mb-8">
-                        <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-                            <Star size={18} className="text-yellow-500 fill-yellow-500" /> 
-                            {t('discovery.matchmakerPicks')}
-                        </h3>
-                        <motion.div 
-                            className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide"
-                            variants={STAGGER_CONTAINER}
-                            initial="hidden"
-                            animate="visible"
-                        >
-                            {profiles.agent_picks.map(profile => (
-                                <motion.div 
-                                    variants={FADE_UP_ITEM}
-                                    key={profile.id} 
-                                    onClick={() => setSelectedProfile(profile)}
-                                    className="min-w-[280px] bg-white rounded-xl p-3 border border-slate-100 shadow-sm hover:shadow-md transition-shadow cursor-pointer flex gap-3 items-center"
-                                >
-                                    <div className="size-16 rounded-full bg-cover bg-center shrink-0" style={{backgroundImage: `url(${profile.avatarUrl})`}}></div>
-                                    <div>
-                                        <h4 className="font-bold text-slate-900">{profile.name}</h4>
-                                        <p className="text-xs text-slate-500">{profile.specialty}</p>
-                                        <span className="text-xs font-bold text-primary mt-1 block">{profile.matchPercentage}% {t('discovery.match')}</span>
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </motion.div>
-                    </div>
-            )}
-
             {/* Main Grid */}
             <div>
                  <h3 className="text-lg font-bold text-slate-900 mb-4">
@@ -706,7 +754,7 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
                         ? (searchQuery.trim()
                             ? t('discovery.searchResultsFor', { query: searchQuery.trim() })
                             : t('discovery.filteredResults'))
-                        : activeTab === 'agent' ? t('discovery.matchmakerRecommendations') : activeTab === 'intent' ? t('discovery.highIntentProfiles') : t('discovery.exploreProfiles')
+                        : activeTab === 'verified' ? t('discovery.verifiedProfiles') : activeTab === 'unverified' ? t('discovery.unverifiedProfiles') : t('discovery.exploreProfiles')
                     }
                  </h3>
                  {viewMode === 'grid' ? (
@@ -752,7 +800,7 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
             </div>
 
             {/* Pagination Controls */}
-            {!isSearchActive && activeTab === 'all' && pagination.last_page > 1 && (
+            {!isSearchActive && pagination.last_page > 1 && (
               <div className="mt-8 flex flex-col items-center gap-3">
                 <div className="flex items-center gap-2">
                   <button
@@ -864,6 +912,19 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
             <MatchTunerModal onClose={() => setShowTuner(false)} />
         )}
       </AnimatePresence>
+
+      {/* Travel Mode Modal */}
+      <AnimatePresence>
+        {showTravelModal && (
+          <TravelModeModal
+            onClose={() => setShowTravelModal(false)}
+            onEnable={handleEnableTravelMode}
+            loading={travelLoading}
+            currentCity={travelCity}
+            currentCountry={travelCountry}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -927,6 +988,11 @@ const ProfileGridCard: React.FC<{
                     {profile.isVerified ? <CheckCircle2 size={10} /> : <AlertCircle size={10} />}
                     {profile.isVerified ? t('modals.verification.verified', 'Verified') : t('profile.unverified', 'Unverified')}
                  </div>
+                 {profile.travel_mode && profile.travel_city && (
+                    <div className="bg-blue-500/90 text-white backdrop-blur-md rounded-full px-2 py-1 text-[10px] font-bold shadow-sm flex items-center gap-1">
+                       <Plane size={10} /> {t('discovery.travelingTo', 'Visiting')} {profile.travel_city}
+                    </div>
+                 )}
             </div>
 
             <div className="aspect-[4/5] bg-slate-200 relative" onClick={onClick}>
