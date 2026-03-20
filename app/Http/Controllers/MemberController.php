@@ -1071,16 +1071,18 @@ class MemberController extends Controller
             }
         }
 
-        $msg = '';
+        $messageParts = [];
         if (!empty($successChannels)) {
-            $msg .= 'Notification sent via: ' . implode(', ', $successChannels) . '. ';
+            $messageParts[] = 'Sent: ' . implode(', ', $successChannels);
         }
         if (!empty($skippedChannels)) {
-            $msg .= 'Skipped: ' . implode(', ', $skippedChannels) . '. ';
+            $messageParts[] = 'Skipped: ' . implode(', ', $skippedChannels);
         }
         if (!empty($failedChannels)) {
-            $msg .= 'Failed: ' . implode(', ', $failedChannels) . '.';
+            $messageParts[] = 'Failed: ' . implode(', ', $failedChannels);
         }
+
+        $msg = implode(' | ', $messageParts);
 
         // Return JSON for AJAX handling (WhatsApp link + results)
         if ($request->ajax() || $request->wantsJson()) {
