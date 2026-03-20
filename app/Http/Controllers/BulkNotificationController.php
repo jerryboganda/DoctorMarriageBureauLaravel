@@ -210,19 +210,19 @@ class BulkNotificationController extends Controller
         // Build result message
         $messages = [];
         if (in_array('email', $channels)) {
-            $messages[] = "Email: {$stats['email_sent']} sent, {$stats['email_failed']} failed";
+            $messages[] = "Email {$stats['email_sent']}/{$stats['email_failed']}";
         }
         if (in_array('sms', $channels)) {
-            $messages[] = "SMS: {$stats['sms_sent']} sent, {$stats['sms_failed']} failed";
+            $messages[] = "SMS {$stats['sms_sent']}/{$stats['sms_failed']}";
         }
         if (in_array('push', $channels)) {
-            $messages[] = "Push: {$stats['push_sent']} sent, {$stats['push_failed']} failed";
+            $messages[] = "Push {$stats['push_sent']}/{$stats['push_failed']}";
         }
         if (in_array('whatsapp', $channels)) {
-            $messages[] = "WhatsApp: " . count($stats['whatsapp_links']) . " links generated";
+            $messages[] = 'WhatsApp ' . count($stats['whatsapp_links']);
         }
 
-        $resultMsg = "Bulk notification sent to {$stats['total_targeted']} members. " . implode(' | ', $messages);
+        $resultMsg = "Sent to {$stats['total_targeted']} members | " . implode(' | ', $messages);
 
         // If there are WhatsApp links, store in session for display
         if (!empty($stats['whatsapp_links'])) {

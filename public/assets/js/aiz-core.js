@@ -1083,8 +1083,10 @@ $.fn.toggleAttr = function (attr, attr1, attr2) {
                     type: type,
                     template:
                         '<div data-notify="container" class="aiz-notify alert alert-{0}" role="alert">' +
-                        '<button type="button" aria-hidden="true" data-notify="dismiss" class="close"><i class="las la-times"></i></button>' +
-                        '<span data-notify="message">{2}</span>' +
+                        '<div class="aiz-notify__header">' +
+                        '<button type="button" aria-hidden="true" data-notify="dismiss" class="close" aria-label="Close notification"><i class="las la-times"></i></button>' +
+                        '</div>' +
+                        '<div class="aiz-notify__body" data-notify="message">{2}</div>' +
                         '<div class="progress" data-notify="progressbar">' +
                         '<div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%;"></div>' +
                         "</div>" +
