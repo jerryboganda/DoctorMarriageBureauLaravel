@@ -60,9 +60,14 @@ const NotificationDetailModal: React.FC<NotificationDetailModalProps> = ({
     : t('notifications.status.read');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-slate-950/55 px-3 py-3 backdrop-blur-sm md:px-4 md:py-4"
+      onClick={onClose}
+      style={{ WebkitOverflowScrolling: 'touch' }}
+    >
+      <div className="flex min-h-full items-start justify-center md:items-center">
       <div
-        className="w-full max-w-2xl overflow-hidden rounded-[28px] bg-white shadow-2xl"
+        className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-2xl flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5 md:px-8">
@@ -84,7 +89,10 @@ const NotificationDetailModal: React.FC<NotificationDetailModalProps> = ({
           </button>
         </div>
 
-        <div className="max-h-[80vh] overflow-y-auto px-6 py-6 md:px-8">
+        <div
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-6 md:px-8"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
           <div className="rounded-3xl border border-primary/15 bg-gradient-to-br from-primary/5 via-white to-rose-50 p-5 md:p-6">
             <div className="flex items-start gap-4">
               <img
@@ -167,6 +175,7 @@ const NotificationDetailModal: React.FC<NotificationDetailModalProps> = ({
             </button>
           ) : null}
         </div>
+      </div>
       </div>
     </div>
   );
