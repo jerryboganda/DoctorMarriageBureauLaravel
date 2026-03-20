@@ -40,11 +40,11 @@ class ShortlistController extends Controller
                 Shortlist::create($request->only('user_id') + [
                     'shortlisted_by' => auth()->user()->id
                 ]);
-                return $this->success_message('You Have Shortlisted This Member');
+                return $this->success_message('You Have Bookmarked This Member');
             }
-            return $this->failure_message('You Have already added This Member');
+            return $this->failure_message('You Have Already Bookmarked This Member');
         }
-        return $this->failure_message('Invalid Member to Shortlist.');
+        return $this->failure_message('Invalid Member to Bookmark.');
     }
 
     public function remove(Request $request)
@@ -52,7 +52,7 @@ class ShortlistController extends Controller
         $shortlist = Shortlist::where('user_id', $request->user_id)->where('shortlisted_by', auth()->user()->id)->first();
         if ($shortlist) {
             Shortlist::destroy($shortlist->id);
-            return $this->success_message('You Have Removed This Member From Your Shortlist.');
+            return $this->success_message('You Have Removed This Member From Your Bookmarks.');
         }
         return $this->success_message('Invalid Information');
     }

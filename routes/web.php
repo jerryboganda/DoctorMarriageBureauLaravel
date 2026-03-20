@@ -704,7 +704,7 @@ Route::group(['middleware' => ['verified']], function () {
         Route::post('/member/verification-info/store', 'verification_info_store')->name('member.verification_info.store');
     });
     Route::get('/dashboard', function () {
-        return redirect('https://panel.doctormarriagebureau.com.pk');
+        return redirect(rtrim(env('FRONTEND_URL', env('APP_URL', 'http://localhost')), '/'));
     })->name('dashboard');
 });
 

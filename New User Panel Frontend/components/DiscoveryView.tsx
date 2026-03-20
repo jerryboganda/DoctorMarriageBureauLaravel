@@ -2,19 +2,21 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   Search, Sliders, MapPin, Heart, X, ChevronDown, Eye, EyeOff, Map as MapIcon, 
-  Grid, Zap, Plane, Filter, ArrowUpDown, Bell, Crown, UserCheck, Send, Loader2, MessageSquare, Clock, CheckCircle2, Camera, Bookmark, Sparkles, AlertCircle,
+  Grid, Zap, Plane, Filter, ArrowUpDown, Bell, Crown, UserCheck, Send, Loader2, MessageSquare, Clock, CheckCircle2, Camera, Bookmark, AlertCircle,
   ChevronLeft, ChevronRight
 } from 'lucide-react';
 import ProfileDetailModal from './ProfileDetailModal';
+import MediaAccessRequestModal from './MediaAccessRequestModal';
 import MatchTunerModal from './MatchTunerModal';
-import TravelModeModal from './TravelModeModal';
 import LanguageToggle from './LanguageToggle';
 import { ProfileMatch } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { STAGGER_CONTAINER, FADE_UP_ITEM, BTN_TAP } from '../utils/motion';
+import { normalizePositiveAge } from '../utils/age';
 import { api } from '../utils/api';
 import { useAuthStore } from '../src/stores/authStore';
 import { CanonicalInterestState, getInterestFlagsFromState, resolveInterestState } from '../utils/interestStatus';
+import { MediaAccessBundle, MediaAccessSnapshot, resolveMediaAccessBundle } from '../utils/mediaAccess';
 
 // API base URL for assets
 const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://api.doctormarriagebureau.com.pk';
@@ -30,10 +32,17 @@ const resolveAvatarUrl = (value?: string | null): string => {
   return `${API_BASE}/${candidate.replace(/^\/+/, '')}`;
 };
 
+const unwrapList = <T,>(payload: any): T[] => {
+  if (Array.isArray(payload)) return payload as T[];
+  if (Array.isArray(payload?.data)) return payload.data as T[];
+  if (Array.isArray(payload?.data?.data)) return payload.data.data as T[];
+  return [];
+};
+
 interface DiscoveryViewProps {
     onSendProposal: (profile: ProfileMatch) => void;
     onProposalStateChange?: (profileId: string, state: CanonicalInterestState) => void;
-    initialTab?: 'all' | 'verified' | 'unverified';
+    initialTab?: 'all' | 'verified' | 'unverified' | 'bookmarked';
     isIdentityVerified?: boolean | null;
     onRequireVerification?: () => void;
     onNavigate?: (view: string) => void;
@@ -48,11 +57,16 @@ const getInterestFlags = (profile: ProfileMatch, isLocallySent = false) =>
     resolveInterestState(profile.interestStatus, profile.interestText, { localSent: isLocallySent })
   );
 
+const isProfileBookmarked = (profile: ProfileMatch): boolean => Number(profile.shortlistStatus) === 0;
+
+type MediaAccessStateMap = Record<string, MediaAccessBundle>;
+
 const normalizeProfile = (profile: any): ProfileMatch => {
   const fullName = profile.name || [profile.first_name, profile.last_name].filter(Boolean).join(' ').trim();
   const gender = profile.gender;
   const fallbackAvatar = gender === 2 ? DEFAULT_FEMALE_AVATAR : DEFAULT_AVATAR;
   let avatarUrl = profile.avatarUrl ?? profile.photo ?? '';
+  const mediaAccess = resolveMediaAccessBundle(profile);
   // If avatarUrl is empty, numeric, or doesn't look like a URL, use fallback
   if (!avatarUrl || avatarUrl === '' || (!avatarUrl.startsWith('http') && !avatarUrl.startsWith('/'))) {
     avatarUrl = fallbackAvatar;
@@ -64,7 +78,7 @@ const normalizeProfile = (profile: any): ProfileMatch => {
     specialty: profile.specialty ?? profile.designation ?? '',
     hospital: profile.hospital ?? profile.company ?? '',
     location: profile.location ?? profile.country ?? '',
-    age: profile.age ?? 0,
+    age: normalizePositiveAge(profile.age),
     matchPercentage: profile.matchPercentage ?? profile.match_percentage ?? 0,
     avatarUrl,
     isVerified: profile.isVerified ?? profile.approved ?? false,
@@ -82,6 +96,23 @@ const normalizeProfile = (profile: any): ProfileMatch => {
     careers: profile.careers,
     interestStatus: profile.interest_status ?? profile.interestStatus ?? profile.proposal_status,
     interestText: profile.interest_text ?? profile.interestText,
+    shortlistStatus: profile.shortlist_status ?? profile.shortlistStatus,
+    shortlistText: profile.shortlist_text ?? profile.shortlistText,
+    photoRequestState: mediaAccess.profilePhoto.state,
+    photoRequestText: mediaAccess.profilePhoto.text,
+    photoRequestRequested: mediaAccess.profilePhoto.requested,
+    photoRequestApproved: mediaAccess.profilePhoto.approved,
+    photoRequestRequired: mediaAccess.profilePhoto.required,
+    photoAccessible: mediaAccess.profilePhoto.accessible,
+    photoExists: mediaAccess.profilePhoto.exists,
+    galleryImageRequestState: mediaAccess.galleryImage.state,
+    galleryImageRequestText: mediaAccess.galleryImage.text,
+    galleryImageRequestRequested: mediaAccess.galleryImage.requested,
+    galleryImageRequestApproved: mediaAccess.galleryImage.approved,
+    galleryImageRequestRequired: mediaAccess.galleryImage.required,
+    galleryImageAccessible: mediaAccess.galleryImage.accessible,
+    galleryImageExists: mediaAccess.galleryImage.exists,
+    profilePhotoBlur: Boolean(profile.profile_photo_blur ?? profile.profilePhotoBlur ?? false),
     travel_mode: profile.travel_mode ?? false,
     travel_city: profile.travel_city ?? '',
     travel_country: profile.travel_country ?? '',
@@ -89,18 +120,26 @@ const normalizeProfile = (profile: any): ProfileMatch => {
 };
 
 type DiscoveryFilters = {
-  familyApprovedOnly: boolean;
+  verifiedOnly: boolean;
   ageMin: string;
   ageMax: string;
+  country: string;
   religion: string;
+  sect: string;
+  caste: string;
+  professionId: string;
   profession: string;
 };
 
 const DEFAULT_FILTERS: DiscoveryFilters = {
-  familyApprovedOnly: false,
+  verifiedOnly: false,
   ageMin: '',
   ageMax: '',
+  country: '',
   religion: '',
+  sect: '',
+  caste: '',
+  professionId: '',
   profession: ''
 };
 
@@ -111,26 +150,36 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
   const userDisplayName = user?.name ?? t('nav.defaultName');
   const userMembershipLabel = user?.membership === 2 ? t('nav.premiumMember') : t('nav.basicMember');
   const [showFilters, setShowFilters] = useState(false);
-  const [isAnonymous, setIsAnonymous] = useState(() => user?.is_visible === false);
+  const [isAnonymous, setIsAnonymous] = useState(() => user?.incognito === true);
   const [anonymousLoading, setAnonymousLoading] = useState(false);
   const [isTravelMode, setIsTravelMode] = useState(() => user?.travel_mode === true);
   const [travelCity, setTravelCity] = useState(() => user?.travel_city || '');
   const [travelCountry, setTravelCountry] = useState(() => user?.travel_country || '');
   const [travelLoading, setTravelLoading] = useState(false);
   const [showTravelModal, setShowTravelModal] = useState(false);
+  useEffect(() => {
+    setIsAnonymous(user?.incognito === true);
+  }, [user?.incognito]);
   const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
   const [selectedProfile, setSelectedProfile] = useState<ProfileMatch | null>(null);
   const [showTuner, setShowTuner] = useState(false);
-  const [activeTab, setActiveTab] = useState<'all' | 'verified' | 'unverified'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'all' | 'verified' | 'unverified' | 'bookmarked'>(initialTab);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<ProfileMatch[]>([]);
   const [filters, setFilters] = useState<DiscoveryFilters>(DEFAULT_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState<DiscoveryFilters>(DEFAULT_FILTERS);
-  const [photoRequesting, setPhotoRequesting] = useState<Record<string, boolean>>({});
-  const [photoRequested, setPhotoRequested] = useState<Record<string, boolean>>({});
+  const [countries, setCountries] = useState<Array<{ id: string | number; name: string; code?: string }>>([]);
+  const [religions, setReligions] = useState<Array<{ id: string | number; name: string }>>([]);
+  const [sects, setSects] = useState<Array<{ id: string | number; name: string }>>([]);
+  const [castes, setCastes] = useState<Array<{ id: string | number; name: string; religion_id?: string | number }>>([]);
+  const [jobTitles, setJobTitles] = useState<Array<{ id: string | number; name: string }>>([]);
+  const [mediaAccessStates, setMediaAccessStates] = useState<MediaAccessStateMap>({});
+  const [mediaAccessRequesting, setMediaAccessRequesting] = useState<Record<string, { profilePhoto?: boolean; galleryImage?: boolean }>>({});
+  const [showMediaAccessModal, setShowMediaAccessModal] = useState(false);
+  const [mediaAccessTarget, setMediaAccessTarget] = useState<ProfileMatch | null>(null);
+  const [mediaAccessPriority, setMediaAccessPriority] = useState<'photo' | 'gallery'>('photo');
   const [shortlistProcessing, setShortlistProcessing] = useState<Record<string, boolean>>({});
   const [shortlisted, setShortlisted] = useState<Record<string, boolean>>({});
-  const [superLikeProcessing, setSuperLikeProcessing] = useState<Record<string, boolean>>({});
   const [superLiked, setSuperLiked] = useState<Record<string, boolean>>({});
   const [profiles, setProfiles] = useState<{
       agent_picks: ProfileMatch[],
@@ -198,24 +247,55 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
     }
   }, []);
 
+  const buildMediaAccessStateMap = useCallback((list: ProfileMatch[]) => {
+    return list.reduce<MediaAccessStateMap>((acc, profile) => {
+      acc[profile.id] = resolveMediaAccessBundle(profile);
+      return acc;
+    }, {});
+  }, []);
+
+  const updateMediaAccessState = useCallback((
+    profile: ProfileMatch,
+    kind: 'profilePhoto' | 'galleryImage',
+    patch: Partial<MediaAccessSnapshot>
+  ) => {
+    setMediaAccessStates((prev) => {
+      const current = prev[profile.id] ?? resolveMediaAccessBundle(profile);
+      return {
+        ...prev,
+        [profile.id]: {
+          ...current,
+          [kind]: {
+            ...current[kind],
+            ...patch,
+          },
+        },
+      };
+    });
+  }, []);
+
   // ── Anonymous/Visible Toggle ───────────────────────────────────
   const handleToggleAnonymous = useCallback(async () => {
     if (anonymousLoading) return;
+    const next = !isAnonymous;
     setAnonymousLoading(true);
     try {
-      const res = await api.post('/member/discovery/toggle-anonymous');
+      const res = await api.post('/member/profile/visibility', {
+        incognito: next,
+      });
+      const visibilityData = res.data?.data ?? {};
       if (res.data.success) {
-        const newVisible = res.data.is_visible;
-        setIsAnonymous(!newVisible);
-        // Sync auth store
-        if (user) setUser({ ...user, is_visible: newVisible });
+        const resolvedIncognito = visibilityData.incognito ?? next;
+        const resolvedVisible = visibilityData.profile_visible ?? user?.is_visible ?? true;
+        setIsAnonymous(resolvedIncognito);
+        if (user) setUser({ ...user, is_visible: resolvedVisible, incognito: resolvedIncognito });
       }
     } catch (err) {
       console.error('Failed to toggle anonymous mode', err);
     } finally {
       setAnonymousLoading(false);
     }
-  }, [anonymousLoading, user, setUser]);
+  }, [anonymousLoading, isAnonymous, user, setUser]);
 
   // ── Travel Mode Handlers ───────────────────────────────────────
   const handleTravelModeClick = useCallback(() => {
@@ -265,8 +345,71 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
     }
   }, [travelLoading, user, setUser]);
 
-  const fetchDiscoveryData = useCallback(async (page: number = 1, tab: 'all' | 'verified' | 'unverified' = 'all') => {
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadFilterOptions = async () => {
+      try {
+        const [countriesRes, religionsRes, sectsRes, profileRes] = await Promise.all([
+          api.get('/member/countries'),
+          api.get('/member/religions'),
+          api.get('/member/sects'),
+          api.get('/full-profile'),
+        ]);
+
+        if (!isMounted) return;
+
+        setCountries(unwrapList(countriesRes.data));
+        setReligions(unwrapList(religionsRes.data));
+        setSects(unwrapList(sectsRes.data));
+
+        const optionSets = profileRes.data?.optionSets ?? profileRes.data?.data?.optionSets ?? {};
+        setJobTitles(unwrapList(optionSets?.jobTitles));
+      } catch (error) {
+        if (isMounted) {
+          console.error('Failed to load discovery filter options', error);
+        }
+      }
+    };
+
+    loadFilterOptions();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadCastes = async () => {
+      if (!filters.religion) {
+        setCastes([]);
+        return;
+      }
+
+      try {
+        const response = await api.get(`/member/casts/${filters.religion}`);
+        if (!isMounted) return;
+        setCastes(unwrapList(response.data));
+      } catch (error) {
+        if (isMounted) {
+          console.error('Failed to load caste options', error);
+          setCastes([]);
+        }
+      }
+    };
+
+    loadCastes();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [filters.religion]);
+
+  const fetchDiscoveryData = useCallback(async (page: number = 1, tab: 'all' | 'verified' | 'unverified' | 'bookmarked' = 'all') => {
       const requestSeq = ++discoveryRequestSeqRef.current;
+      searchAbortRef.current?.abort();
       discoveryAbortRef.current?.abort();
       const controller = new AbortController();
       discoveryAbortRef.current = controller;
@@ -276,6 +419,7 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
           const params: Record<string, string | number> = { page };
           if (tab === 'verified') params.verified = 'yes';
           else if (tab === 'unverified') params.verified = 'no';
+          else if (tab === 'bookmarked') params.bookmarked = 'yes';
 
           const response = await api.get('/discovery', { params, signal: controller.signal });
           if (requestSeq !== discoveryRequestSeqRef.current) return;
@@ -288,6 +432,18 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
                   all_profiles: (data.all_profiles || []).map(normalizeProfile)
               };
               setProfiles(normalized);
+              const bookmarkedProfiles = buildShortlistedMap([
+                ...normalized.agent_picks,
+                ...normalized.high_intent,
+                ...normalized.all_profiles
+              ]);
+              setShortlisted(prev => ({ ...prev, ...bookmarkedProfiles }));
+              const mediaStates = buildMediaAccessStateMap([
+                ...normalized.agent_picks,
+                ...normalized.high_intent,
+                ...normalized.all_profiles
+              ]);
+              setMediaAccessStates(prev => ({ ...prev, ...mediaStates }));
 
               if (response.data.pagination) {
                   setPagination(response.data.pagination);
@@ -315,16 +471,6 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
   }, []);
 
   useEffect(() => {
-    fetchDiscoveryData(currentPage, activeTab);
-  }, [currentPage, activeTab, fetchDiscoveryData]);
-
-  useEffect(() => {
-    fetchDiscoveryData(currentPage, activeTab);
-    // refreshVersion is an explicit external invalidation signal.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refreshVersion]);
-
-  useEffect(() => {
     return () => {
       discoveryAbortRef.current?.abort();
       searchAbortRef.current?.abort();
@@ -339,19 +485,27 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
     }
   };
 
-  const fetchSearchResults = useCallback(async (query: string, filterSet: DiscoveryFilters) => {
+  const fetchSearchResults = useCallback(async (query: string, filterSet: DiscoveryFilters, tab: 'all' | 'verified' | 'unverified' | 'bookmarked' = 'all', page: number = 1) => {
     const requestSeq = ++searchRequestSeqRef.current;
+    discoveryAbortRef.current?.abort();
     searchAbortRef.current?.abort();
     const controller = new AbortController();
     searchAbortRef.current = controller;
 
     setLoading(true);
     try {
-      const params: Record<string, string> = {};
+      const params: Record<string, string | number> = { page };
       if (query) params.q = query;
+      if (tab === 'verified') params.verified = 'yes';
+      else if (tab === 'unverified') params.verified = 'no';
+      else if (tab === 'bookmarked') params.bookmarked = 'yes';
       if (filterSet.ageMin) params.age_min = filterSet.ageMin;
       if (filterSet.ageMax) params.age_max = filterSet.ageMax;
+      if (filterSet.country) params.country = filterSet.country;
       if (filterSet.religion) params.religion = filterSet.religion;
+      if (filterSet.sect) params.sect = filterSet.sect;
+      if (filterSet.caste) params.caste = filterSet.caste;
+      if (filterSet.professionId) params.job_title_id = filterSet.professionId;
       if (filterSet.profession) params.profession = filterSet.profession;
 
       const response = await api.get('/discovery/search', { params, signal: controller.signal });
@@ -360,6 +514,11 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
       const results = response.data?.data || [];
       const normalized = results.map(normalizeProfile);
       setSearchResults(normalized);
+      setShortlisted(prev => ({ ...prev, ...buildShortlistedMap(normalized) }));
+      setMediaAccessStates(prev => ({ ...prev, ...buildMediaAccessStateMap(normalized) }));
+      if (response.data?.pagination) {
+        setPagination(response.data.pagination);
+      }
 
       const alreadySent: Record<string, boolean> = {};
       normalized.forEach((p: ProfileMatch) => {
@@ -382,23 +541,26 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
 
   useEffect(() => {
     const query = searchQuery.trim();
-    const hasFilters = appliedFilters.familyApprovedOnly ||
+    const hasFilters = appliedFilters.verifiedOnly ||
       appliedFilters.ageMin !== '' ||
       appliedFilters.ageMax !== '' ||
+      appliedFilters.country !== '' ||
       appliedFilters.religion.trim() !== '' ||
+      appliedFilters.sect.trim() !== '' ||
+      appliedFilters.caste.trim() !== '' ||
+      appliedFilters.professionId.trim() !== '' ||
       appliedFilters.profession.trim() !== '';
 
-    if (!query && !hasFilters) {
-      setSearchResults([]);
-      return;
+    if (query || hasFilters) {
+      const timeoutId = setTimeout(() => {
+        fetchSearchResults(query, appliedFilters, activeTab, currentPage);
+      }, 350);
+
+      return () => clearTimeout(timeoutId);
     }
 
-    const timeoutId = setTimeout(() => {
-      fetchSearchResults(query, appliedFilters);
-    }, 350);
-
-    return () => clearTimeout(timeoutId);
-  }, [searchQuery, appliedFilters, fetchSearchResults]);
+    fetchDiscoveryData(currentPage, activeTab);
+  }, [searchQuery, appliedFilters, activeTab, currentPage, refreshVersion, fetchSearchResults, fetchDiscoveryData]);
 
   useEffect(() => {
     if (!sentProposalMap || Object.keys(sentProposalMap).length === 0) return;
@@ -429,18 +591,33 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
 
   const handleApplyFilters = () => {
     setAppliedFilters({
-      familyApprovedOnly: filters.familyApprovedOnly,
+      verifiedOnly: filters.verifiedOnly,
       ageMin: filters.ageMin,
       ageMax: filters.ageMax,
+      country: filters.country,
       religion: filters.religion.trim(),
+      sect: filters.sect.trim(),
+      caste: filters.caste.trim(),
+      professionId: filters.professionId.trim(),
       profession: filters.profession.trim()
     });
+    setCurrentPage(1);
     setShowFilters(false);
   };
+
+const buildShortlistedMap = (items: ProfileMatch[]): Record<string, boolean> => {
+  return items.reduce<Record<string, boolean>>((acc, profile) => {
+    if (isProfileBookmarked(profile)) {
+      acc[profile.id] = true;
+    }
+    return acc;
+  }, {});
+};
 
   const handleResetFilters = () => {
     setFilters(DEFAULT_FILTERS);
     setAppliedFilters(DEFAULT_FILTERS);
+    setCurrentPage(1);
   };
 
   // Verification gate: intercept all profile actions if not verified
@@ -452,26 +629,101 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
     return false; // allowed
   };
 
-  const handleRequestPhotoAccess = async (profile: ProfileMatch) => {
+  const openMediaAccessModal = useCallback((profile: ProfileMatch, preferredKind: 'photo' | 'gallery' = 'photo') => {
+    if (requireVerification()) return;
+    setMediaAccessTarget(profile);
+    setMediaAccessPriority(preferredKind);
+    setShowMediaAccessModal(true);
+  }, [requireVerification]);
+
+  const closeMediaAccessModal = useCallback(() => {
+    setShowMediaAccessModal(false);
+    setMediaAccessTarget(null);
+    setMediaAccessPriority('photo');
+  }, []);
+
+  const handleRequestProfilePhotoAccess = useCallback(async (profile: ProfileMatch) => {
     if (requireVerification()) return;
     const profileId = String(profile.id || '');
-    if (!profileId || photoRequesting[profileId] || photoRequested[profileId]) return;
+    if (!profileId) return;
+    const currentMediaAccess = mediaAccessStates[profileId] ?? resolveMediaAccessBundle(profile);
+    const snapshot = currentMediaAccess.profilePhoto;
+    if (mediaAccessRequesting[profileId]?.profilePhoto || snapshot.state !== 'none' || !snapshot.required || snapshot.accessible || !snapshot.exists) return;
 
     try {
-      setPhotoRequesting((prev) => ({ ...prev, [profileId]: true }));
+      setMediaAccessRequesting((prev) => ({
+        ...prev,
+        [profileId]: { ...(prev[profileId] ?? {}), profilePhoto: true },
+      }));
       await api.post('/member/profile-picture-view-request', { id: profileId });
-      setPhotoRequested((prev) => ({ ...prev, [profileId]: true }));
+      updateMediaAccessState(profile, 'profilePhoto', {
+        state: 'pending',
+        requested: true,
+        approved: false,
+        text: t('discovery.photoAccessRequested'),
+      });
     } catch (error) {
+      const message = `${(error as any)?.response?.data?.message ?? ''}`.toLowerCase();
+      if (message.includes('already requested')) {
+        updateMediaAccessState(profile, 'profilePhoto', {
+          state: 'pending',
+          requested: true,
+          approved: false,
+          text: t('discovery.photoAccessRequested'),
+        });
+      }
       console.error('Failed to request photo access', error);
     } finally {
-      setPhotoRequesting((prev) => ({ ...prev, [profileId]: false }));
+      setMediaAccessRequesting((prev) => ({
+        ...prev,
+        [profileId]: { ...(prev[profileId] ?? {}), profilePhoto: false },
+      }));
     }
-  };
+  }, [mediaAccessRequesting, mediaAccessStates, requireVerification, t, updateMediaAccessState]);
+
+  const handleRequestGalleryImagesAccess = useCallback(async (profile: ProfileMatch) => {
+    if (requireVerification()) return;
+    const profileId = String(profile.id || '');
+    if (!profileId) return;
+    const currentMediaAccess = mediaAccessStates[profileId] ?? resolveMediaAccessBundle(profile);
+    const snapshot = currentMediaAccess.galleryImage;
+    if (mediaAccessRequesting[profileId]?.galleryImage || snapshot.state !== 'none' || !snapshot.required || snapshot.accessible || !snapshot.exists) return;
+
+    try {
+      setMediaAccessRequesting((prev) => ({
+        ...prev,
+        [profileId]: { ...(prev[profileId] ?? {}), galleryImage: true },
+      }));
+      await api.post('/member/gallery-image-view-request', { id: profileId });
+      updateMediaAccessState(profile, 'galleryImage', {
+        state: 'pending',
+        requested: true,
+        approved: false,
+        text: t('discovery.galleryAccessRequested'),
+      });
+    } catch (error) {
+      const message = `${(error as any)?.response?.data?.message ?? ''}`.toLowerCase();
+      if (message.includes('already requested')) {
+        updateMediaAccessState(profile, 'galleryImage', {
+          state: 'pending',
+          requested: true,
+          approved: false,
+          text: t('discovery.galleryAccessRequested'),
+        });
+      }
+      console.error('Failed to request gallery image access', error);
+    } finally {
+      setMediaAccessRequesting((prev) => ({
+        ...prev,
+        [profileId]: { ...(prev[profileId] ?? {}), galleryImage: false },
+      }));
+    }
+  }, [mediaAccessRequesting, mediaAccessStates, requireVerification, t, updateMediaAccessState]);
 
   const handleShortlist = async (profile: ProfileMatch) => {
     if (requireVerification()) return;
     const profileId = String(profile.id || '');
-    if (!profileId || shortlistProcessing[profileId] || shortlisted[profileId]) return;
+    if (!profileId || shortlistProcessing[profileId] || shortlisted[profileId] || isProfileBookmarked(profile)) return;
 
     try {
       setShortlistProcessing((prev) => ({ ...prev, [profileId]: true }));
@@ -484,47 +736,30 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
     }
   };
 
-  const handleSuperLike = async (profile: ProfileMatch) => {
-    if (requireVerification()) return;
-    const profileId = String(profile.id || '');
-    if (!profileId || superLikeProcessing[profileId] || superLiked[profileId]) return;
-
-    try {
-      setSuperLikeProcessing((prev) => ({ ...prev, [profileId]: true }));
-      await api.post('/member/express-interest', { user_id: profileId });
-      setSuperLiked((prev) => ({ ...prev, [profileId]: true }));
-      const patchProfile = (item: ProfileMatch) =>
-        String(item.id) === profileId ? applyInterestStateToProfile(item, 'sent_pending') : item;
-      setProfiles((prev) => ({
-        agent_picks: prev.agent_picks.map(patchProfile),
-        high_intent: prev.high_intent.map(patchProfile),
-        all_profiles: prev.all_profiles.map(patchProfile),
-      }));
-      setSearchResults((prev) => prev.map(patchProfile));
-      setSelectedProfile((prev) => (prev && String(prev.id) === profileId ? applyInterestStateToProfile(prev, 'sent_pending') : prev));
-      onProposalStateChange?.(profileId, 'sent_pending');
-    } catch (error) {
-      console.error('Failed to send super like', error);
-    } finally {
-      setSuperLikeProcessing((prev) => ({ ...prev, [profileId]: false }));
-    }
-  };
-
   const getDisplayedProfiles = () => {
     // Backend now handles verified/unverified filtering via ?verified= param
     return profiles.all_profiles;
   };
 
-  const filtersActive = appliedFilters.familyApprovedOnly ||
-    appliedFilters.ageMin !== '' ||
-    appliedFilters.ageMax !== '' ||
-    appliedFilters.religion.trim() !== '' ||
-    appliedFilters.profession.trim() !== '';
+  const filtersActive = appliedFilters.verifiedOnly ||
+      appliedFilters.ageMin !== '' ||
+      appliedFilters.ageMax !== '' ||
+      appliedFilters.country !== '' ||
+      appliedFilters.religion.trim() !== '' ||
+    appliedFilters.sect.trim() !== '' ||
+    appliedFilters.caste.trim() !== '' ||
+      appliedFilters.professionId.trim() !== '' ||
+      appliedFilters.profession.trim() !== '';
   const isSearchActive = searchQuery.trim().length > 0 || filtersActive;
   const baseProfiles = isSearchActive ? searchResults : getDisplayedProfiles();
-  const displayedProfiles = appliedFilters.familyApprovedOnly
-    ? baseProfiles.filter((profile) => profile.isVerified)
-    : baseProfiles;
+  const displayedProfiles = baseProfiles;
+  const bookmarkedEmptyState = !isSearchActive && activeTab === 'bookmarked' && displayedProfiles.length === 0;
+  const emptyStateTitle = bookmarkedEmptyState
+    ? t('discovery.noBookmarkedProfiles')
+    : t('discovery.noMatchingProfiles');
+  const emptyStateDescription = bookmarkedEmptyState
+    ? t('discovery.noBookmarkedProfilesDesc')
+    : t('discovery.noMatchingProfilesDesc');
 
   return (
     <div className="flex-1 flex flex-col h-full min-h-0 bg-slate-50 relative">
@@ -538,7 +773,10 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
                 type="text" 
                 placeholder={t('discovery.searchPlaceholder')} 
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className="w-full pl-10 pr-4 py-2.5 bg-slate-100 border-none rounded-full text-sm focus:ring-2 focus:ring-primary/20 focus:bg-white transition-all"
             />
          </div>
@@ -546,18 +784,6 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
          {/* Actions */}
          <div className="flex items-center gap-2 md:gap-3 overflow-x-auto pb-1 md:pb-0 scrollbar-hide">
              
-             {/* Travel Mode */}
-              <motion.button 
-                 whileTap={BTN_TAP}
-                 onClick={handleTravelModeClick}
-                 disabled={travelLoading}
-                 className={`flex items-center gap-2 px-3 py-2 rounded-full text-xs font-bold transition-all border whitespace-nowrap ${isTravelMode ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'} ${travelLoading ? 'opacity-60 cursor-wait' : ''}`}
-                 title={isTravelMode ? `${t('discovery.travelingTo')} ${travelCity}, ${travelCountry}` : t('discovery.travelMode')}
-              >
-                 {travelLoading ? <Loader2 size={16} className="animate-spin" /> : <Plane size={16} />}
-                 <span className="hidden xl:inline">{isTravelMode ? `${travelCity}` : t('discovery.travelMode')}</span>
-              </motion.button>
-
               {/* Anonymous Toggle */}
               <motion.button 
                  whileTap={BTN_TAP}
@@ -619,13 +845,14 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
             </button>
             
             {/* Discovery Tabs */}
-            <div className="flex bg-slate-100 p-1 rounded-lg shrink-0">
-                <TabButton label={t('discovery.allProfiles')} active={activeTab === 'all'} onClick={() => { setActiveTab('all'); setCurrentPage(1); }} />
-                <TabButton label={t('discovery.verifiedProfiles')} active={activeTab === 'verified'} onClick={() => { setActiveTab('verified'); setCurrentPage(1); }} icon={<UserCheck size={14} />} />
-                <TabButton label={t('discovery.unverifiedProfiles')} active={activeTab === 'unverified'} onClick={() => { setActiveTab('unverified'); setCurrentPage(1); }} icon={<AlertCircle size={14} />} />
-             </div>
-          </div>
-      </div>
+              <div className="flex bg-slate-100 p-1 rounded-lg shrink-0">
+                 <TabButton label={t('discovery.allProfiles')} active={activeTab === 'all'} onClick={() => { setActiveTab('all'); setCurrentPage(1); }} />
+                 <TabButton label={t('discovery.verifiedProfiles')} active={activeTab === 'verified'} onClick={() => { setActiveTab('verified'); setCurrentPage(1); }} icon={<UserCheck size={14} />} />
+                 <TabButton label={t('discovery.unverifiedProfiles')} active={activeTab === 'unverified'} onClick={() => { setActiveTab('unverified'); setCurrentPage(1); }} icon={<AlertCircle size={14} />} />
+                 <TabButton label={t('discovery.bookmarkedProfiles')} active={activeTab === 'bookmarked'} onClick={() => { setActiveTab('bookmarked'); setCurrentPage(1); }} icon={<Bookmark size={14} />} />
+               </div>
+            </div>
+        </div>
 
       <div className="flex-1 flex min-h-0 relative overflow-hidden">
         {/* Filters Panel (Slide Over) */}
@@ -642,10 +869,10 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
                             <input
                                 type="checkbox"
                                 className="accent-purple-600"
-                                checked={filters.familyApprovedOnly}
-                                onChange={(e) => setFilters({ ...filters, familyApprovedOnly: e.target.checked })}
+                                checked={filters.verifiedOnly}
+                                onChange={(e) => setFilters({ ...filters, verifiedOnly: e.target.checked })}
                             />
-                            <span className="text-sm font-bold text-purple-900">{t('discovery.familyApprovedOnly')}</span>
+                            <span className="text-sm font-bold text-purple-900">Verified only</span>
                         </label>
                     </FilterGroup>
 
@@ -672,49 +899,92 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
                         </div>
                     </FilterGroup>
 
-                    <FilterGroup label={t('discovery.locationRadius')}>
-                        <div className="flex items-center gap-2 mb-2">
-                            <input type="checkbox" className="accent-primary" />
-                            <span className="text-sm text-slate-700">{t('discovery.nearMe')}</span>
-                        </div>
-                         <div className="flex items-center gap-2">
-                            <input type="checkbox" className="accent-primary" defaultChecked />
-                            <span className="text-sm text-slate-700">{t('discovery.anywhereInPakistan')}</span>
-                        </div>
+                    <FilterGroup label="Location">
+                        <select
+                          value={filters.country}
+                          onChange={(e) => setFilters((prev) => ({ ...prev, country: e.target.value }))}
+                          className="w-full text-sm p-2 border border-slate-200 rounded-md focus:outline-none focus:border-primary"
+                        >
+                          <option value="">Any country</option>
+                          {countries.map((country) => (
+                            <option key={String(country.id)} value={String(country.id)}>
+                              {country.name}{country.code ? ` (${country.code})` : ''}
+                            </option>
+                          ))}
+                        </select>
                     </FilterGroup>
 
-                    <FilterGroup label={t('discovery.sectCaste')}>
-                         <input
-                            type="text"
-                            placeholder={t('discovery.sectCastePlaceholder')}
+                    <FilterGroup label="Religion">
+                        <select
                             value={filters.religion}
-                            onChange={(e) => setFilters({ ...filters, religion: e.target.value })}
+                            onChange={(e) => setFilters((prev) => ({ ...prev, religion: e.target.value, caste: '' }))}
                             className="w-full text-sm p-2 border border-slate-200 rounded-md focus:outline-none focus:border-primary"
-                         />
+                        >
+                            <option value="">Any religion</option>
+                            {religions.map((religion) => (
+                                <option key={String(religion.id)} value={String(religion.id)}>
+                                    {religion.name}
+                                </option>
+                            ))}
+                        </select>
                     </FilterGroup>
 
-                    <FilterGroup label={t('discovery.profession')}>
-                         <div className="flex flex-wrap gap-2">
-                            {['Doctor', 'Surgeon', 'Dentist', 'Medical Student'].map(p => (
-                                <button
-                                    key={p}
-                                    type="button"
-                                    onClick={() => setFilters({ ...filters, profession: p })}
-                                    className={`px-2 py-1 text-xs rounded border transition-colors ${
-                                        filters.profession === p
-                                        ? 'bg-primary/10 text-primary border-primary/40'
-                                        : 'bg-slate-100 text-slate-600 border-slate-200 hover:border-slate-300'
-                                    }`}
-                                >
-                                    {p}
-                                </button>
+                    <FilterGroup label="Sect">
+                        <select
+                            value={filters.sect}
+                            onChange={(e) => setFilters((prev) => ({ ...prev, sect: e.target.value }))}
+                            className="w-full text-sm p-2 border border-slate-200 rounded-md focus:outline-none focus:border-primary"
+                        >
+                            <option value="">Any sect</option>
+                            {sects.map((sect) => (
+                                <option key={String(sect.id)} value={String(sect.id)}>
+                                    {sect.name}
+                                </option>
                             ))}
-                         </div>
+                        </select>
+                    </FilterGroup>
+
+                    <FilterGroup label="Caste">
+                        <select
+                            value={filters.caste}
+                            onChange={(e) => setFilters((prev) => ({ ...prev, caste: e.target.value }))}
+                            className="w-full text-sm p-2 border border-slate-200 rounded-md focus:outline-none focus:border-primary"
+                            disabled={!filters.religion}
+                        >
+                            <option value="">{filters.religion ? 'Any caste' : 'Choose a religion first'}</option>
+                            {castes.map((caste) => (
+                                <option key={String(caste.id)} value={String(caste.id)}>
+                                    {caste.name}
+                                </option>
+                            ))}
+                        </select>
+                    </FilterGroup>
+
+                    <FilterGroup label="Profession">
+                         <select
+                            value={filters.professionId}
+                            onChange={(e) => {
+                              const selectedId = e.target.value;
+                              setFilters((prev) => ({
+                                ...prev,
+                                professionId: selectedId,
+                                profession: ''
+                              }));
+                            }}
+                            className="w-full text-sm p-2 border border-slate-200 rounded-md focus:outline-none focus:border-primary"
+                         >
+                            <option value="">Any profession</option>
+                            {jobTitles.map((jobTitle) => (
+                              <option key={String(jobTitle.id)} value={String(jobTitle.id)}>
+                                {jobTitle.name}
+                              </option>
+                            ))}
+                         </select>
                          <input
                             type="text"
-                            placeholder={t('discovery.customProfession')}
+                            placeholder="Search profession keywords"
                             value={filters.profession}
-                            onChange={(e) => setFilters({ ...filters, profession: e.target.value })}
+                            onChange={(e) => setFilters({ ...filters, profession: e.target.value, professionId: '' })}
                             className="w-full text-sm p-2 border border-slate-200 rounded-md focus:outline-none focus:border-primary mt-3"
                          />
                     </FilterGroup>
@@ -754,40 +1024,55 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
                         ? (searchQuery.trim()
                             ? t('discovery.searchResultsFor', { query: searchQuery.trim() })
                             : t('discovery.filteredResults'))
-                        : activeTab === 'verified' ? t('discovery.verifiedProfiles') : activeTab === 'unverified' ? t('discovery.unverifiedProfiles') : t('discovery.exploreProfiles')
+                        : activeTab === 'verified'
+                          ? t('discovery.verifiedProfiles')
+                          : activeTab === 'unverified'
+                            ? t('discovery.unverifiedProfiles')
+                            : activeTab === 'bookmarked'
+                              ? t('discovery.bookmarkedProfiles')
+                              : t('discovery.exploreProfiles')
                     }
                  </h3>
                  {viewMode === 'grid' ? (
-                     <motion.div 
+                    displayedProfiles.length > 0 ? (
+                      <motion.div
                         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
                         variants={STAGGER_CONTAINER}
                         initial="hidden"
                         animate="visible"
-                        key={activeTab} // Forces re-animation when tab changes
-                     >
+                        key={activeTab}
+                      >
                         <AnimatePresence mode="popLayout">
                             {displayedProfiles.map(profile => {
                                 const mergedProfile = mergeInterest(profile);
                                 return (
                                 <motion.div key={mergedProfile.id} variants={FADE_UP_ITEM} layout>
-                                    <ProfileGridCard 
+                                <ProfileGridCard
                                         profile={mergedProfile}
                                         onClick={() => setSelectedProfile(mergedProfile)}
                                         onProposal={() => { if (!requireVerification()) onSendProposal(mergedProfile); }}
-                                        onRequestPhoto={() => handleRequestPhotoAccess(mergedProfile)}
-                                        requestingPhoto={photoRequesting[mergedProfile.id]}
-                                        requestedPhoto={photoRequested[mergedProfile.id]}
-                                        onSuperLike={() => handleSuperLike(mergedProfile)}
+                                        onRequestMediaAccess={() => openMediaAccessModal(mergedProfile, 'photo')}
+                                        mediaAccess={mediaAccessStates[mergedProfile.id] ?? resolveMediaAccessBundle(mergedProfile)}
                                         superLiked={superLiked[mergedProfile.id]}
-                                        superLikeProcessing={superLikeProcessing[mergedProfile.id]}
                                         onLike={() => handleShortlist(mergedProfile)}
-                                        liked={shortlisted[mergedProfile.id]}
+                                        liked={Boolean(shortlisted[mergedProfile.id] ?? isProfileBookmarked(mergedProfile))}
                                         shortlistProcessing={shortlistProcessing[mergedProfile.id]}
-                                    />
+                                      />
                                 </motion.div>
                             )})}
                         </AnimatePresence>
-                     </motion.div>
+                      </motion.div>
+                    ) : (
+                      <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-14 text-center">
+                        <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                          <Search size={20} />
+                        </div>
+                        <h4 className="text-base font-bold text-slate-900">{emptyStateTitle}</h4>
+                        <p className="mt-2 text-sm text-slate-500">
+                          {emptyStateDescription}
+                        </p>
+                      </div>
+                    )
                  ) : (
                      <div className="h-96 bg-slate-200 rounded-xl flex items-center justify-center text-slate-500 border border-slate-300">
                         <div className="text-center">
@@ -800,7 +1085,7 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
             </div>
 
             {/* Pagination Controls */}
-            {!isSearchActive && pagination.last_page > 1 && (
+            {pagination.last_page > 1 && (
               <div className="mt-8 flex flex-col items-center gap-3">
                 <div className="flex items-center gap-2">
                   <button
@@ -870,10 +1155,10 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
             )}
 
             {/* Search Results Pagination */}
-            {isSearchActive && searchResults.length > 0 && (
+            {isSearchActive && pagination.total > 0 && (
               <div className="mt-8 flex justify-center">
                 <p className="text-sm text-slate-500">
-                  {t('discovery.resultsCount', { count: searchResults.length }, `${searchResults.length} results found`)}
+                  {t('discovery.resultsCount', { count: pagination.total }, `${pagination.total} results found`)}
                 </p>
               </div>
             )}
@@ -903,8 +1188,23 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
                 setSelectedProfile(null);
                 onSendProposal(p);
               }}
+              onRequestMediaAccess={(p, kind = 'photo') => openMediaAccessModal(p, kind)}
               onNavigate={onNavigate}
             />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showMediaAccessModal && mediaAccessTarget && (
+          <MediaAccessRequestModal
+            profile={mediaAccessTarget}
+            mediaAccess={mediaAccessStates[mediaAccessTarget.id] ?? resolveMediaAccessBundle(mediaAccessTarget)}
+            onClose={closeMediaAccessModal}
+            onRequestProfilePhoto={() => handleRequestProfilePhotoAccess(mediaAccessTarget)}
+            onRequestGalleryImages={() => handleRequestGalleryImagesAccess(mediaAccessTarget)}
+            requestingProfilePhoto={Boolean(mediaAccessRequesting[mediaAccessTarget.id]?.profilePhoto)}
+            requestingGalleryImages={Boolean(mediaAccessRequesting[mediaAccessTarget.id]?.galleryImage)}
+            priorityKind={mediaAccessPriority}
+          />
         )}
       </AnimatePresence>
       <AnimatePresence>
@@ -913,18 +1213,6 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
         )}
       </AnimatePresence>
 
-      {/* Travel Mode Modal */}
-      <AnimatePresence>
-        {showTravelModal && (
-          <TravelModeModal
-            onClose={() => setShowTravelModal(false)}
-            onEnable={handleEnableTravelMode}
-            loading={travelLoading}
-            currentCity={travelCity}
-            currentCountry={travelCountry}
-          />
-        )}
-      </AnimatePresence>
     </div>
   );
 };
@@ -949,18 +1237,30 @@ const ProfileGridCard: React.FC<{
     profile: ProfileMatch;
     onClick: () => void;
     onProposal: () => void;
-    onRequestPhoto: () => void;
-    requestingPhoto?: boolean;
-    requestedPhoto?: boolean;
-    onSuperLike: () => void;
+    onRequestMediaAccess: () => void;
+    mediaAccess: MediaAccessBundle;
     superLiked?: boolean;
-    superLikeProcessing?: boolean;
     onLike: () => void;
     liked?: boolean;
     shortlistProcessing?: boolean;
-}> = ({ profile, onClick, onProposal, onRequestPhoto, requestingPhoto, requestedPhoto, onSuperLike, superLiked, superLikeProcessing, onLike, liked, shortlistProcessing }) => {
+ }> = ({ profile, onClick, onProposal, onRequestMediaAccess, mediaAccess, superLiked, onLike, liked, shortlistProcessing }) => {
     const { t } = useTranslation();
     const interestFlags = getInterestFlags(profile, Boolean(superLiked));
+    const profilePhotoAccess = mediaAccess.profilePhoto;
+    const avatarUrl = profile.avatarUrl || DEFAULT_AVATAR;
+    const shouldBlurAvatar = Boolean(
+      profile.profilePhotoBlur &&
+      profile.photoExists &&
+      avatarUrl !== DEFAULT_AVATAR &&
+      avatarUrl !== DEFAULT_FEMALE_AVATAR
+    );
+    const photoRequestTitle = profilePhotoAccess.state === 'approved' || profilePhotoAccess.accessible
+      ? t('discovery.manageMediaAccess')
+      : profilePhotoAccess.state === 'pending'
+        ? t('discovery.mediaAccessRequested')
+        : profilePhotoAccess.required
+          ? t('discovery.requestMediaAccess')
+          : t('discovery.noRequestNeeded');
 
     return (
         <div 
@@ -995,22 +1295,24 @@ const ProfileGridCard: React.FC<{
                  )}
             </div>
 
-            <div className="aspect-[4/5] bg-slate-200 relative" onClick={onClick}>
+            <div className="aspect-[4/5] bg-slate-200 relative overflow-hidden" onClick={onClick}>
                 <img 
-                    src={profile.avatarUrl || DEFAULT_AVATAR} 
+                    src={avatarUrl}
                     alt={profile.name} 
-                    className="w-full h-full object-cover"
+                    className={`w-full h-full object-cover transition duration-300 ${shouldBlurAvatar ? 'scale-110 blur-2xl' : ''}`}
                     onError={(e) => { (e.target as HTMLImageElement).src = DEFAULT_AVATAR; }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60"></div>
                 
                 <div className="absolute bottom-0 left-0 p-4 w-full text-white">
                     <h3 className="font-bold text-lg leading-tight">{profile.name}</h3>
-                    <div className="flex items-center gap-1 text-xs opacity-90 mt-1">
-                        <span className="bg-white/20 px-1.5 py-0.5 rounded backdrop-blur-sm">{profile.age}</span>
+                     <div className="flex items-center gap-1 text-xs opacity-90 mt-1">
+                        <span className="bg-white/20 px-1.5 py-0.5 rounded backdrop-blur-sm">
+                           {profile.age && profile.age > 0 ? profile.age : t('profile.ageNA')}
+                        </span>
                         <span>-</span>
                         <span>{profile.specialty}</span>
-                    </div>
+                     </div>
                 </div>
             </div>
             
@@ -1024,14 +1326,23 @@ const ProfileGridCard: React.FC<{
                      <motion.button
                         whileHover={{ scale: 1.1 }}
                         whileTap={BTN_TAP}
-                        onClick={(e) => { e.stopPropagation(); onRequestPhoto(); }}
-                        disabled={requestingPhoto || requestedPhoto}
+                        onClick={(e) => { e.stopPropagation(); onRequestMediaAccess(); }}
                         className={`p-1.5 rounded-full bg-slate-50 transition-colors ${
-                            requestedPhoto ? 'text-primary bg-primary/10' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200'
+                            profilePhotoAccess.state === 'approved' || profilePhotoAccess.accessible
+                              ? 'text-emerald-600 bg-emerald-50 border border-emerald-200 shadow-sm'
+                              : profilePhotoAccess.state === 'pending'
+                                ? 'text-primary bg-primary/10 border border-primary/20 shadow-sm'
+                                : profilePhotoAccess.required
+                                  ? 'text-slate-400 hover:text-slate-600 hover:bg-slate-200 border border-transparent'
+                                  : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200 border border-transparent'
                         }`}
-                        title={requestedPhoto ? t('discovery.photoAccessRequested') : t('discovery.requestPhotoAccess')}
+                        title={photoRequestTitle}
                      >
-                        {requestingPhoto ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
+                        {profilePhotoAccess.state === 'pending'
+                          ? <Clock size={16} />
+                          : profilePhotoAccess.state === 'approved' || profilePhotoAccess.accessible
+                            ? <CheckCircle2 size={16} />
+                            : <Camera size={16} />}
                      </motion.button>
                      {(() => {
                         // Mutual match / accepted
@@ -1082,18 +1393,6 @@ const ProfileGridCard: React.FC<{
                             >
                               <Send size={16} />
                             </motion.button>
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={BTN_TAP}
-                              onClick={(e) => { e.stopPropagation(); onSuperLike(); }}
-                              disabled={superLikeProcessing}
-                              className={`p-1.5 rounded-full bg-slate-50 transition-colors ${
-                                  superLiked ? 'text-yellow-500 bg-yellow-50' : 'text-slate-400 hover:text-yellow-500 hover:bg-yellow-50'
-                              }`}
-                              title={t('discovery.expressInterest')}
-                            >
-                              {superLikeProcessing ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-                            </motion.button>
                           </>
                         );
                      })()}
@@ -1103,11 +1402,11 @@ const ProfileGridCard: React.FC<{
                         onClick={(e) => { e.stopPropagation(); onLike(); }}
                         disabled={shortlistProcessing}
                         className={`p-1.5 rounded-full bg-slate-50 transition-colors ${
-                            liked ? 'text-red-500 bg-red-50' : 'text-slate-400 hover:text-red-500 hover:bg-red-50'
+                            liked ? 'text-red-500 bg-red-50 border border-red-200 shadow-sm' : 'text-slate-400 hover:text-red-500 hover:bg-red-50 border border-transparent'
                         }`}
-                        title={t('discovery.like')}
+                        title={liked ? t('discovery.bookmarked') : t('discovery.bookmark')}
                     >
-                        {shortlistProcessing ? <Loader2 size={16} className="animate-spin" /> : <Bookmark size={16} />}
+                        {shortlistProcessing ? <Loader2 size={16} className="animate-spin" /> : liked ? <Bookmark size={16} fill="currentColor" /> : <Bookmark size={16} />}
                      </motion.button>
                 </div>
             </div>

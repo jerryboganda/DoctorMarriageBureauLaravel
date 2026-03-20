@@ -2,7 +2,6 @@
 
 namespace App\Http\Resources;
 
-use Carbon\Carbon;
 use App\Utility\MemberUtility;
 use App\Models\ExpressInterest;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -36,7 +35,7 @@ class MyInterestResource extends JsonResource
             'package_update_alert' => $package_update_alert,
             'photo'                => $profile_picture_show ? uploaded_asset($user->photo) : static_asset($avatar_image),
             'name'                 => $user->first_name . ' ' . $user->last_name,
-            'age'                  => !empty($user->member->birthday) ? Carbon::parse($user->member->birthday)->age : null,
+            'age'                  => MemberUtility::member_age($interest->user_id),
             'religion'             => MemberUtility::member_religion($interest->user_id),
             'country'              => MemberUtility::member_country($interest->user_id),
             'mothere_tongue'       => MemberUtility::member_mothere_tongue($interest->user_id),

@@ -123,7 +123,7 @@ class BulkNotificationController extends Controller
                         Mail::send('emails.index', ['email_body' => $body], function ($message) use ($user, $title, $name) {
                             $message->to($user->email, $name)
                                 ->subject($title)
-                                ->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
+                                ->from(\App\Utility\EmailUtility::fromAddress(), \App\Utility\EmailUtility::fromName());
                         });
                         $stats['email_sent']++;
                     } catch (\Throwable $e) {

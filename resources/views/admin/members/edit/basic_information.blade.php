@@ -159,14 +159,30 @@
             <div class="form-group row">
                 <div class="col-md-6">
                     <label>{{ translate('New Password') }} <span class="text-danger">*</span></label>
-                    <input type="password" name="new_password" class="form-control" placeholder="{{ translate('Enter password') }}" required>
+                    <x-password-field
+                        id="new_password"
+                        name="new_password"
+                        placeholder="{{ translate('Enter password') }}"
+                        wrapperClass=""
+                        inputClass="form-control"
+                        errorName=""
+                        required
+                    />
                     @error('new_password')
                         <small class="form-text text-danger">{{ $message }}</small>
                     @enderror
                 </div>
                 <div class="col-md-6">
                     <label>{{ translate('Confirm Password') }} <span class="text-danger">*</span></label>
-                    <input type="password" name="new_password_confirmation" class="form-control" placeholder="{{ translate('Confirm password') }}" required>
+                    <x-password-field
+                        id="new_password_confirmation"
+                        name="new_password_confirmation"
+                        placeholder="{{ translate('Confirm password') }}"
+                        wrapperClass=""
+                        inputClass="form-control"
+                        errorName=""
+                        required
+                    />
                     @error('new_password_confirmation')
                         <small class="form-text text-danger">{{ $message }}</small>
                     @enderror

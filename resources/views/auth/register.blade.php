@@ -126,12 +126,24 @@
                 </div>
 
                 <div class="form-group row">
-                    <label for="password" class="col-md-4 col-form-label text-md-right">{{ translate('Password') }}</label>
+                    <label for="referral_code" class="col-md-4 col-form-label text-md-right">{{ translate('Referral Code') }}</label>
 
                     <div class="col-md-7">
-                        <input id="password" type="password" class="form-control @error('password') is-invalid @enderror" name="password" required autocomplete="new-password">
+                        <input
+                            id="referral_code"
+                            type="text"
+                            class="form-control @error('referral_code') is-invalid @enderror"
+                            name="referral_code"
+                            value="{{ old('referral_code', request()->query('ref') ?? '') }}"
+                            autocomplete="off"
+                            placeholder="{{ translate('Optional') }}"
+                        >
 
-                        @error('password')
+                        <small class="text-muted d-block mt-2">
+                            {{ translate('Enter a code shared by the member who referred you. Leave blank if you do not have one.') }}
+                        </small>
+
+                        @error('referral_code')
                             <span class="invalid-feedback" role="alert">
                                 <strong>{{ $message }}</strong>
                             </span>
@@ -140,10 +152,37 @@
                 </div>
 
                 <div class="form-group row">
+                    <label for="password" class="col-md-4 col-form-label text-md-right">{{ translate('Password') }}</label>
+
+                    <div class="col-md-7">
+                        <x-password-field
+                            id="password"
+                            name="password"
+                            :value="old('password')"
+                            placeholder="{{ translate('Password') }}"
+                            autocomplete="new-password"
+                            wrapperClass=""
+                            inputClass="form-control @error('password') is-invalid @enderror"
+                            errorName=""
+                            required
+                        />
+                    </div>
+                </div>
+
+                <div class="form-group row">
                     <label for="password-confirm" class="col-md-4 col-form-label text-md-right">{{ translate('Confirm Password') }}</label>
 
                     <div class="col-md-7">
-                        <input id="password-confirm" type="password" class="form-control" name="password_confirmation" required autocomplete="new-password">
+                        <x-password-field
+                            id="password-confirm"
+                            name="password_confirmation"
+                            placeholder="{{ translate('Confirm Password') }}"
+                            autocomplete="new-password"
+                            wrapperClass=""
+                            inputClass="form-control"
+                            errorName=""
+                            required
+                        />
                     </div>
                 </div>
 

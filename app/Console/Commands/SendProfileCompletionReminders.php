@@ -98,11 +98,9 @@ class SendProfileCompletionReminders extends Command
 
                 // Send email using the same pattern as the rest of the app
                 Mail::send('emails.index', ['email_body' => $emailBody], function ($message) use ($user, $subject, $name) {
-                    $fromEmail = env('MAIL_FROM_ADDRESS', 'noreply@doctormarriagebureau.com.pk');
-                    $fromName = env('MAIL_FROM_NAME', 'Doctor Marriage Bureau');
                     $message->to($user->email, $name)
                         ->subject($subject)
-                        ->from($fromEmail, $fromName);
+                        ->from(\App\Utility\EmailUtility::fromAddress(), \App\Utility\EmailUtility::fromName());
                 });
 
                 // Log success

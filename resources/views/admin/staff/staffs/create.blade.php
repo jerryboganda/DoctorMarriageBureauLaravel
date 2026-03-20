@@ -38,7 +38,15 @@
                 <div class="form-group row">
                     <label class="col-sm-3 col-from-label" for="password">{{translate('Password')}}</label>
                     <div class="col-sm-9">
-                        <input type="password" name="password" splaceholder="{{translate('Password')}}" id="password" class="form-control" required>
+                        <x-password-field
+                            id="password"
+                            name="password"
+                            placeholder="{{ translate('Password') }}"
+                            wrapperClass=""
+                            inputClass="form-control"
+                            errorName="password"
+                            required
+                        />
                     </div>
                 </div>
                 <div class="form-group row">

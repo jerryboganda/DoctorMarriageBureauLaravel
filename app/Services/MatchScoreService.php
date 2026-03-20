@@ -101,9 +101,7 @@ class MatchScoreService
     private static function scoreAge(User $viewer, User $target, PartnerExpectation $exp): array
     {
         $weight = self::importanceToWeight($exp->age_importance);
-        $targetAge = $target->member?->birthday
-            ? Carbon::parse($target->member->birthday)->age
-            : null;
+        $targetAge = MemberUtility::member_age($target->id);
 
         if (!$targetAge) {
             return ['score' => 50, 'weight' => $weight];

@@ -155,9 +155,7 @@ class MatchIntelligenceController extends Controller
 
     private function calculateAgeScore($viewer, $target, ?PartnerExpectation $viewerExp): array
     {
-        $targetAge = $target->member?->birthday
-            ? Carbon::parse($target->member->birthday)->age
-            : null;
+        $targetAge = MemberUtility::member_age($target->id);
 
         $weight = $this->formatWeight($viewerExp?->age_importance);
 
@@ -572,7 +570,7 @@ class MatchIntelligenceController extends Controller
         $scores = [];
 
         // Age
-        $age = $person->member?->birthday ? Carbon::parse($person->member->birthday)->age : null;
+        $age = MemberUtility::member_age($person->id);
         $minAge = $theirExpectations->min_age;
         $maxAge = $theirExpectations->max_age;
         if ($minAge || $maxAge) {

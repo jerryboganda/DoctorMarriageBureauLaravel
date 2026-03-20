@@ -16,7 +16,9 @@ return [
     |
     */
 
-    'driver' => env('MAIL_DRIVER', 'smtp'),
+    'default' => env('MAIL_MAILER', env('MAIL_DRIVER', 'smtp')),
+
+    'driver' => env('MAIL_MAILER', env('MAIL_DRIVER', 'smtp')),
 
     /*
     |--------------------------------------------------------------------------
@@ -56,8 +58,8 @@ return [
     */
 
     'from' => [
-        'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
-        'name' => env('MAIL_FROM_NAME', 'Example'),
+        'address' => env('MAIL_FROM_ADDRESS') ?? 'noreply@doctormarriagebureau.com.pk',
+        'name' => env('MAIL_FROM_NAME') ?? env('APP_NAME', 'Doctor Marriage Bureau'),
     ],
 
     /*

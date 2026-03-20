@@ -6,10 +6,10 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
 
-  // Use Laragon SSL certs for local HTTPS (fall back to no HTTPS if not found)
+  // Use Laragon SSL certs only when explicitly enabled.
   const keyPath = 'E:/laragon/etc/ssl/laragon.key';
   const certPath = 'E:/laragon/etc/ssl/laragon.crt';
-  const httpsConfig = fs.existsSync(keyPath) && fs.existsSync(certPath)
+  const httpsConfig = env.VITE_DEV_HTTPS === 'true' && fs.existsSync(keyPath) && fs.existsSync(certPath)
     ? { key: fs.readFileSync(keyPath), cert: fs.readFileSync(certPath) }
     : undefined;
 

@@ -9,6 +9,10 @@ import { api } from '../utils/api';
 import { compressImage } from '../utils/compression';
 import { useTranslation } from 'react-i18next';
 
+interface FamilyPortalViewProps {
+    biodataOnly?: boolean;
+}
+
 interface FamilyProfile {
     description: string;
     traditionLevel: string;
@@ -39,12 +43,12 @@ interface Approval {
     approved: boolean;
 }
 
-const FamilyPortalView: React.FC = () => {
+const FamilyPortalView: React.FC<FamilyPortalViewProps> = ({ biodataOnly = false }) => {
     const { t } = useTranslation();
     const { user } = useAuthStore();
-    const [activeTab, setActiveTab] = useState<'profile' | 'guardians' | 'approvals' | 'biodata'>('profile');
     const [showQr, setShowQr] = useState(false);
-    const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState<'profile' | 'guardians' | 'approvals' | 'biodata'>('profile');
+    const [loading, setLoading] = useState(!biodataOnly);
     const [familyData, setFamilyData] = useState<{
         profile: FamilyProfile;
         guardians: Guardian[];
@@ -52,8 +56,13 @@ const FamilyPortalView: React.FC = () => {
     } | null>(null);
 
     useEffect(() => {
+        if (biodataOnly) {
+            setLoading(false);
+            return;
+        }
+
         fetchFamilyData();
-    }, []);
+    }, [biodataOnly]);
 
     const fetchFamilyData = async () => {
         try {
@@ -66,6 +75,34 @@ const FamilyPortalView: React.FC = () => {
             setLoading(false);
         }
     };
+
+    if (biodataOnly) {
+        return (
+            <div className="flex-1 flex flex-col h-full min-h-0 bg-slate-50 relative">
+                <div className="flex-1 overflow-y-auto p-4 md:p-8 scrollbar-hide">
+                    <div className="max-w-6xl mx-auto">
+                        <BiodataSection onShowQr={() => setShowQr(true)} />
+                    </div>
+                </div>
+
+                {showQr && (
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl p-8 text-center max-w-sm w-full animate-in zoom-in-95">
+                            <h3 className="text-xl font-bold text-slate-900 mb-2">{t('family.shareBiodata')}</h3>
+                            <p className="text-sm text-slate-500 mb-6">{t('family.scanToView', { name: user?.name ?? 'member' })}</p>
+                            <div className="bg-white p-4 rounded-xl border-2 border-slate-900 inline-block mb-6">
+                                <QrCode size={160} className="text-slate-900" />
+                            </div>
+                            <div className="flex gap-3">
+                                <button onClick={() => setShowQr(false)} className="flex-1 py-2 text-slate-500 font-bold hover:bg-slate-50 rounded-lg">{t('family.close')}</button>
+                                <button className="flex-1 py-2 bg-primary text-white font-bold rounded-lg hover:bg-primary-hover">{t('family.copyLink')}</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    }
 
     if (loading) {
         return (
@@ -832,73 +869,28 @@ const BiodataSection: React.FC<{ onShowQr: () => void }> = ({ onShowQr }) => {
     const handleDownload = async () => {
         try {
             setDownloading(true);
-            const response = await api.get('/profile/biodata-json');
+            const response = await api.get('/profile/download-biodata', {
+                responseType: 'blob',
+            });
 
-            if (response.data.result) {
-                const userData = response.data.data;
-                const fileName = `Biodata-${userData.first_name || 'User'}.pdf`;
-                const [{ createRoot }, { default: BiodataPDFTemplate }, { default: html2pdf }] = await Promise.all([
-                    import('react-dom/client'),
-                    import('./BiodataPDFTemplate'),
-                    import('html2pdf.js'),
-                ]);
+            const disposition = response.headers?.['content-disposition'] || '';
+            const fileNameMatch = disposition.match(/filename="?([^"]+)"?/i);
+            const fileName = fileNameMatch?.[1] || `Biodata-Profile.pdf`;
 
-                const container = document.createElement('div');
-                // Off-screen but fully rendered (no display:none)
-                container.style.position = 'fixed';
-                container.style.top = '-10000px';
-                container.style.left = '-10000px';
-                container.style.width = '800px';
-                container.style.height = '1120px';
-                container.style.overflow = 'hidden';
-                document.body.appendChild(container);
-
-                const root = createRoot(container);
-                root.render(<BiodataPDFTemplate userData={userData} />);
-
-                // Wait for React mount + images to load + reflow
-                setTimeout(async () => {
-                    try {
-                        const element = container.querySelector('#biodata-pdf-content') as HTMLElement;
-                        if (element) {
-                            // Force a reflow to ensure all inline styles are computed
-                            element.getBoundingClientRect();
-
-                            const opt: any = {
-                                margin: [0, 0, 0, 0],
-                                filename: fileName,
-                                image: { type: 'jpeg', quality: 0.98 },
-                                html2canvas: {
-                                    scale: 2,
-                                    useCORS: true,
-                                    logging: false,
-                                    scrollX: 0,
-                                    scrollY: 0,
-                                    width: 800,
-                                    height: 1120,
-                                    windowWidth: 800,
-                                    windowHeight: 1120,
-                                },
-                                jsPDF: { unit: 'px', format: [800, 1120], orientation: 'portrait', hotfixes: ["px_scaling"] }
-                            };
-
-                            await (html2pdf() as any).from(element).set(opt).save();
-                        }
-                    } catch (pdfErr) {
-                        console.error('PDF generation error:', pdfErr);
-                        alert('Failed to generate PDF document.');
-                    } finally {
-                        root.unmount();
-                        container.remove();
-                        setDownloading(false);
-                    }
-                }, 1200); // 1.2s for cross-origin image load + full style computation
-            } else {
-                throw new Error('Failed to retrieve biodata');
-            }
+            const blob = new Blob([response.data], { type: 'application/pdf' });
+            const blobUrl = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(blobUrl);
         } catch (error) {
             console.error('Failed to download biodata', error);
             alert(t('family.biodataDownloadFailed') || 'Failed to download biodata. Please try again.');
+        }
+        finally {
             setDownloading(false);
         }
     };
