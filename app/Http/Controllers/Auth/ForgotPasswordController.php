@@ -34,7 +34,7 @@ class ForgotPasswordController extends Controller
     public function sendResetLinkEmail(Request $request)
     {
         if (filter_var($request->email, FILTER_VALIDATE_EMAIL)) {
-            $user = User::where('email', $request->email)->first();
+            $user = User::where('email', $request->email)->whereNull('deleted_at')->first();
             if ($user != null) {
                 $user->verification_code = rand(100000,999999);
                 $user->save();
@@ -49,7 +49,7 @@ class ForgotPasswordController extends Controller
             }
         }
         else{
-            $user = User::where('phone', $request->email)->first();
+            $user = User::where('phone', $request->email)->whereNull('deleted_at')->first();
             if ($user != null) {
                 $user->verification_code = rand(100000,999999);
                 $user->save();

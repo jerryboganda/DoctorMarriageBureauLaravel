@@ -597,7 +597,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                             </FieldGroup>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <FieldGroup label={t('auth.onboarding.dateOfBirth')}>
-                                    <input type="date" className={inputClass} value={data.dateOfBirth} onChange={e => updateField('dateOfBirth', e.target.value)} />
+                                    <input type="date" required className={inputClass} value={data.dateOfBirth} onChange={e => updateField('dateOfBirth', e.target.value)} />
                                 </FieldGroup>
                                 <FieldGroup label={t('auth.onboarding.maritalStatus')}>
                                     <select className={inputClass} value={data.maritalStatusId || ''} onChange={e => updateField('maritalStatusId', e.target.value)}>

@@ -3,9 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Models\ViewGalleryImage;
-use App\Models\ViewProfilePicture;
 use App\Utility\MemberUtility;
-use Illuminate\Support\Carbon;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class ActiveUserResource extends JsonResource
@@ -26,16 +24,11 @@ class ActiveUserResource extends JsonResource
         $identity_verified = ($this->approved == 1) && !empty($this->verification_info);
         $interestInfo = MemberUtility::member_interest_info($this->id);
         $shortlistInfo = MemberUtility::member_shortlist_info($this->id);
-        $profileViewRequestStatus = ViewProfilePicture::query()
-            ->where('user_id', $this->id)
-            ->where('requested_by', auth()->id())
-            ->where('status', 1)
-            ->exists();
-        $galleryViewRequestStatus = ViewGalleryImage::query()
-            ->where('user_id', $this->id)
-            ->where('requested_by', auth()->id())
-            ->where('status', 1)
-            ->exists();
+        $photoRequestInfo = MemberUtility::member_profile_photo_request_info($this->id);
+        $galleryRequestInfo = MemberUtility::member_gallery_image_request_info($this->id);
+        $profileViewRequestStatus = $photoRequestInfo['profile_photo_request_approved'];
+        $galleryViewRequestStatus = (bool) ($galleryRequestInfo['gallery_image_request_approved'] ?? false);
+        $profilePhotoBlur = MemberUtility::member_profile_photo_blur($this->id);
 
         return [
             'id'                   => $this->id,
@@ -48,7 +41,7 @@ class ActiveUserResource extends JsonResource
             'gender'               => $this->member->gender,
             'photo'                => $resolved_photo,
             'avatarUrl'            => $resolved_photo,
-            'age'                  => !empty($this->member->birthday) ? Carbon::parse($this->member->birthday)->age : '',
+            'age'                  => MemberUtility::member_age($this->id),
             'country'              => MemberUtility::member_country($this->id),
             'location'             => MemberUtility::member_country($this->id),
             'specialty'            => $this->career->first()?->designation ?? $this->member->specialization ?? 'Medical Professional',
@@ -70,6 +63,23 @@ class ActiveUserResource extends JsonResource
             'shortlist_status'     => $shortlistInfo['shortlist_status'],
             'shortlist_text'       => $shortlistInfo['shortlist_text'],
             'report_status'        => MemberUtility::member_report_status($this->id) ? true : false,
+            'profile_photo_request_state' => $photoRequestInfo['profile_photo_request_state'],
+            'profile_photo_request_text' => $photoRequestInfo['profile_photo_request_text'],
+            'profile_photo_request_requested' => $photoRequestInfo['profile_photo_request_requested'],
+            'profile_photo_request_approved' => $photoRequestInfo['profile_photo_request_approved'],
+            'profile_photo_request_id' => $photoRequestInfo['profile_photo_request_id'],
+            'profile_photo_request_required' => $photoRequestInfo['profile_photo_request_required'],
+            'profile_photo_accessible' => $photoRequestInfo['profile_photo_accessible'],
+            'profile_photo_exists' => $photoRequestInfo['profile_photo_exists'],
+            'profile_photo_blur' => $profilePhotoBlur,
+            'gallery_image_request_state' => $galleryRequestInfo['gallery_image_request_state'],
+            'gallery_image_request_text' => $galleryRequestInfo['gallery_image_request_text'],
+            'gallery_image_request_requested' => $galleryRequestInfo['gallery_image_request_requested'],
+            'gallery_image_request_approved' => $galleryRequestInfo['gallery_image_request_approved'],
+            'gallery_image_request_id' => $galleryRequestInfo['gallery_image_request_id'],
+            'gallery_image_request_required' => $galleryRequestInfo['gallery_image_request_required'],
+            'gallery_image_accessible' => $galleryRequestInfo['gallery_image_accessible'],
+            'gallery_image_exists' => $galleryRequestInfo['gallery_image_exists'],
             'is_agent_pick'       => $this->member->is_agent_pick == 1,
             'is_high_intent'      => $this->member->is_high_intent == 1,
             'isAgentPick'         => $this->member->is_agent_pick == 1,

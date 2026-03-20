@@ -20,7 +20,7 @@ use App\Models\Package;
 use App\Models\Setting;
 use App\Models\Shortlist;
 use App\Models\ViewGalleryImage;
-use App\Models\ViewProfilePicture;
+use App\Utility\MemberUtility;
 use Laravel\Sanctum\PersonalAccessToken;
 
 class MemberController extends Controller
@@ -255,8 +255,8 @@ class MemberController extends Controller
 
         $shortlist = Shortlist::where('user_id', $id)->where('shortlisted_by', auth()->id())->first();
         $profile_reported = ReportedUser::where('user_id', $id)->where('reported_by', auth()->id())->first();
-        $profile_view_resquest_status = ViewProfilePicture::where('user_id', $id)->where('requested_by', auth()->id())->where('status', 1)->first();
-        $gallery_view_resquest_status = ViewGalleryImage::where('user_id', $id)->where('requested_by', auth()->id())->where('status', 1)->first();
+        $photo_request_info = MemberUtility::member_profile_photo_request_info($id);
+        $gallery_request_info = MemberUtility::member_gallery_image_request_info($id);
         $do_interest = ExpressInterest::where('user_id', $id)->where('interested_by', auth()->id())->first();
         $received_interest = ExpressInterest::where('user_id', auth()->id())->where('interested_by', $id)->first();
 
@@ -289,8 +289,23 @@ class MemberController extends Controller
         }
         $data['shortlist_status']    = $shortlist ? 1 : 0;
         $data['report_status']        = $profile_reported ? true : false;
-        $data['profile_view_resquest_status']   = $profile_view_resquest_status ? true : false;
-        $data['gallery_view_resquest_status']   = $gallery_view_resquest_status ? true : false;
+        $data['profile_view_resquest_status']   = $photo_request_info['profile_photo_request_approved'];
+        $data['profile_photo_request_state']     = $photo_request_info['profile_photo_request_state'];
+        $data['profile_photo_request_text']      = $photo_request_info['profile_photo_request_text'];
+        $data['profile_photo_request_requested'] = $photo_request_info['profile_photo_request_requested'];
+        $data['profile_photo_request_approved']  = $photo_request_info['profile_photo_request_approved'];
+        $data['profile_photo_request_required']  = $photo_request_info['profile_photo_request_required'];
+        $data['profile_photo_accessible']        = $photo_request_info['profile_photo_accessible'];
+        $data['profile_photo_exists']            = $photo_request_info['profile_photo_exists'];
+        $data['profile_photo_blur']              = MemberUtility::member_profile_photo_blur($id);
+        $data['gallery_image_request_state']     = $gallery_request_info['gallery_image_request_state'];
+        $data['gallery_image_request_text']      = $gallery_request_info['gallery_image_request_text'];
+        $data['gallery_image_request_requested'] = $gallery_request_info['gallery_image_request_requested'];
+        $data['gallery_image_request_approved']  = $gallery_request_info['gallery_image_request_approved'];
+        $data['gallery_image_request_required']   = $gallery_request_info['gallery_image_request_required'];
+        $data['gallery_image_accessible']        = $gallery_request_info['gallery_image_accessible'];
+        $data['gallery_image_exists']            = $gallery_request_info['gallery_image_exists'];
+        $data['gallery_view_resquest_status']   = $gallery_request_info['gallery_image_request_approved'];
 
         return $this->response_data($data);
     }

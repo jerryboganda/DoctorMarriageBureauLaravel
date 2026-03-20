@@ -36,8 +36,14 @@
 
                             <div class="form-group">
                                 <label for="admin_password">Admin Password (At least 8 characters)</label>
-                                <input type="password" class="form-control" id="admin_password" name="admin_password"
-                                    required>
+                                <x-password-field
+                                    id="admin_password"
+                                    name="admin_password"
+                                    wrapperClass=""
+                                    inputClass="form-control"
+                                    errorName="admin_password"
+                                    required
+                                />
                             </div>
 
                             <div class="form-group">

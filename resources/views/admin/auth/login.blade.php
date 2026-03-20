@@ -22,10 +22,8 @@
 
 <body class="admin-bg flex items-center justify-center min-h-screen p-6 overflow-hidden">
     <div class="w-full max-w-md">
-        <!-- Logo/Header -->
         <div class="text-center mb-8">
-            <div
-                class="inline-flex items-center justify-center w-16 h-16 bg-white/5 rounded-2xl border border-white/10 mb-4">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-white/5 rounded-2xl border border-white/10 mb-4">
                 <svg class="w-10 h-10 text-white" fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
                     <path d="M44 4H30.6666V17.3334H17.3334V30.6666H4V44H44V4Z" fill="currentColor"></path>
                 </svg>
@@ -34,7 +32,6 @@
             <p class="text-white/50 text-sm mt-2">Administrative Access Only</p>
         </div>
 
-        <!-- Login Card -->
         <div class="bg-white/10 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
             <form method="POST" action="{{ route('login') }}" class="space-y-6">
                 @csrf
@@ -52,12 +49,19 @@
                 <div class="space-y-2">
                     <div class="flex justify-between items-center px-1">
                         <label class="text-white/80 text-sm font-medium">Password</label>
-                        <a href="{{ route('password.request') }}"
-                            class="text-white/40 hover:text-white text-xs transition-colors">Reset Key?</a>
+                        <a href="{{ route('password.request') }}" class="text-white/40 hover:text-white text-xs transition-colors">Reset Key?</a>
                     </div>
-                    <input name="password" required
-                        class="w-full h-12 px-4 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-white/30 transition-all"
-                        placeholder="••••••••" type="password">
+                    <x-password-field
+                        id="password"
+                        name="password"
+                        placeholder="••••••••"
+                        wrapperClass=""
+                        inputClass="w-full h-12 px-4 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-white/30 transition-all"
+                        buttonClass="right-3 text-white/40 hover:text-white"
+                        iconClass="w-5 h-5 text-white/40"
+                        errorName=""
+                        required
+                    />
                     @error('password')
                         <p class="text-red-400 text-xs mt-1">{{ $message }}</p>
                     @enderror
@@ -68,8 +72,7 @@
                         class="w-full h-12 bg-white text-slate-950 font-bold rounded-xl hover:bg-white/90 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
                         <span>Authenticate</span>
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7">
-                            </path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                         </svg>
                     </button>
                 </div>

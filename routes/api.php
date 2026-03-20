@@ -78,9 +78,14 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
         Route::post('/onboarding/complete', 'OnboardingController@complete');
 
         // Progression
+        Route::post('/progression/start', 'ProgressionController@startProgression');
         Route::get('/progression/active', 'ProgressionController@getActiveProgressions');
         Route::get('/progression/{id}', 'ProgressionController@getProgression');
         Route::post('/progression/{id}/update-stage', 'ProgressionController@updateStage');
+        Route::post('/progression/{id}/items', 'ProgressionController@storeItem');
+        Route::patch('/progression/{id}/items/{itemId}', 'ProgressionController@updateItem');
+        Route::delete('/progression/{id}/items/{itemId}', 'ProgressionController@deleteItem');
+        Route::patch('/progression/{id}/settings', 'ProgressionController@updateSettings');
 
         // Family Portal
         Route::get('/family', 'FamilyController@index');
@@ -335,10 +340,15 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
             });
 
             // Progression Routes
+            Route::post('/progression/start', 'ProgressionController@startProgression');
             Route::get('/progression/stages', 'ProgressionController@getStages');
             Route::get('/progression/active', 'ProgressionController@getActiveProgressions');
             Route::get('/progression/partner/{id}', 'ProgressionController@getProgression');
             Route::post('/progression/update-stage', 'ProgressionController@updateStage');
+            Route::post('/progression/{id}/items', 'ProgressionController@storeItem');
+            Route::patch('/progression/{id}/items/{itemId}', 'ProgressionController@updateItem');
+            Route::delete('/progression/{id}/items/{itemId}', 'ProgressionController@deleteItem');
+            Route::patch('/progression/{id}/settings', 'ProgressionController@updateSettings');
 
             // Family Portal Routes
             Route::get('/family/details', 'FamilyPortalController@index');

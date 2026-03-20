@@ -4,6 +4,8 @@ import { ProfileMatch } from '../types';
 import { api } from '../utils/api';
 import ReportModal from './ReportModal';
 import { useTranslation } from 'react-i18next';
+import { normalizePositiveAge } from '../utils/age';
+import { useAuthStore } from '../src/stores/authStore';
 
 // API base URL for assets
 const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://api.doctormarriagebureau.com.pk';
@@ -18,6 +20,7 @@ interface ProfileCardProps {
 
 const ProfileCard: React.FC<ProfileCardProps> = ({ profile, interestId, onDecline, onAccept }) => {
   const { t } = useTranslation();
+  const currentUserId = useAuthStore((state) => state.user?.id);
   const [accepted, setAccepted] = useState(false);
   const [accepting, setAccepting] = useState(false);
   const [blocking, setBlocking] = useState(false);
@@ -40,6 +43,13 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ profile, interestId, onDeclin
   if (!avatarUrl || (!avatarUrl.startsWith('http') && !avatarUrl.startsWith('/'))) {
     avatarUrl = DEFAULT_AVATAR;
   }
+  const shouldBlurAvatar = Boolean(
+    displayProfile.profilePhotoBlur &&
+    currentUserId != null &&
+    String(currentUserId) !== String(displayProfile.id ?? '') &&
+    !avatarUrl.includes('avatar-place.png')
+  );
+  const age = normalizePositiveAge(displayProfile.age);
   const hasInterest = Boolean(interestId);
   const isLiveProfile = Boolean(profile && profile.id);
 
@@ -122,7 +132,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ profile, interestId, onDeclin
         {/* Avatar */}
         <div className="absolute -top-12 md:-top-16 left-4 md:left-8 p-1.5 bg-white rounded-full">
           <div 
-            className="size-24 md:size-32 rounded-full bg-cover bg-center shadow-md border border-slate-100" 
+            className={`size-24 md:size-32 rounded-full bg-cover bg-center shadow-md border border-slate-100 overflow-hidden ${shouldBlurAvatar ? 'scale-110 blur-2xl' : ''}`}
             style={{ backgroundImage: `url('${avatarUrl}')` }}
             aria-label={`Portrait of ${displayProfile.name}`}
           ></div>
@@ -151,7 +161,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ profile, interestId, onDeclin
               </div>
               <div className="flex items-center gap-1">
                 <Cake size={16} />
-                {displayProfile.age ? `${displayProfile.age} ${t('common.yrs')}` : t('profile.ageNA')}
+                {age ? `${age} ${t('common.yrs')}` : t('profile.ageNA')}
               </div>
             </div>
           </div>

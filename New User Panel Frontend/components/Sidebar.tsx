@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { Compass, UserCheck, Heart, MessageSquare, Route, Users, Globe, Bell, UserCircle, ShieldCheck, LogOut, HeartPulse, X, Camera, Loader2, ChevronDown, Gift } from 'lucide-react';
+import { Compass, UserCheck, Heart, MessageSquare, Route, Globe, Bell, UserCircle, ShieldCheck, LogOut, HeartPulse, X, Camera, Loader2, ChevronDown, Gift, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { BTN_TAP } from '../utils/motion';
@@ -191,11 +191,12 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, dataSyncVers
           <NavItem icon={<UserCheck size={20} />} label={t('nav.matchmakerProposals')} active={currentView === 'agent_picks'} onClick={() => onNavigate('agent_picks')} badge={counts.agentPicks || undefined} />
           <NavItem icon={<Heart size={20} />} label={t('nav.proposals')} active={currentView === 'dashboard'} onClick={() => onNavigate('dashboard')} badge={counts.proposals || undefined} />
           <NavItem icon={<MessageSquare size={20} />} label={t('nav.messages')} active={currentView === 'messages'} onClick={() => { if (isPremiumMessagingMember) { onNavigate('messages'); } else { onUpgrade?.(); } }} badge={isPremiumMessagingMember ? (counts.messages || undefined) : undefined} />
+          <NavItem icon={<Bell size={20} />} label={t('nav.notifications')} active={currentView === 'notifications'} onClick={() => onNavigate('notifications')} badge={counts.notifications || undefined} />
         </div>
 
         <p className="px-4 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 mt-4">{t('nav.familySocial')}</p>
         <div className="space-y-1">
-          <NavItem icon={<Users size={20} />} label={t('nav.familyPortal')} sublabel={t('nav.familyPortalSublabel')} active={currentView === 'family'} onClick={() => onNavigate('family')} />
+          <NavItem icon={<FileText size={20} />} label={t('nav.biodata')} sublabel={t('nav.biodataSublabel')} active={currentView === 'biodata' || currentView === 'family'} onClick={() => onNavigate('biodata')} />
           <NavItem icon={<Globe size={20} />} label={t('nav.communities')} active={currentView === 'communities'} onClick={() => onNavigate('communities')} />
           <NavItem icon={<Route size={20} />} label={t('nav.journeyTracking')} active={currentView === 'progression'} onClick={() => onNavigate('progression')} />
         </div>
@@ -207,7 +208,6 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, dataSyncVers
 
         <p className="px-4 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 mt-4">{t('nav.settingsHeader')}</p>
         <div className="space-y-1">
-          <NavItem icon={<Bell size={20} />} label={t('nav.notifications')} active={currentView === 'notifications'} onClick={() => onNavigate('notifications')} badge={counts.notifications || undefined} />
           <NavItem icon={<UserCircle size={20} />} label={t('nav.myProfile')} active={currentView === 'profile'} onClick={() => onNavigate('profile')} />
           <NavItem icon={<ShieldCheck size={20} />} label={t('nav.privacyTrust')} active={currentView === 'settings'} onClick={() => onNavigate('settings')} />
         </div>

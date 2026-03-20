@@ -30,6 +30,34 @@ class ProfileCenterController extends Controller
         'media' => 10,
     ];
 
+    private function buildVisibilitySnapshot(User $user): array
+    {
+        $stored = FieldVisibilitySetting::where('user_id', $user->id)
+            ->pluck('is_visible', 'field_name')
+            ->toArray();
+
+        $fieldVisibility = FieldVisibilitySetting::getForUser($user->id);
+        $photoVisibilityPublic = array_key_exists('photo_visibility_public', $stored)
+            ? filter_var($stored['photo_visibility_public'], FILTER_VALIDATE_BOOLEAN)
+            : true;
+        $photoVisibilityMembers = array_key_exists('photo_visibility_members', $stored)
+            ? filter_var($stored['photo_visibility_members'], FILTER_VALIDATE_BOOLEAN)
+            : true;
+
+        return array_merge($fieldVisibility, [
+            'profile_visible' => (bool) ($user->member?->is_visible ?? true),
+            'incognito' => array_key_exists('incognito', $stored)
+                ? filter_var($stored['incognito'], FILTER_VALIDATE_BOOLEAN)
+                : false,
+            'screenshot_deterrence' => $fieldVisibility['screenshot_deterrence'] ?? true,
+            'photo_visibility_public' => $photoVisibilityPublic,
+            'photo_visibility_members' => $photoVisibilityMembers,
+            'profile_photo_blur' => array_key_exists('profile_photo_blur', $stored)
+                ? filter_var($stored['profile_photo_blur'], FILTER_VALIDATE_BOOLEAN)
+                : false,
+        ]);
+    }
+
     /**
      * Get full profile data aggregated from all tables.
      */
@@ -40,7 +68,7 @@ class ProfileCenterController extends Controller
 
         $profile = $this->aggregateProfileData($user);
         $qualityScore = $this->calculateQualityScore($user);
-        $visibility = FieldVisibilitySetting::getForUser($user->id);
+        $visibility = $this->buildVisibilitySnapshot($user);
         $preferencePriorities = PartnerPreferencePriority::getForUser($user->id);
 
         return response()->json([
@@ -133,6 +161,9 @@ class ProfileCenterController extends Controller
                 'hide_from_search',
                 'block_screenshots',
                 'incognito',
+                'photo_visibility_public',
+                'photo_visibility_members',
+                'profile_photo_blur',
             ]
         );
 
@@ -152,9 +183,42 @@ class ProfileCenterController extends Controller
 
         $updatedSettings = [];
 
+        if (array_key_exists('photo_visibility_public', $updates) || array_key_exists('photo_visibility_members', $updates)) {
+            $currentSettings = FieldVisibilitySetting::where('user_id', $user->id)
+                ->pluck('is_visible', 'field_name')
+                ->toArray();
+            $photoPublic = array_key_exists('photo_visibility_public', $updates)
+                ? filter_var($updates['photo_visibility_public'], FILTER_VALIDATE_BOOLEAN)
+                : (bool) ($currentSettings['photo_visibility_public'] ?? true);
+            $photoMembers = array_key_exists('photo_visibility_members', $updates)
+                ? filter_var($updates['photo_visibility_members'], FILTER_VALIDATE_BOOLEAN)
+                : (bool) ($currentSettings['photo_visibility_members'] ?? true);
+
+            if ($photoPublic) {
+                $photoMembers = true;
+            } elseif (!$photoMembers) {
+                $photoPublic = false;
+                $photoMembers = false;
+            } else {
+                $photoPublic = false;
+                $photoMembers = true;
+            }
+
+            $updates['photo_visibility_public'] = $photoPublic;
+            $updates['photo_visibility_members'] = $photoMembers;
+        }
+
         foreach ($updates as $key => $value) {
             // Handle boolean conversion for most fields, but keep string for 'allow_messages_from'
             $parsedValue = $key === 'allow_messages_from' ? $value : filter_var($value, FILTER_VALIDATE_BOOLEAN);
+
+            if ($key === 'profile_visible') {
+                $member = $user->member;
+                if ($member) {
+                    $member->is_visible = $parsedValue ? 1 : 0;
+                    $member->save();
+                }
+            }
 
             // Log previous value
             $oldValue = FieldVisibilitySetting::where('user_id', $user->id)
@@ -187,10 +251,15 @@ class ProfileCenterController extends Controller
             \Log::warning('Visibility broadcast failed: ' . $e->getMessage());
         }
 
+        \App\Utility\MemberUtility::resetCaches();
+        $snapshot = $this->buildVisibilitySnapshot($user->fresh(['member']));
+
         return response()->json([
             'success' => true,
             'message' => 'Privacy settings updated successfully',
-            'data' => $updatedSettings,
+            'data' => array_merge($snapshot, $updatedSettings, [
+                'profile_visible' => $snapshot['profile_visible'],
+            ]),
         ]);
     }
 
@@ -204,7 +273,7 @@ class ProfileCenterController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => FieldVisibilitySetting::getForUser($user->id),
+            'data' => $this->buildVisibilitySnapshot($user),
         ]);
     }
 
@@ -822,7 +891,8 @@ class ProfileCenterController extends Controller
         $data = $request->validate([
             'first_name' => 'sometimes|string|max:255',
             'last_name' => 'sometimes|string|max:255',
-            'birthday' => 'sometimes|date',
+            'birthday' => 'nullable|date',
+            'dateOfBirth' => 'nullable|date',
             'gender' => 'sometimes|string|in:male,female,other',
             'height' => 'sometimes|numeric|min:3|max:8',
             'weight' => 'sometimes|numeric|min:30|max:300',
@@ -837,6 +907,15 @@ class ProfileCenterController extends Controller
             'seriousness_level' => 'sometimes|string|in:marriage,exploring,casual,optional',
         ]);
 
+        $birthday = $data['birthday'] ?? $data['dateOfBirth'] ?? null;
+        if (trim((string) $birthday) === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Date of Birth is required.',
+            ], 422);
+        }
+        $birthday = \Carbon\Carbon::parse($birthday)->format('Y-m-d');
+
         // Update user table
         $user->update(array_filter([
             'first_name' => $data['first_name'] ?? null,
@@ -847,7 +926,7 @@ class ProfileCenterController extends Controller
         $member = $user->member;
         if ($member) {
             $memberData = array_filter([
-                'birthday' => $data['birthday'] ?? null,
+                'birthday' => $birthday,
                 'gender' => $data['gender'] ?? null,
                 'nationality' => $data['nationality'] ?? null,
                 'known_languages' => isset($data['known_language_ids']) ? json_encode($data['known_language_ids']) : null,

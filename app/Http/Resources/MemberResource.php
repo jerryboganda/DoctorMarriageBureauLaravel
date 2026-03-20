@@ -6,8 +6,6 @@ use App\Models\ExpressInterest;
 use App\Models\ReportedUser;
 use App\Models\Shortlist;
 use App\Models\ViewGalleryImage;
-use App\Models\ViewProfilePicture;
-use Carbon\Carbon;
 use App\Utility\MemberUtility;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -29,11 +27,9 @@ class MemberResource extends JsonResource
                 $user = $token->tokenable;
             }
 
-            $profile_view_resquest_status = ViewProfilePicture::where('user_id', $this->id);
-            if ($token) {
-                $profile_view_resquest_status->where('requested_by', $user->id);
-            }
-            $profile_view_resquest_status->where('status', 1)->first();
+            $photoRequestInfo = MemberUtility::member_profile_photo_request_info($this->id);
+            $galleryRequestInfo = MemberUtility::member_gallery_image_request_info($this->id);
+            $profilePhotoBlur = MemberUtility::member_profile_photo_blur($this->id);
 
             $gallery_view_resquest_status = ViewGalleryImage::where('user_id', $this->id);
             if ($token) {
@@ -81,7 +77,8 @@ class MemberResource extends JsonResource
                 'membership'           => $this->membership,
                 'name'                 => $this->first_name . ' ' . $this->last_name,
                 'photo'                => $profile_picture_show ? (uploaded_asset($this->photo) ?? static_asset($avatar_image)) : static_asset($avatar_image),
-                'age'                  => !empty($this->member->birthday) ? Carbon::parse($this->member->birthday)->age : '',
+                'profile_photo_blur'   => $profilePhotoBlur,
+                'age'                  => MemberUtility::member_age($this->id),
                 'country'              => MemberUtility::member_country($this->id),
                 'height'               => !empty($this->physical_attributes->height) ? $this->physical_attributes->height : '',
                 'package_update_alert' => $package_update_alert,
@@ -92,7 +89,22 @@ class MemberResource extends JsonResource
                 // 'shortlist_status'     => MemberUtility::member_shortlist_info($this->id)['shortlist_status'],
                 // 'shortlist_text'       => MemberUtility::member_shortlist_info($this->id)['shortlist_text'],
                 'report_status'        => $profile_reported ? true : false,
-                'profile_view_resquest_status'   => $profile_view_resquest_status ? true : false,
+                'profile_view_resquest_status'   => $photoRequestInfo['profile_photo_request_approved'],
+                'profile_photo_request_state'     => $photoRequestInfo['profile_photo_request_state'],
+                'profile_photo_request_text'      => $photoRequestInfo['profile_photo_request_text'],
+                'profile_photo_request_requested' => $photoRequestInfo['profile_photo_request_requested'],
+                'profile_photo_request_approved'  => $photoRequestInfo['profile_photo_request_approved'],
+                'profile_photo_request_required'  => $photoRequestInfo['profile_photo_request_required'],
+                'profile_photo_accessible'        => $photoRequestInfo['profile_photo_accessible'],
+                'profile_photo_exists'            => $photoRequestInfo['profile_photo_exists'],
+                'gallery_image_request_state'     => $galleryRequestInfo['gallery_image_request_state'],
+                'gallery_image_request_text'      => $galleryRequestInfo['gallery_image_request_text'],
+                'gallery_image_request_requested' => $galleryRequestInfo['gallery_image_request_requested'],
+                'gallery_image_request_approved'  => $galleryRequestInfo['gallery_image_request_approved'],
+                'gallery_image_request_id'        => $galleryRequestInfo['gallery_image_request_id'],
+                'gallery_image_request_required'  => $galleryRequestInfo['gallery_image_request_required'],
+                'gallery_image_accessible'        => $galleryRequestInfo['gallery_image_accessible'],
+                'gallery_image_exists'            => $galleryRequestInfo['gallery_image_exists'],
                 'gallery_view_resquest_status'   => $gallery_view_resquest_status ? true : false,
             ];
         }

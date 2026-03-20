@@ -1,10 +1,15 @@
 <?php
 namespace App\Utility;
+use Carbon\Carbon;
 use App\Models\User;
+use App\Models\FieldVisibilitySetting;
 use App\Models\Shortlist;
 use App\Models\ReportedUser;
+use App\Models\GalleryImage;
 use App\Models\MemberLanguage;
 use App\Models\ExpressInterest;
+use App\Models\ViewProfilePicture;
+use App\Models\ViewGalleryImage;
 
 class MemberUtility
 {
@@ -15,6 +20,202 @@ class MemberUtility
     protected static array $interestCache = [];
     protected static array $shortlistCache = [];
     protected static array $reportCache = [];
+    protected static array $visibilitySnapshotCache = [];
+    protected static array $mediaVisibilityCache = [];
+    protected static array $profilePhotoRequestCache = [];
+    protected static array $galleryImageRequestCache = [];
+
+    public static function resetCaches(): void
+    {
+        self::$userCache = [];
+        self::$countryCache = [];
+        self::$religionCache = [];
+        self::$motherTongueCache = [];
+        self::$interestCache = [];
+        self::$shortlistCache = [];
+        self::$reportCache = [];
+        self::$visibilitySnapshotCache = [];
+        self::$mediaVisibilityCache = [];
+        self::$profilePhotoRequestCache = [];
+        self::$galleryImageRequestCache = [];
+    }
+
+    protected static function boolSetting(array $settings, string $key, bool $default): bool
+    {
+        if (!array_key_exists($key, $settings)) {
+            return $default;
+        }
+
+        return filter_var($settings[$key], FILTER_VALIDATE_BOOLEAN);
+    }
+
+    public static function member_visibility_snapshot($user_id = ''): array
+    {
+        $userId = (int) $user_id;
+        if ($userId <= 0) {
+            return [
+                'profile_visible' => true,
+                'incognito' => false,
+                'screenshot_deterrence' => true,
+                'photo_visibility_public' => true,
+                'photo_visibility_members' => true,
+                'profile_photo_blur' => false,
+            ];
+        }
+
+        if (!array_key_exists($userId, self::$visibilitySnapshotCache)) {
+            $user = self::getUserWithProfileRelations($userId);
+            $settings = FieldVisibilitySetting::where('user_id', $userId)
+                ->pluck('is_visible', 'field_name')
+                ->toArray();
+
+            self::$visibilitySnapshotCache[$userId] = [
+                'profile_visible' => (bool) ($user?->member?->is_visible ?? true),
+                'incognito' => self::boolSetting($settings, 'incognito', false),
+                'screenshot_deterrence' => self::boolSetting($settings, 'screenshot_deterrence', true),
+                'photo_visibility_public' => self::boolSetting($settings, 'photo_visibility_public', true),
+                'photo_visibility_members' => self::boolSetting($settings, 'photo_visibility_members', true),
+                'profile_photo_blur' => self::boolSetting($settings, 'profile_photo_blur', false),
+            ];
+        }
+
+        return self::$visibilitySnapshotCache[$userId];
+    }
+
+    public static function member_is_incognito($user_id = ''): bool
+    {
+        $userId = (int) $user_id;
+        if ($userId <= 0) {
+            return false;
+        }
+
+        return (bool) (self::member_visibility_snapshot($userId)['incognito'] ?? false);
+    }
+
+    public static function member_profile_photo_blur($user_id = ''): bool
+    {
+        $userId = (int) $user_id;
+        if ($userId <= 0) {
+            return false;
+        }
+
+        return (bool) (self::member_visibility_snapshot($userId)['profile_photo_blur'] ?? false);
+    }
+
+    protected static function member_photo_visibility_level(array $snapshot): int
+    {
+        $publicVisible = (bool) ($snapshot['photo_visibility_public'] ?? true);
+        $membersVisible = (bool) ($snapshot['photo_visibility_members'] ?? true);
+
+        if ($publicVisible) {
+            return 0;
+        }
+
+        if ($membersVisible) {
+            return 2;
+        }
+
+        return 3;
+    }
+
+    public static function resolve_media_visibility($user_id = '', string $surface = 'profile'): array
+    {
+        $userId = (int) $user_id;
+        if ($userId <= 0) {
+            return [
+                'admin_privacy' => $surface === 'gallery' ? (string) get_setting('gallery_image_privacy') : (string) get_setting('profile_picture_privacy'),
+                'member_level' => 0,
+                'effective_level' => 0,
+                'requires_request' => false,
+                'requires_premium' => false,
+                'requires_membership' => false,
+                'visible_to_public' => true,
+                'visible_to_members' => true,
+            ];
+        }
+
+        $cacheKey = $userId . ':' . $surface;
+        if (!array_key_exists($cacheKey, self::$mediaVisibilityCache)) {
+            $snapshot = self::member_visibility_snapshot($userId);
+            $adminPrivacy = (string) get_setting($surface === 'gallery' ? 'gallery_image_privacy' : 'profile_picture_privacy');
+            $adminLevel = match ($adminPrivacy) {
+                'premium_members' => 1,
+                'only_me' => 3,
+                default => 0,
+            };
+            $memberLevel = self::member_photo_visibility_level($snapshot);
+            $effectiveLevel = max($adminLevel, $memberLevel);
+
+            self::$mediaVisibilityCache[$cacheKey] = [
+                'admin_privacy' => $adminPrivacy,
+                'member_level' => $memberLevel,
+                'effective_level' => $effectiveLevel,
+                'requires_request' => $effectiveLevel === 3,
+                'requires_premium' => $effectiveLevel === 1,
+                'requires_membership' => $effectiveLevel >= 1,
+                'visible_to_public' => $effectiveLevel === 0,
+                'visible_to_members' => $effectiveLevel <= 2,
+            ];
+        }
+
+        return self::$mediaVisibilityCache[$cacheKey];
+    }
+
+    protected static function resolveBirthday($birthday): ?Carbon
+    {
+        if ($birthday === null || $birthday === '') {
+            return null;
+        }
+
+        try {
+            $birthdayValue = trim((string) $birthday);
+            if ($birthdayValue === '') {
+                return null;
+            }
+
+            if (is_numeric($birthdayValue)) {
+                $timestamp = (int) $birthdayValue;
+                if ($timestamp > 0) {
+                    return Carbon::createFromTimestamp($timestamp);
+                }
+            }
+
+            return Carbon::parse($birthdayValue);
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    public static function member_birthdate($user_id = ''): ?string
+    {
+        $userId = (int) $user_id;
+        if ($userId <= 0) {
+            return null;
+        }
+
+        $user = self::getUserWithProfileRelations($userId);
+        $birthday = self::resolveBirthday($user?->member?->birthday);
+
+        return $birthday ? $birthday->format('Y-m-d') : null;
+    }
+
+    public static function member_age($user_id = ''): ?int
+    {
+        $userId = (int) $user_id;
+        if ($userId <= 0) {
+            return null;
+        }
+
+        $user = self::getUserWithProfileRelations($userId);
+        $birthday = self::resolveBirthday($user?->member?->birthday);
+
+        if (!$birthday) {
+            return null;
+        }
+
+        $age = $birthday->age;
+        return $age > 0 ? $age : null;
+    }
 
     protected static function getUserWithProfileRelations($user_id)
     {
@@ -175,7 +376,7 @@ class MemberUtility
         if (!$authId || $targetId <= 0) {
             return [
                 'shortlist_status' => 1,
-                'shortlist_text' => translate('Shortlist'),
+                'shortlist_text' => translate('Bookmark'),
             ];
         }
 
@@ -188,11 +389,167 @@ class MemberUtility
 
             self::$shortlistCache[$cacheKey] = [
                 'shortlist_status' => $shortlisted ? 0 : 1,
-                'shortlist_text' => $shortlisted ? translate('Shortlisted') : translate('Shortlist'),
+                'shortlist_text' => $shortlisted ? translate('Bookmarked') : translate('Bookmark'),
             ];
         }
 
         return self::$shortlistCache[$cacheKey];
+    }
+
+    public static function member_profile_photo_request_info($user_id = ''): array
+    {
+        $authId = auth()->id();
+        $targetId = (int) $user_id;
+        $user = $targetId > 0 ? self::getUserWithProfileRelations($targetId) : null;
+        $hasPhoto = !empty($user?->photo) && (int) $user?->photo_approved === 1;
+        $visibility = self::resolve_media_visibility($targetId, 'profile');
+        $effectiveLevel = (int) ($visibility['effective_level'] ?? 0);
+        $currentUserIsPremium = (int) (optional(auth()->user())->membership ?? 0) === 2;
+        $currentUserIsMember = (bool) auth()->check();
+        $accessibleWithoutRequest = $hasPhoto && (
+            $effectiveLevel === 0 ||
+            ($effectiveLevel === 1 && $currentUserIsPremium) ||
+            ($effectiveLevel === 2 && $currentUserIsMember)
+        );
+
+        $default = [
+            'profile_photo_request_state' => 'none',
+            'profile_photo_request_requested' => false,
+            'profile_photo_request_approved' => false,
+            'profile_photo_request_text' => $hasPhoto
+                ? ($accessibleWithoutRequest
+                    ? translate('Already Accessible')
+                    : ($effectiveLevel === 1
+                        ? translate('Premium Members Only')
+                        : ($effectiveLevel === 2
+                            ? translate('Members Only')
+                            : translate('Request Photo Access'))))
+                : translate('Photo Not Available'),
+            'profile_photo_request_id' => null,
+            'profile_photo_request_required' => $hasPhoto && $effectiveLevel === 3,
+            'profile_photo_accessible' => $accessibleWithoutRequest,
+            'profile_photo_exists' => $hasPhoto,
+        ];
+
+        if (!$authId || $targetId <= 0) {
+            return $default;
+        }
+
+        $cacheKey = $authId . ':' . $targetId;
+        if (!array_key_exists($cacheKey, self::$profilePhotoRequestCache)) {
+            $request = ViewProfilePicture::query()
+                ->where('user_id', $targetId)
+                ->where('requested_by', $authId)
+                ->latest('id')
+                ->first();
+
+            if (!$request) {
+                self::$profilePhotoRequestCache[$cacheKey] = $default;
+            } else {
+                $isApproved = (int) $request->status === 1;
+                self::$profilePhotoRequestCache[$cacheKey] = [
+                    'profile_photo_request_state' => $isApproved ? 'approved' : 'pending',
+                    'profile_photo_request_requested' => true,
+                    'profile_photo_request_approved' => $isApproved,
+                    'profile_photo_request_text' => $isApproved
+                        ? translate('Photo Access Granted')
+                        : translate('Photo Access Requested'),
+                    'profile_photo_request_id' => $request->id,
+                    'profile_photo_request_required' => $hasPhoto && $effectiveLevel === 3 && !$isApproved,
+                    'profile_photo_accessible' => $hasPhoto && (
+                        $accessibleWithoutRequest ||
+                        $isApproved
+                    ),
+                    'profile_photo_exists' => $hasPhoto,
+                ];
+            }
+
+            if (!$request) {
+                self::$profilePhotoRequestCache[$cacheKey] = [
+                    ...$default,
+                    'profile_photo_request_required' => $hasPhoto && $effectiveLevel === 3,
+                    'profile_photo_accessible' => $accessibleWithoutRequest,
+                ];
+            }
+        }
+
+        return self::$profilePhotoRequestCache[$cacheKey];
+    }
+
+    public static function member_gallery_image_request_info($user_id = ''): array
+    {
+        $authId = auth()->id();
+        $targetId = (int) $user_id;
+        $user = $targetId > 0 ? self::getUserWithProfileRelations($targetId) : null;
+        $hasGalleryImages = GalleryImage::query()->where('user_id', $targetId)->exists();
+        $visibility = self::resolve_media_visibility($targetId, 'gallery');
+        $effectiveLevel = (int) ($visibility['effective_level'] ?? 0);
+        $currentUserIsPremium = (int) (optional(auth()->user())->membership ?? 0) === 2;
+        $currentUserIsMember = (bool) auth()->check();
+        $accessibleWithoutRequest = $hasGalleryImages && (
+            $effectiveLevel === 0 ||
+            ($effectiveLevel === 1 && $currentUserIsPremium) ||
+            ($effectiveLevel === 2 && $currentUserIsMember)
+        );
+
+        $default = [
+            'gallery_image_request_state' => 'none',
+            'gallery_image_request_requested' => false,
+            'gallery_image_request_approved' => false,
+            'gallery_image_request_text' => $hasGalleryImages
+                ? ($accessibleWithoutRequest
+                    ? translate('Already Accessible')
+                    : ($effectiveLevel === 1
+                        ? translate('Premium Members Only')
+                        : ($effectiveLevel === 2
+                            ? translate('Members Only')
+                            : translate('Request Gallery Access'))))
+                : translate('Gallery Images Not Available'),
+            'gallery_image_request_id' => null,
+            'gallery_image_request_required' => $hasGalleryImages && $effectiveLevel === 3,
+            'gallery_image_accessible' => $accessibleWithoutRequest,
+            'gallery_image_exists' => $hasGalleryImages,
+        ];
+
+        if (!$authId || $targetId <= 0) {
+            return $default;
+        }
+
+        $cacheKey = $authId . ':' . $targetId;
+        if (!array_key_exists($cacheKey, self::$galleryImageRequestCache)) {
+            $request = ViewGalleryImage::query()
+                ->where('user_id', $targetId)
+                ->where('requested_by', $authId)
+                ->latest('id')
+                ->first();
+
+            if (!$request) {
+                self::$galleryImageRequestCache[$cacheKey] = [
+                    ...$default,
+                    'gallery_image_request_required' => $hasGalleryImages && $effectiveLevel === 3,
+                    'gallery_image_accessible' => $accessibleWithoutRequest,
+                ];
+            } else {
+                $isApproved = (int) $request->status === 1;
+                self::$galleryImageRequestCache[$cacheKey] = [
+                    'gallery_image_request_state' => $isApproved ? 'approved' : 'pending',
+                    'gallery_image_request_requested' => true,
+                    'gallery_image_request_approved' => $isApproved,
+                    'gallery_image_request_text' => $isApproved
+                        ? translate('Gallery Access Granted')
+                        : translate('Gallery Access Requested'),
+                    'gallery_image_request_id' => $request->id,
+                    'gallery_image_request_required' => $hasGalleryImages && $effectiveLevel === 3 && !$isApproved,
+                    'gallery_image_accessible' => $hasGalleryImages && (
+                        $accessibleWithoutRequest ||
+                        $isApproved
+                    ),
+                    'gallery_image_exists' => $hasGalleryImages,
+                ];
+            }
+        }
+
+        return self::$galleryImageRequestCache[$cacheKey];
     }
 
     public static function member_report_status($user_id = '')

@@ -716,7 +716,7 @@ const MessagesView: React.FC<MessagesViewProps> = ({
             </div>
 
             {/* Input Area */}
-            <div className="bg-white border-t border-slate-200 px-3 md:px-5 py-3 relative z-20">
+            <div className="bg-white border-t border-slate-200 px-3 md:px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] relative z-20">
               
               {/* Icebreaker Dropdown — rendered outside the scrollable row */}
               {showIcebreakerMenu && (

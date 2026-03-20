@@ -103,10 +103,18 @@
 </div>
 <div class="group relative flex items-center">
 <span class="material-symbols-outlined absolute left-5 text-white/30 group-focus-within:text-primary transition-colors">lock</span>
-<input name="password" required class="w-full h-14 pl-14 pr-14 rounded-full border border-white/10 bg-white/5 text-white placeholder:text-white/20 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none" placeholder="••••••••" type="password"/>
-<button class="absolute right-5 text-white/30 hover:text-primary transition-colors" type="button" onclick="togglePassword()">
-<span class="material-symbols-outlined">visibility</span>
-</button>
+<x-password-field
+    id="password"
+    name="password"
+    :value="old('password')"
+    placeholder="••••••••"
+    wrapperClass=""
+    inputClass="w-full h-14 pl-14 rounded-full border border-white/10 bg-white/5 text-white placeholder:text-white/20 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
+    buttonClass="right-5 text-white/30 hover:text-primary"
+    iconClass="w-5 h-5 text-white/30"
+    errorName=""
+    required
+/>
 </div>
 @error('password')
 <span class="text-red-500 text-xs mt-1" role="alert">
@@ -133,28 +141,4 @@
         </footer>
 </div>
 </div>
-<script>
-    function togglePassword() {
-        const input = document.querySelector('input[type="password"]');
-        const icon = document.querySelector('.material-symbols-outlined:last-child'); // might be risky
-        if (input.type === "password") {
-            input.type = "text";
-        } else {
-            input.type = "password";
-        }
-    }
-    // Better toggle implementation
-    document.querySelectorAll('button[type="button"]').forEach(button => {
-        button.addEventListener('click', () => {
-             const input = button.previousElementSibling;
-             if(input && input.tagName === 'INPUT') {
-                 if (input.type === "password") {
-                    input.type = "text";
-                 } else {
-                    input.type = "password";
-                 }
-             }
-        });
-    });
-</script>
 </body></html>

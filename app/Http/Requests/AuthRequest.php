@@ -48,9 +48,9 @@ class AuthRequest extends FormRequest
             ],
             'gender'               => 'required',
             'on_behalf'            => 'required|integer',
-            'date_of_birth'        => 'nullable|date',
+            'date_of_birth'        => 'required|date',
             'password'             => 'required|string|min:8|confirmed',
-            'referral_code'        => 'sometimes',
+            'referral_code'        => 'nullable|string|max:50',
             'g-recaptcha-response' => [Rule::when(get_setting('google_recaptcha_activation') == 1, ['required', new RecaptchaRule()], ['sometimes'])]
         ];
     }

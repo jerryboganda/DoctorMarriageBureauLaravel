@@ -15,9 +15,11 @@ interface User {
   avatar?: string;
   avatar_original?: string;
   phone?: string;
-  birthday?: number | string;
+  birthday?: string | null;
+  age?: number | null;
   must_change_password?: boolean | number;
   is_visible?: boolean;
+  incognito?: boolean;
   travel_mode?: boolean;
   travel_city?: string | null;
   travel_country?: string | null;

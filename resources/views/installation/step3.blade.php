@@ -40,7 +40,13 @@
                                 </div>
                                 <div class="form-group">
                                     <label for="db_pass">Database Password</label>
-                                    <input type="password" class="form-control" id="db_pass" name = "DB_PASSWORD" autocomplete="off">
+                                    <x-password-field
+                                        id="db_pass"
+                                        name="DB_PASSWORD"
+                                        wrapperClass=""
+                                        inputClass="form-control"
+                                        errorName=""
+                                    />
                                     <input type="hidden" name = "types[]" value="DB_PASSWORD">
                                 </div>
                                 <div class="text-center">

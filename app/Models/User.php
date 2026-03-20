@@ -211,12 +211,12 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function referralsMade()
     {
-        return $this->hasMany(\App\Models\Referral::class, 'referrer_id');
+        return $this->hasMany(\App\Models\Referral::class, 'referrer_user_id');
     }
 
     public function referralReceived()
     {
-        return $this->hasOne(\App\Models\Referral::class, 'referred_id');
+        return $this->hasOne(\App\Models\Referral::class, 'referred_user_id');
     }
 
     public function referralRewards()

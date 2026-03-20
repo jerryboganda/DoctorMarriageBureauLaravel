@@ -2,7 +2,6 @@
 
 namespace App\Http\Resources;
 
-use Carbon\Carbon;
 use App\Utility\MemberUtility;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -26,7 +25,7 @@ class ExpressInterestResource extends JsonResource
                 'package_update_alert' => $package_update_alert,
                 'photo'                => uploaded_asset($interestedBy->photo) ?? $default_image,
                 'name'                 => $interestedBy->first_name . ' ' . $interestedBy->last_name,
-                'age'                  => !empty($interestedBy->member->birthday) ? Carbon::parse($interestedBy->member->birthday)->age : null,
+                'age'                  => MemberUtility::member_age($this->interested_by),
                 'status'               => $this->status == 1 ? 'Approved' : 'Pending',
                 'religion'             => MemberUtility::member_religion($this->interested_by),
                 'country'              => MemberUtility::member_country($this->interested_by),

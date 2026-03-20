@@ -16,22 +16,22 @@ class DiscoverySettingsController extends Controller
     public function toggleAnonymous(Request $request)
     {
         $user = $request->user();
-        $member = $user->member;
+        $currentIncognito = FieldVisibilitySetting::where('user_id', $user->id)
+            ->where('field_name', 'incognito')
+            ->value('is_visible');
+        $newIncognito = !filter_var($currentIncognito, FILTER_VALIDATE_BOOLEAN);
 
-        if (!$member) {
-            return response()->json(['success' => false, 'message' => 'Member profile not found.'], 404);
-        }
+        FieldVisibilitySetting::setVisibility($user->id, 'incognito', $newIncognito);
+        \App\Utility\MemberUtility::resetCaches();
 
-        $newVisible = $member->is_visible ? 0 : 1;
-        $member->update(['is_visible' => $newVisible]);
-
-        // Also sync the incognito field visibility setting
-        FieldVisibilitySetting::setVisibility($user->id, 'incognito', !$newVisible);
+        $snapshot = \App\Utility\MemberUtility::member_visibility_snapshot($user->id);
 
         return response()->json([
             'success' => true,
-            'is_visible' => (bool) $newVisible,
-            'message' => $newVisible ? 'Your profile is now visible to others.' : 'You are now browsing anonymously.',
+            'data' => array_merge($snapshot, [
+                'incognito' => (bool) $newIncognito,
+            ]),
+            'message' => $newIncognito ? 'You are now browsing anonymously.' : 'Anonymous browsing is now off.',
         ]);
     }
 
@@ -40,11 +40,17 @@ class DiscoverySettingsController extends Controller
      */
     public function getAnonymousStatus(Request $request)
     {
-        $member = $request->user()->member;
+        $user = $request->user();
+        $incognito = FieldVisibilitySetting::where('user_id', $user->id)
+            ->where('field_name', 'incognito')
+            ->value('is_visible');
+        $snapshot = \App\Utility\MemberUtility::member_visibility_snapshot($user->id);
 
         return response()->json([
             'success' => true,
-            'is_visible' => (bool) ($member->is_visible ?? true),
+            'data' => array_merge($snapshot, [
+                'incognito' => (bool) filter_var($incognito, FILTER_VALIDATE_BOOLEAN),
+            ]),
         ]);
     }
 

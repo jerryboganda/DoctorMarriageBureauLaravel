@@ -164,11 +164,11 @@ class MemberController extends Controller
         }
 
         if (filter_var($request->email, FILTER_VALIDATE_EMAIL)) {
-            if (User::where('email', $request->email)->first() != null) {
+            if (User::where('email', $request->email)->whereNull('deleted_at')->first() != null) {
                 flash(translate('Email or Phone already exists.'))->error();
                 return back();
             }
-        } elseif (User::where('phone', '+' . $request->country_code . $request->phone)->first() != null) {
+        } elseif (User::where('phone', '+' . $request->country_code . $request->phone)->whereNull('deleted_at')->first() != null) {
             flash(translate('Phone already exists.'))->error();
             return back();
         }
@@ -986,7 +986,7 @@ class MemberController extends Controller
                     \Mail::send('emails.index', ['email_body' => $body], function ($message) use ($user, $title) {
                         $message->to($user->email, $user->first_name . ' ' . $user->last_name)
                                 ->subject($title)
-                                ->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
+                                ->from(\App\Utility\EmailUtility::fromAddress(), \App\Utility\EmailUtility::fromName());
                     });
                     $results['email'] = 'sent';
                 } catch (\Throwable $e) {

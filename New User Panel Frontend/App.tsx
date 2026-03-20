@@ -1,10 +1,11 @@
-import React, { lazy, Suspense, useState, useEffect, useRef, useCallback } from 'react';
+﻿import React, { lazy, Suspense, useState, useEffect, useRef, useCallback } from 'react';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { useTranslation } from 'react-i18next';
 import Sidebar from './components/Sidebar';
 import LanguageToggle from './components/LanguageToggle';
 import FloatingContactButton from './components/FloatingContactButton';
 import LoadingTimeoutFallback from './components/LoadingTimeoutFallback';
+import PasswordField from './components/PasswordField';
 import { Bell, Menu, Send, Inbox, ArrowUpRight, ArrowDownLeft, Undo2 } from 'lucide-react';
 import { ProfileMatch } from './types';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -12,6 +13,7 @@ import { PAGE_VARIANTS } from './utils/motion';
 import { useAuthStore } from './src/stores/authStore';
 import { api } from './utils/api';
 import { CanonicalInterestState } from './utils/interestStatus';
+import { normalizePositiveAge } from './utils/age';
 
 type IncomingInterest = {
     interestId: number;
@@ -209,8 +211,7 @@ const App: React.FC = () => {
     const mapInterestRow = (item: any, direction: 'sent' | 'received'): IncomingInterest => {
         const interestId = Number(item.id);
         const baseScore = Number.isFinite(interestId) ? 75 + (interestId % 20) : 80;
-        const ageValue = Number(item.age);
-        const age = Number.isFinite(ageValue) ? ageValue : 0;
+        const age = normalizePositiveAge(item.age);
         const proposalStatus = String(item.proposal_status ?? '').toLowerCase();
         const statusText = String(item.status ?? '').toLowerCase();
         const isAccepted = proposalStatus.includes('accepted') || statusText === 'approved';
@@ -707,26 +708,32 @@ useEffect(() => {
                                 <div className="mb-3 rounded-lg bg-red-50 text-red-700 text-sm px-3 py-2">{forcePasswordError}</div>
                             )}
                             <div className="space-y-3">
-                                <input
-                                    type="password"
+                                <PasswordField
                                     value={forcePasswordOld}
                                     onChange={(e) => setForcePasswordOld(e.target.value)}
                                     placeholder="Current password"
-                                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm"
+                                    aria-label="Current password"
+                                    inputClassName="w-full border border-slate-200 rounded-xl py-2 text-sm"
+                                    containerClassName="space-y-0"
+                                    showToggle
                                 />
-                                <input
-                                    type="password"
+                                <PasswordField
                                     value={forcePasswordNew}
                                     onChange={(e) => setForcePasswordNew(e.target.value)}
                                     placeholder="New password"
-                                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm"
+                                    aria-label="New password"
+                                    inputClassName="w-full border border-slate-200 rounded-xl py-2 text-sm"
+                                    containerClassName="space-y-0"
+                                    showToggle
                                 />
-                                <input
-                                    type="password"
+                                <PasswordField
                                     value={forcePasswordConfirm}
                                     onChange={(e) => setForcePasswordConfirm(e.target.value)}
                                     placeholder="Confirm new password"
-                                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm"
+                                    aria-label="Confirm new password"
+                                    inputClassName="w-full border border-slate-200 rounded-xl py-2 text-sm"
+                                    containerClassName="space-y-0"
+                                    showToggle
                                 />
                             </div>
                             <button
@@ -977,7 +984,7 @@ useEffect(() => {
                                                                     </div>
                                                                     <div className="flex items-center gap-2 text-sm text-slate-500 mt-0.5">
                                                                         {interest.profile.age > 0 && <span>{interest.profile.age} {t('dashboard.yrs')}</span>}
-                                                                        {interest.profile.age > 0 && interest.profile.location && <span>·</span>}
+                                                                        {interest.profile.age > 0 && interest.profile.location && <span>Â·</span>}
                                                                         {interest.profile.location && <span>{interest.profile.location}</span>}
                                                                     </div>
                                                                     {interest.profile.specialty && (
@@ -1025,7 +1032,7 @@ useEffect(() => {
                                                                     )}
                                                                 </div>
                                                             </div>
-                                                            {/* Mobile action buttons — full-width row below the card */}
+                                                            {/* Mobile action buttons â€” full-width row below the card */}
                                                             <div className="flex sm:hidden items-center gap-2 px-4 pb-3 pt-0">
                                                                 {isReceived && isPending && (
                                                                     <>
@@ -1082,12 +1089,12 @@ useEffect(() => {
                                 />
                             ) : currentView === 'profile' ? (
                                 <ProfileEditView initialTab={profileTargetSection} />
-                            ) : currentView === 'family' ? (
-                                <FamilyPortalView />
+                            ) : currentView === 'family' || currentView === 'biodata' ? (
+                                <FamilyPortalView biodataOnly />
                             ) : currentView === 'communities' ? (
                                 <CommunityView />
                             ) : currentView === 'progression' ? (
-                                <ProgressionView />
+                                <ProgressionView onNavigate={setCurrentView} />
                             ) : currentView === 'referral' ? (
                                 <ReferralView />
                             ) : currentView === 'notifications' ? (
@@ -1336,10 +1343,12 @@ useEffect(() => {
                     )}
                 </AnimatePresence>
 
-                <FloatingContactButton />
+                <FloatingContactButton placement={currentView === 'messages' ? 'chat' : 'default'} />
             </div>
         </GoogleOAuthProvider>
     );
 };
 
 export default App;
+
+

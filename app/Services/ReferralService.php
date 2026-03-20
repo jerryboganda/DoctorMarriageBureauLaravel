@@ -8,6 +8,7 @@ use App\Models\ReferralCode;
 use App\Models\ReferralReward;
 use App\Models\ReferralRule;
 use App\Models\ReferralSetting;
+use App\Models\Wallet;
 use App\Models\User;
 use App\Models\Member;
 use App\Models\Package;
@@ -16,6 +17,36 @@ use Illuminate\Support\Facades\Log;
 
 class ReferralService
 {
+    /**
+     * Normalize a referral code for lookup.
+     */
+    public function normalizeReferralCode(?string $referralCode): ?string
+    {
+        if ($referralCode === null) {
+            return null;
+        }
+
+        $normalized = strtoupper(trim(preg_replace('/\s+/', '', $referralCode)));
+
+        return $normalized !== '' ? $normalized : null;
+    }
+
+    /**
+     * Resolve a referral code to its active record.
+     */
+    public function resolveReferralCode(?string $referralCode): ?ReferralCode
+    {
+        $normalized = $this->normalizeReferralCode($referralCode);
+
+        if (!$normalized) {
+            return null;
+        }
+
+        return ReferralCode::where('code', $normalized)
+            ->where('status', 'active')
+            ->first();
+    }
+
     /**
      * Create a referral record when a new user registers with a referral code
      */
@@ -28,10 +59,12 @@ class ReferralService
             return ['success' => false, 'message' => 'Referral system is currently disabled'];
         }
 
-        // Find the referral code
-        $referralCode = ReferralCode::where('code', $referralCodeString)
-            ->where('status', 'active')
-            ->first();
+        $referredUser = User::find($referredUserId);
+        if (!$referredUser) {
+            return ['success' => false, 'message' => 'Referred user not found'];
+        }
+
+        $referralCode = $this->resolveReferralCode($referralCodeString);
 
         if (!$referralCode) {
             Log::warning("Invalid referral code: {$referralCodeString}");
@@ -46,8 +79,15 @@ class ReferralService
             return ['success' => false, 'message' => 'Self-referral is not allowed'];
         }
 
-        // Check if referred user already has a referral
-        if (Referral::where('referred_user_id', $referredUserId)->exists()) {
+        $existingReferral = Referral::where('referred_user_id', $referredUserId)->first();
+        if ($existingReferral) {
+            if ((int) $existingReferral->referral_code_id === (int) $referralCode->id || (int) $existingReferral->referrer_user_id === (int) $referrerUserId) {
+                $this->syncLegacyReferralState($referredUser, $referrerUserId);
+                $this->checkAndQualifyReferral($referredUserId);
+
+                return ['success' => true, 'referral' => $existingReferral, 'message' => 'Referral already exists'];
+            }
+
             Log::warning("User {$referredUserId} already has a referral record");
             return ['success' => false, 'message' => 'User has already been referred'];
         }
@@ -73,37 +113,165 @@ class ReferralService
             }
         }
 
-        // Create the referral
-        $referral = Referral::create([
-            'referrer_user_id' => $referrerUserId,
-            'referred_user_id' => $referredUserId,
-            'referral_code_id' => $referralCode->id,
-            'source' => $source,
-            'status' => 'pending',
-            'metadata' => array_merge($metadata, [
-                'ip_hash' => isset($metadata['ip']) ? hash('sha256', $metadata['ip']) : null,
-                'user_agent' => $metadata['user_agent'] ?? null,
-                'created_timestamp' => now()->toISOString(),
-            ]),
-        ]);
+        $referral = DB::transaction(function () use ($referrerUserId, $referredUserId, $referralCode, $source, $metadata, $referredUser) {
+            $lockedExisting = Referral::where('referred_user_id', $referredUserId)
+                ->lockForUpdate()
+                ->first();
 
-        // Keep legacy referral flows in sync with the new referral table
-        $referredUser = User::find($referredUserId);
-        if ($referredUser && (empty($referredUser->referred_by) || (int) $referredUser->referred_by !== (int) $referrerUserId)) {
+            if ($lockedExisting) {
+                return $lockedExisting;
+            }
+
+            $referral = Referral::create([
+                'referrer_user_id' => $referrerUserId,
+                'referred_user_id' => $referredUserId,
+                'referral_code_id' => $referralCode->id,
+                'source' => $source,
+                'status' => 'pending',
+                'metadata' => array_merge($metadata, [
+                    'ip_hash' => isset($metadata['ip']) ? hash('sha256', $metadata['ip']) : null,
+                    'user_agent' => $metadata['user_agent'] ?? null,
+                    'created_timestamp' => now()->toISOString(),
+                ]),
+            ]);
+
+            $this->syncLegacyReferralState($referredUser, $referrerUserId);
+
+            ReferralAuditLog::log('system', null, 'referral_created', 'referral', $referral->id, null, [
+                'referrer_user_id' => $referrerUserId,
+                'referred_user_id' => $referredUserId,
+                'code' => $referralCode->code,
+                'source' => $source,
+            ]);
+
+            Log::info("Referral created: #{$referral->id} referrer={$referrerUserId} referred={$referredUserId}");
+
+            return $referral;
+        });
+
+        if ($referral instanceof Referral) {
+            $this->notifyReferrer($referrerUserId, 'new_signup', [
+                'referral_id' => $referral->id,
+                'code' => $referralCode->code,
+                'source' => $source,
+            ]);
+
+            $this->checkAndQualifyReferral($referredUserId);
+        }
+
+        return ['success' => true, 'referral' => $referral];
+    }
+
+    /**
+     * Apply the stored legacy referral link to the canonical referral tables.
+     */
+    protected function syncLegacyReferralState(User $referredUser, int $referrerUserId): void
+    {
+        if ((int) $referredUser->referred_by !== (int) $referrerUserId) {
             $referredUser->referred_by = $referrerUserId;
             $referredUser->save();
         }
+    }
 
-        ReferralAuditLog::log('system', null, 'referral_created', 'referral', $referral->id, null, [
-            'referrer_user_id' => $referrerUserId,
-            'referred_user_id' => $referredUserId,
-            'code' => $referralCodeString,
-            'source' => $source,
-        ]);
+    /**
+     * Award the legacy package-purchase commission once per referred user.
+     */
+    public function applyReferralCommissionIfEligible(User $user, ?float $commissionAmount = null): array
+    {
+        if (!addon_activation('referral_system')) {
+            return ['success' => false, 'message' => 'Referral system is disabled'];
+        }
 
-        Log::info("Referral created: #{$referral->id} referrer={$referrerUserId} referred={$referredUserId}");
+        if (empty($user->referred_by) || (int) $user->referral_comission === 1) {
+            return ['success' => false, 'message' => 'Referral commission already handled'];
+        }
 
-        return ['success' => true, 'referral' => $referral];
+        $referrer = User::find($user->referred_by);
+        if (!$referrer) {
+            return ['success' => false, 'message' => 'Referrer not found'];
+        }
+
+        $amount = $commissionAmount ?? (float) get_setting('referred_by_user_commission');
+        if ($amount <= 0) {
+            return ['success' => false, 'message' => 'Referral commission amount is not configured'];
+        }
+
+        return DB::transaction(function () use ($user, $referrer, $amount) {
+            $wallet = Wallet::create([
+                'user_id' => $referrer->id,
+                'amount' => $amount,
+                'payment_method' => 'reffered_commission',
+                'payment_details' => '',
+                'referral_user' => $user->id,
+            ]);
+
+            $referrer->balance = (float) ($referrer->balance ?? 0) + $amount;
+            $referrer->save();
+
+            $user->referral_comission = 1;
+            $user->save();
+
+            ReferralAuditLog::log('system', null, 'referral_commission_applied', 'wallet', $wallet->id, null, [
+                'referrer_user_id' => $referrer->id,
+                'referred_user_id' => $user->id,
+                'amount' => $amount,
+            ]);
+
+            return ['success' => true, 'wallet' => $wallet];
+        });
+    }
+
+    /**
+     * Process all pending referrals and qualify any that now satisfy the active rules.
+     */
+    public function processPendingReferrals(): int
+    {
+        $processed = 0;
+
+        Referral::where('status', 'pending')
+            ->orderBy('id')
+            ->chunkById(100, function ($referrals) use (&$processed) {
+                foreach ($referrals as $referral) {
+                    $this->checkAndQualifyReferral($referral->referred_user_id);
+                    $processed++;
+                }
+            });
+
+        return $processed;
+    }
+
+    /**
+     * Backfill legacy users.referred_by values into the canonical referrals table.
+     */
+    public function backfillLegacyReferrals(): int
+    {
+        $count = 0;
+
+        User::whereNotNull('referred_by')
+            ->orderBy('id')
+            ->chunkById(100, function ($users) use (&$count) {
+                foreach ($users as $user) {
+                    $referrer = User::find($user->referred_by);
+                    if (!$referrer) {
+                        continue;
+                    }
+
+                    $referrerCode = ReferralCode::where('user_id', $referrer->id)->where('status', 'active')->first();
+                    if (!$referrerCode) {
+                        $referrerCode = ReferralCode::getOrCreateForUser($referrer->id);
+                    }
+
+                    $result = $this->createReferral($user->id, $referrerCode->code, 'link', [
+                        'backfilled' => true,
+                    ]);
+
+                    if (!empty($result['success'])) {
+                        $count++;
+                    }
+                }
+            });
+
+        return $count;
     }
 
     /**
@@ -194,7 +362,7 @@ class ReferralService
 
             case 'active_days':
                 $days = $rule->qualification_params['active_days'] ?? 7;
-                return $user->created_at && $user->created_at->addDays($days)->isPast();
+                return $user->created_at && $user->created_at->copy()->addDays($days)->isPast();
 
             case 'identity_verified':
                 return (int) $user->approved === 1 && !empty($user->verification_info);

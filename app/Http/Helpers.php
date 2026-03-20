@@ -742,34 +742,35 @@ if (!function_exists('get_max_date')) {
 if (!function_exists('show_profile_picture')) {
     function show_profile_picture($user)
     {
-        $profile_picture_privacy = get_setting('profile_picture_privacy');
-        if (Auth::check()) {
-            $profile_picture_show = true;
-
-            if (Auth::user()->id != $user->id) {
-                if ($user->photo != null && $user->photo_approved == 1) {
-                    if ($profile_picture_privacy == 'only_me') {
-                        $profile_picture_show = false;
-                        $photo_view_request = \App\Models\ViewProfilePicture::where('user_id', $user->id)->where('requested_by', Auth::user()->id)->first();
-                        if ($photo_view_request != null && $photo_view_request->status == 1) {
-                            $profile_picture_show = true;
-                        }
-                    } elseif ($profile_picture_privacy == 'premium_members') {
-                        if (Auth::user()->membership == 1) {
-                            $profile_picture_show = false;
-                        }
-                    }
-                } elseif ($user->photo == null || $user->photo_approved == 0) {
-                    $profile_picture_show = false;
-                }
-            }
-        } else {
-            $profile_picture_show = false;
-            if ($profile_picture_privacy == 'all' && $user->photo != null && $user->photo_approved == 1) {
-                $profile_picture_show = true;
-            }
+        if (!$user || $user->photo == null || (int) $user->photo_approved !== 1) {
+            return false;
         }
-        return $profile_picture_show;
+
+        if (Auth::check() && Auth::user()->id === $user->id) {
+            return true;
+        }
+
+        $visibility = \App\Utility\MemberUtility::resolve_media_visibility($user->id, 'profile');
+        $effectiveLevel = (int) ($visibility['effective_level'] ?? 0);
+
+        if ($effectiveLevel === 0) {
+            return true;
+        }
+
+        if (!Auth::check()) {
+            return false;
+        }
+
+        if ($effectiveLevel === 1) {
+            return (int) (Auth::user()->membership ?? 0) === 2;
+        }
+
+        if ($effectiveLevel === 2) {
+            return true;
+        }
+
+        $photo_request = \App\Utility\MemberUtility::member_profile_photo_request_info($user->id);
+        return ($photo_request['profile_photo_request_state'] ?? 'none') === 'approved';
     }
 }
 

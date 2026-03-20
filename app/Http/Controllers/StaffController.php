@@ -50,7 +50,7 @@ class StaffController extends Controller
      */
     public function store(Request $request)
     {
-        if(User::where('email', $request->email)->first() == null){
+        if(User::where('email', $request->email)->whereNull('deleted_at')->first() == null){
             $user             = new User;
             $user->first_name = $request->first_name;
             $user->last_name  = $request->last_name;

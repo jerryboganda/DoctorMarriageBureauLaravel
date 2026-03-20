@@ -69,8 +69,8 @@ use App\Models\FieldVisibilitySetting;
 use App\Models\ViewContact;
 use App\Models\ViewGalleryImage;
 use App\Models\User;
-use App\Models\ViewProfilePicture;
 use App\Utility\PhoneUtility;
+use App\Utility\MemberUtility;
 use Illuminate\Auth\Events\Validated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -590,9 +590,17 @@ class ProfileController extends Controller
             $data['intoduction'] = new AboutUser($user);
             $data['basic_info'] = new BasicInformation($user);
 
-            $profile_pic_privacy = get_setting('profile_picture_privacy');
-            $photo_view_request = ViewProfilePicture::where('user_id', $user->id)->where('requested_by', $auth_user->id)->first();
-            $data['profile_pic_request'] = $user->photo != null && $user->photo_approved == 1 && $profile_pic_privacy == 'only_me' && ($photo_view_request == null || ($photo_view_request && $photo_view_request->status == 0));
+            $photo_request_info = MemberUtility::member_profile_photo_request_info($user->id);
+            $data['profile_photo_request_state'] = $photo_request_info['profile_photo_request_state'];
+            $data['profile_photo_request_text'] = $photo_request_info['profile_photo_request_text'];
+            $data['profile_photo_request_requested'] = $photo_request_info['profile_photo_request_requested'];
+            $data['profile_photo_request_approved'] = $photo_request_info['profile_photo_request_approved'];
+            $data['profile_photo_request_id'] = $photo_request_info['profile_photo_request_id'];
+            $data['profile_photo_request_required'] = $photo_request_info['profile_photo_request_required'];
+            $data['profile_photo_accessible'] = $photo_request_info['profile_photo_accessible'];
+            $data['profile_photo_exists'] = $photo_request_info['profile_photo_exists'];
+            $data['profile_photo_blur'] = MemberUtility::member_profile_photo_blur($user->id);
+            $data['profile_pic_request'] = $photo_request_info['profile_photo_request_required'] && $photo_request_info['profile_photo_request_state'] !== 'approved';
 
             $data['present_address'] = Address::where('user_id', $id)->where('type', 'present')->first() ? new AddressResource(Address::where('user_id', $id)->where('type', 'present')->first()) : null;
             $data['contact_details']['email'] = $user->email;
@@ -620,27 +628,34 @@ class ProfileController extends Controller
             $publicGalleryImages = $allGalleryImages->filter(fn($img) => !in_array($img->privacy_level, ['private', 'vault']));
             $privateGalleryImages = $allGalleryImages->filter(fn($img) => in_array($img->privacy_level, ['private', 'vault']));
 
-            $gallery_image_privacy = get_setting('gallery_image_privacy');
-            $gallery_image_request = ViewGalleryImage::where('user_id', $user->id)->where('requested_by', $auth_user->id)->first();
+            $gallery_request_info = MemberUtility::member_gallery_image_request_info($user->id);
+            $gallery_image_visibility = MemberUtility::resolve_media_visibility($user->id, 'gallery');
 
             $publicPhotos = collect();
             $privatePhotos = collect();
+            $galleryAccessLevel = (int) ($gallery_image_visibility['effective_level'] ?? 0);
+            $viewerIsPremium = (int) ($auth_user->membership ?? 0) === 2;
+            $viewerIsMember = (bool) $auth_user;
 
             // Determine access for public gallery images
-            if ($gallery_image_privacy == 'only_me') {
-                if ($gallery_image_request !== null && $gallery_image_request->status == 1) {
-                    $publicPhotos = GalleryImageResource::collection($publicGalleryImages);
-                } else {
-                    $publicPhotos = RequestedGalleryImage::collection($publicGalleryImages);
-                }
-            } elseif ($gallery_image_privacy == "all") {
+            if ($galleryAccessLevel === 0) {
                 $publicPhotos = GalleryImageResource::collection($publicGalleryImages);
-            } else {
-                if ($auth_user->membership == 2) {
+            } elseif ($galleryAccessLevel === 1) {
+                if ($viewerIsPremium || $gallery_request_info['gallery_image_request_approved']) {
                     $publicPhotos = GalleryImageResource::collection($publicGalleryImages);
                 } else {
                     $publicPhotos = RequestedGalleryImage::collection($publicGalleryImages);
                 }
+            } elseif ($galleryAccessLevel === 2) {
+                if ($viewerIsMember || $gallery_request_info['gallery_image_request_approved']) {
+                    $publicPhotos = GalleryImageResource::collection($publicGalleryImages);
+                } else {
+                    $publicPhotos = RequestedGalleryImage::collection($publicGalleryImages);
+                }
+            } else {
+                $publicPhotos = $gallery_request_info['gallery_image_request_approved']
+                    ? GalleryImageResource::collection($publicGalleryImages)
+                    : RequestedGalleryImage::collection($publicGalleryImages);
             }
 
             // Private/vault images — return metadata only (URL replaced with null, marked as blurred)
@@ -659,6 +674,14 @@ class ProfileController extends Controller
 
             // Merge public + blurred private
             $data['photo_gallery'] = collect($publicPhotos)->merge($blurredPrivatePhotos)->values();
+            $data['gallery_image_request_state'] = $gallery_request_info['gallery_image_request_state'];
+            $data['gallery_image_request_text'] = $gallery_request_info['gallery_image_request_text'];
+            $data['gallery_image_request_requested'] = $gallery_request_info['gallery_image_request_requested'];
+            $data['gallery_image_request_approved'] = $gallery_request_info['gallery_image_request_approved'];
+            $data['gallery_image_request_id'] = $gallery_request_info['gallery_image_request_id'];
+            $data['gallery_image_request_required'] = $gallery_request_info['gallery_image_request_required'];
+            $data['gallery_image_accessible'] = $gallery_request_info['gallery_image_accessible'];
+            $data['gallery_image_exists'] = $gallery_request_info['gallery_image_exists'];
 
             // Screenshot deterrence flag for viewer
             $ownerVisibility = FieldVisibilitySetting::getForUser($user->id);
@@ -674,7 +697,7 @@ class ProfileController extends Controller
             $data['view_contact_check'] = ViewContact::where('user_id', $user->id)->where('viewed_by', auth()->id())->first() ? true : false;
 
             // Profile view data store
-            if ($user->id != $auth_user->id) {
+            if ($user->id != $auth_user->id && !MemberUtility::member_is_incognito($auth_user->id)) {
                 $profileViewed = ProfileViewer::where('user_id', $user->id)->where('viewed_by', $auth_user->id)->first();
                 if ($profileViewed == null) {
                     if (package_validity($user->id) && $user->member->remaining_profile_viewer_view > 0) {
@@ -1209,6 +1232,27 @@ class ProfileController extends Controller
             $timelineValues = array_column($optionSets['marriageTimeline'], 'value');
             $relocationValues = array_column($optionSets['relocationWillingness'], 'value');
             $seriousnessValues = array_column($optionSets['seriousnessLevel'], 'value');
+            $requiresBirthday = empty($member->birthday) || $request->boolean('onboardingCompleted');
+            $birthdayProvided = array_key_exists('dateOfBirth', $basics) || array_key_exists('birthday', $basics);
+            $birthdayInput = $basics['dateOfBirth'] ?? $basics['birthday'] ?? null;
+
+            if ($requiresBirthday || $birthdayProvided) {
+                if (trim((string) $birthdayInput) === '') {
+                    return response()->json([
+                        'result' => false,
+                        'message' => 'Date of Birth is required.',
+                    ], 422);
+                }
+
+                try {
+                    $member->birthday = \Carbon\Carbon::parse($birthdayInput)->format('Y-m-d');
+                } catch (\Throwable $e) {
+                    return response()->json([
+                        'result' => false,
+                        'message' => 'Date of Birth is required.',
+                    ], 422);
+                }
+            }
 
             if (array_key_exists('firstName', $basics)) {
                 $user->first_name = $basics['firstName'];
@@ -1225,9 +1269,6 @@ class ProfileController extends Controller
 
             if (array_key_exists('gender', $basics)) {
                 $member->gender = ($basics['gender'] == 'Female') ? 2 : 1;
-            }
-            if (array_key_exists('dateOfBirth', $basics)) {
-                $member->birthday = $basics['dateOfBirth'] ?: null;
             }
             if (array_key_exists('maritalStatusId', $basics)) {
                 $member->marital_status_id = $basics['maritalStatusId'] ?: null;

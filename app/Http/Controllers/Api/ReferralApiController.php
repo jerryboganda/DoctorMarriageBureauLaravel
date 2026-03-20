@@ -68,7 +68,9 @@ class ReferralApiController extends Controller
             ]);
         }
 
-        $referralCode = ReferralCode::where('code', $request->code)
+        $normalized = $this->referralService->normalizeReferralCode($request->code);
+
+        $referralCode = ReferralCode::where('code', $normalized)
             ->where('status', 'active')
             ->first();
 

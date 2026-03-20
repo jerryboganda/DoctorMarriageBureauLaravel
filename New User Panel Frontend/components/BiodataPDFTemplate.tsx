@@ -1,21 +1,46 @@
 import React from 'react';
-import { User, MapPin, Briefcase, GraduationCap, Heart, Calendar, FileText, Ruler, Eye, Home, BookOpen, UserCheck, Star, Globe, Utensils, Users } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import {
+    Briefcase,
+    BookOpen,
+    Calendar,
+    Globe,
+    GraduationCap,
+    Heart,
+    MapPin,
+    Ruler,
+    Star,
+    Utensils,
+    Users,
+    UserCheck
+} from 'lucide-react';
+import { calculateAgeFromDob } from '../utils/age';
 
 interface BiodataPDFTemplateProps {
     userData: any;
 }
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://api.doctormarriagebureau.com.pk';
+const resolveAssetBase = () => {
+    const envBase = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
+
+    if (envBase) {
+        return envBase.replace(/\/api$/, '').replace(/\/$/, '');
+    }
+
+    if (typeof window !== 'undefined' && window.location?.origin) {
+        return window.location.origin;
+    }
+
+    return 'https://api.doctormarriagebureau.com.pk';
+};
+
+const API_BASE = resolveAssetBase();
 const DEFAULT_AVATAR = `${API_BASE}/assets/img/avatar-place.png`;
 const DEFAULT_FEMALE_AVATAR = `${API_BASE}/assets/img/female-avatar-place.png`;
 
-/** Humanise raw DB values like "early_bird" → "Early Bird" */
-const fmt = (v: any) => v ? String(v).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'N/A';
+const humanize = (value: any) => (value ? String(value).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : null);
+const nonEmpty = (value: any) => !(value == null || value === '' || value === 'N/A');
 
 const BiodataPDFTemplate: React.FC<BiodataPDFTemplateProps> = ({ userData }) => {
-    const { t } = useTranslation();
-
     if (!userData) return null;
 
     const {
@@ -28,227 +53,263 @@ const BiodataPDFTemplate: React.FC<BiodataPDFTemplateProps> = ({ userData }) => 
         lifestyles,
         physical_attributes,
         partner_expectations,
-        hobbies
     } = userData;
 
-    const age = member?.birthday
-        ? new Date().getFullYear() - new Date(member.birthday).getFullYear()
-        : null;
+    const age = calculateAgeFromDob(member?.birthday);
+    const gender = member?.gender === 2 ? 'Female' : 'Male';
+    const defaultAvatar = member?.gender === 2 ? DEFAULT_FEMALE_AVATAR : DEFAULT_AVATAR;
+    const rawPhoto = userData?.photo_url || userData?.photo;
+    const photoUrl =
+        typeof rawPhoto === 'string' &&
+        (rawPhoto.startsWith('http://') || rawPhoto.startsWith('https://') || rawPhoto.startsWith('/'))
+            ? (rawPhoto.startsWith('/') ? `${API_BASE}${rawPhoto}` : rawPhoto)
+            : defaultAvatar;
+    const shouldBlurPhoto = Boolean(userData?.profile_photo_blur && photoUrl !== defaultAvatar);
 
     const presentAddress = addresses?.find((a: any) => a.type === 'present') || addresses?.[0];
     const location = [presentAddress?.city?.name, presentAddress?.country?.name].filter(Boolean).join(', ');
 
-    const primaryEducation = Array.isArray(education) ? education.sort((a, b) => b.end - a.end)[0] : education;
+    const primaryEducation = Array.isArray(education)
+        ? [...education].sort((a: any, b: any) => (b.end ?? 0) - (a.end ?? 0))[0]
+        : education;
     const degree = primaryEducation?.degree || member?.education;
 
-    const primaryCareer = Array.isArray(career) ? career.sort((a, b) => b.present ? 1 : -1)[0] : career;
+    const primaryCareer = Array.isArray(career)
+        ? [...career].sort((a: any, b: any) => Number(Boolean(b.present)) - Number(Boolean(a.present)) || (b.end ?? 0) - (a.end ?? 0))[0]
+        : career;
     const profession = primaryCareer?.designation || member?.designation;
 
     let heightStr = physical_attributes?.height;
     if (typeof heightStr === 'number') {
-        heightStr = heightStr > 20 ? (heightStr / 30.48).toFixed(1) + ' cm' : heightStr.toFixed(1) + "'0\"";
+        heightStr = heightStr > 20 ? `${(heightStr / 30.48).toFixed(1)} cm` : `${heightStr.toFixed(1)}'0"`;
     }
 
-    const gender = member?.gender === 2 ? 'Female' : 'Male';
-    const defaultAvatar = member?.gender === 2 ? DEFAULT_FEMALE_AVATAR : DEFAULT_AVATAR;
-    const photoUrl = userData?.photo ? `${API_BASE}/${userData.photo}` : defaultAvatar;
+    const familySiblings = (() => {
+        if (!families) return null;
+        const brothers = Number(families.no_of_brothers ?? 0);
+        const sisters = Number(families.no_of_sisters ?? 0);
+        if (brothers === 0 && sisters === 0) return 'None';
+        const parts = [];
+        if (brothers > 0) parts.push(`${brothers} Brother${brothers > 1 ? 's' : ''}`);
+        if (sisters > 0) parts.push(`${sisters} Sister${sisters > 1 ? 's' : ''}`);
+        return parts.join(' & ');
+    })();
+
+    const religion = spiritual_backgrounds?.religion?.name;
+    const caste = spiritual_backgrounds?.caste?.name;
+    const sect = spiritual_backgrounds?.ethnicity;
+    const familyValue = spiritual_backgrounds?.family_value?.name;
+
+    const partnerAgeRange = partner_expectations
+        ? `${partner_expectations.min_age || 'Any'} - ${partner_expectations.max_age || 'Any'} yrs`
+        : null;
 
     return (
-        <div id="biodata-pdf-content" className="w-[800px] min-h-[1130px] bg-slate-50 font-sans text-slate-800 relative overflow-hidden box-border">
-            {/* Background Decoration */}
-            <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[50%] bg-primary/10 rounded-full mix-blend-multiply filter blur-[100px] pointer-events-none opacity-70" />
-            <div className="absolute top-[20%] right-[-10%] w-[50%] h-[50%] bg-amber-400/10 rounded-full mix-blend-multiply filter blur-[120px] pointer-events-none opacity-60" />
-            <div className="absolute bottom-[-10%] left-[20%] w-[70%] h-[60%] bg-blue-500/10 rounded-full mix-blend-multiply filter blur-[150px] pointer-events-none opacity-50" />
-            <div className="absolute inset-0 opacity-[0.015] pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }} />
-            <div className="absolute inset-x-5 top-[140px] bottom-5 bg-white/60 backdrop-blur-3xl rounded-3xl border border-white/50 shadow-[0_8px_32px_0_rgba(31,38,135,0.03)] pointer-events-none z-0" />
+        <div id="biodata-pdf-content" className="w-[800px] bg-white font-sans text-slate-900 box-border">
+            <div className="px-5 py-5">
+                <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-4">
+                    <div className="min-w-0">
+                        <div className="text-[9px] font-black uppercase tracking-[0.5em] text-primary">
+                            Doctor Marriage Bureau
+                        </div>
+                        <h1 className="mt-2 text-[27px] font-black text-slate-900 leading-tight">
+                            Biodata Profile
+                        </h1>
+                        <p className="mt-1 text-[11px] text-slate-500 max-w-xl">
+                            A premium matrimonial summary built from your profile data.
+                        </p>
+                    </div>
 
-            <div className="px-6 pt-4 pb-3 relative z-10 h-full flex flex-col">
-
-                {/* ═══ CENTERED BRAND BAR ═══ */}
-                <div className="flex items-center justify-center gap-6 mb-3">
-                    <img src="/logo-v2.png" alt="Doctor Marriage Bureau" className="h-7 w-auto mix-blend-multiply" />
-                    <img src="/sponsor-logo.png" alt="Sponsor" className="h-7 w-auto mix-blend-multiply" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                </div>
-
-                {/* ═══ HEADER BANNER ═══ */}
-                <div className="relative rounded-xl bg-slate-900 overflow-hidden mb-3 shrink-0">
-                    <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent pointer-events-none" />
-                    <div className="px-4 py-3 flex items-center gap-4 relative z-10">
-                        <img src={photoUrl} crossOrigin="anonymous" alt="Profile"
-                            className="w-16 h-16 rounded-lg border-2 border-white/20 object-cover shadow-lg bg-slate-800" />
-                        <div className="flex-1">
-                            <h1 className="text-lg font-bold text-white mb-0">{userData.first_name} {userData.last_name}</h1>
-                            <div className="text-primary font-bold text-[10px] tracking-widest mb-1.5">PROFILE ID: {userData.code || userData.id}</div>
-                            <div className="flex flex-wrap gap-x-4 text-slate-300 text-[10px]">
-                                <span><b className="text-white">{age ? `${age} Yrs` : 'N/A'}</b></span>
-                                <span className="text-slate-600">&middot;</span>
-                                <span><b className="text-white">{spiritual_backgrounds?.religion?.name || 'N/A'}</b></span>
-                                <span className="text-slate-600">&middot;</span>
-                                <span><b className="text-white">{member?.marital_status?.name || 'N/A'}</b></span>
-                                <span className="text-slate-600">&middot;</span>
-                                <span><b className="text-white">{location || 'N/A'}</b></span>
-                                <span className="text-slate-600">&middot;</span>
-                                <span><b className="text-white">{profession || 'N/A'}</b></span>
-                                <span className="text-slate-600">&middot;</span>
-                                <span><b className="text-white">{degree || 'N/A'}</b></span>
-                            </div>
+                    <div className="shrink-0 text-right">
+                        <div className="text-[8px] font-black uppercase tracking-[0.35em] text-slate-400">
+                            Profile ID
+                        </div>
+                        <div className="mt-2 inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-bold text-slate-900 shadow-sm">
+                            {userData.code || userData.id}
                         </div>
                     </div>
                 </div>
 
-                {/* ═══ CONTENT GRID ═══ */}
-                <div className="flex-1 flex flex-col gap-2.5">
-
-                    {/* About */}
-                    {member?.introduction && (
-                        <Section icon={<BookOpen size={13} />} title="About">
-                            <div className="text-[10px] text-slate-500 italic bg-white/80 p-2.5 rounded-md border border-slate-200/60 leading-relaxed">
-                                "{member.introduction}"
+                <div className="mt-4 rounded-[28px] border border-slate-200/80 bg-gradient-to-br from-white via-slate-50/80 to-rose-50/40 p-4 shadow-[0_22px_48px_-36px_rgba(15,23,42,0.45)] break-inside-avoid-page">
+                    <div className="grid grid-cols-[92px_minmax(0,1fr)] gap-4 items-start">
+                        <div className="relative">
+                            <img
+                                src={photoUrl}
+                                crossOrigin="anonymous"
+                                alt="Profile"
+                                className={`h-[112px] w-[92px] rounded-[22px] border border-slate-200 bg-slate-100 object-cover shadow-sm ${
+                                    shouldBlurPhoto ? 'scale-105 blur-2xl' : ''
+                                }`}
+                            />
+                            <div className="absolute -bottom-2 -right-2 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[9px] font-bold uppercase tracking-wide text-slate-600 shadow-sm">
+                                {gender}
                             </div>
-                        </Section>
-                    )}
-
-                    {/* ── Row 1: Basic Information (full width, 6-col) ── */}
-                    <Section icon={<UserCheck size={13} />} title="Basic Information">
-                        <div className="grid grid-cols-6 gap-1.5">
-                            <Cell label="Gender" value={gender} />
-                            <Cell label="Age" value={age ? `${age} yrs` : null} />
-                            <Cell label="Marital Status" value={member?.marital_status?.name} />
-                            <Cell label="Religion" value={spiritual_backgrounds?.religion?.name} />
-                            <Cell label="Caste" value={spiritual_backgrounds?.caste?.name} />
-                            <Cell label="Mother Tongue" value={member?.mothereTongue?.name} />
                         </div>
-                    </Section>
 
-                    {/* ── Row 2: Education | Career ── */}
-                    <div className="grid grid-cols-2 gap-3">
-                        <Section icon={<GraduationCap size={13} />} title="Education">
-                            <div className="space-y-1.5">
-                                {Array.isArray(education) && education.length > 0 ? education.slice(0, 2).map((edu: any, i: number) => (
-                                    <div key={i} className="bg-sky-50/80 border border-sky-200/60 rounded-md px-2.5 py-1.5 flex items-center gap-2">
-                                        <div className="w-6 h-6 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center shrink-0">
-                                            <GraduationCap size={11} />
-                                        </div>
-                                        <div>
-                                            <div className="font-bold text-slate-900 text-[10px] leading-tight">{edu.degree}</div>
-                                            {edu.institution && <div className="text-[8px] text-slate-500 uppercase tracking-wider">{edu.institution}</div>}
-                                        </div>
-                                    </div>
-                                )) : <div className="text-[9px] text-slate-400 italic bg-white p-2 rounded-md border border-slate-200/60">N/A</div>}
-                            </div>
-                        </Section>
-                        <Section icon={<Briefcase size={13} />} title="Career">
-                            <div className="space-y-1.5">
-                                {Array.isArray(career) && career.length > 0 ? career.slice(0, 2).map((job: any, i: number) => (
-                                    <div key={i} className="bg-emerald-50/80 border border-emerald-200/60 rounded-md px-2.5 py-1.5 flex items-center gap-2">
-                                        <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
-                                            <Briefcase size={11} />
-                                        </div>
-                                        <div>
-                                            <div className="font-bold text-slate-900 text-[10px] leading-tight">{job.designation || job.profession}</div>
-                                            {job.company && <div className="text-[8px] text-slate-500 uppercase tracking-wider">{job.company}</div>}
-                                        </div>
-                                    </div>
-                                )) : <div className="text-[9px] text-slate-400 italic bg-white p-2 rounded-md border border-slate-200/60">N/A</div>}
-                            </div>
-                        </Section>
-                    </div>
-
-                    {/* ── Row 3: Religious Context | Residence (3+3 balanced) ── */}
-                    <div className="grid grid-cols-2 gap-3">
-                        <Section icon={<Star size={13} />} title="Religious Context">
-                            <div className="grid grid-cols-2 gap-1.5">
-                                <Cell label="Religion" value={spiritual_backgrounds?.religion?.name} />
-                                <Cell label="Caste" value={spiritual_backgrounds?.caste?.name} />
-                                <Cell className="col-span-2" label="Sect / Ethnicity" value={spiritual_backgrounds?.ethnicity} />
-                            </div>
-                        </Section>
-                        <Section icon={<Globe size={13} />} title="Residence">
-                            <div className="grid grid-cols-2 gap-1.5">
-                                <Cell label="Country" value={presentAddress?.country?.name} />
-                                <Cell label="City" value={presentAddress?.city?.name} />
-                                <Cell className="col-span-2" label="Nationality" value={member?.nationality} />
-                            </div>
-                        </Section>
-                    </div>
-
-                    {/* ── Row 4: Physical Appearance | Lifestyle (6+6 balanced) ── */}
-                    <div className="grid grid-cols-2 gap-3">
-                        <Section icon={<Ruler size={13} />} title="Physical Appearance">
-                            <div className="grid grid-cols-3 gap-1.5">
-                                <Cell label="Height" value={heightStr} />
-                                <Cell label="Weight" value={physical_attributes?.weight ? `${physical_attributes.weight} kg` : null} />
-                                <Cell label="Complexion" value={fmt(physical_attributes?.complexion)} />
-                                <Cell label="Body Type" value={fmt(physical_attributes?.body_type)} />
-                                <Cell label="Eye Color" value={fmt(physical_attributes?.eye_color)} />
-                                <Cell label="Hair Color" value={fmt(physical_attributes?.hair_color)} />
-                            </div>
-                        </Section>
-                        <Section icon={<Utensils size={13} />} title="Lifestyle">
-                            <div className="grid grid-cols-2 gap-1.5">
-                                <Cell label="Diet" value={fmt(lifestyles?.diet)} />
-                                <Cell label="Living With" value={fmt(lifestyles?.living_with)} />
-                                <Cell label="Smoke" value={fmt(lifestyles?.smoke)} />
-                                <Cell label="Drink" value={fmt(lifestyles?.drink)} />
-                                <Cell label="Sleep Schedule" value={fmt(lifestyles?.sleep_schedule)} />
-                                <Cell label="Property / House" value={fmt(lifestyles?.property)} />
-                            </div>
-                        </Section>
-                    </div>
-
-                    {/* ── Row 5: Family Information (full width) ── */}
-                    <Section icon={<Users size={13} />} title="Family Information">
-                        <div className="grid grid-cols-4 gap-1.5">
-                            <Cell label="Father's Name" value={families?.father_name} />
-                            <Cell label="Father's Occupation" value={families?.father_occupation} />
-                            <Cell label="Mother's Name" value={families?.mother_name} />
-                            <Cell label="Mother's Occupation" value={families?.mother_occupation} />
-                            <Cell label="Siblings" value={
-                                families ? (
-                                    (families.no_of_brothers > 0 ? `${families.no_of_brothers} Brother(s)` : '') +
-                                    (families.no_of_brothers > 0 && families.no_of_sisters > 0 ? ' & ' : '') +
-                                    (families.no_of_sisters > 0 ? `${families.no_of_sisters} Sister(s)` : '') || 'None'
-                                ) : null
-                            } />
-                            <Cell label="Family Type" value={fmt(families?.family_type)} />
-                            <Cell className="col-span-2" label="Family Values" value={spiritual_backgrounds?.family_value?.name} />
-                        </div>
-                    </Section>
-
-                    {/* ── Row 6: Partner Expectations (full width, accented) ── */}
-                    {partner_expectations && (
-                        <div>
-                            <div className="flex items-center gap-1.5 mb-1">
-                                <Heart size={13} className="text-rose-500" />
-                                <h3 className="text-[9px] font-bold text-rose-600 uppercase tracking-widest">Partner Expectations</h3>
-                            </div>
-                            <div className="p-2.5 bg-rose-50/80 border border-rose-200/50 rounded-lg">
-                                <div className="grid grid-cols-3 gap-1.5">
-                                    <RoseCell label="Age Range" value={`${partner_expectations.min_age || 'Any'} - ${partner_expectations.max_age || 'Any'} yrs`} />
-                                    <RoseCell label="Height" value={`${partner_expectations.height || 'Any'} - ${partner_expectations.height_max || 'Any'}`} />
-                                    <RoseCell label="Religion" value={partner_expectations.religion?.name || 'Any'} />
-                                    <RoseCell label="Marital Status" value={partner_expectations.marital_status?.name || 'Any'} />
-                                    <RoseCell label="Caste" value={partner_expectations.caste?.name || 'Any'} />
-                                    <RoseCell label="Residence" value={partner_expectations.residence_country?.name || 'Any'} />
-                                    <RoseCell label="Education" value={partner_expectations.education || 'Any'} />
-                                    <RoseCell label="Language" value={partner_expectations.member_language?.name || 'Any'} />
-                                    <RoseCell label="Family Values" value={partner_expectations.family_value?.name || 'Any'} />
+                        <div className="min-w-0">
+                            <div className="flex flex-wrap items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                    <h2 className="text-[28px] font-black text-slate-950 leading-tight">
+                                        {userData.first_name} {userData.last_name}
+                                    </h2>
+                                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.45em] text-primary">
+                                        Candidate Summary
+                                    </p>
                                 </div>
-                                {partner_expectations.general && (
-                                    <div className="mt-1.5 pt-1.5 border-t border-rose-200/50">
-                                        <div className="text-[8px] font-bold text-rose-500 uppercase tracking-wider mb-0.5">Ideal Partner</div>
-                                        <div className="text-[9px] italic text-rose-900/80 leading-snug">"{partner_expectations.general}"</div>
-                                    </div>
+                            </div>
+
+                            <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                <StatPill icon={<Calendar size={11} />} label={age ? `${age} yrs` : 'Age N/A'} />
+                                <StatPill icon={<Globe size={11} />} label={religion || 'Religion N/A'} />
+                                <StatPill icon={<Heart size={11} />} label={member?.marital_status?.name || 'Marital Status N/A'} />
+                                <StatPill icon={<MapPin size={11} />} label={location || 'Location N/A'} />
+                                <StatPill icon={<Briefcase size={11} />} label={profession || 'Profession N/A'} />
+                                <StatPill icon={<GraduationCap size={11} />} label={degree || 'Education N/A'} />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="mt-3 grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-3 items-start">
+                    <div className="space-y-3">
+                        {member?.introduction && (
+                            <Section icon={<BookOpen size={13} />} title="About">
+                                <div className="rounded-2xl border border-slate-200/70 bg-slate-50/70 p-3 text-[11px] leading-relaxed italic text-slate-600">
+                                    "{member.introduction}"
+                                </div>
+                            </Section>
+                        )}
+
+                        <Section icon={<UserCheck size={13} />} title="Basic Information">
+                            <FieldGrid>
+                                <CompactField label="Gender" value={gender} />
+                                <CompactField label="Age" value={age ? `${age} yrs` : null} />
+                                <CompactField label="Marital Status" value={member?.marital_status?.name} />
+                                <CompactField label="Religion" value={religion} />
+                                <CompactField label="Caste" value={caste} />
+                                <CompactField label="Mother Tongue" value={member?.mothereTongue?.name} />
+                            </FieldGrid>
+                        </Section>
+
+                        <Section icon={<GraduationCap size={13} />} title="Education & Career">
+                            <div className="space-y-2">
+                                <ListSectionLabel icon={<GraduationCap size={11} />} label="Education" />
+                                {Array.isArray(education) && education.length > 0 ? (
+                                    education.slice(0, 2).map((edu: any, i: number) => (
+                                        <ProfileLineItem
+                                            key={`edu-${i}`}
+                                            accent="sky"
+                                            icon={<GraduationCap size={11} />}
+                                            title={edu.degree}
+                                            subtitle={edu.institution}
+                                        />
+                                    ))
+                                ) : (
+                                    <EmptyBlock />
+                                )}
+
+                                <ListSectionLabel icon={<Briefcase size={11} />} label="Career" />
+                                {Array.isArray(career) && career.length > 0 ? (
+                                    career.slice(0, 2).map((job: any, i: number) => (
+                                        <ProfileLineItem
+                                            key={`career-${i}`}
+                                            accent="emerald"
+                                            icon={<Briefcase size={11} />}
+                                            title={job.designation || job.profession}
+                                            subtitle={job.company}
+                                        />
+                                    ))
+                                ) : (
+                                    <EmptyBlock />
                                 )}
                             </div>
-                        </div>
-                    )}
+                        </Section>
+
+                        <Section icon={<Users size={13} />} title="Family Information">
+                            <FieldGrid columns="grid-cols-2">
+                                <CompactField label="Father's Name" value={families?.father_name} />
+                                <CompactField label="Father's Occupation" value={families?.father_occupation} />
+                                <CompactField label="Mother's Name" value={families?.mother_name} />
+                                <CompactField label="Mother's Occupation" value={families?.mother_occupation} />
+                                <CompactField label="Siblings" value={familySiblings} />
+                                <CompactField label="Family Type" value={humanize(families?.family_type)} />
+                                <CompactField className="col-span-2" label="Family Values" value={familyValue} />
+                            </FieldGrid>
+                        </Section>
+                    </div>
+
+                    <div className="space-y-3">
+                        <Section icon={<Star size={13} />} title="Religious & Residence">
+                            <div className="space-y-3">
+                                <FieldGrid columns="grid-cols-2">
+                                    <CompactField label="Religion" value={religion} />
+                                    <CompactField label="Caste" value={caste} />
+                                    <CompactField className="col-span-2" label="Sect / Ethnicity" value={sect} />
+                                </FieldGrid>
+                                <FieldGrid columns="grid-cols-2">
+                                    <CompactField label="Country" value={presentAddress?.country?.name} />
+                                    <CompactField label="City" value={presentAddress?.city?.name} />
+                                    <CompactField className="col-span-2" label="Nationality" value={member?.nationality} />
+                                </FieldGrid>
+                            </div>
+                        </Section>
+
+                        <Section icon={<Ruler size={13} />} title="Physical & Lifestyle">
+                            <div className="space-y-3">
+                                <FieldGrid columns="grid-cols-3">
+                                    <CompactField label="Height" value={heightStr} />
+                                    <CompactField label="Weight" value={physical_attributes?.weight ? `${physical_attributes.weight} kg` : null} />
+                                    <CompactField label="Complexion" value={humanize(physical_attributes?.complexion)} />
+                                    <CompactField label="Body Type" value={humanize(physical_attributes?.body_type)} />
+                                    <CompactField label="Eye Color" value={humanize(physical_attributes?.eye_color)} />
+                                    <CompactField label="Hair Color" value={humanize(physical_attributes?.hair_color)} />
+                                </FieldGrid>
+                                <FieldGrid columns="grid-cols-2">
+                                    <CompactField label="Diet" value={humanize(lifestyles?.diet)} />
+                                    <CompactField label="Living With" value={humanize(lifestyles?.living_with)} />
+                                    <CompactField label="Smoke" value={humanize(lifestyles?.smoke)} />
+                                    <CompactField label="Drink" value={humanize(lifestyles?.drink)} />
+                                    <CompactField label="Sleep Schedule" value={humanize(lifestyles?.sleep_schedule)} />
+                                    <CompactField label="Property / House" value={humanize(lifestyles?.property)} />
+                                </FieldGrid>
+                            </div>
+                        </Section>
+
+                        {partner_expectations && (
+                            <Section icon={<Heart size={13} />} title="Partner Expectations" accent>
+                                <div className="space-y-3">
+                                    <FieldGrid columns="grid-cols-3" accent>
+                                        <AccentField label="Age Range" value={partnerAgeRange} />
+                                        <AccentField label="Height" value={partner_expectations.height || null} />
+                                        <AccentField label="Religion" value={partner_expectations.religion?.name || null} />
+                                        <AccentField label="Marital Status" value={partner_expectations.marital_status?.name || null} />
+                                        <AccentField label="Caste" value={partner_expectations.caste?.name || null} />
+                                        <AccentField label="Residence" value={partner_expectations.residence_country?.name || null} />
+                                        <AccentField label="Education" value={partner_expectations.education || null} />
+                                        <AccentField label="Language" value={partner_expectations.member_language?.name || null} />
+                                        <AccentField label="Family Values" value={partner_expectations.family_value?.name || null} />
+                                    </FieldGrid>
+                                    {partner_expectations.general && (
+                                        <div className="rounded-2xl border border-rose-200/70 bg-white/80 p-3">
+                                            <div className="text-[8px] font-black uppercase tracking-[0.35em] text-rose-500">
+                                                Ideal Partner
+                                            </div>
+                                            <div className="mt-1 text-[11px] italic leading-relaxed text-rose-900/80">
+                                                "{partner_expectations.general}"
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </Section>
+                        )}
+                    </div>
                 </div>
 
-                {/* ═══ FOOTER ═══ */}
-                <div className="mt-auto pt-2.5 border-t border-slate-200/60 pb-1 text-center shrink-0">
-                    <span className="text-[9px] font-bold text-slate-700 tracking-wide">Doctor Marriage Bureau</span>
-                    <p className="text-[7px] text-slate-400 mt-0.5">
+                <div className="mt-4 border-t border-slate-200 pt-3 text-center">
+                    <div className="text-[9px] font-black uppercase tracking-[0.35em] text-slate-700">
+                        Doctor Marriage Bureau
+                    </div>
+                    <p className="mt-1 text-[7px] text-slate-400">
                         This document is confidential. Please respect privacy and do not distribute without permission.
                     </p>
                 </div>
@@ -257,36 +318,170 @@ const BiodataPDFTemplate: React.FC<BiodataPDFTemplateProps> = ({ userData }) => 
     );
 };
 
-/* ─── Sub-components ──────────────────────────────────────── */
-
-function Section({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
+function Section({
+    icon,
+    title,
+    children,
+    accent = false,
+}: {
+    icon: React.ReactNode;
+    title: string;
+    children: React.ReactNode;
+    accent?: boolean;
+}) {
     return (
-        <div>
-            <div className="flex items-center gap-1 mb-1">
-                <span className="text-slate-400">{icon}</span>
-                <h3 className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{title}</h3>
+        <section
+            className={`break-inside-avoid-page rounded-[22px] border p-3 shadow-sm ${
+                accent
+                    ? 'border-rose-200/80 bg-rose-50/50'
+                    : 'border-slate-200/80 bg-white'
+            }`}
+        >
+            <div className="mb-2 flex items-center gap-2">
+                <span className={accent ? 'text-rose-500' : 'text-slate-400'}>{icon}</span>
+                <h3
+                    className={`text-[10px] font-black uppercase tracking-[0.32em] ${
+                        accent ? 'text-rose-600' : 'text-slate-500'
+                    }`}
+                >
+                    {title}
+                </h3>
             </div>
             {children}
+        </section>
+    );
+}
+
+function FieldGrid({
+    children,
+    columns = 'grid-cols-2',
+    accent = false,
+}: {
+    children: React.ReactNode;
+    columns?: string;
+    accent?: boolean;
+}) {
+    return <div className={`grid ${columns} gap-2.5`}>{children}</div>;
+}
+
+function CompactField({
+    label,
+    value,
+    className = '',
+}: {
+    label: string;
+    value: any;
+    className?: string;
+}) {
+    const text = renderValue(value);
+    if (!text) return null;
+
+    return (
+        <div className={`rounded-2xl border border-slate-200/70 bg-slate-50/70 px-2.5 py-2 ${className}`}>
+            <div className="text-[7px] font-black uppercase tracking-[0.8px] text-slate-400">
+                {label}
+            </div>
+            <div className="mt-0.5 text-[10px] font-semibold leading-tight text-slate-800">
+                {text}
+            </div>
         </div>
     );
 }
 
-function Cell({ label, value, className = '' }: { label: string; value: any; className?: string }) {
+function AccentField({
+    label,
+    value,
+    className = '',
+}: {
+    label: string;
+    value: any;
+    className?: string;
+}) {
+    const text = renderValue(value);
+    if (!text) return null;
+
     return (
-        <div className={`bg-white/80 border border-slate-200/60 rounded-md px-2 py-1.5 ${className}`}>
-            <div className="text-[7px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">{label}</div>
-            <div className="text-[10px] font-semibold text-slate-800">{value ?? 'N/A'}</div>
+        <div className={`rounded-2xl border border-rose-200/70 bg-white/75 px-2.5 py-2 ${className}`}>
+            <div className="text-[7px] font-black uppercase tracking-[0.8px] text-rose-400">
+                {label}
+            </div>
+            <div className="mt-0.5 text-[10px] font-semibold leading-tight text-rose-950">
+                {text}
+            </div>
         </div>
     );
 }
 
-function RoseCell({ label, value }: { label: string; value: string }) {
+function ListSectionLabel({ icon, label }: { icon: React.ReactNode; label: string }) {
     return (
-        <div>
-            <div className="text-[7px] font-bold text-rose-400 uppercase tracking-wider mb-0.5">{label}</div>
-            <div className="text-[10px] font-semibold text-rose-950">{value}</div>
+        <div className="flex items-center gap-1.5">
+            <span className="text-slate-400">{icon}</span>
+            <div className="text-[8px] font-black uppercase tracking-[0.35em] text-slate-400">
+                {label}
+            </div>
         </div>
     );
+}
+
+function ProfileLineItem({
+    icon,
+    title,
+    subtitle,
+    accent,
+}: {
+    icon: React.ReactNode;
+    title: any;
+    subtitle?: any;
+    accent: 'sky' | 'emerald';
+}) {
+    const text = renderValue(title);
+    if (!text) return null;
+
+    const accentClasses =
+        accent === 'sky'
+            ? 'border-sky-200/70 bg-sky-50/60 text-sky-600'
+            : 'border-emerald-200/70 bg-emerald-50/60 text-emerald-600';
+
+    return (
+        <div className="flex items-start gap-2 rounded-2xl border border-slate-200/70 bg-slate-50/60 px-2.5 py-2.5">
+            <div className={`mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-xl border ${accentClasses}`}>
+                {icon}
+            </div>
+            <div className="min-w-0 flex-1">
+                <div className="text-[11px] font-bold leading-tight text-slate-900">
+                    {text}
+                </div>
+                {renderValue(subtitle) && (
+                    <div className="mt-0.5 text-[8px] uppercase tracking-[0.35em] text-slate-500">
+                        {renderValue(subtitle)}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+function EmptyBlock() {
+    return (
+        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 px-3 py-2 text-[10px] italic text-slate-400">
+            N/A
+        </div>
+    );
+}
+
+function StatPill({ icon, label }: { icon: React.ReactNode; label: string }) {
+    return (
+        <div className="inline-flex min-w-0 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-semibold text-slate-700 shadow-sm">
+            <span className="text-slate-400">{icon}</span>
+            <span className="truncate">{label}</span>
+        </div>
+    );
+}
+
+function renderValue(value: any) {
+    if (value == null || value === '' || value === 'N/A' || value === 0) return null;
+    if (typeof value === 'object' && value?.name) return String(value.name);
+    return String(value);
 }
 
 export default BiodataPDFTemplate;

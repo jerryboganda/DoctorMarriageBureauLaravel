@@ -3,7 +3,6 @@
 namespace App\Http\Resources;
 
 use App\Utility\MemberUtility;
-use Carbon\Carbon;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class PublicProposalResource extends JsonResource
@@ -21,20 +20,9 @@ class PublicProposalResource extends JsonResource
 
         $avatar_fallback = static_asset($avatar_image);
 
-        // Show real photo only if photo_approved & privacy allows public viewing
-        $photo = $avatar_fallback;
-        $profile_picture_privacy = get_setting('profile_picture_privacy');
-        if (
-            $profile_picture_privacy === 'all'
-            && $this->photo !== null
-            && $this->photo_approved == 1
-        ) {
-            $photo = uploaded_asset($this->photo) ?? $avatar_fallback;
-        }
+        $photo = show_profile_picture($this) ? (uploaded_asset($this->photo) ?? $avatar_fallback) : $avatar_fallback;
 
-        $age = !empty($this->member->birthday)
-            ? Carbon::parse($this->member->birthday)->age
-            : null;
+        $age = MemberUtility::member_age($this->id);
 
         return [
             'id'           => $this->id,
