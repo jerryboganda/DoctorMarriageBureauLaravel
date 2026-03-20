@@ -221,6 +221,50 @@ class ProgressionControllerTest extends TestCase
             $table->softDeletes();
         });
 
+        Schema::create('members', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('user_id');
+            $table->date('birthday')->nullable();
+            $table->unsignedBigInteger('mothere_tongue')->nullable();
+            $table->boolean('is_visible')->default(true);
+            $table->timestamps();
+            $table->softDeletes();
+        });
+
+        Schema::create('countries', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->timestamps();
+            $table->softDeletes();
+        });
+
+        Schema::create('religions', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->timestamps();
+            $table->softDeletes();
+        });
+
+        Schema::create('spiritual_backgrounds', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('religion_id')->nullable();
+            $table->unsignedBigInteger('sect_id')->nullable();
+            $table->unsignedBigInteger('caste_id')->nullable();
+            $table->unsignedBigInteger('sub_caste_id')->nullable();
+            $table->timestamps();
+            $table->softDeletes();
+        });
+
+        Schema::create('field_visibility_settings', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('user_id');
+            $table->string('field_name');
+            $table->boolean('is_visible')->default(true);
+            $table->timestamps();
+            $table->softDeletes();
+        });
+
         Schema::create('cities', function (Blueprint $table) {
             $table->id();
             $table->string('name');

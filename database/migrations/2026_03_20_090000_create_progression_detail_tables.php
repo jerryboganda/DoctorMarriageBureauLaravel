@@ -8,7 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('progression_checklist_items', function (Blueprint $table) {
+        if (!Schema::hasTable('progression_checklist_items')) {
+            Schema::create('progression_checklist_items', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('member_progression_id');
             $table->string('title');
@@ -20,10 +21,12 @@ return new class extends Migration
             $table->timestamps();
 
             $table->foreign('member_progression_id')->references('id')->on('member_progressions')->onDelete('cascade');
-            $table->index(['member_progression_id', 'sort_order']);
-        });
+            $table->index(['member_progression_id', 'sort_order'], 'prog_chk_member_sort_idx');
+            });
+        }
 
-        Schema::create('progression_notes', function (Blueprint $table) {
+        if (!Schema::hasTable('progression_notes')) {
+            Schema::create('progression_notes', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('member_progression_id');
             $table->unsignedBigInteger('author_id')->nullable();
@@ -32,10 +35,12 @@ return new class extends Migration
             $table->timestamps();
 
             $table->foreign('member_progression_id')->references('id')->on('member_progressions')->onDelete('cascade');
-            $table->index(['member_progression_id', 'note_type']);
-        });
+            $table->index(['member_progression_id', 'note_type'], 'prog_notes_member_type_idx');
+            });
+        }
 
-        Schema::create('progression_venues', function (Blueprint $table) {
+        if (!Schema::hasTable('progression_venues')) {
+            Schema::create('progression_venues', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('member_progression_id');
             $table->string('name');
@@ -48,10 +53,12 @@ return new class extends Migration
             $table->timestamps();
 
             $table->foreign('member_progression_id')->references('id')->on('member_progressions')->onDelete('cascade');
-            $table->index(['member_progression_id', 'status']);
-        });
+            $table->index(['member_progression_id', 'status'], 'prog_venues_member_status_idx');
+            });
+        }
 
-        Schema::create('progression_budget_items', function (Blueprint $table) {
+        if (!Schema::hasTable('progression_budget_items')) {
+            Schema::create('progression_budget_items', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('member_progression_id');
             $table->string('label');
@@ -62,10 +69,12 @@ return new class extends Migration
             $table->timestamps();
 
             $table->foreign('member_progression_id')->references('id')->on('member_progressions')->onDelete('cascade');
-            $table->index(['member_progression_id', 'status']);
-        });
+            $table->index(['member_progression_id', 'status'], 'prog_budget_member_status_idx');
+            });
+        }
 
-        Schema::create('progression_settings', function (Blueprint $table) {
+        if (!Schema::hasTable('progression_settings')) {
+            Schema::create('progression_settings', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('member_progression_id')->unique();
             $table->boolean('share_calendar_busy')->default(true);
@@ -75,7 +84,8 @@ return new class extends Migration
             $table->timestamps();
 
             $table->foreign('member_progression_id')->references('id')->on('member_progressions')->onDelete('cascade');
-        });
+            });
+        }
     }
 
     public function down(): void
