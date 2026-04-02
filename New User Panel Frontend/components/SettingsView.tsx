@@ -26,6 +26,10 @@ interface SettingsViewProps {
 const SettingsView: React.FC<SettingsViewProps> = ({ onLaunchOnboarding, onOpenBilling, onSelectPlan, appliedCouponCode, onApplyCoupon }) => {
     const { t } = useTranslation();
     const { user, setUser } = useAuthStore();
+
+    const handleChangePasswordRedirect = () => {
+        window.location.assign('/password/reset');
+    };
     const [activeTab, setActiveTab] = useState<'account' | 'privacy' | 'safety' | 'billing'>('account');
     const [loading, setLoading] = useState(true);
     const [managementMode, setManagementMode] = useState<'self' | 'family' | 'matchmaker' | 'dual'>('self');
@@ -721,6 +725,25 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onLaunchOnboarding, onOpenB
                                                         )}
                                                     </span>
                                                 </div>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={handleChangePasswordRedirect}
+                                                    className="w-full flex items-center justify-between gap-3 p-4 bg-white border border-slate-200 rounded-xl hover:border-primary/40 hover:bg-primary/5 transition-all text-left group"
+                                                >
+                                                    <div className="flex items-center gap-3 min-w-0">
+                                                        <div className="size-10 bg-primary/10 rounded-full flex items-center justify-center border border-primary/10 shrink-0">
+                                                            <Lock size={18} className="text-primary" />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <p className="text-sm font-bold text-slate-900">{t('settings.security.changePassword')}</p>
+                                                            <p className="text-xs text-slate-500 truncate">{t('settings.security.changePasswordDesc')}</p>
+                                                        </div>
+                                                    </div>
+                                                    <span className="flex items-center gap-1 text-xs font-bold text-primary shrink-0 group-hover:translate-x-0.5 transition-transform">
+                                                        {t('settings.security.changePasswordAction')} <ChevronRight size={12} />
+                                                    </span>
+                                                </button>
                                             </div>
                                         </div>
 

@@ -26,10 +26,11 @@ class BasicInformation extends JsonResource
         $galleryRequestInfo = MemberUtility::member_gallery_image_request_info($this->id);
         $profilePhotoBlur = MemberUtility::member_profile_photo_blur($this->id);
         $onBehalf = $this->member->on_behalves_id ? OnBehalf::find($this->member->on_behalves_id) : null;
+        $displayNameParts = MemberUtility::member_display_name_parts($this->id, $this->first_name, $this->last_name);
 
         return [
-            'firs_name' => $this->first_name,
-            'last_name' => $this->last_name,
+            'firs_name' => $displayNameParts['first_name'],
+            'last_name' => $displayNameParts['last_name'],
             'code' => $this->code,
             'age' => $age,
             'religion' => $this->spiritual_backgrounds->religion->name ?? '',

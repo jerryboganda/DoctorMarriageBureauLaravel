@@ -39,7 +39,7 @@ class ShortlistResource extends JsonResource
                 'user_id'              => $this->user_id,
                 'package_update_alert' => $package_update_alert,
                 'photo'                => $profile_picture_show ? uploaded_asset($this->user->photo) : static_asset($avatar_image),
-                'name'                 => $this->user->first_name . ' ' . $this->user->last_name,
+                'name'                 => MemberUtility::member_display_name($this->user_id, $this->user->first_name, $this->user->last_name),
                 'age'                  => MemberUtility::member_age($this->user_id),
                 'religion'             => MemberUtility::member_religion($this->user_id),
                 'country'              => MemberUtility::member_country($this->user_id),

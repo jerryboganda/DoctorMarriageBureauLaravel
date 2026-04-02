@@ -148,6 +148,58 @@ class ReferralSystemTest extends TestCase
         $this->assertSame(1, User::onlyTrashed()->where('email', 'mindreader_420@yahoo.com')->count());
     }
 
+
+    public function test_api_signup_succeeds_without_date_of_birth_and_creates_member_with_null_birthday(): void
+    {
+        $this->enableReferralProgram('registration_only');
+
+        $response = $this->postJson('/api/signup', [
+            'first_name' => 'NoDob',
+            'last_name' => 'Member',
+            'gender' => 'Male',
+            'on_behalf' => 1,
+            'phone' => '+923001111119',
+            'email' => 'nodob.member@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('result', true)
+            ->assertJsonPath('user.email', 'nodob.member@example.com');
+
+        $user = User::where('email', 'nodob.member@example.com')->firstOrFail();
+        $member = Member::where('user_id', $user->id)->firstOrFail();
+
+        $this->assertNull($member->birthday);
+    }
+
+    public function test_api_signup_still_accepts_date_of_birth_when_provided(): void
+    {
+        $this->enableReferralProgram('registration_only');
+
+        $response = $this->postJson('/api/signup', [
+            'first_name' => 'WithDob',
+            'last_name' => 'Member',
+            'gender' => 'Male',
+            'on_behalf' => 1,
+            'date_of_birth' => '1995-01-01',
+            'phone' => '+923001111120',
+            'email' => 'withdob.member@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('result', true)
+            ->assertJsonPath('user.email', 'withdob.member@example.com');
+
+        $user = User::where('email', 'withdob.member@example.com')->firstOrFail();
+        $member = Member::where('user_id', $user->id)->firstOrFail();
+
+        $this->assertSame('1995-01-01', optional($member->birthday)->format('Y-m-d'));
+    }
+
     public function test_social_login_new_user_preserves_referral_attribution(): void
     {
         $this->enableReferralProgram('registration_only');

@@ -75,7 +75,7 @@ class MemberResource extends JsonResource
                 'user_id'              => $this->id,
                 'code'                 => $this->code,
                 'membership'           => $this->membership,
-                'name'                 => $this->first_name . ' ' . $this->last_name,
+                'name'                 => MemberUtility::member_display_name($this->id, $this->first_name, $this->last_name),
                 'photo'                => $profile_picture_show ? (uploaded_asset($this->photo) ?? static_asset($avatar_image)) : static_asset($avatar_image),
                 'profile_photo_blur'   => $profilePhotoBlur,
                 'age'                  => MemberUtility::member_age($this->id),

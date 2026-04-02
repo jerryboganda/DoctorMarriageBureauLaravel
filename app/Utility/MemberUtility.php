@@ -56,6 +56,7 @@ class MemberUtility
             return [
                 'profile_visible' => true,
                 'incognito' => false,
+                'full_name' => true,
                 'screenshot_deterrence' => true,
                 'photo_visibility_public' => true,
                 'photo_visibility_members' => true,
@@ -72,6 +73,7 @@ class MemberUtility
             self::$visibilitySnapshotCache[$userId] = [
                 'profile_visible' => (bool) ($user?->member?->is_visible ?? true),
                 'incognito' => self::boolSetting($settings, 'incognito', false),
+                'full_name' => self::boolSetting($settings, 'full_name', true),
                 'screenshot_deterrence' => self::boolSetting($settings, 'screenshot_deterrence', true),
                 'photo_visibility_public' => self::boolSetting($settings, 'photo_visibility_public', true),
                 'photo_visibility_members' => self::boolSetting($settings, 'photo_visibility_members', true),
@@ -90,6 +92,43 @@ class MemberUtility
         }
 
         return (bool) (self::member_visibility_snapshot($userId)['incognito'] ?? false);
+    }
+
+    public static function member_full_name_visible($user_id = ''): bool
+    {
+        $userId = (int) $user_id;
+        if ($userId <= 0) {
+            return true;
+        }
+
+        return (bool) (self::member_visibility_snapshot($userId)['full_name'] ?? true);
+    }
+
+    public static function member_display_name_parts($user_id = '', ?string $firstName = null, ?string $lastName = null): array
+    {
+        $safeFirstName = trim((string) ($firstName ?? ''));
+        $safeLastName = trim((string) ($lastName ?? ''));
+
+        if (self::member_full_name_visible($user_id)) {
+            return [
+                'first_name' => $safeFirstName,
+                'last_name' => $safeLastName,
+            ];
+        }
+
+        $maskedFirstName = $safeFirstName !== '' ? $safeFirstName : 'Member';
+        $maskedLastName = $safeLastName !== '' ? strtoupper(substr($safeLastName, 0, 1)) . '.' : '';
+
+        return [
+            'first_name' => $maskedFirstName,
+            'last_name' => $maskedLastName,
+        ];
+    }
+
+    public static function member_display_name($user_id = '', ?string $firstName = null, ?string $lastName = null): string
+    {
+        $nameParts = self::member_display_name_parts($user_id, $firstName, $lastName);
+        return trim($nameParts['first_name'] . ' ' . $nameParts['last_name']);
     }
 
     public static function member_profile_photo_blur($user_id = ''): bool

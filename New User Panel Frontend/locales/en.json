@@ -23,6 +23,7 @@
     "profilePictureUploadSuccess": "Profile picture uploaded successfully!",
     "profilePictureUploadFailed": "Failed to upload profile picture.",
     "referralHeader": "Referral Program",
+    "wallet": "Wallet",
     "referralSystem": "Referral System",
     "referralSublabel": "Earn Rewards"
   },
@@ -711,6 +712,9 @@
       "verified": "Verified",
       "verifyNow": "Verify Now",
       "phoneOTP": "Phone OTP",
+      "changePassword": "Change Password",
+      "changePasswordDesc": "Reset your account password securely using the existing recovery flow.",
+      "changePasswordAction": "Reset now",
       "accountRecovery": "Account Recovery",
       "recommended": "Recommended",
       "resend": "Resend",

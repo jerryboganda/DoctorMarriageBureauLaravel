@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const PHONE_NUMBER = '+923368899996';
 const EMAIL_ADDRESS = 'support@doctormarriagebureau.com.pk';
+const EMAIL_BODY = 'I would like to get customer support for an issue. Please contact me early as possible !';
+const EMAIL_HREF = `mailto:${EMAIL_ADDRESS}?body=${encodeURIComponent(EMAIL_BODY)}`;
 const WHATSAPP_URL = `https://wa.me/923368899996`;
 
 type FloatingContactButtonProps = {
@@ -60,7 +62,7 @@ const FloatingContactButton: React.FC<FloatingContactButtonProps> = ({ placement
         {
             label: 'Email Us',
             icon: Mail,
-            href: `mailto:${EMAIL_ADDRESS}`,
+            href: EMAIL_HREF,
             bg: 'bg-blue-500 hover:bg-blue-600',
             shadow: 'shadow-blue-500/30',
         },

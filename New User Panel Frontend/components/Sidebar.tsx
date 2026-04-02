@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { Compass, UserCheck, Heart, MessageSquare, Route, Globe, Bell, UserCircle, ShieldCheck, LogOut, HeartPulse, X, Camera, Loader2, ChevronDown, Gift, FileText } from 'lucide-react';
+import { Compass, UserCheck, Heart, MessageSquare, Globe, Bell, UserCircle, ShieldCheck, LogOut, HeartPulse, X, Camera, Loader2, ChevronDown, Gift, Wallet, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { BTN_TAP } from '../utils/motion';
@@ -196,13 +196,12 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, dataSyncVers
 
         <p className="px-4 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 mt-4">{t('nav.familySocial')}</p>
         <div className="space-y-1">
-          <NavItem icon={<FileText size={20} />} label={t('nav.biodata')} sublabel={t('nav.biodataSublabel')} active={currentView === 'biodata' || currentView === 'family'} onClick={() => onNavigate('biodata')} />
           <NavItem icon={<Globe size={20} />} label={t('nav.communities')} active={currentView === 'communities'} onClick={() => onNavigate('communities')} />
-          <NavItem icon={<Route size={20} />} label={t('nav.journeyTracking')} active={currentView === 'progression'} onClick={() => onNavigate('progression')} />
         </div>
 
         <p className="px-4 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 mt-4">{t('nav.referralHeader')}</p>
         <div className="space-y-1">
+          <NavItem icon={<Wallet size={20} />} label={t('nav.wallet')} active={currentView === 'wallet'} onClick={() => onNavigate('wallet')} />
           <NavItem icon={<Gift size={20} />} label={t('nav.referralSystem')} sublabel={t('nav.referralSublabel')} active={currentView === 'referral'} onClick={() => onNavigate('referral')} />
         </div>
 

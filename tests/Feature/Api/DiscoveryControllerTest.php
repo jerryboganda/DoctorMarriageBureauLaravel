@@ -982,6 +982,105 @@ class DiscoveryControllerTest extends TestCase
         $status->assertJsonPath('data.profile_visible', true);
     }
 
+    public function test_it_persists_full_name_visibility_and_hides_names_across_discovery_and_public_profile(): void
+    {
+        $viewer = $this->createProfile([
+            'first_name' => 'Viewer',
+            'last_name' => 'User',
+            'email' => 'full-name-viewer@example.com',
+            'gender' => 1,
+            'birthday' => now()->subYears(32)->format('Y-m-d'),
+            'approved' => 1,
+            'verification_info' => 'viewer-verified',
+        ]);
+
+        $country = Country::create(['code' => 'PK', 'name' => 'Pakistan', 'status' => 1]);
+        $religion = Religion::create(['name' => 'Islam']);
+        $sect = Sect::create(['name' => 'Sunni']);
+        $caste = Caste::create(['religion_id' => $religion->id, 'name' => 'Jutt']);
+        $jobTitle = JobTitle::create(['name' => 'Doctor']);
+
+        $candidate = $this->createProfile([
+            'first_name' => 'Hidden',
+            'last_name' => 'Candidate',
+            'email' => 'hidden-candidate@example.com',
+            'gender' => 2,
+            'birthday' => now()->subYears(29)->format('Y-m-d'),
+            'approved' => 1,
+            'verification_info' => 'verified-doc',
+            'country_id' => $country->id,
+            'religion_id' => $religion->id,
+            'sect_id' => $sect->id,
+            'caste_id' => $caste->id,
+            'job_title_id' => $jobTitle->id,
+            'designation' => 'Doctor',
+            'height' => 5.5,
+        ]);
+
+        Sanctum::actingAs($candidate);
+
+        $legacyHide = $this->postJson('/api/member/profile/visibility', [
+            'field_name' => 'full_name',
+            'is_visible' => false,
+        ]);
+        $legacyHide->assertOk();
+        $legacyHide->assertJsonPath('data.full_name', false);
+
+        $hiddenSnapshot = $this->getJson('/api/member/profile/visibility');
+        $hiddenSnapshot->assertOk();
+        $hiddenSnapshot->assertJsonPath('data.full_name', false);
+
+        Sanctum::actingAs($viewer);
+
+        $hiddenDiscovery = $this->getJson('/api/discovery/search?' . http_build_query([
+            'verified' => 'yes',
+            'country' => (string) $country->id,
+            'religion' => (string) $religion->id,
+            'sect' => (string) $sect->id,
+            'caste' => (string) $caste->id,
+            'job_title_id' => (string) $jobTitle->id,
+        ]));
+        $hiddenDiscovery->assertOk();
+        $hiddenDiscovery->assertJsonPath('data.0.id', $candidate->id);
+        $hiddenDiscovery->assertJsonPath('data.0.name', 'Hidden C.');
+
+        $hiddenPublicProfile = $this->getJson('/api/member/public-profile/' . $candidate->id);
+        $hiddenPublicProfile->assertOk();
+        $hiddenPublicProfile->assertJsonPath('data.basic_info.firs_name', 'Hidden');
+        $hiddenPublicProfile->assertJsonPath('data.basic_info.last_name', 'C.');
+
+        Sanctum::actingAs($candidate);
+
+        $showAgain = $this->postJson('/api/member/profile/visibility', [
+            'full_name' => true,
+        ]);
+        $showAgain->assertOk();
+        $showAgain->assertJsonPath('data.full_name', true);
+
+        $visibleSnapshot = $this->getJson('/api/member/profile/visibility');
+        $visibleSnapshot->assertOk();
+        $visibleSnapshot->assertJsonPath('data.full_name', true);
+
+        Sanctum::actingAs($viewer);
+
+        $visibleDiscovery = $this->getJson('/api/discovery/search?' . http_build_query([
+            'verified' => 'yes',
+            'country' => (string) $country->id,
+            'religion' => (string) $religion->id,
+            'sect' => (string) $sect->id,
+            'caste' => (string) $caste->id,
+            'job_title_id' => (string) $jobTitle->id,
+        ]));
+        $visibleDiscovery->assertOk();
+        $visibleDiscovery->assertJsonPath('data.0.id', $candidate->id);
+        $visibleDiscovery->assertJsonPath('data.0.name', 'Hidden Candidate');
+
+        $visiblePublicProfile = $this->getJson('/api/member/public-profile/' . $candidate->id);
+        $visiblePublicProfile->assertOk();
+        $visiblePublicProfile->assertJsonPath('data.basic_info.firs_name', 'Hidden');
+        $visiblePublicProfile->assertJsonPath('data.basic_info.last_name', 'Candidate');
+    }
+
     private function createTestSchema(): void
     {
         Schema::create('users', function (Blueprint $table) {

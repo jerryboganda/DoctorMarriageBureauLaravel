@@ -34,7 +34,7 @@ class MyInterestResource extends JsonResource
             'user_id'              => $interest->user_id,
             'package_update_alert' => $package_update_alert,
             'photo'                => $profile_picture_show ? uploaded_asset($user->photo) : static_asset($avatar_image),
-            'name'                 => $user->first_name . ' ' . $user->last_name,
+            'name'                 => MemberUtility::member_display_name($interest->user_id, $user->first_name, $user->last_name),
             'age'                  => MemberUtility::member_age($interest->user_id),
             'religion'             => MemberUtility::member_religion($interest->user_id),
             'country'              => MemberUtility::member_country($interest->user_id),

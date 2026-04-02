@@ -31,7 +31,7 @@ class MatchedProfileResource extends JsonResource
                 'user_id'              => $this->match_id ?? '',
                 'code'                 => $this->user->code ?? '',
                 'membership'           => $this->user->membership ?? '',
-                'name'                 => $this->user->first_name . ' ' . $this->user->last_name ?? '',
+                'name'                 => MemberUtility::member_display_name($this->match_id, $this->user->first_name ?? '', $this->user->last_name ?? ''),
                 'photo'                => $profile_picture_show ? uploaded_asset($this->user->photo) : static_asset($avatar_image) ?? '',
                 'profile_photo_blur'   => $profilePhotoBlur,
                 'age'                  => MemberUtility::member_age($this->match_id),

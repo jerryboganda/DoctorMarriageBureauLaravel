@@ -24,7 +24,7 @@ class ExpressInterestResource extends JsonResource
                 'user_id'              => $this->interested_by,
                 'package_update_alert' => $package_update_alert,
                 'photo'                => uploaded_asset($interestedBy->photo) ?? $default_image,
-                'name'                 => $interestedBy->first_name . ' ' . $interestedBy->last_name,
+                'name'                 => MemberUtility::member_display_name($this->interested_by, $interestedBy->first_name, $interestedBy->last_name),
                 'age'                  => MemberUtility::member_age($this->interested_by),
                 'status'               => $this->status == 1 ? 'Approved' : 'Pending',
                 'religion'             => MemberUtility::member_religion($this->interested_by),

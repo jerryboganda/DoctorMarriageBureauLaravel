@@ -72,9 +72,8 @@ const MessagesView = lazy(lazyRetry(() => import('./components/MessagesView')));
 const SubscriptionModal = lazy(lazyRetry(() => import('./components/SubscriptionModal')));
 const PremiumMessagingModal = lazy(lazyRetry(() => import('./components/PremiumMessagingModal')));
 const PaymentModal = lazy(lazyRetry(() => import('./components/PaymentModal')));
-const FamilyPortalView = lazy(lazyRetry(() => import('./components/FamilyPortalView')));
 const CommunityView = lazy(lazyRetry(() => import('./components/CommunityView')));
-const ProgressionView = lazy(lazyRetry(() => import('./components/ProgressionView')));
+const WalletView = lazy(lazyRetry(() => import('./components/WalletView')));
 const NotificationsView = lazy(lazyRetry(() => import('./components/NotificationsView')));
 const ReferralView = lazy(lazyRetry(() => import('./components/ReferralView')));
 const AuthModal = lazy(lazyRetry(() => import('./components/AuthModal')));
@@ -83,6 +82,18 @@ const ProfileDetailModal = lazy(lazyRetry(() => import('./components/ProfileDeta
 const ReferralPopupModal = lazy(lazyRetry(() => import('./components/ReferralPopupModal')));
 const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://api.doctormarriagebureau.com.pk';
 const DEFAULT_AVATAR = `${API_BASE}/assets/img/avatar-place.png`;
+
+const buildNotificationProfileTarget = (profileId: string): ProfileMatch => ({
+    id: profileId,
+    name: 'Loading profile...',
+    specialty: '',
+    hospital: '',
+    location: '',
+    age: null,
+    matchPercentage: 0,
+    avatarUrl: DEFAULT_AVATAR,
+    isVerified: false,
+});
 
 const resolveAvatarUrl = (value?: string | null): string => {
     const candidate = `${value ?? ''}`.trim();
@@ -635,6 +646,13 @@ useEffect(() => {
         setIsMobileMenuOpen(false); // Close mobile menu on navigate
     };
 
+    const handleOpenNotificationProfile = (profileId: string) => {
+        const normalizedProfileId = String(profileId || '').trim();
+        if (!normalizedProfileId) return;
+
+        setSelectedProposalProfile(buildNotificationProfileTarget(normalizedProfileId));
+    };
+
     const handleProposalMessageClick = (profileId?: string) => {
         const normalizedProfileId = String(profileId || '').trim();
 
@@ -1089,17 +1107,16 @@ useEffect(() => {
                                 />
                             ) : currentView === 'profile' ? (
                                 <ProfileEditView initialTab={profileTargetSection} />
-                            ) : currentView === 'family' || currentView === 'biodata' ? (
-                                <FamilyPortalView biodataOnly />
                             ) : currentView === 'communities' ? (
                                 <CommunityView />
-                            ) : currentView === 'progression' ? (
-                                <ProgressionView onNavigate={setCurrentView} />
+                            ) : currentView === 'wallet' ? (
+                                <WalletView />
                             ) : currentView === 'referral' ? (
                                 <ReferralView />
                             ) : currentView === 'notifications' ? (
                                 <NotificationsView
                                     onNavigate={handleNavigate}
+                                    onOpenProfile={handleOpenNotificationProfile}
                                     refreshVersion={dataSyncVersion}
                                     onDataChanged={refreshCoreData}
                                 />

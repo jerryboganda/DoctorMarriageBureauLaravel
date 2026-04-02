@@ -17,6 +17,7 @@ interface NotificationItem extends NotificationDetailItem {
 
 interface NotificationsViewProps {
   onNavigate?: (view: string) => void;
+  onOpenProfile?: (profileId: string) => void;
   refreshVersion?: number;
   onDataChanged?: () => void;
 }
@@ -79,7 +80,7 @@ const formatNotificationDate = (iso: string, relative: string): string => {
   }
 };
 
-const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate, refreshVersion, onDataChanged }) => {
+const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate, onOpenProfile, refreshVersion, onDataChanged }) => {
   const { t } = useTranslation();
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'all' | 'unread'>('all');
@@ -191,6 +192,34 @@ const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate, refre
     }
   };
 
+  const MEMBER_PROFILE_NOTIFICATION_TYPES = new Set([
+    'express_interest',
+    'accept_interest',
+    'interest_rejected',
+    'reject_interest',
+    'profile_viewed',
+    'profile_view',
+    'gallery_image_view',
+    'profile_picture_view',
+  ]);
+
+  const getTargetProfileId = (notification: NotificationItem | null): string | null => {
+    if (!notification) return null;
+
+    const normalizedType = normalizeNotificationType(notification.type);
+    if (!MEMBER_PROFILE_NOTIFICATION_TYPES.has(normalizedType)) {
+      return null;
+    }
+
+    const directNotifyBy = String(notification.notify_by ?? '').trim();
+    if (directNotifyBy) return directNotifyBy;
+
+    const rawNotifyBy = String(notification.raw_data?.notify_by ?? '').trim();
+    if (rawNotifyBy) return rawNotifyBy;
+
+    return null;
+  };
+
   const getNavigationTarget = (notification: NotificationItem): string | null => {
     const normalizedType = normalizeNotificationType(notification.type);
     const route = String(notification.route ?? '').toLowerCase();
@@ -253,6 +282,10 @@ const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate, refre
   const canOpenRelatedPage = (notification: NotificationItem | null): boolean => {
     if (!notification) return false;
 
+    if (Boolean(getTargetProfileId(notification))) {
+      return true;
+    }
+
     const target = getNavigationTarget(notification);
     if (target && target !== 'notifications') {
       return true;
@@ -263,6 +296,13 @@ const NotificationsView: React.FC<NotificationsViewProps> = ({ onNavigate, refre
 
   const handleOpenRelatedPage = () => {
     if (!selectedNotification) return;
+
+    const targetProfileId = getTargetProfileId(selectedNotification);
+    if (targetProfileId && onOpenProfile) {
+      setSelectedNotification(null);
+      onOpenProfile(targetProfileId);
+      return;
+    }
 
     const target = getNavigationTarget(selectedNotification);
     if (target && target !== 'notifications' && onNavigate) {

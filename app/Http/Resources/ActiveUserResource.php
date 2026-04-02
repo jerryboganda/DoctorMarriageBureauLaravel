@@ -29,15 +29,17 @@ class ActiveUserResource extends JsonResource
         $profileViewRequestStatus = $photoRequestInfo['profile_photo_request_approved'];
         $galleryViewRequestStatus = (bool) ($galleryRequestInfo['gallery_image_request_approved'] ?? false);
         $profilePhotoBlur = MemberUtility::member_profile_photo_blur($this->id);
+        $displayNameParts = MemberUtility::member_display_name_parts($this->id, $this->first_name, $this->last_name);
+        $displayName = trim($displayNameParts['first_name'] . ' ' . $displayNameParts['last_name']);
 
         return [
             'id'                   => $this->id,
             'user_id'              => $this->id,
             'code'                 => $this->code,
             'membership'           => $this->membership,
-            'first_name'           => $this->first_name,
-            'last_name'            => $this->last_name,
-            'name'                 => $this->first_name . ' ' . $this->last_name,
+            'first_name'           => $displayNameParts['first_name'],
+            'last_name'            => $displayNameParts['last_name'],
+            'name'                 => $displayName,
             'gender'               => $this->member->gender,
             'photo'                => $resolved_photo,
             'avatarUrl'            => $resolved_photo,
