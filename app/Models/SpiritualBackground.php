@@ -13,7 +13,6 @@ class SpiritualBackground extends Model
     protected $fillable = [
         'user_id',
         'religion_id',
-        'sect_id',
         'caste_id',
         'sub_caste_id',
         'ethnicity',
@@ -30,11 +29,6 @@ class SpiritualBackground extends Model
     public function religion()
     {
         return $this->belongsTo(Religion::class)->withTrashed();
-    }
-
-    public function sect()
-    {
-        return $this->belongsTo(Sect::class)->withTrashed();
     }
 
     public function caste()

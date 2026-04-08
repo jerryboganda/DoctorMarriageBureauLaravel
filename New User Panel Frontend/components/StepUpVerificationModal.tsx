@@ -1,8 +1,7 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Lock, Loader2, X } from 'lucide-react';
 import { api } from '../utils/api';
-import PasswordField from './PasswordField';
 
 type StepUpPurpose = 'ownership_transfer' | '2fa_disable' | 'account_delete' | 'password_change';
 
@@ -98,16 +97,17 @@ const StepUpVerificationModal: React.FC<StepUpVerificationModalProps> = ({ purpo
 
           {step === 'password' && (
             <>
-              <PasswordField
-                label={t('modals.stepUp.accountPassword')}
-                autoFocus
-                placeholder={t('modals.stepUp.enterPassword')}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                inputClassName="border border-slate-300 rounded-xl py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none"
-                containerClassName="space-y-0"
-                labelClassName="block text-xs font-bold text-slate-700 mb-2"
-              />
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-2">{t('modals.stepUp.accountPassword')}</label>
+                <input
+                  type="password"
+                  autoFocus
+                  className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none"
+                  placeholder={t('modals.stepUp.enterPassword')}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
               {error && <p className="text-xs text-red-600 font-medium">{error}</p>}
               <button
                 onClick={handleVerifyPassword}
@@ -151,5 +151,3 @@ const StepUpVerificationModal: React.FC<StepUpVerificationModalProps> = ({ purpo
 };
 
 export default StepUpVerificationModal;
-
-

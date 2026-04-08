@@ -76,15 +76,9 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'must_change_password' => 'boolean',
         // phone_verified_at is handled by accessor getPhoneVerifiedAtAttribute()
         // It returns a Carbon instance from verification_codes.updated_at
     ];
-
-    public function hasUsablePassword(): bool
-    {
-        return !empty($this->password) && strlen((string) $this->password) >= 40;
-    }
 
     public function member()
     {
@@ -200,33 +194,6 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function profile_views(){
         return $this->hasMany(ProfileView::class);
-    }
-
-    // ===== Referral System Relationships =====
-
-    public function referralCode()
-    {
-        return $this->hasOne(\App\Models\ReferralCode::class);
-    }
-
-    public function referralsMade()
-    {
-        return $this->hasMany(\App\Models\Referral::class, 'referrer_user_id');
-    }
-
-    public function referralReceived()
-    {
-        return $this->hasOne(\App\Models\Referral::class, 'referred_user_id');
-    }
-
-    public function referralRewards()
-    {
-        return $this->hasMany(\App\Models\ReferralReward::class);
-    }
-
-    public function referrer()
-    {
-        return $this->belongsTo(User::class, 'referred_by');
     }
 
     /**

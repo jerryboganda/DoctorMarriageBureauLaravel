@@ -40,18 +40,13 @@ if (!function_exists('areActiveRoutes')) {
 if (!function_exists('uploaded_asset')) {
     function uploaded_asset($id)
     {
-        if ($id === null || $id === '' || $id === 0 || $id === '0') {
-            return null;
+        if (is_numeric($id) && ($asset = Upload::find($id)) != null && $asset->file_name && $asset->file_name != '0') {
+            return static_asset($asset->file_name);
         }
-        if (is_numeric($id)) {
-            $asset = Upload::find($id);
-            if ($asset && $asset->file_name && $asset->file_name != '0') {
-                return static_asset($asset->file_name);
-            }
-            return null;
+        if ($id != null && !is_numeric($id)) {
+            return static_asset($id);
         }
-        // Non-numeric: treat as direct path
-        return static_asset($id);
+        return static_asset(null);
     }
 }
 
@@ -102,25 +97,10 @@ if (!function_exists('getFileBaseURL')) {
     }
 }
 
-function translate($key, $lang = null, $replace = [])
+function translate($key, $lang = null)
 {
-    // Support translate('key', ['placeholder' => 'value']) short-hand
-    if (is_array($lang)) {
-        $replace = $lang;
-        $lang = null;
-    }
-
     if ($lang == null) {
         $lang = App::getLocale();
-    }
-
-    if (!is_string($key)) {
-        if (is_scalar($key)) {
-            $key = (string) $key;
-        } else {
-            \Log::warning('translate called with non-string key', ['type' => gettype($key)]);
-            $key = json_encode($key, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '';
-        }
     }
 
     $lang_key = preg_replace('/[^A-Za-z0-9\_]/', '', str_replace(' ', '_', strtolower($key)));
@@ -144,21 +124,12 @@ function translate($key, $lang = null, $replace = [])
 
     //Check for session lang
     if (isset($translation_locale[$lang_key])) {
-        $result = $translation_locale[$lang_key];
+        return $translation_locale[$lang_key];
     } elseif (isset($translations_default[$lang_key])) {
-        $result = $translations_default[$lang_key];
+        return $translations_default[$lang_key];
     } else {
-        $result = $key;
+        return $key;
     }
-
-    // Apply placeholder replacements (:key → value)
-    if (!empty($replace)) {
-        foreach ($replace as $k => $v) {
-            $result = str_replace(':' . $k, (string) $v, $result);
-        }
-    }
-
-    return $result;
 }
 
 if (!function_exists('formatBytes')) {
@@ -742,35 +713,34 @@ if (!function_exists('get_max_date')) {
 if (!function_exists('show_profile_picture')) {
     function show_profile_picture($user)
     {
-        if (!$user || $user->photo == null || (int) $user->photo_approved !== 1) {
-            return false;
+        $profile_picture_privacy = get_setting('profile_picture_privacy');
+        if (Auth::check()) {
+            $profile_picture_show = true;
+
+            if (Auth::user()->id != $user->id) {
+                if ($user->photo != null && $user->photo_approved == 1) {
+                    if ($profile_picture_privacy == 'only_me') {
+                        $profile_picture_show = false;
+                        $photo_view_request = \App\Models\ViewProfilePicture::where('user_id', $user->id)->where('requested_by', Auth::user()->id)->first();
+                        if ($photo_view_request != null && $photo_view_request->status == 1) {
+                            $profile_picture_show = true;
+                        }
+                    } elseif ($profile_picture_privacy == 'premium_members') {
+                        if (Auth::user()->membership == 1) {
+                            $profile_picture_show = false;
+                        }
+                    }
+                } elseif ($user->photo == null || $user->photo_approved == 0) {
+                    $profile_picture_show = false;
+                }
+            }
+        } else {
+            $profile_picture_show = false;
+            if ($profile_picture_privacy == 'all' && $user->photo != null && $user->photo_approved == 1) {
+                $profile_picture_show = true;
+            }
         }
-
-        if (Auth::check() && Auth::user()->id === $user->id) {
-            return true;
-        }
-
-        $visibility = \App\Utility\MemberUtility::resolve_media_visibility($user->id, 'profile');
-        $effectiveLevel = (int) ($visibility['effective_level'] ?? 0);
-
-        if ($effectiveLevel === 0) {
-            return true;
-        }
-
-        if (!Auth::check()) {
-            return false;
-        }
-
-        if ($effectiveLevel === 1) {
-            return (int) (Auth::user()->membership ?? 0) === 2;
-        }
-
-        if ($effectiveLevel === 2) {
-            return true;
-        }
-
-        $photo_request = \App\Utility\MemberUtility::member_profile_photo_request_info($user->id);
-        return ($photo_request['profile_photo_request_state'] ?? 'none') === 'approved';
+        return $profile_picture_show;
     }
 }
 
@@ -778,8 +748,8 @@ if (!function_exists('show_profile_picture')) {
 if (!function_exists('upload_api_file')) {
     function upload_api_file($image)
     {
-        $extension = strtolower((string) $image->getClientOriginalExtension());
-        $convertible_extensions = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif'];
+        $extension = $image->getClientOriginalExtension();
+        $allowed_extensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
 
         $filename = time() . '_' . uniqid();
         $destinationPath = public_path('uploads/all');
@@ -788,48 +758,30 @@ if (!function_exists('upload_api_file')) {
             mkdir($destinationPath, 0777, true);
         }
 
-        if (in_array($extension, $convertible_extensions, true)) {
-            try {
-                // Optimize image
-                $img = Image::make($image->path());
+        if (in_array(strtolower($extension), $allowed_extensions)) {
+            // Optimize image
+            $img = Image::make($image->path());
 
-                // Resize if too large
-                if ($img->width() > 1200 || $img->height() > 1200) {
-                    $img->resize(1200, 1200, function ($constraint) {
-                        $constraint->aspectRatio();
-                        $constraint->upsize();
-                    });
-                }
-
-                // Convert to webp for better compression
-                $filename .= '.webp';
-                $path = 'uploads/all/' . $filename;
-                $fullPath = $destinationPath . '/' . $filename;
-
-                $img->encode('webp', 80)->save($fullPath);
-                $extension = 'webp';
-            } catch (\Throwable $e) {
-                // Fallback to original file when optimization/conversion fails.
-                \Log::warning('Image optimization failed; storing original file', [
-                    'user_id' => auth()->id(),
-                    'original_name' => $image->getClientOriginalName(),
-                    'extension' => $extension,
-                    'error' => $e->getMessage(),
-                ]);
-
-                $safeExtension = $extension !== '' ? $extension : 'bin';
-                $filename .= '.' . $safeExtension;
-                $path = 'uploads/all/' . $filename;
-                $image->move($destinationPath, $filename);
-                $extension = $safeExtension;
+            // Resize if too large
+            if ($img->width() > 1200 || $img->height() > 1200) {
+                $img->resize(1200, 1200, function ($constraint) {
+                    $constraint->aspectRatio();
+                    $constraint->upsize();
+                });
             }
+
+            // Convert to webp for better compression
+            $filename .= '.webp';
+            $path = 'uploads/all/' . $filename;
+            $fullPath = $destinationPath . '/' . $filename;
+
+            $img->encode('webp', 80)->save($fullPath);
+            $extension = 'webp';
         } else {
             // Non-image or non-optimizable file
-            $safeExtension = $extension !== '' ? $extension : 'bin';
-            $filename .= '.' . $safeExtension;
+            $filename .= '.' . $extension;
             $path = 'uploads/all/' . $filename;
             $image->move($destinationPath, $filename);
-            $extension = $safeExtension;
         }
 
         $upload = new App\Models\Upload();

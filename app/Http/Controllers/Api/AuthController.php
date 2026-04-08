@@ -16,9 +16,7 @@ use App\Notifications\AppEmailVerificationNotification;
 use App\Notifications\DbStoreNotification;
 use App\Notifications\VerificationCode;
 use App\Services\MemberService;
-use App\Services\ReferralService;
 use App\Services\UserService;
-use App\Utility\MemberUtility;
 use App\Utility\EmailUtility;
 use App\Utility\PhoneUtility;
 use Carbon\Carbon;
@@ -118,34 +116,6 @@ class AuthController extends Controller
         $user->approved = 1; // Auto-approve since verification is handled in frontend
         $user->save();
 
-        
-        // ===== Referral System Integration =====
-        try {
-            $referralService = new ReferralService();
-
-            // Auto-generate referral code for the new user
-            \App\Models\ReferralCode::getOrCreateForUser($user->id);
-
-            // If a referral code was provided during signup, process the referral
-            $referralCodeInput = $request->input('referral_code');
-            if (!empty($referralCodeInput)) {
-                $referralResult = $referralService->createReferral($user->id, $referralCodeInput, 'link', [
-                    'ip' => $request->ip(),
-                    'user_agent' => $request->userAgent(),
-                ]);
-
-                if (empty($referralResult['success'])) {
-                    \Log::warning("Referral code could not be applied during signup for user {$user->id}: " . ($referralResult['message'] ?? 'Unknown error'));
-                } else {
-                    \Log::info("Referral created successfully for user {$user->id}");
-                }
-            }
-        } catch (\Exception $e) {
-            \Log::error("Referral processing error during signup: " . $e->getMessage());
-            // Don't fail registration if referral processing fails
-        }
-        // ===== End Referral System Integration =====
-
         return $this->authResponse($user, $request);
     }
 
@@ -157,18 +127,13 @@ class AuthController extends Controller
     {
         // Accept both 'email_or_phone' and 'email' for backward compatibility
         $identifier = $request->email_or_phone ?? $request->email ?? $request->phone;
-        $password = (string) ($request->password ?? '');
-
-        if (empty($identifier) || $password === '') {
-            return response()->json([
-                'result' => false,
-                'code' => 'MISSING_LOGIN_FIELDS',
-                'message' => 'Please enter both your email or phone and password.',
-                'user' => null,
-            ], 422);
-        }
 
         $normalizedPhone = PhoneUtility::normalize($identifier);
+
+        // Debug logging
+        \Log::info('=== SIGNIN ATTEMPT ===');
+        \Log::info('Identifier: ' . $identifier);
+        \Log::info('Normalized Phone: ' . $normalizedPhone);
 
         $user = User::where(function ($query) use ($identifier, $normalizedPhone) {
             $query->where('email', $identifier)
@@ -177,16 +142,11 @@ class AuthController extends Controller
         })->whereNull('deleted_at')->first();
 
         if ($user != null) {
-            if (empty($user->password)) {
-                return response()->json([
-                    'result' => false,
-                    'code' => 'PASSWORD_NOT_SET',
-                    'message' => 'This account was created with social login. Please use Google login or ask admin to set a password for your account.',
-                    'user' => null
-                ], 401);
-            }
+            \Log::info('User found: ID=' . $user->id . ', Email=' . $user->email . ', Phone=' . $user->phone);
+            \Log::info('Password hash in DB: ' . substr($user->password, 0, 20) . '...');
 
-            if (Hash::check($password, $user->password)) {
+            if (Hash::check($request->password, $user->password)) {
+                \Log::info('Password check PASSED');
                 $twoFactor = UserTwoFactorSetting::getOrCreate($user->id);
                 if ($twoFactor->is_enabled) {
                     $user->two_factor_pending = true;
@@ -204,19 +164,11 @@ class AuthController extends Controller
                 }
                 return $this->authResponse($user, $request);
             }
-            return response()->json([
-                'result' => false,
-                'code' => 'INVALID_PASSWORD',
-                'message' => 'The password you entered is incorrect. Please try again.',
-                'user' => null
-            ], 401);
+            \Log::warning('Password check FAILED for user ID=' . $user->id);
+            return response()->json(['result' => false, 'message' => translate('Unauthorized'), 'user' => null], 401);
         }
-        return response()->json([
-            'result' => false,
-            'code' => 'ACCOUNT_NOT_FOUND',
-            'message' => 'No account was found with this email or phone number.',
-            'user' => null
-        ], 401);
+        \Log::warning('No user found for identifier: ' . $identifier);
+        return response()->json(['result' => false, 'message' => translate('User not found'), 'user' => null], 401);
     }
 
     /**
@@ -268,12 +220,7 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             \Log::error('Social Login Error: ' . $e->getMessage());
             \Log::error('Social Login Stack: ' . $e->getTraceAsString());
-            return response()->json([
-                'result' => false,
-                'code' => 'INVALID_OR_EXPIRED_TOKEN',
-                'message' => 'Your login session is invalid or expired. Please sign in again.',
-                'user' => null
-            ], 401);
+            return response()->json(['result' => false, 'message' => translate('Unauthorized: Invalid Token'), 'user' => null], 401);
         }
 
         // 1. Try to find by Provider ID
@@ -281,11 +228,11 @@ class AuthController extends Controller
         $socialEmail = is_object($socialUser) && method_exists($socialUser, 'getEmail') ? $socialUser->getEmail() : ($socialUser->email ?? null);
         $socialName = is_object($socialUser) && method_exists($socialUser, 'getName') ? $socialUser->getName() : ($socialUser->name ?? 'User');
 
-            $user = User::where('provider_id', $socialId)->whereNull('deleted_at')->first();
+        $user = User::where('provider_id', $socialId)->first();
 
         // 2. If not found, try to find by Email
         if (!$user) {
-            $user = User::where('email', $socialEmail)->whereNull('deleted_at')->first();
+            $user = User::where('email', $socialEmail)->first();
             if ($user) {
                 // Link existing account
                 $user->provider_id = $socialId;
@@ -313,8 +260,6 @@ class AuthController extends Controller
         $newUser->approved = get_setting('member_verification') == 1 ? 0 : 1;
         $newUser->save();
 
-        \App\Models\ReferralCode::getOrCreateForUser($newUser->id);
-
         $member = new Member;
         $member->user_id = $newUser->id;
         $member->gender = null;
@@ -334,24 +279,6 @@ class AuthController extends Controller
             $member->package_validity = Date('Y-m-d', strtotime($package->validity . " days"));
         }
         $member->save();
-
-        try {
-            $referralCodeInput = $request->input('referral_code');
-            if (!empty($referralCodeInput)) {
-                $referralService = new ReferralService();
-                $referralResult = $referralService->createReferral($newUser->id, $referralCodeInput, 'link', [
-                    'ip' => $request->ip(),
-                    'user_agent' => $request->userAgent(),
-                    'source' => 'social_login',
-                ]);
-
-                if (empty($referralResult['success'])) {
-                    \Log::warning("Referral code could not be applied during social signup for user {$newUser->id}: " . ($referralResult['message'] ?? 'Unknown error'));
-                }
-            }
-        } catch (\Exception $e) {
-            \Log::error('Referral processing error during social login signup: ' . $e->getMessage());
-        }
 
         if ($newUser->approved == 0) {
             return response()->json(['result' => false, 'message' => translate('Please wait for admin approval'), 'user' => null], 401);
@@ -387,7 +314,7 @@ class AuthController extends Controller
             $this->attachTokenMetadata($tokenResult->accessToken, $request);
         }
         $token = $tokenResult->plainTextToken;
-        $age = MemberUtility::member_age($user->id);
+        $age = ($member && $member->birthday) ? Carbon::parse($member->birthday)->age : null;
 
         return response()->json([
             'result' => true,
@@ -405,10 +332,8 @@ class AuthController extends Controller
                 'blocked' => $user->blocked,
                 'deactivated' => $user->deactivated,
                 'approved' => $user->approved,
-                'must_change_password' => (bool) $user->must_change_password,
                 'email' => $user->email,
-            'birthday' => $member?->birthday ?? null,
-            'age' => $age,
+                'birthday' => $age,
                 'height' => $user->physical_attributes ? $user->physical_attributes->height : 0,
                 'marital_status_id' => $maritial_status ? new MaritialStatusResource($maritial_status) : null,
                 'avatar' => uploaded_asset($user->photo) ?? '',
@@ -466,7 +391,7 @@ class AuthController extends Controller
             $this->validate($request, [
                 'email_or_phone' => 'required|email',
             ]);
-            $user = User::where('email', $identifier)->whereNull('deleted_at')->first();
+            $user = User::where('email', $identifier)->first();
         } else {
             // Phone method
             $this->validate($request, [
@@ -658,7 +583,7 @@ class AuthController extends Controller
         }
 
         if (!$user) {
-            return $this->failure_message('No account was found with the provided details.');
+            return $this->failure_message('User not found!!');
         }
 
         if ($user->verification_code == $code) {
@@ -722,11 +647,8 @@ class AuthController extends Controller
     public function authData($user)
     {
         // $user = auth()->user();
-        if (!$user) {
-            return response()->json(['message' => 'Unauthenticated'], 401);
-        }
-        $member = $user->member;
-        $maritial_status = $member ? MaritalStatus::where('id', $member->marital_status_id)->first() : null;
+        $maritial_status = MaritalStatus::where('id', $user->member->marital_status_id)->first();
+        $age = Carbon::parse($user->member->birthday)->age;
         return response()->json(
             [
                 'id' => $user->id,
@@ -738,20 +660,13 @@ class AuthController extends Controller
                 'blocked' => $user->blocked,
                 'deactivated' => $user->deactivated,
                 'approved' => $user->approved,
-                'must_change_password' => (bool) ($user->must_change_password ?? false),
                 'email' => $user->email,
-                'birthday' => $member?->birthday ?? null,
-                'age' => MemberUtility::member_age($user->id),
+                'birthday' => $age,
                 'height' => $user->physical_attributes ? $user->physical_attributes->height : 0,
                 'marital_status_id' => $maritial_status ? new MaritialStatusResource($maritial_status) : new MaritialStatusResource($maritial_status),
                 'avatar' => uploaded_asset($user->photo) ?? '',
                 'avatar_original' => uploaded_asset($user->photo) ?? '',
                 'phone' => $user->phone ?? '',
-                'is_visible' => (bool) ($member->is_visible ?? true),
-                'incognito' => MemberUtility::member_is_incognito($user->id),
-                'travel_mode' => (bool) ($member->travel_mode ?? false),
-                'travel_city' => $member->travel_city ?? null,
-                'travel_country' => $member->travel_country ?? null,
             ]
         );
     }
@@ -858,8 +773,8 @@ class AuthController extends Controller
 
             // Always use the blade view as it's more reliable
             Mail::send('emails.email_verification', ['verificationCode' => $verificationCode], function ($message) use ($email, $subject) {
-                $fromEmail = EmailUtility::fromAddress();
-                $fromName = EmailUtility::fromName();
+                $fromEmail = env('MAIL_FROM_ADDRESS', 'noreply@example.com');
+                $fromName = env('MAIL_FROM_NAME', 'Matrimonial Site');
                 $message->from($fromEmail, $fromName)
                     ->to($email)
                     ->subject($subject);
@@ -1042,19 +957,13 @@ class AuthController extends Controller
         }
 
         // Find existing user by email
-        $user = User::where('email', $email)->whereNull('deleted_at')->first();
+        $user = User::where('email', $email)->first();
 
         if ($user) {
             // Log in the user if they exist
             $user->email_verified_at = Carbon::now();
             $user->approved = 1;
             $user->save();
-
-            try {
-                (new ReferralService())->checkAndQualifyReferral($user->id);
-            } catch (\Exception $e) {
-                \Log::error('Referral qualification check failed after email verification: ' . $e->getMessage(), ['user_id' => $user->id]);
-            }
 
             return $this->authResponse($user, $request);
         }
@@ -1121,12 +1030,6 @@ class AuthController extends Controller
                 }
             }
 
-            try {
-                (new ReferralService())->checkAndQualifyReferral($user->id);
-            } catch (\Exception $e) {
-                \Log::error('Referral qualification check failed after phone verification: ' . $e->getMessage(), ['user_id' => $user->id]);
-            }
-
             return response()->json([
                 'success' => true,
                 'result' => true,
@@ -1146,12 +1049,6 @@ class AuthController extends Controller
             $existingUser->email_verified_at = Carbon::now();
             $existingUser->approved = 1;
             $existingUser->save();
-
-            try {
-                (new ReferralService())->checkAndQualifyReferral($existingUser->id);
-            } catch (\Exception $e) {
-                \Log::error('Referral qualification check failed after phone verification: ' . $e->getMessage(), ['user_id' => $existingUser->id]);
-            }
 
             return $this->authResponse($existingUser, $request);
         }

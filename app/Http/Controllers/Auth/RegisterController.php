@@ -10,7 +10,6 @@ use App\Rules\RecaptchaRule;
 use Illuminate\Http\Request;
 use App\Models\EmailTemplate;
 use App\Utility\EmailUtility;
-use App\Models\ReferralCode;
 use Illuminate\Validation\Rule;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
@@ -18,7 +17,6 @@ use Illuminate\Auth\Events\Registered;
 use App\Providers\RouteServiceProvider;
 use Illuminate\Support\Facades\Validator;
 use App\Notifications\DbStoreNotification;
-use App\Services\ReferralService;
 use Kutia\Larafirebase\Facades\Larafirebase;
 use Illuminate\Foundation\Auth\RegistersUsers;
 
@@ -94,7 +92,6 @@ class RegisterController extends Controller
                 Rule::unique('users')->whereNull('deleted_at')
             ],
             'password'             => ['required', 'string', 'min:8', 'confirmed'],
-            'referral_code'        => 'nullable|string|max:50',
             'medical_license_number' => ['required', 'string', 'max:255'],
             'specialization'       => ['required', 'string', 'max:255'],
             'verification_document' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'], // 10MB max
@@ -158,25 +155,12 @@ class RegisterController extends Controller
         \Log::info('Creating user with data: ' . json_encode($userData));
         $user = User::create($userData);
         \Log::info('User created with ID: ' . $user->id . ' - Approved: ' . $user->approved);
-
-        if (addon_activation('referral_system')) {
-            ReferralCode::getOrCreateForUser($user->id);
-
-            $referralCode = $data['referral_code'] ?? null;
-            if (!empty($referralCode)) {
-                try {
-                    $referralResult = (new ReferralService())->createReferral($user->id, $referralCode, 'link', [
-                        'ip' => request()->ip(),
-                        'user_agent' => request()->userAgent(),
-                        'source' => 'web_registration',
-                    ]);
-
-                    if (empty($referralResult['success'])) {
-                        \Log::warning('Referral code could not be applied during web registration: ' . ($referralResult['message'] ?? 'Unknown error'));
-                    }
-                } catch (\Exception $e) {
-                    \Log::error('Referral processing error during web registration: ' . $e->getMessage());
-                }
+        
+        if (addon_activation('referral_system') && $data['referral_code'] != null) {
+            $reffered_user = User::where('code', '!=', null)->where('code', $data['referral_code'])->first();
+            if ($reffered_user != null) {
+                $user->referred_by = $reffered_user->id;
+                $user->save();
             }
         }
 
@@ -248,14 +232,14 @@ class RegisterController extends Controller
         \Log::info('Last Name: ' . $request->last_name);
         
         // Check if email already exists
-            if (User::where('email', $request->email)->whereNull('deleted_at')->first() != null) {
+            if (User::where('email', $request->email)->first() != null) {
             \Log::info('Registration failed: Email already exists');
             flash(translate('Email already registered'), 'error');
             return back()->withInput();
         }
         
         // Check if phone already exists
-        if (User::where('phone', '+' . $request->country_code . $request->phone)->whereNull('deleted_at')->first() != null) {
+        if (User::where('phone', '+' . $request->country_code . $request->phone)->first() != null) {
             \Log::info('Registration failed: Phone already exists');
             flash(translate('Phone already registered'), 'error');
             return back()->withInput();

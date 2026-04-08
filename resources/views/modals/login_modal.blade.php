@@ -103,15 +103,10 @@
 
                         <div class="form-group">
                             <label class="form-label" for="password">{{ translate('Password') }}</label>
-                            <x-password-field
-                                id="password"
-                                name="password"
-                                placeholder="********"
-                                wrapperClass=""
-                                inputClass="form-control @error('password') is-invalid @enderror"
-                                errorName="password"
-                                required
-                            />
+                            <input type="password" class="form-control @error('password') is-invalid @enderror" name="password" id="password" placeholder="********" required>
+                            @error('password')
+                                <span class="invalid-feedback" role="alert">{{ $message }}</span>
+                            @enderror
                         </div>
 
                         <div class="mb-3 text-right">

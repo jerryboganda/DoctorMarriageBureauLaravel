@@ -33,15 +33,6 @@ class IsMember
             $expiresAt = Carbon::now()->addMinutes(3);
             Cache::put('user-is-online-' . Auth::user()->id, true, $expiresAt);
 
-            // Check deactivated status
-            if (Auth::user()->deactivated == 1) {
-                Auth::logout();
-                $request->session()->invalidate();
-                $request->session()->regenerateToken();
-                flash(translate('Your account has been deactivated by the administrator. Please contact support for assistance.'))->error();
-                return redirect()->route('user.login');
-            }
-
             if (Auth::user()->approved == 0) {
                 flash(translate("Please verify your account."));
                 return redirect()->route('member.verification');

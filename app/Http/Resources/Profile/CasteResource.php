@@ -18,7 +18,6 @@ class CasteResource extends JsonResource
         return [
             'id'=> $this->id,
             'name' => $this->name,
-            'religion_id' => $this->religion_id,
         ];
     }
 }

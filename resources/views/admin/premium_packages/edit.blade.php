@@ -59,7 +59,7 @@
                             </div>
                         </div>
                         <div class="form-group row">
-                            <label class="col-md-3 col-form-label">{{translate('Proposals')}}</label>
+                            <label class="col-md-3 col-form-label">{{translate('Express Interest')}}</label>
                             <div class="col-md-9">
                                 <input type="number" name="express_interest" value="{{$package->express_interest}}" class="form-control" placeholder="{{translate('Eg. 10')}}" min="0" required>
                                 @error('express_interest')

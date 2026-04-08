@@ -120,15 +120,6 @@
                                 </li>
                                 @endcan
 
-                                @can('show_sects')
-                                <li class="aiz-side-nav-item">
-                                    <a href="{{ route('sects.index') }}"
-                                        class="aiz-side-nav-link {{ areActiveRoutes(['sects.edit']) }}">
-                                        <span class="aiz-side-nav-text">{{ translate('Sect') }}</span>
-                                    </a>
-                                </li>
-                                @endcan
-
                                 @can('show_castes')
                                 <li class="aiz-side-nav-item">
                                     <a href="{{ route('castes.index') }}"
@@ -207,27 +198,6 @@
                                 <li class="aiz-side-nav-item">
                                     <a href="{{ route('annual-salaries.index') }}" class="aiz-side-nav-link {{ areActiveRoutes(['annual-salaries.edit']) }}">
                                         <span class="aiz-side-nav-text">{{ translate('Annual Salary Ranges') }}</span>
-                                    </a>
-                                </li>
-                                @endcan
-                                @can('show_job_titles')
-                                <li class="aiz-side-nav-item">
-                                    <a href="{{ route('job-titles.index') }}" class="aiz-side-nav-link {{ areActiveRoutes(['job-titles.edit']) }}">
-                                        <span class="aiz-side-nav-text">{{ translate('Job Titles') }}</span>
-                                    </a>
-                                </li>
-                                @endcan
-                                @can('show_specialities')
-                                <li class="aiz-side-nav-item">
-                                    <a href="{{ route('specialities.index') }}" class="aiz-side-nav-link {{ areActiveRoutes(['specialities.edit']) }}">
-                                        <span class="aiz-side-nav-text">{{ translate('Specialities') }}</span>
-                                    </a>
-                                </li>
-                                @endcan
-                                @can('show_profile_option_values')
-                                <li class="aiz-side-nav-item">
-                                    <a href="{{ route('profile-option-values.index') }}" class="aiz-side-nav-link {{ areActiveRoutes(['profile-option-values.index', 'profile-option-values.edit']) }}">
-                                        <span class="aiz-side-nav-text">{{ translate('Lifestyle & Profile Options') }}</span>
                                     </a>
                                 </li>
                                 @endcan
@@ -379,13 +349,8 @@
                     </a>
                     <ul class="aiz-side-nav-list level-2">
                         <li class="aiz-side-nav-item">
-                            <a href="{{ route('admin.bulk_notifications.index') }}" class="aiz-side-nav-link {{ areActiveRoutes(['admin.bulk_notifications.index']) }}">
-                                <span class="aiz-side-nav-text">{{ translate('Send Notification') }}</span>
-                            </a>
-                        </li>
-                        <li class="aiz-side-nav-item">
-                            <a href="{{ route('admin.profile_completion_reminders.index') }}" class="aiz-side-nav-link {{ areActiveRoutes(['admin.profile_completion_reminders.index']) }}">
-                                <span class="aiz-side-nav-text">{{ translate('Profile Reminders') }}</span>
+                            <a href="{{ route('newsletters.index') }}" class="aiz-side-nav-link">
+                                <span class="aiz-side-nav-text">{{ translate('Newsletter') }}</span>
                             </a>
                         </li>
                     </ul>
@@ -404,63 +369,55 @@
                 @endcan
 
 
-                <!-- Referral System -->
-                @if (auth()->user()->can('view_referral_dashboard') ||
-                auth()->user()->can('manage_referral_settings') ||
-                auth()->user()->can('manage_referral_rules') ||
-                auth()->user()->can('view_referral_audit_logs') ||
-                auth()->user()->can('reverse_referral_reward'))
+                @if (addon_activation('referral_system'))
+                @if (auth()->user()->can('set_referral_commission') ||
+                auth()->user()->can('view_refferal_users') ||
+                auth()->user()->can('view_refferal_earnings') ||
+                auth()->user()->can('manage_wallet_withdraw_requests'))
                 <li class="aiz-side-nav-item">
                     <a href="#" class="aiz-side-nav-link">
-                        <i class="las la-user-friends aiz-side-nav-icon"></i>
-                        <span class="aiz-side-nav-text">{{ translate('Referral System') }}</span>
+                        <i class="las la-money-bill aiz-side-nav-icon"></i>
+                        <span class="aiz-side-nav-text">{{ translate('Referral') }}</span>
+                        @if (env('DEMO_MODE') == 'On')
+                        <span class="badge badge-inline badge-danger">{{ translate('Addon') }}</span>
+                        @endif
                         <span class="aiz-side-nav-arrow"></span>
                     </a>
                     <ul class="aiz-side-nav-list level-2">
-                        @can('view_referral_dashboard')
+                        @can('set_referral_commission')
                         <li class="aiz-side-nav-item">
-                            <a href="{{ route('admin.referral.dashboard') }}" class="aiz-side-nav-link">
-                                <span class="aiz-side-nav-text">{{ translate('Dashboard') }}</span>
+                            <a href="{{ route('set_referral_commission') }}" class="aiz-side-nav-link">
+                                <span
+                                    class="aiz-side-nav-text">{{ translate('Set Referral Comission') }}</span>
                             </a>
                         </li>
                         @endcan
-                        @can('manage_referral_settings')
+                        @can('view_refferal_users')
                         <li class="aiz-side-nav-item">
-                            <a href="{{ route('admin.referral.settings') }}" class="aiz-side-nav-link">
-                                <span class="aiz-side-nav-text">{{ translate('Settings') }}</span>
+                            <a href="{{ route('referals.users') }}" class="aiz-side-nav-link">
+                                <span class="aiz-side-nav-text">{{ translate('Referral Users') }}</span>
                             </a>
                         </li>
                         @endcan
-                        @can('manage_referral_rules')
+                        @can('view_refferal_earnings')
                         <li class="aiz-side-nav-item">
-                            <a href="{{ route('admin.referral.rules') }}" class="aiz-side-nav-link">
-                                <span class="aiz-side-nav-text">{{ translate('Rules') }}</span>
+                            <a href="{{ route('referal.earnings_admin') }}" class="aiz-side-nav-link">
+                                <span class="aiz-side-nav-text">{{ translate('Referral Earnings') }}</span>
                             </a>
                         </li>
                         @endcan
-                        @can('view_referral_dashboard')
+                        @can('manage_wallet_withdraw_requests')
                         <li class="aiz-side-nav-item">
-                            <a href="{{ route('admin.referral.referrals') }}" class="aiz-side-nav-link">
-                                <span class="aiz-side-nav-text">{{ translate('Referrals') }}</span>
-                            </a>
-                        </li>
-                        @endcan
-                        @can('view_referral_dashboard')
-                        <li class="aiz-side-nav-item">
-                            <a href="{{ route('admin.referral.rewards') }}" class="aiz-side-nav-link">
-                                <span class="aiz-side-nav-text">{{ translate('Rewards') }}</span>
-                            </a>
-                        </li>
-                        @endcan
-                        @can('view_referral_audit_logs')
-                        <li class="aiz-side-nav-item">
-                            <a href="{{ route('admin.referral.audit_logs') }}" class="aiz-side-nav-link">
-                                <span class="aiz-side-nav-text">{{ translate('Audit Logs') }}</span>
+                            <a href="{{ route('wallet-withdraw-requests.index') }}"
+                                class="aiz-side-nav-link">
+                                <span
+                                    class="aiz-side-nav-text">{{ translate('Wallet Withdraw Request') }}</span>
                             </a>
                         </li>
                         @endcan
                     </ul>
                 </li>
+                @endif
                 @endif
 
                 <!-- Support Ticket Addon -->
@@ -769,7 +726,33 @@
                 </li>
                 @endif
 
-
+                <!-- System -->
+                @if (auth()->user()->can('system_update') ||
+                auth()->user()->can('server_status'))
+                <li class="aiz-side-nav-item">
+                    <a href="#" class="aiz-side-nav-link">
+                        <i class="las la-dharmachakra aiz-side-nav-icon"></i>
+                        <span class="aiz-side-nav-text">{{ translate('System') }}</span>
+                        <span class="aiz-side-nav-arrow"></span>
+                    </a>
+                    <ul class="aiz-side-nav-list level-2">
+                        @can('system_update')
+                        <li class="aiz-side-nav-item">
+                            <a href="{{ route('system_update') }}" class="aiz-side-nav-link">
+                                <span class="aiz-side-nav-text">{{ translate('Update') }}</span>
+                            </a>
+                        </li>
+                        @endcan
+                        @can('server_status')
+                        <li class="aiz-side-nav-item">
+                            <a href="{{ route('system_server') }}" class="aiz-side-nav-link">
+                                <span class="aiz-side-nav-text">{{ translate('Server status') }}</span>
+                            </a>
+                        </li>
+                        @endcan
+                    </ul>
+                </li>
+                @endif
 
                 <!-- Addon Manager -->
                 @can('addon_manager')

@@ -87,15 +87,6 @@
                                     @endif
                                 </td>
                                 <td class="text-right">
-                                    @if(($member->whatsapp_available ?? false) && !empty($member->whatsapp_link))
-                                        <a href="{{ $member->whatsapp_link }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-soft-success mb-1" title="{{ translate('Contact on WhatsApp') }}">
-                                            <i class="lab la-whatsapp"></i>
-                                        </a>
-                                    @else
-                                        <button type="button" class="btn btn-sm btn-soft-secondary mb-1" title="{{ $member->whatsapp_unavailable_reason ?? translate('WhatsApp unavailable: invalid or missing phone number') }}" disabled>
-                                            <i class="lab la-whatsapp"></i>
-                                        </button>
-                                    @endif
                                     <a href="{{ route('member.show_verification_info', encrypt($member->id)) }}" class="btn btn-sm btn-soft-primary mb-1" title="{{ translate('View Details') }}">
                                         <i class="las la-eye"></i>
                                     </a>

@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { User, ArrowRight, ArrowLeft, Check, Loader2, AlertCircle, MapPin, Briefcase, Ruler, Heart, Camera, Upload, Sparkles } from 'lucide-react';
 import { api } from '../utils/api';
-import LoadingTimeoutFallback from './LoadingTimeoutFallback';
 
 interface OnboardingModalProps {
     onClose: () => void;
@@ -21,7 +20,6 @@ const inputClass = "w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text
 
 const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
     const { t } = useTranslation();
-    const MAX_PROFILE_PHOTO_BYTES = 10 * 1024 * 1024; // 10MB
     const STEPS = [
         { label: t('auth.onboarding.stepPersonal'), icon: STEPS_ICONS[0] },
         { label: t('auth.onboarding.stepLocation'), icon: STEPS_ICONS[1] },
@@ -31,85 +29,25 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
         { label: t('auth.onboarding.stepPhoto'), icon: STEPS_ICONS[5] },
     ];
     const [step, setStep] = useState(1);
-    const [initialStepSet, setInitialStepSet] = useState(false);
     const totalSteps = STEPS.length;
-    const onboardingTitleText = "Complete Profile";
-    const finishSetupText = t("modals.twoFactor.completeSetup") || "Complete Setup";
 
     // All form data
     const [data, setData] = useState<any>({
         firstName: '', lastName: '', gender: '', dateOfBirth: '', maritalStatusId: '',
         currentResidencyCountryId: '', currentResidencyStateId: '', currentResidencyCityId: '',
-        religionId: '', sectId: '', casteId: '',
+        religionId: '', casteId: '',
         designation: '', company: '', education: '', institution: '', incomeRangeId: '',
-        jobTitleId: '', specialityId: '',
         height: '', weight: '', complexion: '',
         introduction: '',
         avatarUrl: '',
-        hasProfilePhoto: false,
     });
     const [optionSets, setOptionSets] = useState<any>({});
     const [salaryRanges, setSalaryRanges] = useState<any[]>([]);
-    const [liveCastes, setLiveCastes] = useState<any[]>([]);
-    const [liveSects, setLiveSects] = useState<any[]>([]);
 
     // Photo
     const [photoFile, setPhotoFile] = useState<File | null>(null);
     const [photoPreview, setPhotoPreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
-
-    // Real-time profile completion calculation (mirrors backend logic)
-    const computeLocalCompletion = () => {
-        const step1 = [
-            data.firstName?.trim(),
-            data.lastName?.trim(),
-            data.gender,
-            data.dateOfBirth,
-            data.maritalStatusId,
-        ];
-        const step2 = [
-            data.currentResidencyCountryId,
-            data.currentResidencyStateId,
-            data.currentResidencyCityId,
-            data.religionId,
-            data.casteId,
-        ];
-        const step3 = [
-            data.designation?.trim(),
-            data.company?.trim(),
-            data.education?.trim(),
-            data.institution?.trim(),
-            data.incomeRangeId,
-        ];
-        const step4 = [
-            data.height,
-            data.weight,
-            data.complexion?.trim(),
-        ];
-        const step5 = [
-            (data.introduction || '').trim(),
-        ];
-        const step6 = [
-            photoFile || data.hasProfilePhoto ? 'yes' : '',
-        ];
-
-        const allSteps = [step1, step2, step3, step4, step5, step6];
-        let totalFields = 0;
-        let filledFields = 0;
-        const stepComplete: boolean[] = [];
-
-        allSteps.forEach(fields => {
-            const filled = fields.filter(v => v !== '' && v !== null && v !== undefined && v !== false && v !== 0).length;
-            totalFields += fields.length;
-            filledFields += filled;
-            stepComplete.push(filled === fields.length);
-        });
-
-        const percentage = totalFields > 0 ? Math.round((filledFields / totalFields) * 100) : 0;
-        return { percentage, stepComplete, filledFields, totalFields };
-    };
-
-    const { percentage: livePercentage, stepComplete: liveStepComplete } = computeLocalCompletion();
 
     // States & cities for location
     const [states, setStates] = useState<any[]>([]);
@@ -119,38 +57,6 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
-    const normalizeMaritalStatuses = (raw: any): Array<{ id: string | number; name: string }> => {
-        const items = Array.isArray(raw) ? raw : [];
-        return items
-            .map((item: any) => {
-                const id = item?.id ?? item?.value ?? '';
-                const name = item?.name ?? item?.label ?? item?.value ?? '';
-                return { id, name: String(name).trim() };
-            })
-            .filter((item) => item.id !== '' && item.name !== '');
-    };
-
-    const fetchMaritalStatusesFallback = async (): Promise<Array<{ id: string | number; name: string }>> => {
-        try {
-            const res = await api.get('/member/maritial-status');
-            const payload = res?.data;
-            const candidates = [
-                payload?.data,
-                payload?.marital_statuses,
-                payload,
-            ];
-            for (const candidate of candidates) {
-                const normalized = normalizeMaritalStatuses(candidate);
-                if (normalized.length) {
-                    return normalized;
-                }
-            }
-        } catch (fallbackErr) {
-            console.error('Failed to fetch marital statuses fallback', fallbackErr);
-        }
-        return [];
-    };
 
     // Fetch existing profile data on mount
     useEffect(() => {
@@ -170,12 +76,9 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                         currentResidencyStateId: d.basics?.currentResidencyStateId || '',
                         currentResidencyCityId: d.basics?.currentResidencyCityId || '',
                         religionId: d.family?.religionId || '',
-                        sectId: d.family?.sectId || '',
                         casteId: d.family?.casteId || '',
                         designation: d.career?.designation || '',
                         company: d.career?.company || '',
-                        jobTitleId: d.career?.jobTitleId || '',
-                        specialityId: d.career?.specialityId || '',
                         education: d.career?.education || '',
                         institution: d.career?.institution || '',
                         incomeRangeId: d.career?.incomeRangeId || '',
@@ -184,28 +87,8 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                         complexion: d.basics?.complexion || '',
                         introduction: d.basics?.introduction || '',
                         avatarUrl: d.basics?.avatarUrl || '',
-                        hasProfilePhoto: !!d.basics?.hasProfilePhoto,
                     });
-
-                    // Auto-navigate to the first incomplete step
-                    if (d.profileCompletion?.firstIncompleteStep && !initialStepSet) {
-                        setStep(d.profileCompletion.firstIncompleteStep);
-                        setInitialStepSet(true);
-                    }
-                    const incomingOptionSets = d.optionSets || {};
-                    let maritalStatuses = normalizeMaritalStatuses(
-                        incomingOptionSets?.maritalStatuses || incomingOptionSets?.marital_statuses
-                    );
-                    if (!maritalStatuses.length) {
-                        maritalStatuses = await fetchMaritalStatusesFallback();
-                    }
-                    setOptionSets({
-                        ...incomingOptionSets,
-                        maritalStatuses,
-                    });
-                    if (!maritalStatuses.length) {
-                        setError('Unable to load marital status options. Please refresh once.');
-                    }
+                    setOptionSets(d.optionSets || {});
                     setSalaryRanges(d.salaryRanges || []);
 
                     if (d.basics?.currentResidencyCountryId) {
@@ -214,33 +97,14 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                     if (d.basics?.currentResidencyStateId) {
                         fetchCities(d.basics.currentResidencyStateId);
                     }
-                } else {
-                    const maritalStatuses = await fetchMaritalStatusesFallback();
-                    setOptionSets((prev: any) => ({
-                        ...(prev || {}),
-                        maritalStatuses,
-                    }));
-                    if (!maritalStatuses.length) {
-                        setError('Unable to load marital status options. Please refresh once.');
-                    }
                 }
             } catch (err) {
                 console.error('Failed to load profile', err);
-                const maritalStatuses = await fetchMaritalStatusesFallback();
-                setOptionSets((prev: any) => ({
-                    ...(prev || {}),
-                    maritalStatuses,
-                }));
-                if (!maritalStatuses.length) {
-                    setError('Unable to load marital status options. Please refresh once.');
-                }
             } finally {
                 setLoading(false);
             }
         };
         fetchProfile();
-        fetchCastes();
-        fetchSects();
     }, []);
 
     const fetchStates = async (countryId: string | number) => {
@@ -255,26 +119,6 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
             const res = await api.get(`/member/cities/${stateId}`);
             setCities(res.data?.data || res.data || []);
         } catch { setCities([]); }
-    };
-
-    const fetchCastes = async () => {
-        try {
-            const res = await api.get('/member/casts');
-            const payload = Array.isArray(res.data?.data) ? res.data.data : (Array.isArray(res.data) ? res.data : []);
-            setLiveCastes(payload);
-        } catch {
-            setLiveCastes([]);
-        }
-    };
-
-    const fetchSects = async () => {
-        try {
-            const res = await api.get('/member/sects');
-            const payload = Array.isArray(res.data?.data) ? res.data.data : (Array.isArray(res.data) ? res.data : []);
-            setLiveSects(payload);
-        } catch {
-            setLiveSects([]);
-        }
     };
 
     const updateField = (field: string, value: any) => {
@@ -300,25 +144,6 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
     const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            const extension = file.name.split('.').pop()?.toLowerCase() || '';
-            const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif'];
-            const isAllowedType = file.type.startsWith('image/') || file.type === '' || file.type === 'application/octet-stream';
-
-            if (!allowedExtensions.includes(extension) || !isAllowedType) {
-                setError('Unsupported file type. Please upload JPG, PNG, GIF, WEBP, HEIC, or HEIF.');
-                setPhotoFile(null);
-                setPhotoPreview(null);
-                return;
-            }
-
-            if (file.size > MAX_PROFILE_PHOTO_BYTES) {
-                setError('Photo is too large. Maximum allowed size is 10MB.');
-                setPhotoFile(null);
-                setPhotoPreview(null);
-                return;
-            }
-
-            setError(null);
             setPhotoFile(file);
             const reader = new FileReader();
             reader.onload = () => setPhotoPreview(reader.result as string);
@@ -349,7 +174,6 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                     };
                     payload.family = {
                         religionId: data.religionId || null,
-                        sectId: data.sectId || null,
                         casteId: data.casteId || null,
                     };
                 } else if (step === 3) {
@@ -359,8 +183,6 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                         education: data.education,
                         institution: data.institution,
                         incomeRangeId: data.incomeRangeId || null,
-                        jobTitleId: data.jobTitleId || null,
-                        specialityId: data.specialityId || null,
                         careerPresent: true,
                         isHighestDegree: true,
                     };
@@ -379,77 +201,23 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                 await api.post('/full-profile/update', payload);
             }
 
-            // Upload photo first (if on photo step and a file was selected).
-            // Do not continue onboarding completion when photo upload fails.
             if (step === 6 && photoFile) {
-                try {
-                    const formData = new FormData();
-                    formData.append('photo', photoFile);
-                    await api.post('/upload-profile-picture', formData, {
-                        headers: { 'Content-Type': 'multipart/form-data' },
-                    });
-                } catch (uploadErr: any) {
-                    const status = uploadErr?.response?.status;
-                    const serverMessage = uploadErr?.response?.data?.message;
-                    const uploadErrorMessage =
-                        status === 413
-                            ? 'Photo is too large for upload. Please upload an image up to 10MB.'
-                            : (serverMessage || 'Photo upload failed. Please upload JPG, PNG, GIF, WEBP, HEIC, or HEIF and try again.');
-                    setError(uploadErrorMessage);
-                    setSaving(false);
-                    return false;
-                }
+                const formData = new FormData();
+                formData.append('photo', photoFile);
+                await api.post('/upload-profile-picture', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                });
             }
 
-            // On the final step, re-send ALL accumulated data + mark complete.
-            // This ensures no data is lost even if an earlier step save failed.
+            // On the final step, mark onboarding as completed on the server
             if (step === totalSteps) {
-                const fullPayload: any = {
-                    basics: {
-                        firstName: data.firstName,
-                        lastName: data.lastName,
-                        gender: data.gender,
-                        dateOfBirth: data.dateOfBirth,
-                        maritalStatusId: data.maritalStatusId || null,
-                        currentResidencyCountryId: data.currentResidencyCountryId || null,
-                        currentResidencyStateId: data.currentResidencyStateId || null,
-                        currentResidencyCityId: data.currentResidencyCityId || null,
-                        height: data.height || null,
-                        weight: data.weight || null,
-                        complexion: data.complexion || null,
-                        introduction: data.introduction,
-                    },
-                    family: {
-                        religionId: data.religionId || null,
-                        sectId: data.sectId || null,
-                        casteId: data.casteId || null,
-                    },
-                    career: {
-                        designation: data.designation,
-                        company: data.company,
-                        education: data.education,
-                        institution: data.institution,
-                        incomeRangeId: data.incomeRangeId || null,
-                        jobTitleId: data.jobTitleId || null,
-                        specialityId: data.specialityId || null,
-                        careerPresent: true,
-                        isHighestDegree: true,
-                    },
-                    onboardingCompleted: true,
-                };
-                await api.post('/full-profile/update', fullPayload);
+                await api.post('/full-profile/update', { onboardingCompleted: true });
             }
 
             setSaving(false);
             return true;
         } catch (err: any) {
-            const serverMsg = err?.response?.data?.message;
-            const missingFields = err?.response?.data?.missingFields;
-            if (missingFields && Array.isArray(missingFields) && missingFields.length > 0) {
-                setError(`${t('auth.onboarding.saveFailed')}: ${missingFields.join(', ')}`);
-            } else {
-                setError(serverMsg || t('auth.onboarding.saveFailed'));
-            }
+            setError(err?.response?.data?.message || t('auth.onboarding.saveFailed'));
             setSaving(false);
             return false;
         }
@@ -462,6 +230,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                 setStep(s => s + 1);
                 setError(null);
             } else {
+                localStorage.setItem('dmb_onboarding_complete', 'true');
                 onClose();
             }
         }
@@ -475,45 +244,20 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
     };
 
     const canProceed = () => {
-        if (step === 1) {
-            return !!(data.firstName && data.lastName && data.gender && data.dateOfBirth && data.maritalStatusId);
-        }
-        if (step === 2) {
-            return !!(
-                data.currentResidencyCountryId &&
-                data.currentResidencyStateId &&
-                data.currentResidencyCityId &&
-                data.religionId &&
-                data.sectId &&
-                data.casteId
-            );
-        }
-        if (step === 3) {
-            return !!(data.designation && data.company && data.education && data.institution && data.incomeRangeId);
-        }
-        if (step === 4) {
-            return !!(data.height && data.weight && data.complexion);
-        }
-        if (step === 5) {
-            return !!(String(data.introduction || '').trim());
-        }
-        if (step === 6) {
-            return !!(photoFile || data.hasProfilePhoto);
-        }
-        return false;
+        if (step === 1) return !!(data.firstName && data.lastName && data.gender && data.dateOfBirth);
+        return true; // All other steps have optional fields
     };
 
-    const filteredCastes = liveCastes.length ? liveCastes : (optionSets?.castes || []);
+    const filteredCastes = data.religionId
+        ? (optionSets?.castes || []).filter((c: any) => String(c.religion_id) === String(data.religionId))
+        : (optionSets?.castes || []);
 
     if (loading) {
         return (
             <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
                 <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl p-8 text-center">
-                    <LoadingTimeoutFallback
-                        message={t('auth.onboarding.loading')}
-                        timeoutMs={10000}
-                        reloadLabel={t('common.reloadPage', 'Reload page')}
-                    />
+                    <Loader2 className="animate-spin mx-auto text-primary mb-4" size={32} />
+                    <p className="text-slate-600 font-medium">{t('auth.onboarding.loading')}</p>
                 </div>
             </div>
         );
@@ -528,32 +272,31 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                         <div>
                             <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                                 <Sparkles size={20} className="text-primary" />
-                                {onboardingTitleText}
+                                {t('auth.onboarding.title')}
                             </h3>
                             <p className="text-xs text-slate-500 mt-0.5">
                                 {t('auth.onboarding.stepLabel', { n: step, total: totalSteps, label: STEPS[step - 1].label })}
                             </p>
                         </div>
                         <div className="text-right">
-                            <span className={`text-2xl font-black ${livePercentage === 100 ? 'text-emerald-600' : 'text-primary'}`}>{livePercentage}%</span>
+                            <span className="text-2xl font-black text-primary">{Math.round((step / totalSteps) * 100)}%</span>
                             <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">{t('auth.onboarding.complete')}</p>
                         </div>
                     </div>
 
-                    {/* Step progress bars — clickable to navigate */}
+                    {/* Step progress bars */}
                     <div className="flex gap-1.5">
                         {STEPS.map((s, i) => (
-                            <button key={i} className="flex-1 flex flex-col items-center gap-1 cursor-pointer group" onClick={() => !saving && setStep(i + 1)}>
+                            <div key={i} className="flex-1 flex flex-col items-center gap-1">
                                 <div className={`h-1.5 w-full rounded-full transition-all duration-300 ${
-                                    liveStepComplete[i] ? 'bg-emerald-500' :
+                                    i + 1 < step ? 'bg-emerald-500' :
                                     i + 1 === step ? 'bg-primary' :
-                                    'bg-slate-200 group-hover:bg-slate-300'
+                                    'bg-slate-200'
                                 }`} />
                                 <span className={`text-[9px] font-semibold hidden sm:block ${
-                                    liveStepComplete[i] ? 'text-emerald-600' :
-                                    i + 1 === step ? 'text-slate-600' : 'text-slate-400'
+                                    i + 1 <= step ? 'text-slate-600' : 'text-slate-400'
                                 }`}>{s.label}</span>
-                            </button>
+                            </div>
                         ))}
                     </div>
                 </div>
@@ -597,7 +340,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                             </FieldGroup>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <FieldGroup label={t('auth.onboarding.dateOfBirth')}>
-                                    <input type="date" required className={inputClass} value={data.dateOfBirth} onChange={e => updateField('dateOfBirth', e.target.value)} />
+                                    <input type="date" className={inputClass} value={data.dateOfBirth} onChange={e => updateField('dateOfBirth', e.target.value)} />
                                 </FieldGroup>
                                 <FieldGroup label={t('auth.onboarding.maritalStatus')}>
                                     <select className={inputClass} value={data.maritalStatusId || ''} onChange={e => updateField('maritalStatusId', e.target.value)}>
@@ -644,7 +387,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                                     </select>
                                 </FieldGroup>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <FieldGroup label={t('auth.onboarding.religion')}>
                                     <select className={inputClass} value={data.religionId || ''} onChange={e => { updateField('religionId', e.target.value); updateField('casteId', ''); }}>
                                         <option value="">{t('auth.onboarding.selectReligion')}</option>
@@ -653,15 +396,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                                         ))}
                                     </select>
                                 </FieldGroup>
-                                <FieldGroup label={t('auth.onboarding.sect')}>
-                                    <select className={inputClass} value={data.sectId || ''} onChange={e => updateField('sectId', e.target.value)} disabled={!liveSects.length}>
-                                        <option value="">{t('auth.onboarding.selectSect')}</option>
-                                        {liveSects.map((s: any) => (
-                                            <option key={s.id} value={s.id}>{s.name}</option>
-                                        ))}
-                                    </select>
-                                </FieldGroup>
-                                <FieldGroup label={t('auth.onboarding.casteClan')}>
+                                <FieldGroup label={t('auth.onboarding.caste')}>
                                     <select className={inputClass} value={data.casteId || ''} onChange={e => updateField('casteId', e.target.value)} disabled={!filteredCastes.length}>
                                         <option value="">{t('auth.onboarding.selectCaste')}</option>
                                         {filteredCastes.map((c: any) => (
@@ -682,27 +417,8 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <FieldGroup label={t('auth.onboarding.designation')}>
-                                    <select className={inputClass} value={String(data.jobTitleId ?? '')} onChange={e => {
-                                        const id = e.target.value;
-                                        const label = (optionSets?.jobTitles || []).find((o: any) => String(o.id) === id)?.name || '';
-                                        setData((prev: any) => ({ ...prev, jobTitleId: id, designation: label }));
-                                    }}>
-                                        <option value="">{t('auth.onboarding.designationPlaceholder')}</option>
-                                        {(optionSets?.jobTitles || []).map((o: any) => (
-                                            <option key={o.id} value={String(o.id)}>{o.name}</option>
-                                        ))}
-                                    </select>
+                                    <input type="text" className={inputClass} value={data.designation} onChange={e => updateField('designation', e.target.value)} placeholder={t('auth.onboarding.designationPlaceholder')} />
                                 </FieldGroup>
-                                <FieldGroup label="Speciality">
-                                    <select className={inputClass} value={String(data.specialityId ?? '')} onChange={e => updateField('specialityId', e.target.value)}>
-                                        <option value="">Select Speciality</option>
-                                        {(optionSets?.specialities || []).map((o: any) => (
-                                            <option key={o.id} value={String(o.id)}>{o.name}</option>
-                                        ))}
-                                    </select>
-                                </FieldGroup>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <FieldGroup label={t('auth.onboarding.hospital')}>
                                     <input type="text" className={inputClass} value={data.company} onChange={e => updateField('company', e.target.value)} placeholder={t('auth.onboarding.hospitalPlaceholder')} />
                                 </FieldGroup>
@@ -785,18 +501,18 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                                     <div
                                         className="size-40 rounded-full bg-cover bg-center border-4 border-white shadow-lg bg-slate-100"
                                         style={{
-                                            backgroundImage: (photoPreview || data.hasProfilePhoto)
+                                            backgroundImage: (photoPreview || data.avatarUrl)
                                                 ? `url('${photoPreview || data.avatarUrl}')`
                                                 : undefined,
                                         }}
                                     >
-                                        {!photoPreview && !data.hasProfilePhoto && (
+                                        {!photoPreview && !data.avatarUrl && (
                                             <div className="w-full h-full flex items-center justify-center text-slate-300">
                                                 <Camera size={48} />
                                             </div>
                                         )}
                                     </div>
-                                    {(photoPreview || data.hasProfilePhoto) && (
+                                    {(photoPreview || data.avatarUrl) && (
                                         <div className="absolute bottom-1 right-1 size-8 bg-emerald-500 rounded-full flex items-center justify-center text-white shadow-md">
                                             <Check size={16} />
                                         </div>
@@ -814,7 +530,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                                     className="flex items-center gap-2 px-6 py-3 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm font-bold text-slate-700 transition-colors"
                                 >
                                     <Upload size={16} />
-                                    {photoPreview || data.hasProfilePhoto ? t('auth.onboarding.changePhoto') : t('auth.onboarding.uploadPhoto')}
+                                    {photoPreview || data.avatarUrl ? t('auth.onboarding.changePhoto') : t('auth.onboarding.uploadPhoto')}
                                 </button>
                                 <p className="text-xs text-slate-400 text-center max-w-xs">
                                     {t('auth.onboarding.photoHint')}
@@ -844,7 +560,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                         {saving ? (
                             <><Loader2 size={16} className="animate-spin" /> {t('auth.onboarding.saving')}</>
                         ) : step === totalSteps ? (
-                            <><Check size={16} /> {finishSetupText}</>
+                            <><Check size={16} /> {t('auth.onboarding.completeProfile')}</>
                         ) : (
                             <>{t('auth.onboarding.continue')} <ArrowRight size={16} /></>
                         )}

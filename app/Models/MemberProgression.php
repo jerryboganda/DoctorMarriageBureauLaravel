@@ -11,10 +11,6 @@ class MemberProgression extends Model
 
     protected $guarded = [];
 
-    protected $casts = [
-        'total_progress_percent' => 'integer',
-    ];
-
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
@@ -33,30 +29,5 @@ class MemberProgression extends Model
     public function events()
     {
         return $this->hasMany(ProgressionEvent::class);
-    }
-
-    public function checklistItems()
-    {
-        return $this->hasMany(ProgressionChecklistItem::class, 'member_progression_id');
-    }
-
-    public function notes()
-    {
-        return $this->hasMany(ProgressionNote::class, 'member_progression_id');
-    }
-
-    public function venues()
-    {
-        return $this->hasMany(ProgressionVenue::class, 'member_progression_id');
-    }
-
-    public function budgetItems()
-    {
-        return $this->hasMany(ProgressionBudgetItem::class, 'member_progression_id');
-    }
-
-    public function settings()
-    {
-        return $this->hasOne(ProgressionSetting::class, 'member_progression_id');
     }
 }

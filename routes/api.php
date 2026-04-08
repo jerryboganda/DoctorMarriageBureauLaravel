@@ -68,7 +68,7 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
     Route::get('/home/packages', 'HomeController@home_packages');
     Route::get('/home/reviews', 'HomeController@home_reviews');
 
-    Route::group(['middleware' => ['auth:sanctum', 'api_require_password_change']], function () {
+    Route::group(['middleware' => ['auth:sanctum']], function () {
         Route::get('/discovery', 'DiscoveryController@index');
         Route::get('/discovery/search', 'DiscoveryController@search');
         Route::get('/match-intelligence/{id}', 'MatchIntelligenceController@show');
@@ -78,14 +78,9 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
         Route::post('/onboarding/complete', 'OnboardingController@complete');
 
         // Progression
-        Route::post('/progression/start', 'ProgressionController@startProgression');
         Route::get('/progression/active', 'ProgressionController@getActiveProgressions');
         Route::get('/progression/{id}', 'ProgressionController@getProgression');
         Route::post('/progression/{id}/update-stage', 'ProgressionController@updateStage');
-        Route::post('/progression/{id}/items', 'ProgressionController@storeItem');
-        Route::patch('/progression/{id}/items/{itemId}', 'ProgressionController@updateItem');
-        Route::delete('/progression/{id}/items/{itemId}', 'ProgressionController@deleteItem');
-        Route::patch('/progression/{id}/settings', 'ProgressionController@updateSettings');
 
         // Family Portal
         Route::get('/family', 'FamilyController@index');
@@ -102,7 +97,6 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
         Route::get('/full-profile', 'ProfileController@get_full_profile_react');
         Route::post('/full-profile/update', 'ProfileController@update_full_profile_react');
         Route::get('/profile/download-biodata', 'ProfileController@download_biodata');
-        Route::get('/profile/biodata-json', 'ProfileController@biodata_json');
 
         // Dropdowns and Profile Center (Accessible even if email not verified)
         Route::group(['prefix' => 'member'], function () {
@@ -112,8 +106,7 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
             Route::get('/cities/{id}', 'ProfileDropdownController@city_list');
             Route::get('/languages', 'ProfileDropdownController@language_list');
             Route::get('/religions', 'ProfileDropdownController@religion_list');
-            Route::get('/sects', 'ProfileDropdownController@sect_list');
-            Route::get('/casts/{id?}', 'ProfileDropdownController@caste_list');
+            Route::get('/casts/{id}', 'ProfileDropdownController@caste_list');
             Route::get('/sub-casts/{id}', 'ProfileDropdownController@sub_caste_list');
             Route::get('/family-values', 'ProfileDropdownController@family_value_list');
             Route::get('/profile-dropdown', 'ProfileDropdownController@profile_dropdown');
@@ -164,7 +157,7 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
 
         // Razor Pay
         Route::controller('RazorpayController')->group(function () {
-            Route::any('razorpay/payment', 'payment')->name('api.razorpay.legacy_payment');
+            Route::any('razorpay/payment', 'payment')->name('api.razorpay.payment');
             Route::post('razorpay/success', 'success')->name('api.razorpay.success');
         });
 
@@ -180,10 +173,10 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
         });
     });
 
-    Route::post('/logout', 'AuthController@logout')->name('api.logout')->middleware('auth:sanctum');
+    Route::post('/logout', 'AuthController@logout')->name('logout')->middleware('auth:sanctum');
     Route::get('/member-validate', 'MemberController@member_validate');
 
-    Route::group(['middleware' => ['auth:sanctum', 'api_email_verified', 'api_require_password_change']], function () {
+    Route::group(['middleware' => ['auth:sanctum', 'api_email_verified']], function () {
         Route::get('/member/dashboard', 'HomeController@member_dashboard');
         Route::get('/member/verification_form', 'MemberController@getVerifyForm');
         Route::get('/member/is-approved', 'MemberController@isApproved');
@@ -191,7 +184,7 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
     });
 
 
-    Route::group(['middleware' => ['auth:sanctum', 'api_email_verified', 'api_member', 'api_require_password_change']], function () {
+    Route::group(['middleware' => ['auth:sanctum', 'api_email_verified', 'api_member']], function () {
         Route::post('/update-device-token', 'AuthController@update_device_token');
         Route::get('/app-check', 'AuthController@checkedData');
         //Payment Gateways
@@ -214,9 +207,9 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
 
 
             //Instamojo
-            Route::any('pay-with-instamojo', 'InstamojoController@pay')->name('api.instamojo.pay');
+            Route::any('pay-with-instamojo', 'InstamojoController@pay')->name('api.phonepe.pay');
         });
-        Route::post('/upload-profile-picture', 'HomeController@upload_profile_picture')->name('api.upload.profile.picture');
+        Route::post('/upload-profile-picture', 'HomeController@upload_profile_picture')->name('upload.profile.picture');
 
         // member middleware has removed for api but it exist in web
         Route::group(['prefix' => 'member'], function () {
@@ -269,33 +262,11 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
             Route::get('/home-with-login', 'HomeController@home_with_login');
             Route::get('/check-happy-story', 'HappyStoryController@happy_story_check');
             Route::post('/happy-story', 'HappyStoryController@store');
-            Route::apiResource('gallery-image', 'GalleryImageController')->names([
-                'index' => 'api.member.gallery-image.index',
-                'store' => 'api.member.gallery-image.store',
-                'show' => 'api.member.gallery-image.show',
-                'update' => 'api.member.gallery-image.update',
-                'destroy' => 'api.member.gallery-image.destroy',
-            ]);
-            Route::apiResource('career', 'CareerController')->names([
-                'index' => 'api.member.career.index',
-                'store' => 'api.member.career.store',
-                'show' => 'api.member.career.show',
-                'update' => 'api.member.career.update',
-                'destroy' => 'api.member.career.destroy',
-            ]);
-            Route::apiResource('education', 'EducationController')->names([
-                'index' => 'api.member.education.index',
-                'store' => 'api.member.education.store',
-                'show' => 'api.member.education.show',
-                'update' => 'api.member.education.update',
-                'destroy' => 'api.member.education.destroy',
-            ]);
-            Route::apiResource('support-ticket', 'SupportTicketController')->names([
-                'index' => 'api.member.support-ticket.index',
-                'store' => 'api.member.support-ticket.store',
-                'show' => 'api.member.support-ticket.show',
-                'update' => 'api.member.support-ticket.update',
-                'destroy' => 'api.member.support-ticket.destroy',
+            Route::apiResources([
+                'gallery-image' => 'GalleryImageController',
+                'career' => 'CareerController',
+                'education' => 'EducationController',
+                'support-ticket' => 'SupportTicketController',
             ]);
 
             // Gallery Image Custom Actions
@@ -306,23 +277,23 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
             // Gallery Image View Request
             Route::get('/gallery-image-view-request', 'GalleryImageController@image_view_request');
             Route::post('/gallery-image-view-request', 'GalleryImageController@store_image_view_request');
-            Route::post('/gallery-image-view-request/accept', 'GalleryImageController@accept_image_view_request')->name('api.gallery_image_view_request_accept');
-            Route::post('/gallery-image-view-request/reject', 'GalleryImageController@reject_image_view_request')->name('api.gallery_image_view_request_reject');
+            Route::post('/gallery-image-view-request/accept', 'GalleryImageController@accept_image_view_request')->name('gallery_image_view_request_accept');
+            Route::post('/gallery-image-view-request/reject', 'GalleryImageController@reject_image_view_request')->name('gallery_image_view_request_reject');
             // Profile Image View Request
             Route::get('/profile-picture-view-request', 'ProfileImageController@image_view_request');
             Route::post('/profile-picture-view-request', 'ProfileImageController@store_image_view_request');
-            Route::post('/profile-picture-view-request/accept', 'ProfileImageController@accept_image_view_request')->name('api.profile_picture_view_request_accept');
-            Route::post('/profile-picture-view-request/reject', 'ProfileImageController@reject_image_view_request')->name('api.profile_picture_view_request_reject');
+            Route::post('/profile-picture-view-request/accept', 'ProfileImageController@accept_image_view_request')->name('gallery_image_view_request_accept');
+            Route::post('/profile-picture-view-request/reject', 'ProfileImageController@reject_image_view_request')->name('gallery_image_view_request_reject');
 
 
 
 
             //chat routes
-            Route::get('/chat-list', 'ChatController@chat_list')->middleware('api_premium_messaging');
-            Route::get('/chat-view/{id}', 'ChatController@chat_view')->middleware('api_premium_messaging');
-            Route::post('/chat-reply', 'ChatController@chat_reply')->middleware('api_premium_messaging');
-            Route::post('/chat/old-messages', 'ChatController@get_old_messages')->middleware('api_premium_messaging');
-            Route::post('/chat/share-biodata', 'ChatController@share_biodata')->middleware('api_premium_messaging');
+            Route::get('/chat-list', 'ChatController@chat_list');
+            Route::get('/chat-view/{id}', 'ChatController@chat_view');
+            Route::post('/chat-reply', 'ChatController@chat_reply');
+            Route::post('/chat/old-messages', 'ChatController@get_old_messages');
+            Route::post('/chat/share-biodata', 'ChatController@share_biodata');
 
             // Heartbeat & Online Status
             Route::post('/heartbeat', function () {
@@ -340,15 +311,10 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
             });
 
             // Progression Routes
-            Route::post('/progression/start', 'ProgressionController@startProgression');
             Route::get('/progression/stages', 'ProgressionController@getStages');
             Route::get('/progression/active', 'ProgressionController@getActiveProgressions');
             Route::get('/progression/partner/{id}', 'ProgressionController@getProgression');
             Route::post('/progression/update-stage', 'ProgressionController@updateStage');
-            Route::post('/progression/{id}/items', 'ProgressionController@storeItem');
-            Route::patch('/progression/{id}/items/{itemId}', 'ProgressionController@updateItem');
-            Route::delete('/progression/{id}/items/{itemId}', 'ProgressionController@deleteItem');
-            Route::patch('/progression/{id}/settings', 'ProgressionController@updateSettings');
 
             // Family Portal Routes
             Route::get('/family/details', 'FamilyPortalController@index');
@@ -372,13 +338,6 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
             Route::post('/profile/section/{section}', 'ProfileCenterController@updateSection');
             Route::get('/profile/visibility', 'ProfileCenterController@getVisibilitySettings');
             Route::post('/profile/visibility', 'ProfileCenterController@toggleVisibility');
-
-            // Discovery Settings (Anonymous Mode & Travel Mode)
-            Route::post('/discovery/toggle-anonymous', 'DiscoverySettingsController@toggleAnonymous');
-            Route::get('/discovery/anonymous-status', 'DiscoverySettingsController@getAnonymousStatus');
-            Route::post('/discovery/travel-mode/enable', 'DiscoverySettingsController@enableTravelMode');
-            Route::post('/discovery/travel-mode/disable', 'DiscoverySettingsController@disableTravelMode');
-            Route::get('/discovery/travel-mode/status', 'DiscoverySettingsController@getTravelModeStatus');
             Route::post('/profile/media/voice', 'ProfileCenterController@uploadVoiceIntro');
             Route::delete('/profile/media/voice', 'ProfileCenterController@deleteVoiceIntro');
             Route::post('/profile/media/video', 'ProfileCenterController@uploadIntroVideo');
@@ -471,7 +430,6 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
             Route::get('/referral-check', 'ReferralController@referral_check');
             // Notifications
             Route::get('/notifications', 'NotificationController@notifications');
-            Route::get('/notifications/{id}', 'NotificationController@show');
             Route::get('/notification/{id}', 'NotificationController@single_notification_read');
             Route::get('/mark-all-as-read', 'NotificationController@mark_all_as_read');
             // Happy tory
@@ -486,7 +444,7 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
     });
 
     // Dashboard API Routes - Web Authentication
-    Route::group(['middleware' => ['auth:sanctum', 'api_email_verified', 'api_member', 'api_require_password_change']], function () {
+    Route::group(['middleware' => ['auth:sanctum', 'api_email_verified', 'api_member']], function () {
 
         // Dashboard Stats
         Route::get('/dashboard/stats', function (Request $request) {
@@ -571,7 +529,7 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
                         'sender_name' => $otherUser->first_name . ' ' . $otherUser->last_name,
                         'message_preview' => $latestMessage ? substr($latestMessage->message, 0, 50) . '...' : 'No messages yet',
                         'time_ago' => $latestMessage ? $latestMessage->created_at->diffForHumans() : 'Just now',
-                        'unread_count' => $thread->chats()->where('sender_user_id', '!=', $user->id)->where('seen', 0)->count(),
+                        'unread_count' => $thread->chats()->where('sender_user_id', '!=', $user->id)->where('read_at', null)->count(),
                         'thread_id' => $thread->id
                     ];
                 })->filter();
@@ -729,7 +687,7 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
             // Update original interest status
             $interest->update(['status' => 1]);
 
-            return response()->json(['success' => true, 'message' => 'Proposal accepted successfully']);
+            return response()->json(['success' => true, 'message' => 'Interest accepted successfully']);
         });
 
         Route::post('/interest/decline', function (Request $request) {
@@ -746,7 +704,7 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
             // Update interest status to declined
             $interest->update(['status' => 2]);
 
-            return response()->json(['success' => true, 'message' => 'Proposal declined successfully']);
+            return response()->json(['success' => true, 'message' => 'Interest declined successfully']);
         });
 
         // Express Interest
@@ -760,7 +718,7 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
                 ->first();
 
             if ($existingInterest) {
-                return response()->json(['success' => false, 'message' => 'Proposal already sent']);
+                return response()->json(['success' => false, 'message' => 'Interest already expressed']);
             }
 
             // Create new interest
@@ -770,19 +728,8 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
                 'status' => 0
             ]);
 
-            return response()->json(['success' => true, 'message' => 'Proposal sent successfully']);
+            return response()->json(['success' => true, 'message' => 'Interest sent successfully']);
         });
 
-
-        // ===== Referral System API Routes =====
-        Route::prefix('referral')->group(function () {
-            Route::get('/my-stats', 'ReferralApiController@myStats');
-            Route::post('/validate-code', 'ReferralApiController@validateCode');
-            Route::post('/regenerate-code', 'ReferralApiController@regenerateCode');
-            Route::get('/settings-public', 'ReferralApiController@publicSettings');
-        });
     });
-
-    // Public referral code validation (no auth required)
-    Route::post('/referral/validate-signup-code', 'ReferralApiController@validateCode');
 });

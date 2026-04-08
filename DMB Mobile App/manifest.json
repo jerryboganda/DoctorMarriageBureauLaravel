@@ -1,0 +1,18 @@
+{
+  "name": "Doctor Marriage Bureau",
+  "short_name": "DocsMarriage",
+  "description": "Exclusive matchmaking platform for medical professionals.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#F8FAFC",
+  "theme_color": "#2563EB",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/387/387561.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

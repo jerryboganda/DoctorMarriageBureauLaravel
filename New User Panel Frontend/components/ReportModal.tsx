@@ -7,14 +7,13 @@ interface ReportModalProps {
   onClose: () => void;
   userName: string;
   userId: string | number;
-  defaultBlockUser?: boolean;
 }
 
-const ReportModal: React.FC<ReportModalProps> = ({ onClose, userName, userId, defaultBlockUser = true }) => {
+const ReportModal: React.FC<ReportModalProps> = ({ onClose, userName, userId }) => {
   const { t } = useTranslation();
   const [reason, setReason] = useState<string | null>(null);
   const [description, setDescription] = useState('');
-  const [blockUser, setBlockUser] = useState(defaultBlockUser);
+  const [blockUser, setBlockUser] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

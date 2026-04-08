@@ -1,29 +1,40 @@
-﻿import React, { lazy, Suspense, useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { useTranslation } from 'react-i18next';
 import Sidebar from './components/Sidebar';
+import RightSidebar from './components/RightSidebar';
+import ProfileCard from './components/ProfileCard';
+import ProfileTeaser from './components/ProfileTeaser';
+import SettingsView from './components/SettingsView';
+import OnboardingModal from './components/OnboardingModal';
+import VerificationModal from './components/VerificationModal';
+import ProfileEditView from './components/ProfileEditView';
+import DiscoveryView from './components/DiscoveryView';
+import ProposalModal from './components/ProposalModal';
+import DeclineModal from './components/DeclineModal';
+import MessagesView from './components/MessagesView';
+import SubscriptionModal from './components/SubscriptionModal';
+import PaymentModal from './components/PaymentModal';
+import FamilyPortalView from './components/FamilyPortalView';
+import CommunityView from './components/CommunityView';
+import ProgressionView from './components/ProgressionView';
+import NotificationsView from './components/NotificationsView';
+import AuthModal from './components/AuthModal';
+import WelcomeScreen from './components/WelcomeScreen';
 import LanguageToggle from './components/LanguageToggle';
 import FloatingContactButton from './components/FloatingContactButton';
-import LoadingTimeoutFallback from './components/LoadingTimeoutFallback';
-import PasswordField from './components/PasswordField';
-import { Bell, Menu, Send, Inbox, ArrowUpRight, ArrowDownLeft, Undo2 } from 'lucide-react';
+import ProfileDetailModal from './components/ProfileDetailModal';
+import { Bell, Menu, Heart, Search, Send, Inbox, ArrowUpRight, ArrowDownLeft, Undo2 } from 'lucide-react';
 import { ProfileMatch } from './types';
 import { AnimatePresence, motion } from 'framer-motion';
 import { PAGE_VARIANTS } from './utils/motion';
 import { useAuthStore } from './src/stores/authStore';
 import { api } from './utils/api';
-import { CanonicalInterestState } from './utils/interestStatus';
-import { normalizePositiveAge } from './utils/age';
 
 type IncomingInterest = {
     interestId: number;
     status?: string;
     profile: ProfileMatch;
-};
-
-type ProposalStateMapValue = {
-    state: CanonicalInterestState;
-    expiresAt: number;
 };
 
 type CheckoutItem = {
@@ -33,98 +44,22 @@ type CheckoutItem = {
     type: 'package' | 'addon';
 };
 
-type GateState = 'gateLoading' | 'needsOnboarding' | 'needsVerification' | 'verificationPending' | 'gateUnlocked';
-
-const lazyRetry = <T extends React.ComponentType<any>>(
-    importer: () => Promise<{ default: T }>
-) => {
-    return () =>
-        importer().catch((error) => {
-            const message = String(error?.message || '');
-            const isDynamicChunkError =
-                message.includes('Failed to fetch dynamically imported module') ||
-                message.includes('Importing a module script failed') ||
-                message.includes('Loading chunk');
-
-            if (isDynamicChunkError && typeof window !== 'undefined') {
-                const reloadKey = 'dmb_chunk_reload_once';
-                const alreadyReloaded = sessionStorage.getItem(reloadKey) === '1';
-                if (!alreadyReloaded) {
-                    sessionStorage.setItem(reloadKey, '1');
-                    window.location.reload();
-                    return new Promise<never>(() => {});
-                }
-            }
-
-            throw error;
-        });
-};
-
-const RightSidebar = lazy(lazyRetry(() => import('./components/RightSidebar')));
-const SettingsView = lazy(lazyRetry(() => import('./components/SettingsView')));
-const OnboardingModal = lazy(lazyRetry(() => import('./components/OnboardingModal')));
-const VerificationModal = lazy(lazyRetry(() => import('./components/VerificationModal')));
-const ProfileEditView = lazy(lazyRetry(() => import('./components/ProfileEditView')));
-const DiscoveryView = lazy(lazyRetry(() => import('./components/DiscoveryView')));
-const ProposalModal = lazy(lazyRetry(() => import('./components/ProposalModal')));
-const DeclineModal = lazy(lazyRetry(() => import('./components/DeclineModal')));
-const MessagesView = lazy(lazyRetry(() => import('./components/MessagesView')));
-const SubscriptionModal = lazy(lazyRetry(() => import('./components/SubscriptionModal')));
-const PremiumMessagingModal = lazy(lazyRetry(() => import('./components/PremiumMessagingModal')));
-const PaymentModal = lazy(lazyRetry(() => import('./components/PaymentModal')));
-const CommunityView = lazy(lazyRetry(() => import('./components/CommunityView')));
-const WalletView = lazy(lazyRetry(() => import('./components/WalletView')));
-const NotificationsView = lazy(lazyRetry(() => import('./components/NotificationsView')));
-const ReferralView = lazy(lazyRetry(() => import('./components/ReferralView')));
-const AuthModal = lazy(lazyRetry(() => import('./components/AuthModal')));
-const WelcomeScreen = lazy(lazyRetry(() => import('./components/WelcomeScreen')));
-const ProfileDetailModal = lazy(lazyRetry(() => import('./components/ProfileDetailModal')));
-const ReferralPopupModal = lazy(lazyRetry(() => import('./components/ReferralPopupModal')));
-const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://api.doctormarriagebureau.com.pk';
-const DEFAULT_AVATAR = `${API_BASE}/assets/img/avatar-place.png`;
-
-const buildNotificationProfileTarget = (profileId: string): ProfileMatch => ({
-    id: profileId,
-    name: 'Loading profile...',
-    specialty: '',
-    hospital: '',
-    location: '',
-    age: null,
-    matchPercentage: 0,
-    avatarUrl: DEFAULT_AVATAR,
-    isVerified: false,
-});
-
-const resolveAvatarUrl = (value?: string | null): string => {
-    const candidate = `${value ?? ''}`.trim();
-    if (!candidate) return DEFAULT_AVATAR;
-    if (candidate.startsWith('http://') || candidate.startsWith('https://')) return candidate;
-    if (candidate.startsWith('//')) return `https:${candidate}`;
-    if (candidate.startsWith('/')) return `${API_BASE}${candidate}`;
-    return `${API_BASE}/${candidate.replace(/^\/+/, '')}`;
-};
-
 const App: React.FC = () => {
-    const { isAuthenticated, isLoading, checkAuth, logout, user } = useAuthStore();
+    const { isAuthenticated, isLoading, checkAuth, logout } = useAuthStore();
     const { t } = useTranslation();
 
     const [currentView, setCurrentView] = useState('discovery');
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [showVerificationPrompt, setShowVerificationPrompt] = useState(false);
-    const [isIdentityVerified, setIsIdentityVerified] = useState<boolean>(false); // true only when admin approved
-    const [gateState, setGateState] = useState<GateState>('gateLoading');
+    const [isIdentityVerified, setIsIdentityVerified] = useState<boolean | null>(null); // null = loading, true = verified/pending, false = not submitted
     const [showDeclineModal, setShowDeclineModal] = useState(false);
     const [proposalTarget, setProposalTarget] = useState<ProfileMatch | null>(null);
     const [incomingInterests, setIncomingInterests] = useState<IncomingInterest[]>([]);
     const [sentInterests, setSentInterests] = useState<IncomingInterest[]>([]);
     const [declineInterestId, setDeclineInterestId] = useState<number | null>(null);
-    const [dashboardTab, setDashboardTab] = useState<'all' | 'verified' | 'unverified'>('all');
+    const [dashboardTab, setDashboardTab] = useState<'all' | 'compatible' | 'recent'>('all');
     const [proposalDirection, setProposalDirection] = useState<'received' | 'sent'>('received');
     const [selectedProposalProfile, setSelectedProposalProfile] = useState<ProfileMatch | null>(null);
-    const [sentProposalMap, setSentProposalMap] = useState<Record<string, boolean>>({});
-    const [proposalStatusMap, setProposalStatusMap] = useState<Record<string, CanonicalInterestState>>({});
-    const [dataSyncVersion, setDataSyncVersion] = useState(0);
-    const optimisticProposalMapRef = useRef<Record<string, ProposalStateMapValue>>({});
 
     // Mobile Sidebar State
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -132,80 +67,16 @@ const App: React.FC = () => {
     // Auth Modal State
     const [showAuthModal, setShowAuthModal] = useState(false);
 
-    const [showReferralPopup, setShowReferralPopup] = useState(false);
-    const [referralPopupConfig, setReferralPopupConfig] = useState<any>(null);
-
     // Billing & Subscription State
     const [showSubscription, setShowSubscription] = useState(false);
-    const [showPremiumMessagingModal, setShowPremiumMessagingModal] = useState(false);
     const [checkoutItem, setCheckoutItem] = useState<CheckoutItem | null>(null);
     const [appliedCouponCode, setAppliedCouponCode] = useState<string | null>(null);
     const [profileTargetSection, setProfileTargetSection] = useState<string | null>(null);
-    const [messageTargetMemberId, setMessageTargetMemberId] = useState<string | null>(null);
-    const isPremiumMessagingMember = Number(user?.membership) === 2;
-    const mustChangePassword = isAuthenticated && Boolean(Number(user?.must_change_password ?? 0));
-    const [forcePasswordOld, setForcePasswordOld] = useState('');
-    const [forcePasswordNew, setForcePasswordNew] = useState('');
-    const [forcePasswordConfirm, setForcePasswordConfirm] = useState('');
-    const [forcePasswordSubmitting, setForcePasswordSubmitting] = useState(false);
-    const [forcePasswordError, setForcePasswordError] = useState('');
     const [unreadNotifCount, setUnreadNotifCount] = useState(0);
-    const refreshInFlightRef = useRef<Promise<void> | null>(null);
-    const lastRefreshAtRef = useRef<number>(0);
-    const verificationDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const lastHiddenAtRef = useRef<number | null>(null);
-    const lastPassiveGateCheckAtRef = useRef<number>(0);
 
     useEffect(() => {
         checkAuth();
     }, []);
-
-    // Referral Popup: fetch config and show to free-plan users
-    useEffect(() => {
-        if (!isAuthenticated || !user) return;
-
-        // Only show to free plan users (membership !== 2)
-        const membershipVal = Number(user.membership);
-        if (membershipVal === 2) return;
-
-        const controller = new AbortController();
-
-        const fetchAndShow = async () => {
-            try {
-                const res = await api.get('/referral/settings-public', { signal: controller.signal });
-                const popup = res.data?.popup;
-                if (!popup?.enabled) return;
-
-                // Check frequency-based dismissal
-                const freq = popup.show_frequency || 'once_per_session';
-                const dismissKey = 'referral_popup_dismissed';
-
-                if (freq === 'once_ever') {
-                    if (localStorage.getItem(dismissKey) === 'forever') return;
-                } else if (freq === 'once_per_day') {
-                    const lastDismissed = localStorage.getItem(dismissKey + '_date');
-                    if (lastDismissed === new Date().toISOString().slice(0, 10)) return;
-                } else if (freq === 'once_per_session') {
-                    if (sessionStorage.getItem(dismissKey) === '1') return;
-                }
-                // 'every_login' always shows
-
-                setReferralPopupConfig(popup);
-
-                const delay = (popup.delay_seconds || 2) * 1000;
-                const timer = setTimeout(() => {
-                    setShowReferralPopup(true);
-                }, delay);
-
-                return () => clearTimeout(timer);
-            } catch {
-                // Silently ignore - popup is non-critical
-            }
-        };
-
-        fetchAndShow();
-        return () => controller.abort();
-    }, [isAuthenticated, user]);
 
     // Handle back button navigation
     useEffect(() => {
@@ -219,19 +90,11 @@ const App: React.FC = () => {
         return () => window.removeEventListener('popstate', handlePopState);
     }, []);
 
-    const mapInterestRow = (item: any, direction: 'sent' | 'received'): IncomingInterest => {
+    const mapInterestRow = (item: any): IncomingInterest => {
         const interestId = Number(item.id);
         const baseScore = Number.isFinite(interestId) ? 75 + (interestId % 20) : 80;
-        const age = normalizePositiveAge(item.age);
-        const proposalStatus = String(item.proposal_status ?? '').toLowerCase();
-        const statusText = String(item.status ?? '').toLowerCase();
-        const isAccepted = proposalStatus.includes('accepted') || statusText === 'approved';
-        const isReceived = proposalStatus.startsWith('received') || direction === 'received';
-        const interestStatus = isReceived ? 'do_response' : (isAccepted ? 'mutual' : 'sent interest');
-        const interestText = isReceived
-            ? (isAccepted ? 'You Accepted Proposal' : 'Reply to Proposal')
-            : (isAccepted ? 'Proposal Accepted' : 'Proposal Sent');
-
+        const ageValue = Number(item.age);
+        const age = Number.isFinite(ageValue) ? ageValue : 0;
         return {
             interestId,
             status: item.status,
@@ -243,10 +106,8 @@ const App: React.FC = () => {
                 location: item.country ?? '',
                 age,
                 matchPercentage: baseScore,
-                avatarUrl: resolveAvatarUrl(item.photo),
-                isVerified: !!item.is_verified,
-                interestStatus,
-                interestText,
+                avatarUrl: item.photo ?? '',
+                isVerified: false
             }
         };
     };
@@ -265,7 +126,7 @@ const App: React.FC = () => {
         try {
             const response = await api.get('/member/interest-requests');
             const rows = response.data?.data || [];
-            setIncomingInterests(rows.map((row: any) => mapInterestRow(row, 'received')));
+            setIncomingInterests(rows.map(mapInterestRow));
         } catch (error) {
             console.error('Failed to fetch incoming interests', error);
         }
@@ -275,283 +136,76 @@ const App: React.FC = () => {
         try {
             const response = await api.get('/member/my-interests');
             const rows = response.data?.data || [];
-            setSentInterests(rows.map((row: any) => mapInterestRow(row, 'sent')));
+            setSentInterests(rows.map(mapInterestRow));
         } catch (error) {
             console.error('Failed to fetch sent interests', error);
         }
     };
 
-    const touchDataSync = () => {
-        setDataSyncVersion((prev) => prev + 1);
-    };
-
-    const upsertProposalState = useCallback(
-        (profileId: string, state: CanonicalInterestState, optimisticTtlMs: number = 0) => {
-            const normalizedId = String(profileId || '').trim();
-            if (!normalizedId) return;
-
-            if (optimisticTtlMs > 0) {
-                optimisticProposalMapRef.current[normalizedId] = {
-                    state,
-                    expiresAt: Date.now() + optimisticTtlMs,
-                };
-            } else {
-                delete optimisticProposalMapRef.current[normalizedId];
-            }
-
-            setProposalStatusMap((prev) => ({ ...prev, [normalizedId]: state }));
-            setSentProposalMap((prev) => ({
-                ...prev,
-                [normalizedId]: state === 'sent_pending' || state === 'sent_accepted',
-            }));
-        },
-        []
-    );
-
-    const refreshCoreData = async ({ force = false }: { force?: boolean } = {}) => {
-        const now = Date.now();
-        const minGapMs = 1500;
-
-        if (refreshInFlightRef.current) {
-            return refreshInFlightRef.current;
-        }
-
-        if (!force && now - lastRefreshAtRef.current < minGapMs) {
-            return;
-        }
-
-        const task = (async () => {
-            await Promise.allSettled([
-                fetchIncomingInterests(),
-                fetchSentInterests(),
-                fetchNotificationCount(),
-            ]);
-            lastRefreshAtRef.current = Date.now();
-            touchDataSync();
-        })().finally(() => {
-            refreshInFlightRef.current = null;
-        });
-
-        refreshInFlightRef.current = task;
-        return task;
-    };
-
     const handleWithdrawInterest = async (interestId?: number) => {
         if (!interestId) return;
-        const target = sentInterests.find((item) => item.interestId === interestId);
-        if (target?.profile?.id) {
-            upsertProposalState(String(target.profile.id), 'none');
-        }
         try {
             await api.post('/member/interest-withdraw', { interest_id: interestId });
-            await refreshCoreData({ force: true });
+            await fetchSentInterests();
         } catch (error) {
             console.error('Failed to withdraw interest', error);
-            if (target?.profile?.id) {
-                upsertProposalState(String(target.profile.id), 'sent_pending', 120000);
-            }
         }
     };
 
-    const fetchApprovalStatus = async () => {
-    const res = await api.get('/member/is-approved');
-    const hasSubmitted = !!res.data?.verification_info;
-    const isApproved = (res.data?.is_approved == 1) && hasSubmitted;
-    return { isApproved, hasSubmitted };
-};
+    useEffect(() => {
+        if (isAuthenticated) {
+            fetchIncomingInterests();
+            fetchSentInterests();
+            fetchNotificationCount();
 
-const evaluateGate = async ({ silent = false }: { silent?: boolean } = {}) => {
-    if (!silent) {
-        setGateState('gateLoading');
-    }
-    try {
-        const profileRes = await api.get('/full-profile');
-        const onboardingCompleted = profileRes.data?.result && profileRes.data?.basics?.onboardingCompleted === true;
+            // Check verification status
+            const checkVerification = async () => {
+                try {
+                    const res = await api.get('/member/is-approved');
+                    const hasSubmitted = !!res.data?.verification_info;
+                    const isApproved = res.data?.is_approved == 1;
+                    setIsIdentityVerified(hasSubmitted || isApproved);
+                    return hasSubmitted || isApproved;
+                } catch {
+                    setIsIdentityVerified(false);
+                    return false;
+                }
+            };
 
-        if (!onboardingCompleted) {
-            setIsIdentityVerified(false);
-            setShowVerificationPrompt(false);
-            setShowOnboarding(true);
-            setGateState('needsOnboarding');
-            return;
+            // Auto-trigger onboarding if profile is incomplete
+            const checkOnboarding = async () => {
+                try {
+                    const res = await api.get('/full-profile');
+                    if (res.data?.result) {
+                        const b = res.data.basics || {};
+                        const hasName = !!(b.firstName && b.lastName);
+                        const hasGender = !!b.gender;
+                        const hasDob = !!b.dateOfBirth;
+                        
+                        // If server says onboarding is completed, OR all essential fields exist (legacy users), skip
+                        if (b.onboardingCompleted || (hasName && hasGender && hasDob)) {
+                            localStorage.setItem('dmb_onboarding_complete', 'true');
+                            // If legacy user had fields but flag was false, mark it complete on server
+                            if (!b.onboardingCompleted && hasName && hasGender && hasDob) {
+                                api.post('/full-profile/update', { onboardingCompleted: true }).catch(() => {});
+                            }
+                            // Onboarding done — check verification and auto-show if needed
+                            const verified = await checkVerification();
+                            if (!verified) {
+                                setShowVerificationPrompt(true);
+                            }
+                            return;
+                        }
+                        // Essential fields are missing — show onboarding
+                        setShowOnboarding(true);
+                    }
+                } catch {
+                    // Ignore — don't block the app
+                }
+            };
+            checkOnboarding();
         }
-
-        setShowOnboarding(false);
-        const { isApproved, hasSubmitted } = await fetchApprovalStatus();
-        setIsIdentityVerified(isApproved);
-
-        if (isApproved) {
-            setShowVerificationPrompt(false);
-            setGateState('gateUnlocked');
-            return;
-        }
-
-        setShowVerificationPrompt(true);
-        setGateState(hasSubmitted ? 'verificationPending' : 'needsVerification');
-    } catch (error) {
-        console.error('Failed to evaluate onboarding/verification gate', error);
-        // Fail closed for mission-critical flows.
-        setIsIdentityVerified(false);
-        setShowVerificationPrompt(false);
-        setShowOnboarding(true);
-        setGateState('needsOnboarding');
-    }
-};
-
-const scheduleVerificationPrompt = () => {
-    if (verificationDelayRef.current) {
-        clearTimeout(verificationDelayRef.current);
-    }
-    verificationDelayRef.current = setTimeout(() => {
-        setShowVerificationPrompt(true);
-    }, 5000);
-};
-
-useEffect(() => {
-    if (isAuthenticated) {
-        if (mustChangePassword) {
-            setGateState('gateUnlocked');
-            setShowOnboarding(false);
-            setShowVerificationPrompt(false);
-            setIsIdentityVerified(true);
-            return;
-        }
-        refreshCoreData({ force: true });
-        evaluateGate();
-    } else {
-        setGateState('gateLoading');
-        setShowOnboarding(false);
-        setShowVerificationPrompt(false);
-        setIsIdentityVerified(false);
-    }
-}, [isAuthenticated, mustChangePassword]);
-
-useEffect(() => {
-    const next: Record<string, CanonicalInterestState> = {};
-
-    sentInterests.forEach((interest) => {
-        const profileId = String(interest.profile?.id ?? '');
-        if (!profileId) return;
-        const statusText = String(interest.status ?? '').toLowerCase();
-        next[profileId] = statusText === 'approved' ? 'sent_accepted' : 'sent_pending';
-    });
-
-    incomingInterests.forEach((interest) => {
-        const profileId = String(interest.profile?.id ?? '');
-        if (!profileId) return;
-        const statusText = String(interest.status ?? '').toLowerCase();
-        next[profileId] = statusText === 'approved' ? 'received_accepted' : 'received_pending';
-    });
-
-    const now = Date.now();
-    Object.entries(optimisticProposalMapRef.current).forEach(([profileId, optimistic]) => {
-        if (optimistic.expiresAt < now) {
-            delete optimisticProposalMapRef.current[profileId];
-            return;
-        }
-        if (!(profileId in next)) {
-            next[profileId] = optimistic.state;
-        } else {
-            delete optimisticProposalMapRef.current[profileId];
-        }
-    });
-
-    setProposalStatusMap(next);
-    setSentProposalMap((prev) => {
-        const merged: Record<string, boolean> = { ...prev };
-        Object.entries(next).forEach(([profileId, state]) => {
-            merged[profileId] = state === 'sent_pending' || state === 'sent_accepted';
-        });
-        return merged;
-    });
-}, [sentInterests, incomingInterests]);
-
-useEffect(() => {
-    return () => {
-        if (verificationDelayRef.current) {
-            clearTimeout(verificationDelayRef.current);
-        }
-    };
-}, []);
-
-useEffect(() => {
-    if (!isAuthenticated || gateState !== 'gateUnlocked') return;
-
-    const MIN_PASSIVE_RECHECK_INTERVAL_MS = 30000;
-    const MIN_HIDDEN_DURATION_MS = 5000;
-
-    const runPassiveGateCheck = () => {
-        const now = Date.now();
-        if (now - lastPassiveGateCheckAtRef.current < MIN_PASSIVE_RECHECK_INTERVAL_MS) {
-            return;
-        }
-        lastPassiveGateCheckAtRef.current = now;
-        evaluateGate({ silent: true });
-    };
-
-    const handleFocus = () => {
-        runPassiveGateCheck();
-    };
-    const handleVisibilityChange = () => {
-        if (document.visibilityState === 'hidden') {
-            lastHiddenAtRef.current = Date.now();
-            return;
-        }
-        if (document.visibilityState === 'visible') {
-            const hiddenFor = lastHiddenAtRef.current ? Date.now() - lastHiddenAtRef.current : 0;
-            lastHiddenAtRef.current = null;
-            if (hiddenFor >= MIN_HIDDEN_DURATION_MS) {
-                runPassiveGateCheck();
-            }
-        }
-    };
-
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('pageshow', handleFocus);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-        window.removeEventListener('focus', handleFocus);
-        window.removeEventListener('pageshow', handleFocus);
-        document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-}, [isAuthenticated, gateState]);
-
-
-useEffect(() => {
-    if (!isAuthenticated) return;
-
-    const onVisibility = () => {
-        if (document.visibilityState === 'visible') {
-            refreshCoreData();
-        }
-    };
-    const onFocus = () => {
-        refreshCoreData();
-    };
-
-    document.addEventListener('visibilitychange', onVisibility);
-    window.addEventListener('focus', onFocus);
-
-    return () => {
-        document.removeEventListener('visibilitychange', onVisibility);
-        window.removeEventListener('focus', onFocus);
-    };
-}, [isAuthenticated]);
-
-    const openPremiumMessagingModal = () => {
-        setShowPremiumMessagingModal(true);
-    };
-
-    const handleUpgradeMessaging = () => {
-        setShowPremiumMessagingModal(false);
-        setShowSubscription(true);
-    };
-
-    const handleUpgradeMessagingViaReferral = () => {
-        setShowPremiumMessagingModal(false);
-        handleNavigate('referral');
-    };
+    }, [isAuthenticated]);
 
     const handleSelectPlan = (id: number, name: string, amount: number) => {
         setShowSubscription(false);
@@ -564,61 +218,18 @@ useEffect(() => {
     };
 
     const handleSignOut = async () => {
-        if (verificationDelayRef.current) {
-            clearTimeout(verificationDelayRef.current);
-            verificationDelayRef.current = null;
-        }
         await logout();
         setCurrentView('dashboard');
     }
 
-    const handleForcedPasswordChange = async () => {
-        if (!forcePasswordOld || !forcePasswordNew || !forcePasswordConfirm) {
-            setForcePasswordError('Please fill all password fields.');
-            return;
-        }
-        if (forcePasswordNew.length < 8) {
-            setForcePasswordError('New password must be at least 8 characters.');
-            return;
-        }
-        if (forcePasswordNew !== forcePasswordConfirm) {
-            setForcePasswordError('New password and confirm password do not match.');
-            return;
-        }
-
-        try {
-            setForcePasswordSubmitting(true);
-            setForcePasswordError('');
-            await api.post('/member/change/password', {
-                old_password: forcePasswordOld,
-                password: forcePasswordNew,
-                password_confirmation: forcePasswordConfirm,
-            });
-            await checkAuth();
-            setForcePasswordOld('');
-            setForcePasswordNew('');
-            setForcePasswordConfirm('');
-        } catch (error: any) {
-            setForcePasswordError(error?.response?.data?.message || 'Failed to update password.');
-        } finally {
-            setForcePasswordSubmitting(false);
-        }
-    };
-
     const handleAcceptInterest = async (interestId?: number) => {
         if (!interestId) return;
-        const target = incomingInterests.find((item) => item.interestId === interestId);
-        if (target?.profile?.id) {
-            upsertProposalState(String(target.profile.id), 'received_accepted', 120000);
-        }
         try {
             await api.post('/member/interest-accept', { interest_id: interestId });
-            await refreshCoreData({ force: true });
+            await fetchIncomingInterests();
+            await fetchSentInterests();
         } catch (error) {
             console.error('Failed to accept interest', error);
-            if (target?.profile?.id) {
-                upsertProposalState(String(target.profile.id), 'received_pending', 120000);
-            }
         }
     };
 
@@ -631,45 +242,20 @@ useEffect(() => {
     const handleNavigate = (view: string) => {
         if (view === 'signout') {
             handleSignOut();
-            return;
+        } else {
+            setCurrentView(view);
+            // Push state to browser history to enable back button
+            window.history.pushState({ view }, '', window.location.pathname);
+            // Refresh notification count when navigating away from notifications
+            fetchNotificationCount();
         }
-
-        if (view !== 'messages') {
-            setMessageTargetMemberId(null);
-        }
-
-        setCurrentView(view);
-        // Push state to browser history to enable back button
-        window.history.pushState({ view }, '', window.location.pathname);
-        // Keep navigation light to preserve SPA responsiveness
-        fetchNotificationCount();
         setIsMobileMenuOpen(false); // Close mobile menu on navigate
-    };
-
-    const handleOpenNotificationProfile = (profileId: string) => {
-        const normalizedProfileId = String(profileId || '').trim();
-        if (!normalizedProfileId) return;
-
-        setSelectedProposalProfile(buildNotificationProfileTarget(normalizedProfileId));
-    };
-
-    const handleProposalMessageClick = (profileId?: string) => {
-        const normalizedProfileId = String(profileId || '').trim();
-
-        if (!isPremiumMessagingMember) {
-            setMessageTargetMemberId(null);
-            openPremiumMessagingModal();
-            return;
-        }
-
-        setMessageTargetMemberId(normalizedProfileId || null);
-        handleNavigate('messages');
     };
 
     if (isLoading) {
         return (
             <div className="h-screen w-full flex items-center justify-center bg-white">
-                <LoadingTimeoutFallback message="Loading your account..." onReload={checkAuth} />
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
             </div>
         );
     }
@@ -677,93 +263,18 @@ useEffect(() => {
     if (!isAuthenticated) {
         return (
             <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID_PLACEHOLDER"}>
-                <Suspense fallback={<div className="h-screen w-full flex items-center justify-center bg-white"><LoadingTimeoutFallback message="Loading welcome screen..." compact /></div>}>
-                    <AnimatePresence mode="wait">
-                        <motion.div key="welcome" exit={{ opacity: 0 }}>
-                            <WelcomeScreen onComplete={() => checkAuth()} />
-                        </motion.div>
-                    </AnimatePresence>
-                </Suspense>
+                <AnimatePresence mode="wait">
+                    <motion.div key="welcome" exit={{ opacity: 0 }}>
+                        <WelcomeScreen onComplete={() => checkAuth()} />
+                    </motion.div>
+                </AnimatePresence>
             </GoogleOAuthProvider>
         );
     }
 
-    if (gateState === 'gateLoading') {
-        return (
-            <div className="h-screen w-full flex items-center justify-center bg-white">
-                <LoadingTimeoutFallback message="Checking onboarding and verification..." onReload={() => evaluateGate({ silent: false })} />
-            </div>
-        );
-    }
-
-
-    const handleDismissReferralPopup = () => {
-        setShowReferralPopup(false);
-        if (referralPopupConfig) {
-            const freq = referralPopupConfig.show_frequency || 'once_per_session';
-            const dismissKey = 'referral_popup_dismissed';
-            if (freq === 'once_ever') {
-                localStorage.setItem(dismissKey, 'forever');
-            } else if (freq === 'once_per_day') {
-                localStorage.setItem(dismissKey + '_date', new Date().toISOString().slice(0, 10));
-            } else if (freq === 'once_per_session') {
-                sessionStorage.setItem(dismissKey, '1');
-            }
-        }
-    };
-
     return (
         <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID_PLACEHOLDER"}>
             <div className="flex h-screen w-full bg-background-light overflow-hidden">
-                {mustChangePassword && (
-                    <div className="fixed inset-0 z-[120] bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
-                        <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-6">
-                            <h2 className="text-xl font-bold text-slate-900 mb-2">Change Password Required</h2>
-                            <p className="text-sm text-slate-600 mb-4">
-                                For security, please change your password to continue.
-                            </p>
-                            {forcePasswordError && (
-                                <div className="mb-3 rounded-lg bg-red-50 text-red-700 text-sm px-3 py-2">{forcePasswordError}</div>
-                            )}
-                            <div className="space-y-3">
-                                <PasswordField
-                                    value={forcePasswordOld}
-                                    onChange={(e) => setForcePasswordOld(e.target.value)}
-                                    placeholder="Current password"
-                                    aria-label="Current password"
-                                    inputClassName="w-full border border-slate-200 rounded-xl py-2 text-sm"
-                                    containerClassName="space-y-0"
-                                    showToggle
-                                />
-                                <PasswordField
-                                    value={forcePasswordNew}
-                                    onChange={(e) => setForcePasswordNew(e.target.value)}
-                                    placeholder="New password"
-                                    aria-label="New password"
-                                    inputClassName="w-full border border-slate-200 rounded-xl py-2 text-sm"
-                                    containerClassName="space-y-0"
-                                    showToggle
-                                />
-                                <PasswordField
-                                    value={forcePasswordConfirm}
-                                    onChange={(e) => setForcePasswordConfirm(e.target.value)}
-                                    placeholder="Confirm new password"
-                                    aria-label="Confirm new password"
-                                    inputClassName="w-full border border-slate-200 rounded-xl py-2 text-sm"
-                                    containerClassName="space-y-0"
-                                    showToggle
-                                />
-                            </div>
-                            <button
-                                onClick={handleForcedPasswordChange}
-                                disabled={forcePasswordSubmitting}
-                                className="mt-4 w-full bg-primary text-white rounded-xl py-2.5 text-sm font-semibold disabled:opacity-60"
-                            >
-                                {forcePasswordSubmitting ? 'Updating...' : 'Update Password'}
-                            </button>
-                        </div>
-                    </div>
-                )}
                 {/* Mobile Sidebar Overlay */}
                 <AnimatePresence>
                     {isMobileMenuOpen && (
@@ -787,9 +298,8 @@ useEffect(() => {
                         <Sidebar
                             currentView={currentView}
                             onNavigate={handleNavigate}
-                            dataSyncVersion={dataSyncVersion}
                             onUpgrade={() => {
-                                openPremiumMessagingModal();
+                                setShowSubscription(true);
                                 setIsMobileMenuOpen(false);
                             }}
                             onCloseMobile={() => setIsMobileMenuOpen(false)}
@@ -832,8 +342,7 @@ useEffect(() => {
                             animate="animate"
                             exit="exit"
                         >
-                            <Suspense fallback={<div className="h-full w-full flex items-center justify-center bg-white"><LoadingTimeoutFallback message="Loading view..." compact /></div>}>
-                                {currentView === 'dashboard' ? (
+                            {currentView === 'dashboard' ? (
                                 <>
                                     {/* Dashboard Header/Tabs */}
                                     <header className="h-auto py-4 lg:h-20 shrink-0 flex flex-col lg:flex-row items-start lg:items-center justify-between px-4 lg:px-8 bg-background-light/95 backdrop-blur-sm sticky top-0 z-10 gap-4">
@@ -851,25 +360,25 @@ useEffect(() => {
                                             </motion.button>
                                             <motion.button 
                                                 whileTap={{ scale: 0.95 }} 
-                                                onClick={() => setDashboardTab('verified')}
+                                                onClick={() => setDashboardTab('compatible')}
                                                 className={`px-4 lg:px-6 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
-                                                    dashboardTab === 'verified' 
+                                                    dashboardTab === 'compatible' 
                                                         ? 'bg-slate-900 text-white font-bold shadow-md' 
                                                         : 'text-slate-500 hover:text-slate-900'
                                                 }`}
                                             >
-                                                {t('dashboard.tabs.verifiedProposals')}
+                                                {t('dashboard.tabs.highCompatibility')}
                                             </motion.button>
                                             <motion.button 
                                                 whileTap={{ scale: 0.95 }} 
-                                                onClick={() => setDashboardTab('unverified')}
+                                                onClick={() => setDashboardTab('recent')}
                                                 className={`px-4 lg:px-6 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
-                                                    dashboardTab === 'unverified' 
+                                                    dashboardTab === 'recent' 
                                                         ? 'bg-slate-900 text-white font-bold shadow-md' 
                                                         : 'text-slate-500 hover:text-slate-900'
                                                 }`}
                                             >
-                                                {t('dashboard.tabs.unverifiedProposals')}
+                                                {t('dashboard.tabs.recent')}
                                             </motion.button>
                                         </div>
 
@@ -935,10 +444,12 @@ useEffect(() => {
                                                 const isReceived = proposalDirection === 'received';
                                                 const source = isReceived ? incomingInterests : sentInterests;
                                                 let filtered = [...source];
-                                                if (dashboardTab === 'verified') {
-                                                    filtered = filtered.filter((a) => a.profile.isVerified === true);
-                                                } else if (dashboardTab === 'unverified') {
-                                                    filtered = filtered.filter((a) => a.profile.isVerified !== true);
+                                                if (dashboardTab === 'compatible') {
+                                                    filtered = filtered.sort((a, b) => 
+                                                        (b.profile.matchPercentage || 0) - (a.profile.matchPercentage || 0)
+                                                    );
+                                                } else if (dashboardTab === 'recent') {
+                                                    filtered = filtered.sort((a, b) => b.interestId - a.interestId);
                                                 }
                                                 
                                                 if (filtered.length === 0) {
@@ -986,7 +497,7 @@ useEffect(() => {
                                                             >
                                                                 <div
                                                                     className="size-12 sm:size-14 rounded-full bg-cover bg-center shrink-0 border-2 border-white shadow-sm hover:ring-2 hover:ring-primary/40 transition-all"
-                                                                    style={{ backgroundImage: `url('${resolveAvatarUrl(interest.profile.avatarUrl)}')` }}
+                                                                    style={{ backgroundImage: `url('${interest.profile.avatarUrl || '/assets/img/avatar-place.png'}')` }}
                                                                 />
                                                                 <div className="flex-1 min-w-0">
                                                                     <div className="flex items-center gap-2 flex-wrap">
@@ -1002,7 +513,7 @@ useEffect(() => {
                                                                     </div>
                                                                     <div className="flex items-center gap-2 text-sm text-slate-500 mt-0.5">
                                                                         {interest.profile.age > 0 && <span>{interest.profile.age} {t('dashboard.yrs')}</span>}
-                                                                        {interest.profile.age > 0 && interest.profile.location && <span>Â·</span>}
+                                                                        {interest.profile.age > 0 && interest.profile.location && <span>·</span>}
                                                                         {interest.profile.location && <span>{interest.profile.location}</span>}
                                                                     </div>
                                                                     {interest.profile.specialty && (
@@ -1042,7 +553,7 @@ useEffect(() => {
                                                                     {isApproved && (
                                                                         <motion.button
                                                                             whileTap={{ scale: 0.9 }}
-                                                                            onClick={() => handleProposalMessageClick(interest.profile.id)}
+                                                                            onClick={() => setCurrentView('messages')}
                                                                             className="flex items-center gap-1.5 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold hover:bg-emerald-100 transition-colors"
                                                                         >
                                                                             {t('dashboard.message')}
@@ -1050,7 +561,7 @@ useEffect(() => {
                                                                     )}
                                                                 </div>
                                                             </div>
-                                                            {/* Mobile action buttons â€” full-width row below the card */}
+                                                            {/* Mobile action buttons — full-width row below the card */}
                                                             <div className="flex sm:hidden items-center gap-2 px-4 pb-3 pt-0">
                                                                 {isReceived && isPending && (
                                                                     <>
@@ -1083,7 +594,7 @@ useEffect(() => {
                                                                 {isApproved && (
                                                                     <motion.button
                                                                         whileTap={{ scale: 0.9 }}
-                                                                        onClick={() => handleProposalMessageClick(interest.profile.id)}
+                                                                        onClick={() => setCurrentView('messages')}
                                                                         className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold hover:bg-emerald-100 transition-colors"
                                                                     >
                                                                         {t('dashboard.message')}
@@ -1107,199 +618,134 @@ useEffect(() => {
                                 />
                             ) : currentView === 'profile' ? (
                                 <ProfileEditView initialTab={profileTargetSection} />
+                            ) : currentView === 'family' ? (
+                                <FamilyPortalView />
                             ) : currentView === 'communities' ? (
                                 <CommunityView />
-                            ) : currentView === 'wallet' ? (
-                                <WalletView />
-                            ) : currentView === 'referral' ? (
-                                <ReferralView />
+                            ) : currentView === 'progression' ? (
+                                <ProgressionView />
                             ) : currentView === 'notifications' ? (
-                                <NotificationsView
-                                    onNavigate={handleNavigate}
-                                    onOpenProfile={handleOpenNotificationProfile}
-                                    refreshVersion={dataSyncVersion}
-                                    onDataChanged={refreshCoreData}
-                                />
+                                <NotificationsView onNavigate={handleNavigate} />
                             ) : currentView === 'messages' ? (
-                                <MessagesView
-                                    onSubscriptionRequired={openPremiumMessagingModal}
-                                    initialMemberId={messageTargetMemberId}
-                                    onInitialMemberIdConsumed={() => setMessageTargetMemberId(null)}
-                                />
+                                <MessagesView />
                             ) : (
                                 <DiscoveryView
-                                    initialTab={'all'}
+                                    initialTab={currentView === 'agent_picks' ? 'agent' : 'all'}
                                     onSendProposal={(p) => setProposalTarget(p)}
-                                    onProposalStateChange={(profileId, state) => {
-                                        upsertProposalState(profileId, state, 120000);
-                                        refreshCoreData({ force: true });
-                                    }}
                                     isIdentityVerified={isIdentityVerified}
-                                    onRequireVerification={() => {
-                                        setGateState('needsVerification');
-                                        setShowVerificationPrompt(true);
-                                    }}
+                                    onRequireVerification={() => setShowVerificationPrompt(true)}
                                     onNavigate={handleNavigate}
                                     unreadNotifCount={unreadNotifCount}
-                                    sentProposalMap={sentProposalMap}
-                                    proposalStatusMap={proposalStatusMap}
-                                    refreshVersion={dataSyncVersion}
                                 />
-                                )}
-                            </Suspense>
+                            )}
                         </motion.div>
                     </AnimatePresence>
                 </main>
 
                 {currentView === 'dashboard' && (
-                    <Suspense fallback={null}>
-                        <RightSidebar
-                            onNavigateToProfile={(section) => {
-                                setProfileTargetSection(section);
-                                setCurrentView('profile');
-                            }}
-                        />
-                    </Suspense>
+                    <RightSidebar
+                        onNavigateToProfile={(section) => {
+                            setProfileTargetSection(section);
+                            setCurrentView('profile');
+                        }}
+                    />
                 )}
 
                 <AnimatePresence>
-                    {showOnboarding && (
-                        <Suspense fallback={null}>
-                            <OnboardingModal onClose={() => {
-                                setShowOnboarding(false);
-                                setGateState('needsVerification');
-                                scheduleVerificationPrompt();
-                            }} />
-                        </Suspense>
-                    )}
+                    {showOnboarding && <OnboardingModal onClose={() => {
+                        setShowOnboarding(false);
+                        // After onboarding closes, check verification and show prompt if not verified
+                        if (isIdentityVerified === false || isIdentityVerified === null) {
+                            api.get('/member/is-approved').then(res => {
+                                const hasSubmitted = !!res.data?.verification_info;
+                                const isApproved = res.data?.is_approved == 1;
+                                setIsIdentityVerified(hasSubmitted || isApproved);
+                                if (!hasSubmitted && !isApproved) {
+                                    setTimeout(() => setShowVerificationPrompt(true), 300);
+                                }
+                            }).catch(() => {
+                                setTimeout(() => setShowVerificationPrompt(true), 300);
+                            });
+                        }
+                    }} />}
                 </AnimatePresence>
 
                 <AnimatePresence>
                     {showVerificationPrompt && (
-                        <Suspense fallback={null}>
-                            <VerificationModal
-                                lockMode={gateState !== 'gateUnlocked'}
-                                approvalPollIntervalMs={10000}
-                                onApproved={() => {
-                                    setIsIdentityVerified(true);
-                                    setGateState('gateUnlocked');
-                                    setShowVerificationPrompt(false);
-                                }}
-                                onClose={() => {
-                                    setShowVerificationPrompt(false);
-                                }}
-                            />
-                        </Suspense>
+                        <VerificationModal onClose={() => {
+                            setShowVerificationPrompt(false);
+                            // Re-check status in case user submitted verification
+                            api.get('/member/is-approved').then(res => {
+                                const hasSubmitted = !!res.data?.verification_info;
+                                const isApproved = res.data?.is_approved == 1;
+                                setIsIdentityVerified(hasSubmitted || isApproved);
+                            }).catch(() => {});
+                        }} />
                     )}
                 </AnimatePresence>
 
                 <AnimatePresence>
                     {showDeclineModal && (
-                        <Suspense fallback={null}>
-                            <DeclineModal
-                                interestId={declineInterestId}
-                                onClose={() => {
-                                    setShowDeclineModal(false);
-                                    setDeclineInterestId(null);
-                                }}
-                                onDeclineSuccess={() => { refreshCoreData(); }}
-                            />
-                        </Suspense>
+                        <DeclineModal
+                            interestId={declineInterestId}
+                            onClose={() => {
+                                setShowDeclineModal(false);
+                                setDeclineInterestId(null);
+                            }}
+                            onDeclineSuccess={() => { fetchIncomingInterests(); fetchSentInterests(); }}
+                        />
                     )}
                 </AnimatePresence>
 
                 <AnimatePresence>
                     {proposalTarget && (
-                        <Suspense fallback={null}>
-                            <ProposalModal
-                                profile={proposalTarget}
-                                onClose={() => setProposalTarget(null)}
-                                onNavigate={handleNavigate}
-                                onSent={(profileId) => {
-                                    upsertProposalState(profileId, 'sent_pending', 120000);
-                                    refreshCoreData({ force: true });
-                                }}
-                            />
-                        </Suspense>
-                    )}
-                </AnimatePresence>
-
-                <AnimatePresence>
-                    {showPremiumMessagingModal && (
-                        <Suspense fallback={null}>
-                            <PremiumMessagingModal
-                                open={showPremiumMessagingModal}
-                                onClose={() => setShowPremiumMessagingModal(false)}
-                                onChooseReferral={handleUpgradeMessagingViaReferral}
-                                onChoosePackage={handleUpgradeMessaging}
-                            />
-                        </Suspense>
+                        <ProposalModal profile={proposalTarget} onClose={() => setProposalTarget(null)} onNavigate={handleNavigate} />
                     )}
                 </AnimatePresence>
 
                 <AnimatePresence>
                     {showSubscription && (
-                        <Suspense fallback={null}>
-                            <SubscriptionModal
-                                onClose={() => setShowSubscription(false)}
-                                onSelectPlan={handleSelectPlan}
-                                onSelectAddon={handleSelectAddon}
-                            />
-                        </Suspense>
+                        <SubscriptionModal
+                            onClose={() => setShowSubscription(false)}
+                            onSelectPlan={handleSelectPlan}
+                            onSelectAddon={handleSelectAddon}
+                        />
                     )}
                 </AnimatePresence>
 
                 <AnimatePresence>
                     {checkoutItem && (
-                        <Suspense fallback={null}>
-                            <PaymentModal
-                                itemId={checkoutItem.id}
-                                itemName={checkoutItem.name}
-                                amount={checkoutItem.amount}
-                                purchaseType={checkoutItem.type}
-                                appliedCouponCode={appliedCouponCode}
-                                onCouponApplied={(code) => setAppliedCouponCode(code)}
-                                onClose={() => setCheckoutItem(null)}
-                            />
-                        </Suspense>
+                        <PaymentModal
+                            itemId={checkoutItem.id}
+                            itemName={checkoutItem.name}
+                            amount={checkoutItem.amount}
+                            purchaseType={checkoutItem.type}
+                            appliedCouponCode={appliedCouponCode}
+                            onCouponApplied={(code) => setAppliedCouponCode(code)}
+                            onClose={() => setCheckoutItem(null)}
+                        />
                     )}
                 </AnimatePresence>
 
                 <AnimatePresence>
                     {showAuthModal && (
-                        <Suspense fallback={null}>
-                            <AuthModal
-                                onClose={() => setShowAuthModal(false)}
-                                onLogin={() => setShowAuthModal(false)}
-                            />
-                        </Suspense>
+                        <AuthModal
+                            onClose={() => setShowAuthModal(false)}
+                            onLogin={() => setShowAuthModal(false)}
+                        />
                     )}
                 </AnimatePresence>
 
                 <AnimatePresence>
                     {selectedProposalProfile && (
-                        <Suspense fallback={null}>
-                            <ProfileDetailModal
-                                profile={selectedProposalProfile}
-                                onClose={() => setSelectedProposalProfile(null)}
-                                onSendProposal={(p) => { setSelectedProposalProfile(null); setProposalTarget(p); }}
-                                onNavigate={handleNavigate}
-                            />
-                        </Suspense>
+                        <ProfileDetailModal
+                            profile={selectedProposalProfile}
+                            onClose={() => setSelectedProposalProfile(null)}
+                            onSendProposal={(p) => { setSelectedProposalProfile(null); setProposalTarget(p); }}
+                            onNavigate={handleNavigate}
+                        />
                     )}
                 </AnimatePresence>
-
-                {gateState !== 'gateUnlocked' && !showOnboarding && !showVerificationPrompt && (
-                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center">
-                        <div className="bg-white rounded-2xl px-6 py-5 shadow-2xl text-center">
-                            <LoadingTimeoutFallback
-                                message="Preparing identity verification..."
-                                timeoutMs={10000}
-                                compact
-                            />
-                        </div>
-                    </div>
-                )}
 
                 <style>{`
         /* Global Inputs */
@@ -1347,25 +793,10 @@ useEffect(() => {
             scrollbar-width: none;
         }
       `}</style>
-                
-                <AnimatePresence>
-                    {showReferralPopup && referralPopupConfig && (
-                        <Suspense fallback={null}>
-                            <ReferralPopupModal
-                                onClose={handleDismissReferralPopup}
-                                onNavigate={(view) => { handleDismissReferralPopup(); handleNavigate(view); }}
-                                popupConfig={referralPopupConfig}
-                            />
-                        </Suspense>
-                    )}
-                </AnimatePresence>
-
-                <FloatingContactButton placement={currentView === 'messages' ? 'chat' : 'default'} />
+                <FloatingContactButton />
             </div>
         </GoogleOAuthProvider>
     );
 };
 
 export default App;
-
-

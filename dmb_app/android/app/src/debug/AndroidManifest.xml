@@ -1,4 +1,0 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Allow cleartext for debug builds (local API testing) -->
-    <application android:usesCleartextTraffic="true" />
-</manifest>

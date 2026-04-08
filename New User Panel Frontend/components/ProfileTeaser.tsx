@@ -1,7 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ProfileMatch } from '../types';
-import { useAuthStore } from '../src/stores/authStore';
 
 // API base URL for assets
 const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://api.doctormarriagebureau.com.pk';
@@ -13,7 +12,6 @@ interface ProfileTeaserProps {
 
 const ProfileTeaser: React.FC<ProfileTeaserProps> = ({ profile }) => {
   const { t } = useTranslation();
-  const currentUserId = useAuthStore((state) => state.user?.id);
   if (!profile) {
     return (
       <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 opacity-70">
@@ -31,17 +29,11 @@ const ProfileTeaser: React.FC<ProfileTeaserProps> = ({ profile }) => {
   if (!avatarUrl || (!avatarUrl.startsWith('http') && !avatarUrl.startsWith('/'))) {
     avatarUrl = DEFAULT_AVATAR;
   }
-  const shouldBlurAvatar = Boolean(
-    displayProfile.profilePhotoBlur &&
-    currentUserId != null &&
-    String(currentUserId) !== String(displayProfile.id ?? '') &&
-    !avatarUrl.includes('avatar-place.png')
-  );
 
   return (
     <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 opacity-60 hover:opacity-100 transition-opacity cursor-pointer group">
       <div 
-        className={`size-16 rounded-full bg-cover bg-center shrink-0 grayscale group-hover:grayscale-0 transition-all overflow-hidden ${shouldBlurAvatar ? 'scale-110 blur-2xl' : ''}`}
+        className="size-16 rounded-full bg-cover bg-center shrink-0 grayscale group-hover:grayscale-0 transition-all" 
         style={{ backgroundImage: `url('${avatarUrl}')` }}
       ></div>
       <div className="flex-1">

@@ -82,30 +82,27 @@
 
         <div class="space-y-2">
             <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200" for="password">{{ translate('New Password') }}</label>
-            <x-password-field
-                id="password"
-                name="password"
-                placeholder="••••••••"
-                autocomplete="new-password"
-                wrapperClass=""
-                inputClass="block w-full px-4 py-3.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-white/5 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all sm:text-sm font-medium shadow-sm @error('password') border-red-500 @enderror"
-                errorName="password"
-                required
-            />
+            <div class="relative group">
+                <input class="block w-full px-4 py-3.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-white/5 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all sm:text-sm font-medium shadow-sm @error('password') border-red-500 @enderror" id="password" name="password" required type="password" placeholder="••••••••"/>
+                <button type="button" class="pass-toggle absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors" data-target="password">
+                    <span class="material-symbols-outlined text-[20px]">visibility</span>
+                </button>
+            </div>
+            @error('password')
+                <span class="text-red-500 text-xs mt-1 block" role="alert">
+                    <strong>{{ $message }}</strong>
+                </span>
+            @enderror
         </div>
 
         <div class="space-y-2">
             <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200" for="password-confirm">{{ translate('Confirm Password') }}</label>
-            <x-password-field
-                id="password-confirm"
-                name="password_confirmation"
-                placeholder="••••••••"
-                autocomplete="new-password"
-                wrapperClass=""
-                inputClass="block w-full px-4 py-3.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-white/5 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all sm:text-sm font-medium shadow-sm"
-                errorName=""
-                required
-            />
+            <div class="relative group">
+                <input class="block w-full px-4 py-3.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-white/5 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all sm:text-sm font-medium shadow-sm" id="password-confirm" name="password_confirmation" required type="password" placeholder="••••••••"/>
+                <button type="button" class="pass-toggle absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors" data-target="password-confirm">
+                    <span class="material-symbols-outlined text-[20px]">visibility</span>
+                </button>
+            </div>
             <span class="text-red-500 text-xs mt-1 hidden" id="confirmError">{{ translate('Passwords do not match') }}</span>
         </div>
 
@@ -131,6 +128,7 @@
         const resetBtn = document.getElementById('resetBtn');
         const codeHidden = document.getElementById('code');
         const otpInputs = Array.from(document.querySelectorAll('.otp-input'));
+        const eyeButtons = Array.from(document.querySelectorAll('.pass-toggle'));
 
         function validateMatch() {
             const filled = !!password.value && !!confirmPassword.value;
@@ -183,10 +181,21 @@
         password.addEventListener('input', updateButton);
         confirmPassword.addEventListener('input', updateButton);
 
+        eyeButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetId = btn.getAttribute('data-target');
+                const input = document.getElementById(targetId);
+                const isPwd = input.type === 'password';
+                input.type = isPwd ? 'text' : 'password';
+                btn.querySelector('.material-symbols-outlined').innerText = isPwd ? 'visibility_off' : 'visibility';
+            });
+        });
+
+        // Mirror old code if available
         const prevCode = codeHidden.value;
-        if (prevCode && prevCode.length === 6) {
+        if(prevCode && prevCode.length === 6) {
             prevCode.split('').forEach((char, i) => {
-                if (otpInputs[i]) otpInputs[i].value = char;
+                if(otpInputs[i]) otpInputs[i].value = char;
             });
             updateButton();
         }

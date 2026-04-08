@@ -6,11 +6,6 @@ use Illuminate\Database\Seeder;
 use App\Models\ProgressionStage;
 use App\Models\MemberProgression;
 use App\Models\ProgressionEvent;
-use App\Models\ProgressionChecklistItem;
-use App\Models\ProgressionNote;
-use App\Models\ProgressionVenue;
-use App\Models\ProgressionBudgetItem;
-use App\Models\ProgressionSetting;
 use App\Models\User;
 
 class ProgressionSeeder extends Seeder
@@ -35,11 +30,7 @@ class ProgressionSeeder extends Seeder
             ProgressionStage::firstOrCreate(['slug' => $stage['slug']], $stage);
         }
 
-        if (!app()->environment(['local', 'testing'])) {
-            return;
-        }
-
-        // 2. Create demo progression data for local/testing only
+        // 2. Create Dummy Progression for a logged in user (assuming user ID 1 exists, or find one)
         $user = User::where('user_type', 'member')->first();
         if (!$user) return; // No users to seed
 
@@ -56,65 +47,6 @@ class ProgressionSeeder extends Seeder
                  'status' => 'active',
                  'total_progress_percent' => $stage->progress_percent,
                  'next_steps' => $index == 0 ? 'Plan family dinner' : 'Post-date feedback'
-             ]);
-
-             ProgressionSetting::firstOrCreate([
-                 'member_progression_id' => $progression->id,
-             ], [
-                 'share_calendar_busy' => true,
-                 'auto_detect_timezone' => true,
-                 'timezone' => config('app.timezone'),
-                 'budget_target' => $index === 0 ? 1500000 : 500000,
-             ]);
-
-             ProgressionChecklistItem::firstOrCreate([
-                 'member_progression_id' => $progression->id,
-                 'title' => 'Exchange biodata',
-             ], [
-                 'is_completed' => true,
-                 'completed_at' => now()->subDays(6),
-                 'sort_order' => 1,
-                 'created_by' => $user->id,
-                 'updated_by' => $user->id,
-             ]);
-
-             ProgressionChecklistItem::firstOrCreate([
-                 'member_progression_id' => $progression->id,
-                 'title' => 'Schedule family intro',
-             ], [
-                 'is_completed' => false,
-                 'sort_order' => 2,
-                 'created_by' => $user->id,
-                 'updated_by' => $user->id,
-             ]);
-
-             ProgressionNote::firstOrCreate([
-                 'member_progression_id' => $progression->id,
-                 'note_type' => 'family_feedback',
-                 'note' => 'Family liked the profile presentation and wants a deeper conversation.',
-             ], [
-                 'author_id' => $user->id,
-             ]);
-
-             ProgressionVenue::firstOrCreate([
-                 'member_progression_id' => $progression->id,
-                 'name' => $index == 0 ? 'Pearl Continental, Lahore' : 'Gymkhana Club',
-             ], [
-                 'venue_type' => $index == 0 ? 'Engagement Venue' : 'Family Lunch',
-                 'estimated_cost' => $index == 0 ? 450000 : 150000,
-                 'rating' => $index == 0 ? 4.8 : 4.5,
-                 'status' => 'shortlisted',
-                 'notes' => 'Suggested for planning discussion.',
-             ]);
-
-             ProgressionBudgetItem::firstOrCreate([
-                 'member_progression_id' => $progression->id,
-                 'label' => $index == 0 ? 'Venue Advance' : 'Family Lunch',
-             ], [
-                 'amount' => $index == 0 ? 30000 : 12000,
-                 'category' => 'planning',
-                 'status' => 'planned',
-                 'notes' => 'Seeded local demo item.',
              ]);
 
              // Events

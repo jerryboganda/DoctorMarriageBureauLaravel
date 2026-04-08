@@ -1,13 +1,12 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     X, ShieldCheck, Smartphone, Mail, ArrowRight, Lock,
-    Users, User, Briefcase, AlertCircle, Fingerprint, Clock, Monitor, ShieldAlert,
+    Users, User, Briefcase, Eye, EyeOff, AlertCircle, Fingerprint, Clock, Monitor, ShieldAlert,
     Sparkles, Key, ChevronLeft, Shield, HelpCircle, Signal, MessageCircle
 } from 'lucide-react';
 import { api } from '../utils/api';
 import { useAuthStore } from '../src/stores/authStore';
 import CountryCodeSelector from './CountryCodeSelector';
-import PasswordField from './PasswordField';
 import { Country, getDefaultCountry, countries } from '../utils/countries';
 import { useGoogleLogin } from '@react-oauth/google';
 import FacebookLogin from '@greatsumini/react-facebook-login';
@@ -42,6 +41,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin }) => {
     }, [selectedCountry, method]);
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [rateLimitTimer, setRateLimitTimer] = useState(0);
     const [failedAttempts, setFailedAttempts] = useState(0);
@@ -245,9 +245,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin }) => {
         if (method === 'email') {
             const [name, domain] = identifier.split('@');
             if (!domain) return identifier;
-            return `${name.slice(0, 2)}â€¢â€¢â€¢â€¢â€¢â€¢@${domain}`;
+            return `${name.slice(0, 2)}••••••@${domain}`;
         }
-        return `${selectedCountry.dialCode} â€¢â€¢â€¢â€¢â€¢ â€¢â€¢${identifier.slice(-2)}`;
+        return `${selectedCountry.dialCode} ••••• ••${identifier.slice(-2)}`;
     };
 
     return (
@@ -475,18 +475,26 @@ const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin }) => {
                                 </p>
                             </div>
 
-                            <PasswordField
-                                autoFocus
-                                placeholder={t('auth.modal.password')}
-                                value={password}
-                                onChange={(e) => {
-                                    setPassword(e.target.value);
-                                    setError('');
-                                }}
-                                onKeyDown={(e) => { if (e.key === 'Enter') handlePasswordLogin(); }}
-                                inputClassName="h-12 px-4 bg-white border border-slate-300 rounded-xl font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-                                containerClassName="space-y-0"
-                            />
+                            <div className="relative">
+                                <input
+                                    type={showPassword ? "text" : "password"}
+                                    autoFocus
+                                    className="w-full h-12 px-4 bg-white border border-slate-300 rounded-xl font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all pr-12"
+                                    placeholder={t('auth.modal.password')}
+                                    value={password}
+                                    onChange={(e) => {
+                                        setPassword(e.target.value);
+                                        setError('');
+                                    }}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') handlePasswordLogin(); }}
+                                />
+                                <button
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                >
+                                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
+                            </div>
 
                             {error && <p className="text-red-500 text-xs font-bold text-center">{error}</p>}
 
@@ -672,4 +680,3 @@ const RoleButton: React.FC<{ icon: React.ReactNode, title: string, desc: string,
 );
 
 export default AuthModal;
-

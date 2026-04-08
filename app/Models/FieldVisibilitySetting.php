@@ -67,7 +67,6 @@ class FieldVisibilitySetting extends Model
         'intro_video',
         'private_vault',
         'screenshot_deterrence',
-        'profile_photo_blur',
     ];
 
     /**
@@ -89,7 +88,6 @@ class FieldVisibilitySetting extends Model
 
         // Default all fields to visible if not set
         $defaults = array_fill_keys(self::VALID_FIELDS, true);
-        $defaults['profile_photo_blur'] = false;
 
         return array_merge($defaults, $settings);
     }

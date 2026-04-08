@@ -107,18 +107,6 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="form-group row">
-                            <label class="col-sm-3 col-from-label">{{ translate('Biodata WhatsApp Number') }}
-                                <br>
-                                <i>
-                                    <code>({{ translate('Shown in PDF footer') }})</code>
-                                </i>
-                            </label>
-                            <div class="col-sm-9">
-                                <input type="hidden" name="types[]" value="biodata_whatsapp">
-                                <input type="text" class="form-control" name="biodata_whatsapp" value="{{ get_setting('biodata_whatsapp') }}" placeholder="+92 300 1234567">
-                            </div>
-                        </div>
                         <div class="text-right">
                             <button type="submit" class="btn btn-primary">{{ translate('Update') }}</button>
                         </div>

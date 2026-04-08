@@ -2,8 +2,11 @@
 
 namespace App\Http\Resources;
 
+use App\Models\IgnoredUser;
 use App\Models\Member;
 use App\Models\Package;
+use App\Models\ProfileMatch;
+use App\Models\User;
 use Cache;
 use Carbon\Carbon;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -13,8 +16,8 @@ class ChatThreadResource extends JsonResource
     /**
      * Transform the resource into an array.
      *
-     * OPTIMISED: uses withCount aggregates from controller instead of
-     * loading + filtering the entire chats collection in memory.
+     * @param  \Illuminate\Http\Request  $request
+     * @return array|\Illuminate\Contracts\Support\Arrayable|\JsonSerializable
      */
     public function toArray($request)
     {
@@ -22,43 +25,31 @@ class ChatThreadResource extends JsonResource
         if ($this->receiver != null && $this->sender != null) {
             $user_to_show = $user->id == $this->sender->id ? 'receiver' : 'sender';
             $member = Member::where('user_id', $this->$user_to_show->id)->first();
-            $member_package = $member ? Package::find($member->current_package_id) : null;
+            $member_package = Package::find($member->current_package_id);
 
-            // Use the eager-loaded latestChat (single message) instead of all chats
-            $lastChat = $this->relationLoaded('latestChat')
-                ? $this->latestChat
-                : ($this->relationLoaded('chats') ? $this->chats->sortBy([['created_at', 'asc'], ['id', 'asc']])->values()->last() : null);
-
-            // Use withCount aggregates when available, fallback to collection for backwards compat
-            $unseenCount = $this->unseen_message_count ?? ($this->relationLoaded('chats')
-                ? $this->chats->where('seen', 0)->where('sender_user_id', '!=', $user->id)->count()
-                : 0);
-
-            $meReplied = ($this->my_message_count ?? ($this->relationLoaded('chats')
-                ? $this->chats->where('sender_user_id', $user->id)->count()
-                : 0)) > 0;
-
-            $otherSent = ($this->other_message_count ?? ($this->relationLoaded('chats')
-                ? $this->chats->where('sender_user_id', $this->$user_to_show->id)->count()
-                : 0)) > 0;
-
-            $isRequest = (!$meReplied && $otherSent);
+            // Determine if it's a request
+            // A thread is a "Request" if the current user has received messages but hasn't replied yet
+            // AND the thread started by the other person.
+            $me_replied = $this->chats->where('sender_user_id', $user->id)->count() > 0;
+            $other_sent = $this->chats->where('sender_user_id', $this->$user_to_show->id)->count() > 0;
+            
+            $is_request = (!$me_replied && $other_sent);
 
             return [
                 'id' => $this->id,
                 'user_id' => $this->$user_to_show->id,
+                // 'active' => $this->active,
                 'active' => Cache::has('user-is-online-' . $this->$user_to_show->id) ? 1 : 0,
                 'blocked_by_user' => $this->blocked_by_user,
-                'unseen_message_count' => $unseenCount,
+                'unseen_message_count' => $this->chats->where('seen', 0)->where('sender_user_id', '!=', $user->id)->count(),
                 'member_photo' => $this->$user_to_show->photo != null ? uploaded_asset($this->$user_to_show->photo) : static_asset('assets/img/avatar-place.png'),
                 'member_name' => $this->$user_to_show->first_name . ' ' . $this->$user_to_show->last_name,
-                'last_message_time' => $lastChat != null ? Carbon::parse($lastChat->created_at)->diffForHumans() : '',
-                'last_message' => $lastChat ? $lastChat->message : '',
+                'last_message_time' => $this->chats->last() != null ? Carbon::parse($this->chats->last()->created_at)->diffForHumans() : '',
+                'last_message' => $this->chats->last() ? $this->chats->last()->message  : '',
                 'member_package' => $member_package ? new PackageResource($member_package) : '',
-                'is_request' => $isRequest,
+                'is_request' => $is_request,
             ];
         }
-
         return [];
     }
 }

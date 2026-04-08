@@ -79,7 +79,7 @@
 <h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-white">DMB<span class="text-primary">.</span></h1>
 </div>
 <div class="flex items-center gap-4">
-<a href="{{ route('logout.get') }}" class="text-sm font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors flex items-center gap-2">
+<a href="{{ route('logout') }}" class="text-sm font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors flex items-center gap-2">
     <span class="material-symbols-outlined text-[18px]">logout</span>
     Logout
 </a>

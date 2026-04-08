@@ -2,7 +2,6 @@
 
 namespace App\Mail;
 
-use App\Utility\EmailUtility;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -33,7 +32,7 @@ class SecondEmailVerifyMailManager extends Mailable
     public function build()
     {
         return $this->view('emails.verification')
-                    ->from($this->array['from'] ?? EmailUtility::fromAddress(), EmailUtility::fromName())
+                    ->from($this->array['from'], env('MAIL_FROM_NAME'))
                     ->subject($this->array['subject']);
     }
 }

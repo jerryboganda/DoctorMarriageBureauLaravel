@@ -75,7 +75,7 @@ Route::get('/password/reset', function () {
 
 Route::get('/password/email', function () {
     return view('auth.passwords.email');
-})->name('password.email.form');
+})->name('password.email');
 
 Route::post('/password/email', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
 
@@ -98,7 +98,7 @@ Route::controller(VerificationController::class)->group(function () {
     Route::get('/email_change/callback', 'email_change_callback')->name('email_change.callback');
     // Show reset password form (GET) to avoid 405 after POST validation errors
     Route::get('/password/reset/email', function(){ return view('auth.passwords.reset'); })->name('password.reset.form');
-    Route::post('/password/reset/email/submit', 'reset_password_with_code')->name('password.update.email_code');
+    Route::post('/password/reset/email/submit', 'reset_password_with_code')->name('password.update');
     Route::get('/users/login', 'login')->name('user.login');
     Route::get('/happy-stories', 'happy_stories')->name('happy_stories');
     Route::get('/users/blocked', 'user_account_blocked')->name('user.blocked');
@@ -121,13 +121,13 @@ Route::controller(AizUploadController::class)->group(function () {
 
 Auth::routes(['verify' => true]);
 Route::controller(LoginController::class)->group(function () {
-    Route::get('/logout', 'logout')->name('logout.get');
+    Route::get('/logout', 'logout')->name('logout');
     Route::get('/social-login/redirect/{provider}', 'redirectToProvider')->name('social.login');
     Route::get('/social-login/{provider}/callback', 'handleProviderCallback')->name('social.callback');
 });
 
 Route::controller(VerificationController::class)->group(function () {
-    Route::get('/email/resend', 'resend')->name('verification.resend.get');
+    Route::get('/email/resend', 'resend')->name('verification.resend');
     Route::get('/verification-confirmation/{code}', 'verification_confirmation')->name('email.verification.confirmation');
 });
 
@@ -216,7 +216,7 @@ Route::group(['middleware' => ['member', 'verified']], function () {
                     'sender_name' => $otherUser->first_name . ' ' . $otherUser->last_name,
                     'message_preview' => $latestMessage ? substr($latestMessage->message, 0, 50) . '...' : 'No messages yet',
                     'time_ago' => $latestMessage ? $latestMessage->created_at->diffForHumans() : 'Just now',
-                    'unread_count' => $thread->chats()->where('sender_user_id', '!=', $user->id)->where('seen', 0)->count(),
+                    'unread_count' => $thread->chats()->where('sender_user_id', '!=', $user->id)->where('read_at', null)->count(),
                     'thread_id' => $thread->id
                 ];
             })->filter();
@@ -247,7 +247,7 @@ Route::group(['middleware' => ['member', 'verified']], function () {
                     'name' => $match->user->first_name . ' ' . $match->user->last_name,
                     'age' => $age,
                     'location' => $location,
-                    'match_percentage' => auth()->check() ? \App\Services\MatchScoreService::score(auth()->user(), $match->user) : 50,
+                    'match_percentage' => rand(85, 98),
                     'is_online' => rand(0, 1)
                 ];
             });
@@ -471,7 +471,7 @@ Route::group(['middleware' => ['member', 'verified']], function () {
             
             $interest = \App\Models\ExpressInterest::find($interestId);
             if (!$interest) {
-                return response()->json(['success' => false, 'message' => 'Proposal request not found'], 404);
+                return response()->json(['success' => false, 'message' => 'Interest not found'], 404);
             }
             
             // Check if user owns this interest
@@ -496,9 +496,9 @@ Route::group(['middleware' => ['member', 'verified']], function () {
                     $chat_thread->save();
                 }
                 
-                return response()->json(['success' => true, 'message' => 'Proposal accepted successfully']);
+                return response()->json(['success' => true, 'message' => 'Interest accepted successfully']);
             } else {
-                return response()->json(['success' => false, 'message' => 'Failed to accept proposal'], 500);
+                return response()->json(['success' => false, 'message' => 'Failed to accept interest'], 500);
             }
         } catch (\Exception $e) {
             \Log::error('Error accepting interest: ' . $e->getMessage());
@@ -518,7 +518,7 @@ Route::group(['middleware' => ['member', 'verified']], function () {
             
             $interest = \App\Models\ExpressInterest::find($interestId);
             if (!$interest) {
-                return response()->json(['success' => false, 'message' => 'Proposal request not found'], 404);
+                return response()->json(['success' => false, 'message' => 'Interest not found'], 404);
             }
             
             // Check if user owns this interest
@@ -527,9 +527,9 @@ Route::group(['middleware' => ['member', 'verified']], function () {
             }
             
             if (\App\Models\ExpressInterest::destroy($interestId)) {
-                return response()->json(['success' => true, 'message' => 'Proposal declined successfully']);
+                return response()->json(['success' => true, 'message' => 'Interest declined successfully']);
             } else {
-                return response()->json(['success' => false, 'message' => 'Failed to decline proposal'], 500);
+                return response()->json(['success' => false, 'message' => 'Failed to decline interest'], 500);
             }
         } catch (\Exception $e) {
             \Log::error('Error declining interest: ' . $e->getMessage());
@@ -557,27 +557,27 @@ Route::group(['middleware' => ['member', 'verified']], function () {
                 ->first();
             
             $status = 'none';
-            $buttonText = 'Send Proposal';
+            $buttonText = 'Send Interest';
             $buttonClass = 'btn-send-interest';
             
             if ($sentInterest) {
                 if ($sentInterest->status == 1) {
                     $status = 'accepted';
-                    $buttonText = 'Proposal Accepted';
+                    $buttonText = 'Interest Accepted';
                     $buttonClass = 'btn-interest-accepted';
                 } else {
                     $status = 'sent';
-                    $buttonText = 'Proposal Sent';
+                    $buttonText = 'Interest Sent';
                     $buttonClass = 'btn-interest-sent';
                 }
             } else if ($receivedInterest) {
                 if ($receivedInterest->status == 1) {
                     $status = 'mutual';
-                    $buttonText = 'Mutual Proposal';
+                    $buttonText = 'Mutual Interest';
                     $buttonClass = 'btn-mutual-interest';
                 } else {
                     $status = 'received';
-                    $buttonText = 'Reply to Proposal';
+                    $buttonText = 'Respond to Interest';
                     $buttonClass = 'btn-respond-interest';
                 }
             }
@@ -625,12 +625,12 @@ Route::group(['middleware' => ['member', 'verified']], function () {
                 ->first();
             
             if ($existingInterest) {
-                return response()->json(['success' => false, 'message' => 'Proposal already sent']);
+                return response()->json(['success' => false, 'message' => 'Interest already sent']);
             }
             
             // Check if user is trying to send interest to themselves
             if ($targetUserId == $user->id) {
-                return response()->json(['success' => false, 'message' => 'Cannot send proposal to yourself']);
+                return response()->json(['success' => false, 'message' => 'Cannot send interest to yourself']);
             }
             
             // Create new interest
@@ -651,9 +651,9 @@ Route::group(['middleware' => ['member', 'verified']], function () {
                 //     // Send notification logic here
                 // }
                 
-                return response()->json(['success' => true, 'message' => 'Proposal sent successfully']);
+                return response()->json(['success' => true, 'message' => 'Interest sent successfully']);
             } else {
-                return response()->json(['success' => false, 'message' => 'Failed to send proposal']);
+                return response()->json(['success' => false, 'message' => 'Failed to send interest']);
             }
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
@@ -671,7 +671,7 @@ Route::group(['middleware' => ['member', 'verified']], function () {
                 return response()->json(['success' => true]);
             }
             
-            return response()->json(['success' => false, 'message' => 'Proposal request not found']);
+            return response()->json(['success' => false, 'message' => 'Interest not found']);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
@@ -688,7 +688,7 @@ Route::group(['middleware' => ['member', 'verified']], function () {
                 return response()->json(['success' => true]);
             }
             
-            return response()->json(['success' => false, 'message' => 'Proposal request not found']);
+            return response()->json(['success' => false, 'message' => 'Interest not found']);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
@@ -703,9 +703,7 @@ Route::group(['middleware' => ['verified']], function () {
         Route::get('/member/verification', 'verification_form')->name('member.verification');
         Route::post('/member/verification-info/store', 'verification_info_store')->name('member.verification_info.store');
     });
-    Route::get('/dashboard', function () {
-        return redirect(rtrim(env('FRONTEND_URL', env('APP_URL', 'http://localhost')), '/'));
-    })->name('dashboard');
+    Route::get('/dashboard', [HomeController::class, 'dashboard'])->name('dashboard');
 });
 
 Route::group(['middleware' => ['member', 'verified']], function () {
@@ -870,11 +868,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('/address', AddressController::class);
 
     // Member education
-    Route::resource('/education', EducationController::class)->names([
-        'create' => 'education.resource.create',
-        'edit' => 'education.resource.edit',
-        'destroy' => 'education.resource.destroy',
-    ]);
+    Route::resource('/education', EducationController::class);
     Route::controller(EducationController::class)->group(function () {
         Route::post('/education/create', 'create')->name('education.create');
         Route::post('/education/edit', 'edit')->name('education.edit');
@@ -886,11 +880,7 @@ Route::group(['middleware' => ['auth']], function () {
 
 
     // Member Career
-    Route::resource('/career', CareerController::class)->names([
-        'create' => 'career.resource.create',
-        'edit' => 'career.resource.edit',
-        'destroy' => 'career.resource.destroy',
-    ]);
+    Route::resource('/career', CareerController::class);
     Route::controller(CareerController::class)->group(function () {
         Route::post('/career/create', 'create')->name('career.create');
         Route::post('/career/edit', 'edit')->name('career.edit');
@@ -983,13 +973,238 @@ Route::get('/migrate/products/', 'ProfileMatchController@migrate_profiles');
 
 
 //Custom page
-Route::get('/admin-react/{any?}', function () {
-    $path = public_path('admin-panel/index.html');
-    if (!file_exists($path)) {
-        abort(404, 'Admin React build not found. Please run npm run build in Admin Panel Frontend.');
-    }
+Route::get('/{slug}', 'PageController@show_custom_page')->name('custom-pages.show_custom_page');
 
-    return response()->file($path);
-})->where('any', '.*');
+    Route::controller(MemberController::class)->group(function () {
+
+        Route::post('/members/introduction_update/{id}', 'introduction_update')->name('member.introduction.update');
+
+        Route::post('/members/basic_info_update/{id}', 'basic_info_update')->name('member.basic_info_update');
+
+        Route::post('/members/language_info_update/{id}', 'language_info_update')->name('member.language_info_update');
+
+    });
+
+   
+
+
+
+    Route::resource('/address', AddressController::class);
+
+
+
+    // Member education
+
+    Route::resource('/education', EducationController::class);
+
+    Route::controller(EducationController::class)->group(function () {
+
+        Route::post('/education/create', 'create')->name('education.create');
+
+        Route::post('/education/edit', 'edit')->name('education.edit');
+
+        Route::post('/education/update_education_present_status', 'update_education_present_status')->name('education.update_education_present_status');
+
+        Route::post('/education/update-highest-degree', 'updateHighestDegree')->name('education.update_highest_degree');
+
+        
+
+        Route::get('/education/destroy/{id}', 'destroy')->name('education.destroy');
+
+    });
+
+
+
+
+
+    // Member Career
+
+    Route::resource('/career', CareerController::class);
+
+    Route::controller(CareerController::class)->group(function () {
+
+        Route::post('/career/create', 'create')->name('career.create');
+
+        Route::post('/career/edit', 'edit')->name('career.edit');
+
+        Route::post('/career/update_career_present_status', 'update_career_present_status')->name('career.update_career_present_status');
+
+        Route::get('/career/destroy/{id}', 'destroy')->name('career.destroy');
+
+    });
+
+
+
+    Route::resource('/physical-attribute', PhysicalAttributeController::class);
+
+    Route::resource('/hobbies', HobbyController::class);
+
+    Route::resource('/attitudes', AttitudeController::class);
+
+    Route::resource('/recidencies', RecidencyController::class);
+
+    Route::resource('/lifestyles', LifestyleController::class);
+
+    Route::resource('/astrologies', AstrologyController::class);
+
+    Route::resource('/families', FamilyController::class);
+
+    Route::resource('/spiritual_backgrounds', SpiritualBackgroundController::class);
+
+    Route::resource('/partner_expectations', PartnerExpectationController::class);
+
+    Route::post('/additional-member-info/update', [AdditionalMemberInfoController::class, 'update'])->name('additional_member_info.update');
+
+
+
+    Route::post('/states/get_state_by_country', [StateController::class, 'get_state_by_country'])->name('states.get_state_by_country');
+
+    Route::post('/cities/get_cities_by_state', [CityController::class, 'get_cities_by_state'])->name('cities.get_cities_by_state');
+
+    Route::post('/castes/get_caste_by_religion', [CasteController::class, 'get_caste_by_religion'])->name('castes.get_caste_by_religion');
+
+    Route::post('/sub-castes/get_sub_castes_by_religion', [SubCasteController::class, 'get_sub_castes_by_religion'])->name('sub_castes.get_sub_castes_by_religion');
+
+
+
+    Route::get('/package-payment-invoice/{id}', [PackagePaymentController::class, 'package_payment_invoice'])->name('package_payment.invoice');
+
+
+
+    Route::controller(NotificationController::class)->group(function () {
+
+        Route::get('/notification-view/{id}', 'notification_view')->name('notification_view');
+
+        Route::get('/notification/mark-all-as-read', 'mark_all_as_read')->name('notification.mark_all_as_read');
+
+    });
+
+    
+
+// });
+
+
+
+// Contact Us page
+
+Route::controller(ContactUsController::class)->group(function () {
+
+    Route::get('/contact-us/page', 'show_contact_us_page')->name('contact_us');
+
+    Route::post('/contact-us', 'store')->name('contact-us.store');
+
+});
+
+
+
+// Payment gateway Redirect
+
+
+
+//Paypal START
+
+Route::get('/paypal/payment/done', 'PaypalController@getDone')->name('payment.done');
+
+Route::get('/paypal/payment/cancel', 'PaypalController@getCancel')->name('payment.cancel');
+
+//Paypal END
+
+
+
+//amarpay
+
+
+
+Route::post('/aamarpay/success', 'AamarpayController@success')->name('aamarpay.success');
+
+Route::post('/aamarpay/fail', 'AamarpayController@fail')->name('aamarpay.fail');
+
+
+
+// SSLCOMMERZ Start
+
+Route::get('/sslcommerz/pay', 'SslcommerzController@index');
+
+Route::any('/sslcommerz/success', 'SslcommerzController@success')->name('sslcommerz.success');
+
+Route::any('/sslcommerz/fail', 'SslcommerzController@fail');
+
+Route::any('/sslcommerz/cancel', 'SslcommerzController@cancel');
+
+Route::post('/sslcommerz/ipn', 'SslcommerzController@ipn');
+
+
+
+
+
+Route::get('/instamojo/payment/pay-success', 'InstamojoController@success')->name('instamojo.success');
+
+Route::post('rozer/payment/pay-success', 'RazorpayController@payment')->name('payment.rozer');
+
+Route::get('/paystack/payment/callback', 'PaystackController@handleGatewayCallback');
+
+
+
+//Stipe Start
+
+Route::controller(StripeController::class)->group(function () {
+
+    Route::get('stripe', 'stripe');
+
+    Route::post('/stripe/create-checkout-session', 'create_checkout_session')->name('stripe.get_token');
+
+    Route::any('/stripe/payment/callback', 'callback')->name('stripe.callback');
+
+    Route::get('/stripe/success', 'success')->name('stripe.success');
+
+    Route::get('/stripe/cancel', 'cancel')->name('stripe.cancel');
+
+});
+
+//Stripe END
+
+
+
+//Paytm
+
+Route::get('/paytm/index', 'PaytmController@index');
+
+Route::post('/paytm/callback', 'PaytmController@callback')->name('paytm.callback');
+
+
+
+// phonepe
+
+Route::controller(PhonepeController::class)->group(function () {
+
+    Route::any('/phonepe/pay', 'pay')->name('phonepe.pay');
+
+    Route::any('/phonepe/redirecturl', 'phonepe_redirecturl')->name('phonepe.redirecturl');
+
+    Route::any('/phonepe/callbackUrl', 'phonepe_callbackUrl')->name('phonepe.callbackUrl');
+
+});
+
+
+
+Route::get('/customer-products/admin', 'HomeController@profile_edit')->name('profile.edit');
+
+Route::get('/check_for_package_invalid', 'PackageController@check_for_package_invalid')->name('member.check_for_package_invalid');
+
+
+
+Route::get('/match_profiles', 'ProfileMatchController@match_profiles')->name('match_profiles');
+
+Route::get('/migrate/products/', 'ProfileMatchController@migrate_profiles');
+
+
+
+
+
+
+
+//Custom page
 
 Route::get('/{slug}', 'PageController@show_custom_page')->name('custom-pages.show_custom_page');
+
+

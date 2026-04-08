@@ -1,92 +1,34 @@
-# ========================================
-# Doctor Marriage Bureau - Laravel Project
-# ========================================
-
-# ---- Environment / Secrets ----
+/bootstrap/compiled.php
+/bootstrap/cache/
 .env
 .env.*.php
-.env.local
-.env.production
-
-# ---- PHP / Laravel ----
-/vendor/
-/node_modules/
-/bootstrap/compiled.php
-/bootstrap/cache/*.php
-_ide_helper.php
-_ide_helper_models.php
-.phpunit.result.cache
-Homestead.json
-Homestead.yaml
-
-# ---- Storage (keep structure via .gitkeep) ----
-/storage/*.key
-/storage/framework/cache/data/*
-!/storage/framework/cache/.gitkeep
-/storage/framework/sessions/*
-!/storage/framework/sessions/.gitkeep
-/storage/framework/views/*
-!/storage/framework/views/.gitkeep
-/storage/logs/*
-!/storage/logs/.gitkeep
-/storage/debugbar/*
-!/storage/debugbar/.gitkeep
-
-# ---- Temp directory ----
-/temp/*
-!/temp/.gitkeep
-
-# ---- Public uploads / generated ----
+.env.php
+/node_modules
 /public/hot
 /public/storage
 /public/uploads
-
-# ---- Frontend build artifacts ----
-New User Panel Frontend/node_modules/
-New User Panel Frontend/dist/
-New User Panel Frontend/.env.local
-New User Panel Frontend/.env.production
-
-# ---- Admin Panel Frontend build artifacts ----
-Admin Panel Frontend/node_modules/
-Admin Panel Frontend/dist/
-Admin Panel Frontend/.env.local
-Admin Panel Frontend/.env.production
-
-# ---- Mobile App build artifacts ----
-DMB Mobile App/node_modules/
-DMB Mobile App/.expo/
-DMB Mobile App/android/app/build/
-DMB Mobile App/ios/Pods/
-
-# ---- Archives / zips ----
+/storage/*.key
+/vendor
+/temp
+/.idea
+/.vscode
+/.vagrant
+Homestead.json
+Homestead.yaml
+npm-debug.log
+yarn-error.log
+.DS_Store
+.idea/
 updates/
+composer.lock
+*.lock
+resources/lang/en.json
+
+.env
 updates.zip
 ecommerce.zip
 install.zip
+/nbproject/private/
+/nbproject
 matrimonial_laravel.zip
 matrimonial420.zip
-
-# ---- IDE / Editor ----
-.idea/
-.vscode/
-/.vagrant
-/nbproject/
-/nbproject/private/
-*.swp
-*.swo
-*~
-
-# ---- OS generated ----
-.DS_Store
-Thumbs.db
-
-# ---- Debug / Logs ----
-npm-debug.log
-yarn-error.log
-
-# ---- Misc ----
-*.lock
-!composer.lock
-!package-lock.json
-!New User Panel Frontend/package-lock.json

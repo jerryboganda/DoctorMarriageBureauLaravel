@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
-    X, ShieldCheck, Mail, QrCode, Copy, Download, 
+    X, ShieldCheck, Smartphone, Mail, QrCode, Copy, Download, 
     CheckCircle2, AlertTriangle, ArrowRight, ArrowLeft, Lock, Loader2
 } from 'lucide-react';
 import { api } from '../utils/api';
@@ -18,7 +18,7 @@ const TwoFactorSetupModal: React.FC<TwoFactorSetupModalProps> = ({ onClose, onCo
   const [step, setStep] = useState<'method' | 'config' | 'backup' | 'success' | 'recover'>(
     isRecoveryMode ? 'recover' : 'method'
   );
-  const [method, setMethod] = useState<'app' | 'email'>('app');
+  const [method, setMethod] = useState<'app' | 'sms' | 'email'>('app');
   const [verificationCode, setVerificationCode] = useState('');
   const [codesSaved, setCodesSaved] = useState(false);
   const [setupData, setSetupData] = useState<{ qrCode?: string; manualKey?: string } | null>(null);
@@ -44,7 +44,7 @@ const TwoFactorSetupModal: React.FC<TwoFactorSetupModalProps> = ({ onClose, onCo
     window.URL.revokeObjectURL(url);
   };
 
-  const startSetup = async (nextMethod: 'app' | 'email') => {
+  const startSetup = async (nextMethod: 'app' | 'sms' | 'email') => {
     try {
       setLoading(true);
       setError(null);
@@ -136,6 +136,19 @@ const TwoFactorSetupModal: React.FC<TwoFactorSetupModalProps> = ({ onClose, onCo
           </div>
 
           <div 
+              onClick={() => startSetup('sms')}
+              className="flex items-start gap-4 p-4 border-2 border-slate-200 rounded-xl cursor-pointer hover:border-slate-300 hover:bg-slate-50 transition-all"
+          >
+              <div className="size-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-600">
+                  <Smartphone size={24} />
+              </div>
+              <div>
+                  <h4 className="font-bold text-slate-900 mb-1">{t('modals.twoFactor.smsMessage')}</h4>
+                  <p className="text-xs text-slate-500">{t('modals.twoFactor.smsDesc')}</p>
+              </div>
+          </div>
+
+          <div 
               onClick={() => startSetup('email')}
               className="flex items-start gap-4 p-4 border-2 border-slate-200 rounded-xl cursor-pointer hover:border-slate-300 hover:bg-slate-50 transition-all"
           >
@@ -157,7 +170,7 @@ const TwoFactorSetupModal: React.FC<TwoFactorSetupModalProps> = ({ onClose, onCo
                   {method === 'app' ? t('modals.twoFactor.setupAuthenticator') : t('modals.twoFactor.verifyContact')}
               </h3>
               <p className="text-slate-500 text-sm">
-                  {method === 'app' ? t('modals.twoFactor.scanQR') : t('modals.twoFactor.codeSentToContact', { method: 'email' })}
+                  {method === 'app' ? t('modals.twoFactor.scanQR') : t('modals.twoFactor.codeSentToContact', { method: method === 'sms' ? 'phone' : 'email' })}
               </p>
           </div>
 
@@ -192,7 +205,7 @@ const TwoFactorSetupModal: React.FC<TwoFactorSetupModalProps> = ({ onClose, onCo
           ) : (
               <div className="flex justify-center py-8">
                   <div className="size-24 bg-slate-100 rounded-full flex items-center justify-center animate-pulse text-slate-400">
-                      <Mail size={40} />
+                      {method === 'sms' ? <Smartphone size={40} /> : <Mail size={40} />}
                   </div>
               </div>
           )}

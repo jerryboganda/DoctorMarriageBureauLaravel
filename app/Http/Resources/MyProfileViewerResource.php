@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use Carbon\Carbon;
 use App\Utility\MemberUtility;
 use App\Models\ProfileViewer;
 use App\Models\User;
@@ -30,7 +31,7 @@ class MyProfileViewerResource extends JsonResource
                 'package_update_alert' => $package_update_alert,
                 'photo'                => $profile_picture_show ? uploaded_asset($user->photo) : static_asset($avatar_image),
                 'name'                 => $viewedBy->first_name . ' ' . $viewedBy->last_name,
-                'age'                  => MemberUtility::member_age($viewedBy->id),
+                'age'                  => Carbon::parse($viewedBy->member->birthday)->age,
                 'religion'             => MemberUtility::member_religion($viewedBy->id),
                 'country'              => MemberUtility::member_country($viewedBy->id),
                 'mothere_tongue'       => MemberUtility::member_mothere_tongue($viewedBy->id)

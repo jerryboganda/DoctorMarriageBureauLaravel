@@ -118,15 +118,7 @@
                         <div class="form-group row">
                             <label class="col-md-2 col-form-label">{{translate('Password')}}<span class="text-danger"> *</span></label>
                             <div class="col-md-9">
-                                <x-password-field
-                                    id="new_password"
-                                    name="password"
-                                    placeholder="{{ translate('Password') }}"
-                                    wrapperClass=""
-                                    inputClass="form-control"
-                                    errorName=""
-                                    required
-                                />
+                                <input type="password" name="password" id="new_password" class="form-control" placeholder="{{translate('Password')}}" required>
                                 @error('password')
                                     <small class="form-text text-danger">{{ $message }}</small>
                                 @enderror
@@ -135,16 +127,7 @@
                         <div class="form-group row">
                             <label class="col-md-2 col-form-label">{{translate('Confirm Password')}} <span class="text-danger"> *</span></label>
                             <div class="col-md-9">
-                                <x-password-field
-                                    id="confirm_password"
-                                    name="confirm_password"
-                                    placeholder="{{ translate('Confirm Password') }}"
-                                    wrapperClass=""
-                                    inputClass="form-control"
-                                    errorName=""
-                                    onkeyup="checkPasswordValidation(123)"
-                                    required
-                                />
+                                <input type="password" class="form-control" name="confirm_password" onkeyup="checkPasswordValidation(123)" id="confirm_password" placeholder="{{translate('Confirm Password')}}" required>
                                 <small id="confirm_password_help" class="form-text text-muted" style="color: red; display: none;">{{ translate('Mismatch Password.') }}</small>
                                 @error('confirm_password')
                                     <small class="form-text text-danger">{{ $message }}</small>

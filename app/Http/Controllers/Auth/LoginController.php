@@ -81,7 +81,7 @@ class LoginController extends Controller
         }
 
         //check if provider_id exist
-        $existingUserByProviderId = User::where('provider_id', $user->id)->whereNull('deleted_at')->first();
+        $existingUserByProviderId = User::where('provider_id', $user->id)->first();
 
         if ($existingUserByProviderId) {
             $existingUserByProviderId->access_token = $user->token;
@@ -90,7 +90,7 @@ class LoginController extends Controller
             auth()->login($existingUserByProviderId, true);
         } else {
             // check if email exist
-            $existingUser = User::whereNotNull('email')->where('email', $user->email)->whereNull('deleted_at')->first();
+            $existingUser = User::where('email', '!=', null)->where('email', $user->email)->first();
 
             if ($existingUser) {
                 auth()->login($existingUser, true);
@@ -146,7 +146,7 @@ class LoginController extends Controller
             return redirect()->route('user.login');
         }
         //check if provider_id exist
-        $existingUserByProviderId = User::where('provider_id', $user->id)->whereNull('deleted_at')->first();
+        $existingUserByProviderId = User::where('provider_id', $user->id)->first();
 
         if ($existingUserByProviderId) {
             $existingUserByProviderId->access_token = $user->token;
@@ -224,9 +224,6 @@ class LoginController extends Controller
             return redirect()->route('admin.dashboard');
 
         } else {
-            if (auth()->user()->must_change_password == 1) {
-                return redirect()->route('member.change_password');
-            }
             if (auth()->user()->email_verified_at == null) {
                 return redirect()->route('otp.initiation');
             }
@@ -254,8 +251,8 @@ class LoginController extends Controller
         if (request()->is('admin') || request()->is('admin/*')) {
             return view('auth.login');
         }
-        // Keep local environments on the local app instead of the production panel.
-        return redirect(rtrim(env('FRONTEND_URL', env('APP_URL', 'http://localhost')), '/'));
+        // For regular users, redirect to React panel
+        return redirect('https://panel.doctormarriagebureau.com.pk');
     }
 
     public function logout(Request $request)

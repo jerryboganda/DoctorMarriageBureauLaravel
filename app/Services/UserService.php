@@ -21,9 +21,14 @@ class UserService
         
         $data = $collection->merge(compact('password', 'code', 'approved', 'verification_code', 'membership', 'user_type'))->toArray();
 
-        // Remove referral_code from data before creating user - it's not a column in users table
-        // Referral processing is handled by AuthController via ReferralService
-        unset($data['referral_code']);
+        if (addon_activation('referral_system')) {
+
+            $reffered_user = User::where('code', '!=', null)->where('code', $data['referral_code'])->first();
+            if ($reffered_user) {
+                $referred_by['referred_by'] = $reffered_user->id;
+                $data = array_merge($data, $referred_by);
+            }
+        }
 
         return User::create($data);
     }

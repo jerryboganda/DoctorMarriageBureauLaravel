@@ -17,15 +17,11 @@ class AddressResource extends JsonResource
      */
     public function toArray($request)
     {
-        $country = $this->country_id ? Country::where('id', $this->country_id)->first() : null;
-        $state = $this->state_id ? State::where('id', $this->state_id)->first() : null;
-        $city = $this->city_id ? City::where('id', $this->city_id)->first() : null;
-
         return [
-            'country' => $country ? $country->name : null,
-            'state' => $state ? $state->name : null,
-            'city' => $city ? $city->name : null,
-            'postal_code' => $this->postal_code,
+            'country'=> Country::where('id', $this->country_id)->first()->name,
+            'state'=> State::where('id', $this->state_id)->first()->name,
+            'city'=> City::where('id', $this->city_id)->first()->name,
+            'postal_code'=> $this->postal_code,
         ];
     }
 }

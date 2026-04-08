@@ -17,26 +17,14 @@ class ProgressionUpdated implements ShouldBroadcast
 
     public $progression;
     public $updatedBy;
-    public $section;
 
     /**
      * Create a new event instance.
      */
-    public function __construct(MemberProgression $progression, int $updatedBy, string $section = 'stage')
+    public function __construct(MemberProgression $progression, int $updatedBy)
     {
-        $this->progression = $progression->load([
-            'stage',
-            'user',
-            'partner',
-            'checklistItems',
-            'notes',
-            'venues',
-            'budgetItems',
-            'events',
-            'settings',
-        ]);
+        $this->progression = $progression->load(['stage', 'user', 'partner']);
         $this->updatedBy = $updatedBy;
-        $this->section = $section;
     }
 
     /**
@@ -74,26 +62,14 @@ class ProgressionUpdated implements ShouldBroadcast
 
         return [
             'progression_id' => $this->progression->id,
-            'section' => $this->section,
             'stage' => [
                 'slug' => $this->progression->stage?->slug,
                 'name' => $this->progression->stage?->name,
                 'progress_percent' => $this->progression->stage?->progress_percent,
             ],
             'total_progress_percent' => $this->progression->total_progress_percent,
-            'checklist_completed' => $this->progression->checklistItems->where('is_completed', true)->count(),
-            'checklist_total' => $this->progression->checklistItems->count(),
-            'notes_total' => $this->progression->notes->count(),
-            'venues_total' => $this->progression->venues->count(),
-            'events_total' => $this->progression->events->count(),
             'updated_by' => $this->updatedBy,
             'status' => $this->progression->status,
-            'settings' => [
-                'share_calendar_busy' => $this->progression->settings?->share_calendar_busy,
-                'auto_detect_timezone' => $this->progression->settings?->auto_detect_timezone,
-                'timezone' => $this->progression->settings?->timezone,
-                'budget_target' => $this->progression->settings?->budget_target,
-            ],
             'partner' => [
                 'id' => $partner->id,
                 'name' => $partner->first_name . ' ' . $partner->last_name,

@@ -20,7 +20,7 @@ use App\Models\Package;
 use App\Models\Setting;
 use App\Models\Shortlist;
 use App\Models\ViewGalleryImage;
-use App\Utility\MemberUtility;
+use App\Models\ViewProfilePicture;
 use Laravel\Sanctum\PersonalAccessToken;
 
 class MemberController extends Controller
@@ -255,57 +255,29 @@ class MemberController extends Controller
 
         $shortlist = Shortlist::where('user_id', $id)->where('shortlisted_by', auth()->id())->first();
         $profile_reported = ReportedUser::where('user_id', $id)->where('reported_by', auth()->id())->first();
-        $photo_request_info = MemberUtility::member_profile_photo_request_info($id);
-        $gallery_request_info = MemberUtility::member_gallery_image_request_info($id);
+        $profile_view_resquest_status = ViewProfilePicture::where('user_id', $id)->where('requested_by', auth()->id())->where('status', 1)->first();
+        $gallery_view_resquest_status = ViewGalleryImage::where('user_id', $id)->where('requested_by', auth()->id())->where('status', 1)->first();
         $do_interest = ExpressInterest::where('user_id', $id)->where('interested_by', auth()->id())->first();
         $received_interest = ExpressInterest::where('user_id', auth()->id())->where('interested_by', $id)->first();
 
 
         if ($do_interest && $received_interest) {
-            $isAccepted = ((int) $do_interest->status === 1) || ((int) $received_interest->status === 1);
-            $latestUpdatedAt = $do_interest->updated_at >= $received_interest->updated_at
-                ? $do_interest->updated_at
-                : $received_interest->updated_at;
-
-            $data['interest_status'] = $isAccepted ? 'mutual' : 'sent interest';
-            $data['interest_text'] = $isAccepted ? 'Proposal Accepted' : 'Proposal Sent';
-            $data['proposal_status'] = $isAccepted ? 'sent_accepted' : 'sent_pending';
-            $data['proposal_updated_at'] = optional($latestUpdatedAt)->toIso8601String();
+            $data['interest_status'] = 'mutual';
+            $data['interest_text'] = 'Interest Accepted';
         } elseif ($do_interest) {
             $data['interest_status'] = 'sent interest';
-            $data['interest_text'] = $do_interest->status == 0 ? 'Proposal Sent' : 'Proposal Accepted';
-            $data['proposal_status'] = $do_interest->status == 0 ? 'sent_pending' : 'sent_accepted';
-            $data['proposal_updated_at'] = optional($do_interest->updated_at)->toIso8601String();
+            $data['interest_text'] = $do_interest->status == 0 ? 'Interest Expressed' : 'Interest Accepted';
         } elseif ($received_interest) {
             $data['interest_status'] = 'received interest';
-            $data['interest_text'] = $received_interest->status == 0 ? 'Reply to Proposal' : 'You Accepted Proposal';
-            $data['proposal_status'] = $received_interest->status == 0 ? 'received_pending' : 'received_accepted';
-            $data['proposal_updated_at'] = optional($received_interest->updated_at)->toIso8601String();
+            $data['interest_text'] = $received_interest->status == 0 ? 'Response to Interest' : 'You Accepted Interest';
         } else {
             $data['interest_status'] = 'no interest';
-            $data['interest_text'] = 'Proposal';
-            $data['proposal_status'] = 'none';
-            $data['proposal_updated_at'] = null;
+            $data['interest_text'] = 'Interest';
         }
         $data['shortlist_status']    = $shortlist ? 1 : 0;
         $data['report_status']        = $profile_reported ? true : false;
-        $data['profile_view_resquest_status']   = $photo_request_info['profile_photo_request_approved'];
-        $data['profile_photo_request_state']     = $photo_request_info['profile_photo_request_state'];
-        $data['profile_photo_request_text']      = $photo_request_info['profile_photo_request_text'];
-        $data['profile_photo_request_requested'] = $photo_request_info['profile_photo_request_requested'];
-        $data['profile_photo_request_approved']  = $photo_request_info['profile_photo_request_approved'];
-        $data['profile_photo_request_required']  = $photo_request_info['profile_photo_request_required'];
-        $data['profile_photo_accessible']        = $photo_request_info['profile_photo_accessible'];
-        $data['profile_photo_exists']            = $photo_request_info['profile_photo_exists'];
-        $data['profile_photo_blur']              = MemberUtility::member_profile_photo_blur($id);
-        $data['gallery_image_request_state']     = $gallery_request_info['gallery_image_request_state'];
-        $data['gallery_image_request_text']      = $gallery_request_info['gallery_image_request_text'];
-        $data['gallery_image_request_requested'] = $gallery_request_info['gallery_image_request_requested'];
-        $data['gallery_image_request_approved']  = $gallery_request_info['gallery_image_request_approved'];
-        $data['gallery_image_request_required']   = $gallery_request_info['gallery_image_request_required'];
-        $data['gallery_image_accessible']        = $gallery_request_info['gallery_image_accessible'];
-        $data['gallery_image_exists']            = $gallery_request_info['gallery_image_exists'];
-        $data['gallery_view_resquest_status']   = $gallery_request_info['gallery_image_request_approved'];
+        $data['profile_view_resquest_status']   = $profile_view_resquest_status ? true : false;
+        $data['gallery_view_resquest_status']   = $gallery_view_resquest_status ? true : false;
 
         return $this->response_data($data);
     }
@@ -387,107 +359,39 @@ class MemberController extends Controller
 
     public function store_verification_info(Request $request)
     {
+        $data = array();
+        $i = 0;
+        foreach (json_decode(Setting::where('type', 'verification_form')->first()->value) as $key => $element) {
+            $item = array();
+            if ($element->type == 'text') {
+                $item['type'] = 'text';
+                $item['label'] = $element->label;
+                $item['value'] = $request['element_' . $i];
+            } elseif ($element->type == 'select' || $element->type == 'radio') {
+                $item['type'] = 'select';
+                $item['label'] = $element->label;
+                $item['value'] = $request['element_' . $i];
+            } elseif ($element->type == 'multi_select') {
+                $item['type'] = 'multi_select';
+                $item['label'] = $element->label;
+                $item['value'] = json_encode(explode(',', $request['element_' . $i]));
+            } 
+            elseif ($element->type == 'file') {
+                $item['type'] = 'file';
+                $item['label'] = $element->label;
+                $item['value'] = $request['element_' . $i]->store('uploads/verification_form');
+            }
+            array_push($data, $item);
+            $i++;
+        }
         $user = auth()->user();
+        $user->verification_info = json_encode($data);
+        $user->approved = 0;
+        if ($user->save()) {
+            return $this->success_message(translate('Your verification request has been submitted successfully!'));
+        } 
 
-        // Check if already submitted and pending/approved
-        if ($user->verification_info !== null) {
-            if ($user->approved == 1) {
-                return response()->json([
-                    'result' => true,
-                    'error_code' => 'already_approved',
-                    'verification_status' => 'approved',
-                    'message' => translate('Your identity has already been verified and approved. No further action is needed.'),
-                ]);
-            }
-            return response()->json([
-                'result' => true,
-                'error_code' => 'already_pending',
-                'verification_status' => 'pending',
-                'message' => translate('Your verification is already under review. Please wait for the administration to process your submission.'),
-            ]);
-        }
-
-        try {
-            $setting = Setting::where('type', 'verification_form')->first();
-            if (!$setting || !$setting->value) {
-                return response()->json([
-                    'result' => false,
-                    'error_code' => 'form_unavailable',
-                    'message' => translate('Verification form is not configured. Please contact support.'),
-                ]);
-            }
-
-            $formFields = json_decode($setting->value);
-            if (!$formFields || !is_array($formFields)) {
-                return response()->json([
-                    'result' => false,
-                    'error_code' => 'form_invalid',
-                    'message' => translate('Verification form configuration is invalid. Please contact support.'),
-                ]);
-            }
-
-            $data = array();
-            $i = 0;
-            foreach ($formFields as $key => $element) {
-                $item = array();
-                if ($element->type == 'text') {
-                    $item['type'] = 'text';
-                    $item['label'] = $element->label;
-                    $item['value'] = $request['element_' . $i] ?? '';
-                } elseif ($element->type == 'select' || $element->type == 'radio') {
-                    $item['type'] = 'select';
-                    $item['label'] = $element->label;
-                    $item['value'] = $request['element_' . $i] ?? '';
-                } elseif ($element->type == 'multi_select') {
-                    $item['type'] = 'multi_select';
-                    $item['label'] = $element->label;
-                    $item['value'] = json_encode(explode(',', $request['element_' . $i] ?? ''));
-                } elseif ($element->type == 'file') {
-                    $item['type'] = 'file';
-                    $item['label'] = $element->label;
-                    $file = $request->file('element_' . $i);
-                    if (!$file) {
-                        return response()->json([
-                            'result' => false,
-                            'error_code' => 'missing_document',
-                            'message' => translate('Please upload the required document: :label', ['label' => $element->label]),
-                        ]);
-                    }
-                    if (!$file->isValid()) {
-                        return response()->json([
-                            'result' => false,
-                            'error_code' => 'invalid_document_upload',
-                            'message' => translate('The uploaded file for :label is invalid or exceeded upload limits. Please retry with a smaller file.', ['label' => $element->label]),
-                        ], 422);
-                    }
-                    $item['value'] = $file->store('uploads/verification_form');
-                }
-                array_push($data, $item);
-                $i++;
-            }
-
-            $user->verification_info = json_encode($data);
-            $user->approved = 0;
-            if ($user->save()) {
-                return $this->success_message(translate('Your verification request has been submitted successfully! We will review it shortly.'));
-            }
-
-            return response()->json([
-                'result' => false,
-                'error_code' => 'save_failed',
-                'message' => translate('Could not save your verification data. Please try again.'),
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('Verification submission error: ' . $e->getMessage(), [
-                'user_id' => $user->id,
-                'trace' => $e->getTraceAsString(),
-            ]);
-            return response()->json([
-                'result' => false,
-                'error_code' => 'server_error',
-                'message' => translate('An unexpected error occurred while processing your verification. Please try again or contact support.'),
-            ], 500);
-        }
+        return $this->failure_message(translate('Something Wenr Wrong!'));
     }
 
 }

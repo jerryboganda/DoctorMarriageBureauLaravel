@@ -20,8 +20,6 @@ use App\Models\HappyStory;
 use App\Models\IgnoredUser;
 use App\Models\ProfileMatch;
 use App\Models\ProfileViewer;
-use App\Utility\EmailUtility;
-use App\Utility\MemberUtility;
 use Notification;
 use Hash;
 use Artisan;
@@ -170,7 +168,14 @@ class HomeController extends Controller
                                 if (!$interestedUser)
                                     return null;
 
-                                $age = MemberUtility::member_age($interestedUser->id);
+                                $age = '';
+                                try {
+                                    if ($interestedUser->member && $interestedUser->member->birthday) {
+                                        $age = \Carbon\Carbon::parse($interestedUser->member->birthday)->age;
+                                    }
+                                } catch (\Exception $e) {
+                                    $age = '';
+                                }
 
                                 $location = 'N/A';
                                 try {
@@ -249,7 +254,7 @@ class HomeController extends Controller
 
                                 $unreadCount = 0;
                                 try {
-                                    $unreadCount = $thread->chats()->where('sender_user_id', '!=', $user->id)->where('seen', 0)->count();
+                                    $unreadCount = $thread->chats()->where('sender_user_id', '!=', $user->id)->where('read_at', null)->count();
                                 } catch (\Exception $e) {
                                     $unreadCount = 0;
                                 }
@@ -305,7 +310,14 @@ class HomeController extends Controller
                                 if (!$matchUser)
                                     return null;
 
-                                $age = MemberUtility::member_age($matchUser->id);
+                                $age = null;
+                                try {
+                                    if ($matchUser->member && $matchUser->member->birthday) {
+                                        $age = \Carbon\Carbon::parse($matchUser->member->birthday)->age;
+                                    }
+                                } catch (\Exception $e) {
+                                    $age = null;
+                                }
 
                                 $location = 'N/A';
                                 try {
@@ -325,7 +337,7 @@ class HomeController extends Controller
                                     'age' => $age,
                                     'location' => $location,
                                     'photo' => $matchUser->photo ? uploaded_asset($matchUser->photo) : null,
-                                    'match_percentage' => auth()->check() ? \App\Services\MatchScoreService::score(auth()->user(), $matchUser) : 50,
+                                    'match_percentage' => rand(85, 98),
                                     'is_online' => $isOnline
                                 ];
                             } catch (\Exception $e) {
@@ -369,7 +381,14 @@ class HomeController extends Controller
                                 if (!$visitor->profileViewer)
                                     return null;
 
-                                $age = MemberUtility::member_age($visitor->profileViewer->id);
+                                $age = null;
+                                try {
+                                    if ($visitor->profileViewer->member && $visitor->profileViewer->member->birthday) {
+                                        $age = \Carbon\Carbon::parse($visitor->profileViewer->member->birthday)->age;
+                                    }
+                                } catch (\Exception $e) {
+                                    $age = null;
+                                }
 
                                 $location = 'N/A';
                                 try {
@@ -515,7 +534,14 @@ class HomeController extends Controller
                         ->get()
                         ->map(function ($newUser) {
                             try {
-                                $age = MemberUtility::member_age($newUser->id);
+                                $age = null;
+                                try {
+                                    if ($newUser->member && $newUser->member->birthday) {
+                                        $age = \Carbon\Carbon::parse($newUser->member->birthday)->age;
+                                    }
+                                } catch (\Exception $e) {
+                                    $age = null;
+                                }
 
                                 $location = 'N/A';
                                 try {
@@ -901,7 +927,7 @@ class HomeController extends Controller
         $user = User::findOrFail($id);
 
         // Profile view data store
-        if ($user->id != $authUser->id && !\App\Utility\MemberUtility::member_is_incognito($authUser->id)) {
+        if ($user->id != $authUser->id) {
             $profileViewed = ProfileViewer::where('user_id', $user->id)->where('viewed_by', $authUser->id)->first();
             if ($profileViewed == null) {
                 if (package_validity($user->id) && $user->member->remaining_profile_viewer_view > 0) {
@@ -946,7 +972,7 @@ class HomeController extends Controller
     public function new_verify(Request $request)
     {
         $email = $request->email;
-        if (User::where('email', $email)->whereNull('deleted_at')->count() > 0) {
+        if (User::where('email', $email)->count() > 0) {
             $response['status'] = 2;
             $response['message'] = 'Email already exists!';
             return json_encode($response);
@@ -960,7 +986,7 @@ class HomeController extends Controller
     public function update_email(Request $request)
     {
         $email = $request->email;
-        if (User::where('email', $email)->whereNull('deleted_at')->count() == 0) {
+        if (User::where('email', $email)->count() == 0) {
             $this->send_email_change_verification_mail($request, $email);
             flash(translate('A verification mail has been sent to the mail you provided us with.'))->success();
             return back();
@@ -978,7 +1004,7 @@ class HomeController extends Controller
         $verification_code = Str::random(32);
 
         $array['subject'] = 'Email Verification';
-        $array['from'] = EmailUtility::fromAddress();
+        $array['from'] = env('MAIL_USERNAME');
         $array['content'] = 'Verify your account';
         $array['link'] = route('email_change.callback') . '?new_email_verificiation_code=' . $verification_code . '&email=' . $email;
         $array['sender'] = Auth::user()->name;
@@ -1035,7 +1061,7 @@ class HomeController extends Controller
             'password' => 'required|confirmed|min:8',
         ]);
 
-        if (($user = User::where('email', $request->email)->whereNull('deleted_at')->where('verification_code', $request->code)->first()) != null) {
+        if (($user = User::where('email', $request->email)->where('verification_code', $request->code)->first()) != null) {
             $user->password = Hash::make($request->password);
             $user->email_verified_at = date('Y-m-d h:m:s');
             $user->save();
@@ -1206,7 +1232,10 @@ class HomeController extends Controller
                         if (!$interestedUser)
                             return null;
 
-                        $age = MemberUtility::member_age($interestedUser->id);
+                        $age = '';
+                        if ($interestedUser->member && $interestedUser->member->birthday) {
+                            $age = \Carbon\Carbon::parse($interestedUser->member->birthday)->age;
+                        }
 
                         $location = 'N/A';
                         $address = $interestedUser->addresses->first();
@@ -1282,7 +1311,10 @@ class HomeController extends Controller
                         if (!$matchUser)
                             return null;
 
-                        $age = MemberUtility::member_age($matchUser->id);
+                        $age = null;
+                        if ($matchUser->member && $matchUser->member->birthday) {
+                            $age = \Carbon\Carbon::parse($matchUser->member->birthday)->age;
+                        }
 
                         $location = 'N/A';
                         $address = $matchUser->addresses->first();
@@ -1298,7 +1330,7 @@ class HomeController extends Controller
                             'age' => $age,
                             'location' => $location,
                             'photo' => $matchUser->photo ? uploaded_asset($matchUser->photo) : null,
-                            'match_percentage' => auth()->check() ? \App\Services\MatchScoreService::score(auth()->user(), $matchUser) : 50,
+                            'match_percentage' => rand(85, 98),
                             'is_online' => $isOnline
                         ];
                     } catch (\Exception $e) {
@@ -1355,7 +1387,10 @@ class HomeController extends Controller
                         if (!$visitor->profileViewer)
                             return null;
 
-                        $age = MemberUtility::member_age($visitor->profileViewer->id);
+                        $age = null;
+                        if ($visitor->profileViewer->member && $visitor->profileViewer->member->birthday) {
+                            $age = \Carbon\Carbon::parse($visitor->profileViewer->member->birthday)->age;
+                        }
 
                         $location = 'N/A';
                         $address = $visitor->profileViewer->addresses->first();
@@ -1424,7 +1459,10 @@ class HomeController extends Controller
                 ->get()
                 ->map(function ($newUser) {
                     try {
-                        $age = MemberUtility::member_age($newUser->id);
+                        $age = null;
+                        if ($newUser->member && $newUser->member->birthday) {
+                            $age = \Carbon\Carbon::parse($newUser->member->birthday)->age;
+                        }
 
                         $location = 'N/A';
                         $address = $newUser->addresses->first();

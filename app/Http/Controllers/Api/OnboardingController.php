@@ -16,7 +16,6 @@ use App\Models\SpiritualBackground;
 use App\Models\LifeStyle;
 use App\Models\Astrology;
 use App\Models\Family;
-use Carbon\Carbon;
 
 class OnboardingController extends Controller
 {
@@ -29,7 +28,7 @@ class OnboardingController extends Controller
 
         $validated = $request->validate([
             'gender' => 'nullable|string',
-            'dateOfBirth' => 'required|date',
+            'dateOfBirth' => 'nullable|date',
             'religion' => 'nullable|string', // Assuming string for simple onboarding, might need ID mapping if real app uses IDs
             'specialty' => 'nullable|string',
             'degree' => 'nullable|string',
@@ -58,7 +57,7 @@ class OnboardingController extends Controller
                 $member->gender = $request->gender == 'Male' ? 1 : 2; 
             }
             if ($request->has('dateOfBirth')) {
-                $member->birthday = Carbon::parse($request->dateOfBirth)->format('Y-m-d');
+                $member->birthday = strtotime($request->dateOfBirth);
             }
             $member->save();
 

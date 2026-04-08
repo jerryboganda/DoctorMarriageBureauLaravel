@@ -27,42 +27,23 @@ class IsApiMember
             Cache::put('user-is-online-' . $user->id, true, $expiresAt);
         }
 
-        // Check deactivated users first (across all API routes)
-        if ($user->deactivated == 1) {
-            // Revoke current token so they can't keep using it
-            if ($user->currentAccessToken()) {
-                $user->currentAccessToken()->delete();
+        if ($request->is('api/*') && $user->blocked == 1) {
+
+            if($user->approved == 0){
+                return response()->json([
+                    'result' => false,
+                    'status' => 'non_verified',
+                    'message' => translate('User is not verified')
+                ]);
             }
-            return response()->json([
-                'result' => false,
-                'status' => 'deactivated',
-                'code' => 'ACCOUNT_DEACTIVATED',
-                'message' => translate('Your account has been deactivated by the administrator. Please contact support for assistance.')
-            ], 403);
-        }
-
-        // Check blocked users
-        if ($user->blocked == 1) {
-            if ($user->currentAccessToken()) {
-                $user->currentAccessToken()->delete();
+            elseif($user->blocked == 1){
+                return response()->json([
+                    'result' => false,
+                    'status' => 'blocked',
+                    'message' => translate('user is banned')
+                ]);
             }
-            return response()->json([
-                'result' => false,
-                'status' => 'blocked',
-                'code' => 'ACCOUNT_BLOCKED',
-                'message' => translate('Your account has been blocked. Please contact support for assistance.')
-            ], 403);
         }
-
-        // Check approved status
-        if ($user->approved == 0) {
-            return response()->json([
-                'result' => false,
-                'status' => 'non_verified',
-                'message' => translate('User is not verified')
-            ]);
-        }
-
         return $next($request);
     }
 }

@@ -10,11 +10,9 @@ import StepUpVerificationModal from './StepUpVerificationModal';
 import TwoFactorSetupModal from './TwoFactorSetupModal';
 import { api } from '../utils/api';
 import CredentialVerificationModal from './CredentialVerificationModal';
-import PasswordResetModal from './PasswordResetModal';
 import CountryCodeSelector from './CountryCodeSelector';
 import { Country, getDefaultCountry, countries } from '../utils/countries';
 import { useTranslation } from 'react-i18next';
-import { useAuthStore } from '../src/stores/authStore';
 
 interface SettingsViewProps {
     onLaunchOnboarding: () => void;
@@ -26,13 +24,6 @@ interface SettingsViewProps {
 
 const SettingsView: React.FC<SettingsViewProps> = ({ onLaunchOnboarding, onOpenBilling, onSelectPlan, appliedCouponCode, onApplyCoupon }) => {
     const { t } = useTranslation();
-    const { user, setUser } = useAuthStore();
-
-    const [showPasswordResetModal, setShowPasswordResetModal] = useState(false);
-
-    const openPasswordResetModal = () => {
-        setShowPasswordResetModal(true);
-    };
     const [activeTab, setActiveTab] = useState<'account' | 'privacy' | 'safety' | 'billing'>('account');
     const [loading, setLoading] = useState(true);
     const [managementMode, setManagementMode] = useState<'self' | 'family' | 'matchmaker' | 'dual'>('self');
@@ -66,17 +57,12 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onLaunchOnboarding, onOpenB
 
     // Device Management State
     const [devices, setDevices] = useState<any[]>([]);
-    const [loginAlerts, setLoginAlerts] = useState({ email: true });
+    const [loginAlerts, setLoginAlerts] = useState({ email: true, sms: false });
 
     // Privacy State
     const [incognito, setIncognito] = useState(false);
     const [watermark, setWatermark] = useState(true);
-    const [profilePhotoBlur, setProfilePhotoBlur] = useState(false);
     const [photoVisibility, setPhotoVisibility] = useState('requests');
-    const [visibilitySavingKey, setVisibilitySavingKey] = useState<string | null>(null);
-    const [visibilityStatus, setVisibilityStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-    const [visibilityStatusMessage, setVisibilityStatusMessage] = useState<string | null>(null);
-    const visibilityStatusTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Recovery State
     const [trustedContacts, setTrustedContacts] = useState<any[]>([]);
@@ -104,34 +90,6 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onLaunchOnboarding, onOpenB
         label: string;
         onVerified: (token: string) => Promise<void>;
     } | null>(null);
-
-    const applyVisibilitySnapshot = React.useCallback((visibilityData: Record<string, any>) => {
-        setVisibility(visibilityData);
-        setIncognito(visibilityData.incognito === true);
-        setWatermark(visibilityData.screenshot_deterrence !== false);
-        setProfilePhotoBlur(visibilityData.profile_photo_blur === true);
-        const visibilityPublic = visibilityData.photo_visibility_public !== false;
-        const visibilityMembers = visibilityData.photo_visibility_members !== false;
-        setPhotoVisibility(visibilityPublic ? 'everyone' : visibilityMembers ? 'members' : 'requests');
-        setVisibilitySavingKey(null);
-        setVisibilityStatus((current) => current === 'saving' ? 'saved' : current);
-
-        if (user) {
-            setUser({
-                ...user,
-                is_visible: visibilityData.profile_visible !== false,
-                incognito: visibilityData.incognito === true,
-            });
-        }
-    }, [setUser, user]);
-
-    useEffect(() => {
-        return () => {
-            if (visibilityStatusTimerRef.current) {
-                clearTimeout(visibilityStatusTimerRef.current);
-            }
-        };
-    }, []);
 
     const handleTrustedPhoneChange = (value: string) => {
         // User types only the local part (dial code is shown in the selector)
@@ -225,11 +183,17 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onLaunchOnboarding, onOpenB
             if (prefsData) {
                 setLoginAlerts({
                     email: Boolean(prefsData.email_digest),
+                    sms: Boolean(prefsData.sms),
                 });
             }
 
             const visibilityData = visibilityRes?.data?.data ?? {};
-            applyVisibilitySnapshot(visibilityData);
+            setVisibility(visibilityData);
+            setIncognito(visibilityData.incognito !== false);
+            setWatermark(visibilityData.screenshot_deterrence !== false);
+            const visibilityPublic = visibilityData.photo_visibility_public !== false;
+            const visibilityMembers = visibilityData.photo_visibility_members !== false;
+            setPhotoVisibility(visibilityPublic ? 'everyone' : visibilityMembers ? 'members' : 'requests');
 
             setBlockedUsers(ignoredRes?.data?.data ?? []);
             setPackageDetails(packageRes?.data?.data ?? null);
@@ -256,53 +220,13 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onLaunchOnboarding, onOpenB
 
     const updateVisibilitySetting = async (fieldName: string, isVisible: boolean) => {
         setVisibility((prev) => ({ ...prev, [fieldName]: isVisible }));
-        setVisibilitySavingKey(fieldName);
-        setVisibilityStatus('saving');
-        setVisibilityStatusMessage(null);
-        if (fieldName === 'incognito') {
-            setIncognito(isVisible);
-        }
-        if (fieldName === 'screenshot_deterrence') {
-            setWatermark(isVisible);
-        }
-        if (fieldName === 'profile_photo_blur') {
-            setProfilePhotoBlur(isVisible);
-        }
         try {
-            const response = await api.post('/member/profile/visibility', {
+            await api.post('/member/profile/visibility', {
                 field_name: fieldName,
                 is_visible: isVisible,
             });
-            const nextVisibility = response.data?.data ?? {};
-            if (Object.keys(nextVisibility).length > 0) {
-                applyVisibilitySnapshot(nextVisibility);
-                setVisibilityStatusMessage(response.data?.message ?? t('settings.privacy.saved'));
-            }
-            setVisibilityStatus('saved');
-            if (visibilityStatusTimerRef.current) clearTimeout(visibilityStatusTimerRef.current);
-            visibilityStatusTimerRef.current = setTimeout(() => {
-                setVisibilityStatus((current) => current === 'saved' ? 'idle' : current);
-                setVisibilityStatusMessage(null);
-            }, 2200);
-            return true;
         } catch (error) {
             console.error('Failed to update visibility', error);
-            setVisibilityStatus('error');
-            setVisibilityStatusMessage(t('settings.privacy.saveFailed'));
-            try {
-                const refresh = await api.get('/member/profile/visibility');
-                applyVisibilitySnapshot(refresh.data?.data ?? {});
-            } catch (refreshError) {
-                console.error('Failed to refresh visibility after error', refreshError);
-            }
-            if (visibilityStatusTimerRef.current) clearTimeout(visibilityStatusTimerRef.current);
-            visibilityStatusTimerRef.current = setTimeout(() => {
-                setVisibilityStatus((current) => current === 'error' ? 'idle' : current);
-                setVisibilityStatusMessage(null);
-            }, 3500);
-            return false;
-        } finally {
-            setVisibilitySavingKey(null);
         }
     };
 
@@ -333,26 +257,13 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onLaunchOnboarding, onOpenB
         }
     };
 
-    const refreshSecurityStatus = async () => {
-        try {
-            const securityRes = await api.get('/member/account/security-status');
-            const securityData = securityRes?.data?.data ?? null;
-            setSecurityStatus(securityData);
-            setDevices(securityData?.devices ?? []);
-            setTrustedContacts(securityData?.trusted_contacts ?? []);
-            setIs2FAEnabled(Boolean(securityData?.two_factor?.enabled));
-        } catch (error) {
-            console.error('Failed to refresh security status', error);
-        }
-    };
-
-    const handleAlertsChange = async (next: { email: boolean }) => {
+    const handleAlertsChange = async (next: { email: boolean; sms: boolean }) => {
         setLoginAlerts(next);
-        setNotificationPrefs((prev) => (prev ? { ...prev, email_digest: next.email, sms: false } : prev));
+        setNotificationPrefs((prev) => (prev ? { ...prev, email_digest: next.email, sms: next.sms } : prev));
         try {
             await api.post('/member/notifications/preferences', {
                 email_digest: next.email,
-                sms: false,
+                sms: next.sms,
                 whatsapp: notificationPrefs?.whatsapp ?? true,
                 push_notifications: notificationPrefs?.push_notifications ?? true,
                 weekly_digest: notificationPrefs?.weekly_digest ?? true,
@@ -423,44 +334,19 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onLaunchOnboarding, onOpenB
     };
 
     const handlePhotoVisibilityChange = async (value: 'everyone' | 'members' | 'requests') => {
-        const payload = value === 'everyone'
-            ? { photo_visibility_public: true, photo_visibility_members: true }
-            : value === 'members'
-                ? { photo_visibility_public: false, photo_visibility_members: true }
-                : { photo_visibility_public: false, photo_visibility_members: false };
-
         setPhotoVisibility(value);
-        setVisibilitySavingKey('photo_visibility');
-        setVisibilityStatus('saving');
-        setVisibilityStatusMessage(null);
-        try {
-            const response = await api.post('/member/profile/visibility', payload);
-            applyVisibilitySnapshot(response.data?.data ?? payload);
-            setVisibilityStatus('saved');
-            setVisibilityStatusMessage(response.data?.message ?? t('settings.privacy.saved'));
-            if (visibilityStatusTimerRef.current) clearTimeout(visibilityStatusTimerRef.current);
-            visibilityStatusTimerRef.current = setTimeout(() => {
-                setVisibilityStatus((current) => current === 'saved' ? 'idle' : current);
-                setVisibilityStatusMessage(null);
-            }, 2200);
-        } catch (error) {
-            console.error('Failed to update photo visibility', error);
-            setVisibilityStatus('error');
-            setVisibilityStatusMessage(t('settings.privacy.saveFailed'));
-            try {
-                const refresh = await api.get('/member/profile/visibility');
-                applyVisibilitySnapshot(refresh.data?.data ?? {});
-            } catch (refreshError) {
-                console.error('Failed to refresh visibility after photo visibility error', refreshError);
-            }
-            if (visibilityStatusTimerRef.current) clearTimeout(visibilityStatusTimerRef.current);
-            visibilityStatusTimerRef.current = setTimeout(() => {
-                setVisibilityStatus((current) => current === 'error' ? 'idle' : current);
-                setVisibilityStatusMessage(null);
-            }, 3500);
-        } finally {
-            setVisibilitySavingKey(null);
+        if (value === 'everyone') {
+            await updateVisibilitySetting('photo_visibility_public', true);
+            await updateVisibilitySetting('photo_visibility_members', true);
+            return;
         }
+        if (value === 'members') {
+            await updateVisibilitySetting('photo_visibility_public', false);
+            await updateVisibilitySetting('photo_visibility_members', true);
+            return;
+        }
+        await updateVisibilitySetting('photo_visibility_public', false);
+        await updateVisibilitySetting('photo_visibility_members', false);
     };
 
     const handleDeactivateAccount = async () => {
@@ -728,25 +614,6 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onLaunchOnboarding, onOpenB
                                                         )}
                                                     </span>
                                                 </div>
-
-                                                <button
-                                                    type="button"
-                                                    onClick={openPasswordResetModal}
-                                                    className="w-full flex items-center justify-between gap-3 p-4 bg-white border border-slate-200 rounded-xl hover:border-primary/40 hover:bg-primary/5 transition-all text-left group"
-                                                >
-                                                    <div className="flex items-center gap-3 min-w-0">
-                                                        <div className="size-10 bg-primary/10 rounded-full flex items-center justify-center border border-primary/10 shrink-0">
-                                                            <Lock size={18} className="text-primary" />
-                                                        </div>
-                                                        <div className="min-w-0">
-                                                            <p className="text-sm font-bold text-slate-900">{t('settings.security.changePassword')}</p>
-                                                            <p className="text-xs text-slate-500 truncate">{t('settings.security.changePasswordDesc')}</p>
-                                                        </div>
-                                                    </div>
-                                                    <span className="flex items-center gap-1 text-xs font-bold text-primary shrink-0 group-hover:translate-x-0.5 transition-transform">
-                                                        {t('settings.security.changePasswordAction')} <ChevronRight size={12} />
-                                                    </span>
-                                                </button>
                                             </div>
                                         </div>
 
@@ -757,8 +624,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onLaunchOnboarding, onOpenB
                                             type={verificationType}
                                             value={verificationValue}
                                             onVerified={() => {
-                                                setShowCredentialVerification(false);
-                                                refreshSecurityStatus();
+                                                window.location.reload();
                                             }}
                                         />
 
@@ -953,6 +819,15 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onLaunchOnboarding, onOpenB
                                                         type="checkbox"
                                                         checked={loginAlerts.email}
                                                         onChange={(e) => handleAlertsChange({ ...loginAlerts, email: e.target.checked })}
+                                                        className="accent-primary size-4"
+                                                    />
+                                                </label>
+                                                <label className="flex items-center justify-between cursor-pointer group">
+                                                    <span className="text-sm text-slate-600 group-hover:text-slate-900">{t('settings.security.smsAlertUnknown')}</span>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={loginAlerts.sms}
+                                                        onChange={(e) => handleAlertsChange({ ...loginAlerts, sms: e.target.checked })}
                                                         className="accent-primary size-4"
                                                     />
                                                 </label>
@@ -1413,32 +1288,16 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onLaunchOnboarding, onOpenB
                                     <SectionHeader title={t('settings.privacy.visibilitySettings')} icon={<Eye size={20} className="text-primary" />} />
 
                                     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-6">
-                                        <div className="flex items-center justify-between gap-3">
-                                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                                                {visibilityStatus === 'saving' && t('settings.privacy.saving')}
-                                                {visibilityStatus === 'saved' && t('settings.privacy.saved')}
-                                                {visibilityStatus === 'error' && t('settings.privacy.saveFailed')}
-                                                {visibilityStatus === 'idle' && t('settings.privacy.liveSync')}
-                                            </p>
-                                            {visibilityStatusMessage && (
-                                                <p className={`text-xs font-medium ${
-                                                    visibilityStatus === 'error' ? 'text-red-600' : 'text-emerald-600'
-                                                }`}>
-                                                    {visibilityStatusMessage}
-                                                </p>
-                                            )}
-                                        </div>
                                         <div className="flex items-center justify-between">
                                             <div>
                                                 <h4 className="font-bold text-slate-900">{t('settings.privacy.profileStatus')}</h4>
                                                 <p className="text-xs text-slate-500">{t('settings.privacy.profileStatusDesc')}</p>
                                             </div>
-                                            <label className={`relative inline-flex items-center ${visibilitySavingKey ? 'cursor-wait opacity-70' : 'cursor-pointer'}`}>
+                                            <label className="relative inline-flex items-center cursor-pointer">
                                                 <input
                                                     type="checkbox"
                                                     className="sr-only peer"
                                                     checked={profileVisible}
-                                                    disabled={visibilitySavingKey !== null}
                                                     onChange={(e) => updateVisibilitySetting('profile_visible', e.target.checked)}
                                                 />
                                                 <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
@@ -1455,12 +1314,11 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onLaunchOnboarding, onOpenB
                                                 </div>
                                                 <p className="text-xs text-slate-500">{t('settings.privacy.incognitoDesc')}</p>
                                             </div>
-                                            <label className={`relative inline-flex items-center ${visibilitySavingKey ? 'cursor-wait opacity-70' : 'cursor-pointer'}`}>
+                                            <label className="relative inline-flex items-center cursor-pointer">
                                                 <input
                                                     type="checkbox"
                                                     className="sr-only peer"
                                                     checked={incognito}
-                                                    disabled={visibilitySavingKey !== null}
                                                     onChange={(e) => {
                                                         const next = e.target.checked;
                                                         setIncognito(next);
@@ -1478,12 +1336,11 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onLaunchOnboarding, onOpenB
                                                 <h4 className="font-bold text-slate-900">{t('settings.privacy.screenshotDeterrence')}</h4>
                                                 <p className="text-xs text-slate-500">{t('settings.privacy.screenshotDesc')}</p>
                                             </div>
-                                            <label className={`relative inline-flex items-center ${visibilitySavingKey ? 'cursor-wait opacity-70' : 'cursor-pointer'}`}>
+                                            <label className="relative inline-flex items-center cursor-pointer">
                                                 <input
                                                     type="checkbox"
                                                     className="sr-only peer"
                                                     checked={watermark}
-                                                    disabled={visibilitySavingKey !== null}
                                                     onChange={(e) => {
                                                         const next = e.target.checked;
                                                         setWatermark(next);
@@ -1496,40 +1353,16 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onLaunchOnboarding, onOpenB
 
                                         <hr className="border-slate-100" />
 
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <h4 className="font-bold text-slate-900">{t('settings.privacy.blurProfilePicture')}</h4>
-                                                <p className="text-xs text-slate-500">{t('settings.privacy.blurProfilePictureDesc')}</p>
-                                            </div>
-                                            <label className={`relative inline-flex items-center ${visibilitySavingKey ? 'cursor-wait opacity-70' : 'cursor-pointer'}`}>
-                                                <input
-                                                    type="checkbox"
-                                                    className="sr-only peer"
-                                                    checked={profilePhotoBlur}
-                                                    disabled={visibilitySavingKey !== null}
-                                                    onChange={(e) => {
-                                                        const next = e.target.checked;
-                                                        setProfilePhotoBlur(next);
-                                                        updateVisibilitySetting('profile_photo_blur', next);
-                                                    }}
-                                                />
-                                                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-900"></div>
-                                            </label>
-                                        </div>
-
-                                        <hr className="border-slate-100" />
-
                                         <div>
                                             <h4 className="font-bold text-slate-900 mb-3">{t('settings.privacy.whoCanSeePhotos')}</h4>
                                             <div className="space-y-3">
                                                 {['everyone', 'members', 'requests'].map((opt) => (
-                                                    <label key={opt} className={`flex items-center gap-3 p-3 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors ${visibilitySavingKey ? 'cursor-wait opacity-70' : 'cursor-pointer'}`}>
+                                                    <label key={opt} className="flex items-center gap-3 cursor-pointer p-3 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
                                                         <input
                                                             type="radio"
                                                             name="photoVisibility"
                                                             className="accent-primary size-4"
                                                             checked={photoVisibility === opt}
-                                                            disabled={visibilitySavingKey !== null}
                                                             onChange={() => handlePhotoVisibilityChange(opt as 'everyone' | 'members' | 'requests')}
                                                         />
                                                         <span className="text-sm text-slate-700 capitalize">
@@ -1711,7 +1544,6 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onLaunchOnboarding, onOpenB
             </div >
 
             {showVerification && <VerificationModal onClose={() => setShowVerification(false)} />}
-            <PasswordResetModal isOpen={showPasswordResetModal} onClose={() => setShowPasswordResetModal(false)} defaultEmail={user?.email ?? ''} />
             {
                 stepUpContext && (
                     <StepUpVerificationModal

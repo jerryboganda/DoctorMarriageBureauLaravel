@@ -24,20 +24,18 @@ class InterestController extends Controller
     {
         $ignoredUserIds = IgnoredUser::where('ignored_by', auth()->user()->id)->pluck('user_id');
 
-        $interestsQuery = ExpressInterest::query()
-            ->with([
-                'user.member',
-                'user.spiritual_backgrounds.religion',
-                'user.addresses.country',
-            ])
-            ->where('interested_by', auth()->user()->id)
-            ->orderByDesc('id');
+        $interestsQuery = ExpressInterest::orderBy('id', 'desc')
+            ->where('interested_by', auth()->user()->id);
 
         if ($ignoredUserIds->count() > 0) {
-            $interestsQuery->whereNotIn('user_id', $ignoredUserIds);
+            $interestsQuery->whereNotIn('express_interests.user_id', $ignoredUserIds);
         }
 
-        $interests = $interestsQuery->paginate(10);
+        $interests = $interestsQuery
+            ->join('users', 'express_interests.user_id', '=', 'users.id')
+            ->select('express_interests.id')
+            ->distinct()
+            ->paginate(10);
 
         return MyInterestResource::collection($interests)->additional([
             'result' => true
@@ -46,105 +44,23 @@ class InterestController extends Controller
 
     public function express_interest(Request $request)
     {
-        $user = auth()->user();
+        if (User::find($request->user_id)) {
+            if (!ExpressInterest::where(['user_id' => $request->user_id, 'interested_by' => auth()->user()->id])->first() || ExpressInterest::where(['user_id' => auth()->user()->id, 'interested_by' => $request->user_id])->first()) {
+                $interest = new InterestService();
+                $new_interest = $interest->store($request->user_id);
 
-        // Pre-flight checks with clear error messages
-        if ($user->blocked) {
-            return response()->json([
-                'result' => false,
-                'error_code' => 'account_blocked',
-                'message' => translate('Your account has been blocked by the administration. Please contact support for assistance.'),
-            ]);
-        }
-
-        if ($user->deactivated) {
-            return response()->json([
-                'result' => false,
-                'error_code' => 'account_deactivated',
-                'message' => translate('Your account is currently deactivated. Please reactivate your account from Settings before sending proposals.'),
-            ]);
-        }
-
-        $targetUser = User::find($request->user_id);
-        if (!$targetUser) {
-            return response()->json([
-                'result' => false,
-                'error_code' => 'invalid_target',
-                'message' => translate('This profile could not be found. It may have been removed.'),
-            ]);
-        }
-
-        if ($targetUser->deactivated) {
-            return response()->json([
-                'result' => false,
-                'error_code' => 'target_deactivated',
-                'message' => translate('This profile is currently unavailable. The user may have deactivated their account.'),
-            ]);
-        }
-
-        $authId = $user->id;
-        $existingSent = ExpressInterest::query()
-            ->where('user_id', $request->user_id)
-            ->where('interested_by', $authId)
-            ->first();
-
-        if ($existingSent) {
-            return response()->json([
-                'result' => false,
-                'error_code' => 'already_sent',
-                'message' => translate('You have already sent a proposal to this person.'),
-            ]);
-        }
-
-        $receivedInterest = ExpressInterest::query()
-            ->where('user_id', $authId)
-            ->where('interested_by', $request->user_id)
-            ->first();
-
-        if ($receivedInterest) {
-            if ((int) $receivedInterest->status === 1) {
-                return $this->success_message('Proposal already accepted');
+                return ($new_interest) ?
+                    $this->success_message('Interest Expressed Sucessfully') :
+                    $this->failure_message('Something went wrong');
             }
-
-            $interestService = new InterestService();
-            $accepted = $interestService->accept($receivedInterest->id);
-            return $accepted
-                ? $this->success_message('Proposal accepted successfully.')
-                : $this->failure_message('Could not accept proposal at this time. Please try again.');
+            return $this->failure_message('Alreary Expressed The Interest');
         }
-
-        $interest = new InterestService();
-        $result = $interest->store($request->user_id);
-
-        // InterestService now returns an array with structured error info
-        if (is_array($result)) {
-            if ($result['success']) {
-                return $this->success_message('Proposal Sent Successfully');
-            }
-            return response()->json([
-                'result' => false,
-                'error_code' => $result['error_code'] ?? 'unknown',
-                'message' => $result['message'] ?? translate('Could not send proposal. Please try again.'),
-            ]);
-        }
-
-        // Legacy fallback (should not reach here)
-        return $result
-            ? $this->success_message('Proposal Sent Successfully')
-            : $this->failure_message('Could not send proposal. Please try again.');
+        return $this->failure_message('Invalid Member to Express Interest.');
     }
 
     public function interest_requests()
     {
-        $interests = ExpressInterest::query()
-            ->with([
-                'interestedby.member',
-                'interestedby.spiritual_backgrounds.religion',
-                'interestedby.addresses.country',
-            ])
-            ->where('user_id', auth()->user()->id)
-            ->latest()
-            ->paginate(10);
+        $interests = ExpressInterest::where('user_id', auth()->user()->id)->latest()->paginate(10);
         return ExpressInterestResource::collection($interests)->additional([
             'result' => true
         ]);
@@ -156,7 +72,7 @@ class InterestController extends Controller
         $accept_interest = $interest->accept($request->interest_id);
 
         return ($accept_interest) ?
-            $this->success_message('Proposal has been accepted successfully.') :
+            $this->success_message('Interest has been accepted successfully.') :
             $this->failure_message('Something went wrong');
     }
 
@@ -166,7 +82,7 @@ class InterestController extends Controller
         $reject_interest = $interest->reject($request->interest_id);
 
         return ($reject_interest) ?
-            $this->success_message('Proposal has been rejected successfully.') :
+            $this->success_message('Interest has been rejected successfully.') :
             $this->failure_message('Something went wrong');
     }
 
@@ -180,22 +96,22 @@ class InterestController extends Controller
         $interest = ExpressInterest::find($interest_id);
         
         if (!$interest) {
-            return $this->failure_message('Proposal request not found.');
+            return $this->failure_message('Interest not found.');
         }
         
         // Only the person who sent the interest can withdraw it
         if ($interest->interested_by != auth()->user()->id) {
-            return $this->failure_message('You are not authorized to cancel this proposal.');
+            return $this->failure_message('You are not authorized to cancel this interest.');
         }
         
         // Can only withdraw pending interests
         if ($interest->status != 0) {
-            return $this->failure_message('Can only cancel pending proposals.');
+            return $this->failure_message('Can only cancel pending interests.');
         }
         
         // Delete the interest
         ExpressInterest::destroy($interest_id);
         
-        return $this->success_message('Proposal withdrawn successfully.');
+        return $this->success_message('Interest withdrawn successfully.');
     }
 }

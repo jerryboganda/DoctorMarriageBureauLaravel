@@ -48,8 +48,6 @@ class RouteServiceProvider extends ServiceProvider
     {
         $this->mapApiRoutes();
 
-        $this->mapAdminApiRoutes();
-
         $this->mapAdminRoutes();
 
         $this->mapSupportTicketRoutes();
@@ -134,14 +132,6 @@ class RouteServiceProvider extends ServiceProvider
             ->middleware('api')
             ->namespace($this->namespace)
             ->group(base_path('routes/api.php'));
-    }
-
-    protected function mapAdminApiRoutes()
-    {
-        Route::prefix('api')
-            ->middleware('api')
-            ->namespace($this->namespace)
-            ->group(base_path('routes/admin_api.php'));
     }
 
     protected function configureRateLimiting()

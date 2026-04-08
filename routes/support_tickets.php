@@ -2,9 +2,7 @@
 
 Route::group(['prefix' => 'support'], function(){
 
-	Route::resource('support-tickets','Api\SupportTicketController')->names([
-		'destroy' => 'support-tickets.resource.destroy',
-	]);
+	Route::resource('support-tickets','Api\SupportTicketController');
 	Route::get('/my-ticket', 'Api\SupportTicketController@my_ticket')->name('support-tickets.my_ticket');
 	Route::get('/solved-ticket', 'Api\SupportTicketController@solved_ticket')->name('support-tickets.solved_ticket');
 	Route::get('/active-ticket', 'Api\SupportTicketController@active_ticket')->name('support-tickets.active_ticket');

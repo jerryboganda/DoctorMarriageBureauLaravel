@@ -56,28 +56,24 @@ use App\Models\ProfileViewer;
 use App\Models\Recidency;
 use App\Models\Religion;
 use App\Models\ReportedUser;
-use App\Models\Sect;
 use App\Models\Setting;
 use App\Models\Shortlist;
 use App\Models\SpiritualBackground;
 use App\Models\Staff;
 use App\Models\State;
 use App\Models\SubCaste;
-use App\Models\JobTitle;
-use App\Models\Speciality;
 use App\Models\FieldVisibilitySetting;
 use App\Models\ViewContact;
 use App\Models\ViewGalleryImage;
 use App\Models\User;
+use App\Models\ViewProfilePicture;
 use App\Utility\PhoneUtility;
-use App\Utility\MemberUtility;
 use Illuminate\Auth\Events\Validated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Cache;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use App\Notifications\DbStoreNotification;
 use App\Services\FirbaseNotification;
@@ -192,7 +188,7 @@ class ProfileController extends Controller
         } else {
             return $this->failure_data($present_address);
 
-            // return $this->failure_message('No information has been added for this section yet.');
+            // return $this->failure_message('No Data Found!!');
         }
     }
     public function permanent_address()
@@ -203,7 +199,7 @@ class ProfileController extends Controller
                 'result' => true
             ]);
         } else {
-            // return $this->failure_message('No information has been added for this section yet.');
+            // return $this->failure_message('No Data Found!!');
             return $this->failure_data($permanent_address);
         }
     }
@@ -237,7 +233,7 @@ class ProfileController extends Controller
                 'result' => true
             ]);
         } else {
-            return $this->failure_message('No information has been added for this section yet.');
+            return $this->failure_message('No Data Found!!');
         }
     }
     public function physical_attributes_update(Request $request)
@@ -307,7 +303,7 @@ class ProfileController extends Controller
                 'result' => true
             ]);
         } else {
-            return $this->failure_message('No information has been added for this section yet.');
+            return $this->failure_message('No Data Found!!');
         }
     }
     public function hobbies_interest_update(Request $request)
@@ -337,7 +333,7 @@ class ProfileController extends Controller
                 'result' => true
             ]);
         } else {
-            return $this->failure_message('No information has been added for this section yet.');
+            return $this->failure_message('No Data Found!!');
         }
     }
     public function attitude_behavior_update(Request $request)
@@ -361,7 +357,7 @@ class ProfileController extends Controller
                 'result' => true
             ]);
         } else {
-            return $this->failure_message('No information has been added for this section yet.');
+            return $this->failure_message('No Data Found!!');
         }
     }
     public function residency_info_update(Request $request)
@@ -385,7 +381,7 @@ class ProfileController extends Controller
                 'result' => true
             ]);
         } else {
-            return $this->failure_message('No information has been added for this section yet.');
+            return $this->failure_message('No Data Found!!');
         }
     }
 
@@ -413,7 +409,7 @@ class ProfileController extends Controller
                 'result' => true
             ]);
         } else {
-            return $this->failure_message('No information has been added for this section yet.');
+            return $this->failure_message('No Data Found!!');
         }
     }
     public function life_style_update(Request $request)
@@ -437,7 +433,7 @@ class ProfileController extends Controller
                 'result' => true
             ]);
         } else {
-            // return $this->failure_message('No information has been added for this section yet.');
+            // return $this->failure_message('No Data Found!!');
             return $this->failure_data(auth()->user()->astrologies);
         }
     }
@@ -465,7 +461,7 @@ class ProfileController extends Controller
                 'result' => true
             ]);
         } else {
-            return $this->failure_message('No information has been added for this section yet.');
+            return $this->failure_message('No Data Found!!');
         }
     }
 
@@ -490,7 +486,7 @@ class ProfileController extends Controller
                 'result' => true
             ]);
         } else {
-            return $this->failure_message('No information has been added for this section yet.');
+            return $this->failure_message('No Data Found!!');
         }
     }
 
@@ -550,14 +546,7 @@ class ProfileController extends Controller
 
         if (Hash::check($request->old_password, $user->password)) {
             $user->password = Hash::make($request->password);
-            $user->must_change_password = 0;
             $user->save();
-            $currentTokenId = auth()->user()?->currentAccessToken()?->id;
-            if ($currentTokenId) {
-                $user->tokens()->where('id', '!=', $currentTokenId)->delete();
-            } else {
-                $user->tokens()->delete();
-            }
             return $this->success_message('Passwoed Updated successfully.');
         }
 
@@ -591,17 +580,9 @@ class ProfileController extends Controller
             $data['intoduction'] = new AboutUser($user);
             $data['basic_info'] = new BasicInformation($user);
 
-            $photo_request_info = MemberUtility::member_profile_photo_request_info($user->id);
-            $data['profile_photo_request_state'] = $photo_request_info['profile_photo_request_state'];
-            $data['profile_photo_request_text'] = $photo_request_info['profile_photo_request_text'];
-            $data['profile_photo_request_requested'] = $photo_request_info['profile_photo_request_requested'];
-            $data['profile_photo_request_approved'] = $photo_request_info['profile_photo_request_approved'];
-            $data['profile_photo_request_id'] = $photo_request_info['profile_photo_request_id'];
-            $data['profile_photo_request_required'] = $photo_request_info['profile_photo_request_required'];
-            $data['profile_photo_accessible'] = $photo_request_info['profile_photo_accessible'];
-            $data['profile_photo_exists'] = $photo_request_info['profile_photo_exists'];
-            $data['profile_photo_blur'] = MemberUtility::member_profile_photo_blur($user->id);
-            $data['profile_pic_request'] = $photo_request_info['profile_photo_request_required'] && $photo_request_info['profile_photo_request_state'] !== 'approved';
+            $profile_pic_privacy = get_setting('profile_picture_privacy');
+            $photo_view_request = ViewProfilePicture::where('user_id', $user->id)->where('requested_by', $auth_user->id)->first();
+            $data['profile_pic_request'] = $user->photo != null && $user->photo_approved == 1 && $profile_pic_privacy == 'only_me' && ($photo_view_request == null || ($photo_view_request && $photo_view_request->status == 0));
 
             $data['present_address'] = Address::where('user_id', $id)->where('type', 'present')->first() ? new AddressResource(Address::where('user_id', $id)->where('type', 'present')->first()) : null;
             $data['contact_details']['email'] = $user->email;
@@ -629,34 +610,27 @@ class ProfileController extends Controller
             $publicGalleryImages = $allGalleryImages->filter(fn($img) => !in_array($img->privacy_level, ['private', 'vault']));
             $privateGalleryImages = $allGalleryImages->filter(fn($img) => in_array($img->privacy_level, ['private', 'vault']));
 
-            $gallery_request_info = MemberUtility::member_gallery_image_request_info($user->id);
-            $gallery_image_visibility = MemberUtility::resolve_media_visibility($user->id, 'gallery');
+            $gallery_image_privacy = get_setting('gallery_image_privacy');
+            $gallery_image_request = ViewGalleryImage::where('user_id', $user->id)->where('requested_by', $auth_user->id)->first();
 
             $publicPhotos = collect();
             $privatePhotos = collect();
-            $galleryAccessLevel = (int) ($gallery_image_visibility['effective_level'] ?? 0);
-            $viewerIsPremium = (int) ($auth_user->membership ?? 0) === 2;
-            $viewerIsMember = (bool) $auth_user;
 
             // Determine access for public gallery images
-            if ($galleryAccessLevel === 0) {
+            if ($gallery_image_privacy == 'only_me') {
+                if ($gallery_image_request !== null && $gallery_image_request->status == 1) {
+                    $publicPhotos = GalleryImageResource::collection($publicGalleryImages);
+                } else {
+                    $publicPhotos = RequestedGalleryImage::collection($publicGalleryImages);
+                }
+            } elseif ($gallery_image_privacy == "all") {
                 $publicPhotos = GalleryImageResource::collection($publicGalleryImages);
-            } elseif ($galleryAccessLevel === 1) {
-                if ($viewerIsPremium || $gallery_request_info['gallery_image_request_approved']) {
-                    $publicPhotos = GalleryImageResource::collection($publicGalleryImages);
-                } else {
-                    $publicPhotos = RequestedGalleryImage::collection($publicGalleryImages);
-                }
-            } elseif ($galleryAccessLevel === 2) {
-                if ($viewerIsMember || $gallery_request_info['gallery_image_request_approved']) {
-                    $publicPhotos = GalleryImageResource::collection($publicGalleryImages);
-                } else {
-                    $publicPhotos = RequestedGalleryImage::collection($publicGalleryImages);
-                }
             } else {
-                $publicPhotos = $gallery_request_info['gallery_image_request_approved']
-                    ? GalleryImageResource::collection($publicGalleryImages)
-                    : RequestedGalleryImage::collection($publicGalleryImages);
+                if ($auth_user->membership == 2) {
+                    $publicPhotos = GalleryImageResource::collection($publicGalleryImages);
+                } else {
+                    $publicPhotos = RequestedGalleryImage::collection($publicGalleryImages);
+                }
             }
 
             // Private/vault images — return metadata only (URL replaced with null, marked as blurred)
@@ -675,14 +649,6 @@ class ProfileController extends Controller
 
             // Merge public + blurred private
             $data['photo_gallery'] = collect($publicPhotos)->merge($blurredPrivatePhotos)->values();
-            $data['gallery_image_request_state'] = $gallery_request_info['gallery_image_request_state'];
-            $data['gallery_image_request_text'] = $gallery_request_info['gallery_image_request_text'];
-            $data['gallery_image_request_requested'] = $gallery_request_info['gallery_image_request_requested'];
-            $data['gallery_image_request_approved'] = $gallery_request_info['gallery_image_request_approved'];
-            $data['gallery_image_request_id'] = $gallery_request_info['gallery_image_request_id'];
-            $data['gallery_image_request_required'] = $gallery_request_info['gallery_image_request_required'];
-            $data['gallery_image_accessible'] = $gallery_request_info['gallery_image_accessible'];
-            $data['gallery_image_exists'] = $gallery_request_info['gallery_image_exists'];
 
             // Screenshot deterrence flag for viewer
             $ownerVisibility = FieldVisibilitySetting::getForUser($user->id);
@@ -698,7 +664,7 @@ class ProfileController extends Controller
             $data['view_contact_check'] = ViewContact::where('user_id', $user->id)->where('viewed_by', auth()->id())->first() ? true : false;
 
             // Profile view data store
-            if ($user->id != $auth_user->id && !MemberUtility::member_is_incognito($auth_user->id)) {
+            if ($user->id != $auth_user->id) {
                 $profileViewed = ProfileViewer::where('user_id', $user->id)->where('viewed_by', $auth_user->id)->first();
                 if ($profileViewed == null) {
                     if (package_validity($user->id) && $user->member->remaining_profile_viewer_view > 0) {
@@ -722,7 +688,7 @@ class ProfileController extends Controller
                             // fcm 
                             if (get_setting('firebase_push_notification') == 1) {
                                 $fcmTokens = User::where('id', $user->id)->whereNotNull('fcm_token')->pluck('fcm_token')->toArray();
-                                self::sendFirebaseNotification($user, $notify_type, $message, $notify_by, $fcmTokens);
+                                self::sendFirebaseNotification($fcmTokens, $user, $notify_type, $message, $notify_by);
                             }
                             // end of fcm
 
@@ -740,7 +706,7 @@ class ProfileController extends Controller
         }
     }
 
-    public static function sendFirebaseNotification($notify_user, $notify_type, $message, $notify_by = null, $fcmTokens = null)
+    public static function sendFirebaseNotification($fcmTokens = null, $notify_user, $notify_type, $message, $notify_by = null)
     {
         // send firebase notification for mobile app
         if ($notify_user->fcm_token != null) {
@@ -766,7 +732,7 @@ class ProfileController extends Controller
         if ($user->save()) {
             return $this->success_message('Contact Info has been updated successfully');
         } else {
-            return $this->failure_message('We could not update your contact information right now. Please try again.');
+            return $this->failure_message('Something went wrong');
         }
     }
 
@@ -861,21 +827,10 @@ class ProfileController extends Controller
     {
         $user = auth()->user();
         if (!$user) {
-            return response()->json([
-                'result' => false,
-                'message' => 'Your session has expired. Please sign in again.',
-            ], 401);
+            return response()->json(['result' => false, 'message' => 'Unauthorized'], 401);
         }
 
         $member = $user->member;
-        if (!$member) {
-            return response()->json([
-                'result' => false,
-                'error_code' => 'profile_incomplete',
-                'message' => 'Your profile has not been set up yet. Please complete the registration process first.',
-            ], 400);
-        }
-
         $optionSets = $this->getMarriageIntentOptionSets();
 
         $physical_attributes = PhysicalAttribute::where('user_id', $user->id)->first();
@@ -972,19 +927,13 @@ class ProfileController extends Controller
 
         $visibility = \App\Models\FieldVisibilitySetting::getForUser($user->id);
 
-        // Server truth for gate:
-        // onboarding must be explicitly completed and required onboarding data must be present.
-        $isOnboardingDataComplete = $this->isOnboardingDataComplete($user, $member);
-        $onboardingCompleted = (bool) $member->onboarding_completed && $isOnboardingDataComplete;
-
-        // Keep persisted state aligned for old/inconsistent accounts.
-        if ((bool) $member->onboarding_completed !== $onboardingCompleted) {
-            $member->onboarding_completed = $onboardingCompleted ? 1 : 0;
+        // Auto-mark onboarding complete for legacy users who already have essential fields
+        $onboardingCompleted = (bool) $member->onboarding_completed;
+        if (!$onboardingCompleted && $user->first_name && $user->last_name && $member->gender !== null && $member->gender !== '' && $member->birthday) {
+            $member->onboarding_completed = 1;
             $member->save();
+            $onboardingCompleted = true;
         }
-
-        // Calculate real-time profile completion data
-        $profileCompletion = $this->getProfileCompletionData($user, $member);
 
         return response()->json([
             'result' => true,
@@ -1012,7 +961,6 @@ class ProfileController extends Controller
                 'relocationWillingness' => $member->relocation_willingness ?? '',
                 'seriousnessLevel' => $member->seriousness_level ?? '',
                 'avatarUrl' => $user->photo ? ((strpos($user->photo, 'http') === 0) ? $user->photo : uploaded_asset($user->photo)) : 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80',
-                'hasProfilePhoto' => !empty($user->photo),
                 'height' => $physicalHeightCm ?? '',
                 'weight' => $physical_attributes->weight ?? '',
                 'complexion' => $physical_attributes->complexion ?? '',
@@ -1045,8 +993,6 @@ class ProfileController extends Controller
                 'income' => $incomeLabel,
                 'incomeRangeId' => $member->annual_salary_range_id ?? null,
                 'workLocationType' => $career->work_location_type ?? '',
-                'jobTitleId' => $career->job_title_id ?? null,
-                'specialityId' => $career->speciality_id ?? null,
                 'careerStart' => $career->start ?? '',
                 'careerEnd' => $career->end ?? '',
                 'careerPresent' => (bool) ($career->present ?? false),
@@ -1069,8 +1015,6 @@ class ProfileController extends Controller
                         'end' => $c->end ?? '',
                         'present' => (bool) ($c->present ?? false),
                         'workLocationType' => $c->work_location_type ?? '',
-                        'jobTitleId' => $c->job_title_id,
-                        'specialityId' => $c->speciality_id,
                     ];
                 })->values()->toArray(),
             ],
@@ -1088,8 +1032,6 @@ class ProfileController extends Controller
                 'religionId' => $spiritual?->religion_id,
                 'religion' => $spiritual && $spiritual->religion ? $spiritual->religion->name : '',
                 'sect' => $spiritual->ethnicity ?? '',
-                'sectId' => $spiritual?->sect_id,
-                'sectName' => $spiritual && $spiritual->sect ? $spiritual->sect->name : '',
                 'casteId' => $spiritual?->caste_id,
                 'caste' => $spiritual && $spiritual->caste ? $spiritual->caste->name : '',
             ],
@@ -1127,8 +1069,7 @@ class ProfileController extends Controller
                 'intro_video_url' => $member->intro_video_path ? uploaded_asset($member->intro_video_path) : null,
             ],
             'salaryRanges' => $salaryRanges,
-            'visibility' => $visibility,
-            'profileCompletion' => $profileCompletion,
+            'visibility' => $visibility
         ]);
     }
 
@@ -1136,18 +1077,13 @@ class ProfileController extends Controller
     {
         $user = auth()->user();
         if (!$user) {
-            return response()->json([
-                'result' => false,
-                'message' => 'Your session has expired. Please sign in again.',
-            ], 401);
+            return response()->json(['result' => false, 'message' => 'Unauthorized'], 401);
         }
 
         $member = $user->member;
         if (!$member) {
             return response()->json(['result' => false, 'message' => 'Member profile not found'], 404);
         }
-
-        try {
 
         $normalizeStringList = function ($value) {
             if (is_array($value)) {
@@ -1233,27 +1169,6 @@ class ProfileController extends Controller
             $timelineValues = array_column($optionSets['marriageTimeline'], 'value');
             $relocationValues = array_column($optionSets['relocationWillingness'], 'value');
             $seriousnessValues = array_column($optionSets['seriousnessLevel'], 'value');
-            $requiresBirthday = empty($member->birthday) || $request->boolean('onboardingCompleted');
-            $birthdayProvided = array_key_exists('dateOfBirth', $basics) || array_key_exists('birthday', $basics);
-            $birthdayInput = $basics['dateOfBirth'] ?? $basics['birthday'] ?? null;
-
-            if ($requiresBirthday || $birthdayProvided) {
-                if (trim((string) $birthdayInput) === '') {
-                    return response()->json([
-                        'result' => false,
-                        'message' => 'Date of Birth is required.',
-                    ], 422);
-                }
-
-                try {
-                    $member->birthday = \Carbon\Carbon::parse($birthdayInput)->format('Y-m-d');
-                } catch (\Throwable $e) {
-                    return response()->json([
-                        'result' => false,
-                        'message' => 'Date of Birth is required.',
-                    ], 422);
-                }
-            }
 
             if (array_key_exists('firstName', $basics)) {
                 $user->first_name = $basics['firstName'];
@@ -1270,6 +1185,9 @@ class ProfileController extends Controller
 
             if (array_key_exists('gender', $basics)) {
                 $member->gender = ($basics['gender'] == 'Female') ? 2 : 1;
+            }
+            if (array_key_exists('dateOfBirth', $basics)) {
+                $member->birthday = $basics['dateOfBirth'] ?: null;
             }
             if (array_key_exists('maritalStatusId', $basics)) {
                 $member->marital_status_id = $basics['maritalStatusId'] ?: null;
@@ -1491,8 +1409,6 @@ class ProfileController extends Controller
                         'designation' => $carEntry['designation'] ?? null,
                         'company' => $carEntry['company'] ?? null,
                         'work_location_type' => $carEntry['workLocationType'] ?? null,
-                        'job_title_id' => $normalizeInt($carEntry['jobTitleId'] ?? null) ?: null,
-                        'speciality_id' => $normalizeInt($carEntry['specialityId'] ?? null) ?: null,
                         'start' => $normalizeInt($carEntry['start'] ?? null),
                         'end' => $normalizeInt($carEntry['end'] ?? null),
                         'present' => !empty($carEntry['present']) ? 1 : 0,
@@ -1529,8 +1445,6 @@ class ProfileController extends Controller
                     'designation' => $careerData['designation'] ?? null,
                     'company' => $careerData['company'] ?? null,
                     'work_location_type' => $careerData['workLocationType'] ?? null,
-                    'job_title_id' => $normalizeInt($careerData['jobTitleId'] ?? null) ?: null,
-                    'speciality_id' => $normalizeInt($careerData['specialityId'] ?? null) ?: null,
                     'start' => $normalizeInt($careerData['careerStart'] ?? null),
                     'end' => $normalizeInt($careerData['careerEnd'] ?? null),
                     'present' => !empty($careerData['careerPresent']) ? 1 : 0,
@@ -1655,7 +1569,6 @@ class ProfileController extends Controller
                 [
                     'religion_id' => $religionId,
                     'caste_id' => $casteId,
-                    'sect_id' => $normalizeInt($familyData['sectId'] ?? null),
                     'ethnicity' => $familyData['sect'] ?? null,
                 ]
             );
@@ -1743,48 +1656,6 @@ class ProfileController extends Controller
         }
 
         if ($request->has('onboardingCompleted') && $request->input('onboardingCompleted')) {
-            // Reload user and member from DB to get latest state (e.g. photo just uploaded)
-            $user = $user->fresh();
-            $member = $user->member;
-
-            // Backward-compatible fallback for users who uploaded to gallery
-            // but still have an empty primary profile photo.
-            if (empty($user->photo)) {
-                $candidatePhoto = GalleryImage::where('user_id', $user->id)
-                    ->where('is_main_photo', true)
-                    ->orderByDesc('id')
-                    ->value('image');
-
-                if (empty($candidatePhoto)) {
-                    $candidatePhoto = GalleryImage::where('user_id', $user->id)
-                        ->orderByDesc('id')
-                        ->value('image');
-                }
-
-                if (!empty($candidatePhoto)) {
-                    $user->photo = $candidatePhoto;
-                    if (get_setting('profile_picture_approval_by_admin') && $user->user_type == 'member') {
-                        $user->photo_approved = 0;
-                    } else {
-                        $user->photo_approved = 1;
-                    }
-                    $user->save();
-                    $user = $user->fresh();
-                }
-            }
-
-            $missingFields = $this->getOnboardingMissingFields($user, $member);
-            if (!empty($missingFields)) {
-                $warningKey = 'onboarding_warning:' . $user->id;
-                if (Cache::add($warningKey, true, now()->addHours(6))) {
-                    \Log::warning('Onboarding incomplete for user ' . $user->id, ['missing' => $missingFields]);
-                }
-                return response()->json([
-                    'result' => false,
-                    'message' => 'Missing: ' . implode(', ', $missingFields),
-                    'missingFields' => $missingFields,
-                ], 422);
-            }
             $member->onboarding_completed = 1;
         }
 
@@ -1795,202 +1666,10 @@ class ProfileController extends Controller
             $member->save();
         }
 
-        // Return updated profile completion data after save
-        $user = $user->fresh();
-        $member = $user->member;
-        $profileCompletion = $this->getProfileCompletionData($user, $member);
-
         return response()->json([
             'result' => true,
-            'message' => 'Profile updated successfully',
-            'profileCompletion' => $profileCompletion,
+            'message' => 'Profile updated successfully'
         ]);
-
-        } catch (\Exception $e) {
-            \Log::error('update_full_profile_react failed for user ' . ($user->id ?? '?'), [
-                'error' => $e->getMessage(),
-                'file' => $e->getFile() . ':' . $e->getLine(),
-            ]);
-            return response()->json([
-                'result' => false,
-                'message' => 'Failed to save profile: ' . $e->getMessage(),
-            ], 500);
-        }
-    }
-
-    /**
-     * Check onboarding completeness. Returns empty array if complete,
-     * otherwise returns list of human-readable missing field labels.
-     */
-    private function getOnboardingMissingFields(User $user, Member $member): array
-    {
-        $missing = [];
-
-        $presentAddress = Address::where('user_id', $user->id)->where('type', 'present')->first();
-        $spiritual = SpiritualBackground::where('user_id', $user->id)->first();
-        $career = DB::table('careers')
-            ->where('user_id', $user->id)
-            ->whereNull('deleted_at')
-            ->orderByDesc('present')
-            ->orderByDesc('updated_at')
-            ->first();
-        $education = DB::table('education')
-            ->where('user_id', $user->id)
-            ->whereNull('deleted_at')
-            ->orderByDesc('is_highest_degree')
-            ->orderByDesc('updated_at')
-            ->first();
-        $physical = PhysicalAttribute::where('user_id', $user->id)->first();
-
-        // Step 1: Personal
-        if (trim((string) $user->first_name) === '') $missing[] = 'First Name';
-        if (trim((string) $user->last_name) === '') $missing[] = 'Last Name';
-        if (empty($member->gender)) $missing[] = 'Gender';
-        if (empty($member->birthday)) $missing[] = 'Date of Birth';
-        if (empty($member->marital_status_id)) $missing[] = 'Marital Status';
-
-        // Step 2: Location & Religion
-        if (!$presentAddress || empty($presentAddress->country_id)) $missing[] = 'Country';
-        if (!$presentAddress || empty($presentAddress->state_id)) $missing[] = 'State';
-        if (!$presentAddress || empty($presentAddress->city_id)) $missing[] = 'City';
-        if (!$spiritual || empty($spiritual->religion_id)) $missing[] = 'Religion';
-        if (!$spiritual || empty($spiritual->caste_id)) $missing[] = 'Caste';
-
-        // Step 3: Career & Education
-        if (!$career || trim((string) ($career->designation ?? '')) === '') $missing[] = 'Designation';
-        if (!$career || trim((string) ($career->company ?? '')) === '') $missing[] = 'Hospital/Company';
-        if (!$education || trim((string) ($education->degree ?? '')) === '') $missing[] = 'Degree';
-        if (!$education || trim((string) ($education->institution ?? '')) === '') $missing[] = 'Institution';
-        if (empty($member->annual_salary_range_id)) $missing[] = 'Income Range';
-
-        // Step 4: Appearance
-        if (!$physical || $physical->height === null || $physical->height === '') $missing[] = 'Height';
-        if (!$physical || $physical->weight === null || $physical->weight === '') $missing[] = 'Weight';
-        if (!$physical || trim((string) ($physical->complexion ?? '')) === '') $missing[] = 'Complexion';
-
-        // Step 5: About Me
-        if (trim((string) ($member->introduction ?? '')) === '') $missing[] = 'Introduction';
-
-        // Step 6: Photo
-        if (empty($user->photo)) $missing[] = 'Profile Photo';
-
-        return $missing;
-    }
-
-    /**
-     * Backward-compatible boolean wrapper used by get_full_profile_react.
-     */
-    private function isOnboardingDataComplete(User $user, Member $member): bool
-    {
-        return empty($this->getOnboardingMissingFields($user, $member));
-    }
-
-    /**
-     * Get per-step completion data for profile completion tracking.
-     * Returns step completion booleans, filled/total fields per step,
-     * overall percentage, and the first incomplete step number.
-     */
-    private function getProfileCompletionData(User $user, Member $member): array
-    {
-        $presentAddress = Address::where('user_id', $user->id)->where('type', 'present')->first();
-        $spiritual = SpiritualBackground::where('user_id', $user->id)->first();
-        $career = DB::table('careers')
-            ->where('user_id', $user->id)
-            ->whereNull('deleted_at')
-            ->orderByDesc('present')
-            ->orderByDesc('updated_at')
-            ->first();
-        $education = DB::table('education')
-            ->where('user_id', $user->id)
-            ->whereNull('deleted_at')
-            ->orderByDesc('is_highest_degree')
-            ->orderByDesc('updated_at')
-            ->first();
-        $physical = PhysicalAttribute::where('user_id', $user->id)->first();
-
-        // Step 1: Personal (5 fields)
-        $step1Fields = [
-            'firstName' => trim((string) $user->first_name) !== '',
-            'lastName' => trim((string) $user->last_name) !== '',
-            'gender' => !empty($member->gender),
-            'dateOfBirth' => !empty($member->birthday),
-            'maritalStatus' => !empty($member->marital_status_id),
-        ];
-
-        // Step 2: Location & Religion (5 fields)
-        $step2Fields = [
-            'country' => $presentAddress && !empty($presentAddress->country_id),
-            'state' => $presentAddress && !empty($presentAddress->state_id),
-            'city' => $presentAddress && !empty($presentAddress->city_id),
-            'religion' => $spiritual && !empty($spiritual->religion_id),
-            'caste' => $spiritual && !empty($spiritual->caste_id),
-        ];
-
-        // Step 3: Career & Education (5 fields)
-        $step3Fields = [
-            'designation' => $career && trim((string) ($career->designation ?? '')) !== '',
-            'company' => $career && trim((string) ($career->company ?? '')) !== '',
-            'degree' => $education && trim((string) ($education->degree ?? '')) !== '',
-            'institution' => $education && trim((string) ($education->institution ?? '')) !== '',
-            'incomeRange' => !empty($member->annual_salary_range_id),
-        ];
-
-        // Step 4: Appearance (3 fields)
-        $step4Fields = [
-            'height' => $physical && $physical->height !== null && $physical->height !== '',
-            'weight' => $physical && $physical->weight !== null && $physical->weight !== '',
-            'complexion' => $physical && trim((string) ($physical->complexion ?? '')) !== '',
-        ];
-
-        // Step 5: About Me (1 field)
-        $step5Fields = [
-            'introduction' => trim((string) ($member->introduction ?? '')) !== '',
-        ];
-
-        // Step 6: Photo (1 field)
-        $step6Fields = [
-            'profilePhoto' => !empty($user->photo),
-        ];
-
-        $allSteps = [$step1Fields, $step2Fields, $step3Fields, $step4Fields, $step5Fields, $step6Fields];
-
-        // Calculate per-step completion
-        $stepStatuses = [];
-        $totalFields = 0;
-        $filledFields = 0;
-        $firstIncompleteStep = null;
-
-        foreach ($allSteps as $i => $stepFields) {
-            $stepFilled = count(array_filter($stepFields));
-            $stepTotal = count($stepFields);
-            $isComplete = $stepFilled === $stepTotal;
-
-            $totalFields += $stepTotal;
-            $filledFields += $stepFilled;
-
-            $stepStatuses[] = [
-                'step' => $i + 1,
-                'complete' => $isComplete,
-                'filled' => $stepFilled,
-                'total' => $stepTotal,
-                'fields' => $stepFields,
-            ];
-
-            if (!$isComplete && $firstIncompleteStep === null) {
-                $firstIncompleteStep = $i + 1;
-            }
-        }
-
-        $percentage = $totalFields > 0 ? round(($filledFields / $totalFields) * 100) : 0;
-
-        return [
-            'percentage' => (int) $percentage,
-            'totalFields' => $totalFields,
-            'filledFields' => $filledFields,
-            'firstIncompleteStep' => $firstIncompleteStep ?? 1,
-            'allComplete' => $filledFields === $totalFields,
-            'steps' => $stepStatuses,
-        ];
     }
 
     public function download_biodata(Request $request)
@@ -2000,78 +1679,17 @@ class ProfileController extends Controller
             abort(401);
         }
 
-        try {
-            $pdf = PDF::loadView('pdf.biodata_modern', compact('user'), [], [
-                'margin_left'   => 5,
-                'margin_right'  => 5,
-                'margin_top'    => 5,
-                'margin_bottom' => 5,
-            ]);
-            $filename = 'Biodata-' . ($user->first_name ?? 'User') . '.pdf';
+        $template = $request->input('template', 'modern');
+        $view = 'pdf.biodata_modern';
 
-            // Use output() instead of download() to avoid mPDF calling exit()
-            // which bypasses Laravel middleware (including CORS)
-            return response($pdf->output(), 200, [
-                'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-                'Content-Transfer-Encoding' => 'binary',
-                'Cache-Control' => 'public, must-revalidate, max-age=0',
-                'Pragma' => 'public',
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('Biodata PDF generation failed: ' . $e->getMessage(), [
-                'user_id' => $user->id,
-                'trace' => $e->getTraceAsString()
-            ]);
-            return response()->json([
-                'result' => false,
-                'message' => 'Failed to generate biodata PDF. Please try again.'
-            ], 500);
-        }
-    }
-
-    public function biodata_json(Request $request)
-    {
-        $user = auth()->user();
-        if (!$user) {
-            return response()->json([
-                'result' => false,
-                'message' => 'Your session has expired. Please sign in again.',
-            ], 401);
+        if ($template === 'traditional') {
+            $view = 'pdf.biodata_traditional';
+        } elseif ($template === 'minimalist') {
+            $view = 'pdf.biodata_minimalist';
         }
 
-        // Return user with all necessary related models, just like how the frontend uses it or how get_full_profile_react provides it.
-        // Actually, the simplest approach that guarantees parity with what get_full_profile_react returns
-        // is to either call it or return the exact same data structure.
-        // But since this is specifically for Biodata, we'll return structured user.
-        $user->load([
-            'member',
-            'member.marital_status',
-            'member.mothereTongue',
-            'education',
-            'career',
-            'families',
-            'addresses.city',
-            'addresses.state',
-            'addresses.country',
-            'spiritual_backgrounds.religion',
-            'spiritual_backgrounds.sect',
-            'spiritual_backgrounds.caste',
-            'spiritual_backgrounds.family_value',
-            'lifestyles',
-            'physical_attributes',
-            'partner_expectations.religion',
-            'partner_expectations.caste',
-            'partner_expectations.family_value',
-            'partner_expectations.member_language',
-            'partner_expectations.marital_status',
-            'hobbies'
-        ]);
-
-        return response()->json([
-            'result' => true,
-            'data' => $user
-        ]);
+        $pdf = PDF::loadView($view, compact('user'));
+        return $pdf->download('Biodata-' . $user->first_name . '.pdf');
     }
 
     private function getMarriageIntentOptionSets(): array
@@ -2095,24 +1713,6 @@ class ProfileController extends Controller
             }
         };
 
-        $maritalStatuses = MaritalStatus::orderBy('name')->get(['id', 'name']);
-        if ($maritalStatuses->isEmpty()) {
-            // Safety net: ensure onboarding always has usable marital-status options.
-            foreach (['Single', 'Divorced', 'Widowed', 'Separated'] as $defaultStatus) {
-                MaritalStatus::firstOrCreate(['name' => $defaultStatus]);
-            }
-            $maritalStatuses = MaritalStatus::orderBy('name')->get(['id', 'name']);
-        }
-
-        $maritalStatusOptions = $maritalStatuses->map(function ($item) {
-            return [
-                'id' => $item->id,
-                'name' => $item->name,
-                'value' => $item->name, // Added value for compatibility
-                'label' => $item->name, // Added label for compatibility
-            ];
-        })->values()->toArray();
-
         return [
             'genders' => $optionGroup('gender'),
             'marriageTimeline' => $optionGroup('marriage_timeline'),
@@ -2130,9 +1730,14 @@ class ProfileController extends Controller
             'personalityTags' => $optionGroup('personality_tags'),
             'personalValues' => $optionGroup('personal_values'),
             'communityValues' => $optionGroup('community_values'),
-            // Keep both keys for backward compatibility with older frontend builds.
-            'maritalStatuses' => $maritalStatusOptions,
-            'marital_statuses' => $maritalStatusOptions,
+            'maritalStatuses' => MaritalStatus::orderBy('name')->get(['id', 'name'])->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'name' => $item->name,
+                    'value' => $item->name, // Added value for compatibility
+                    'label' => $item->name, // Added label for compatibility
+                ];
+            })->values()->toArray(),
             'religions' => Religion::orderBy('name')->get(['id', 'name'])->map(function ($item) {
                 return [
                     'id' => $item->id,
@@ -2175,23 +1780,6 @@ class ProfileController extends Controller
                     'label' => $item->name,
                 ];
             })->values()->toArray(),
-            'jobTitles' => JobTitle::orderBy('name')->get(['id', 'name'])->map(function ($item) {
-                return [
-                    'id' => $item->id,
-                    'name' => $item->name,
-                    'value' => $item->id,
-                    'label' => $item->name,
-                ];
-            })->values()->toArray(),
-            'specialities' => Speciality::orderBy('name')->get(['id', 'name'])->map(function ($item) {
-                return [
-                    'id' => $item->id,
-                    'name' => $item->name,
-                    'value' => $item->id,
-                    'label' => $item->name,
-                ];
-            })->values()->toArray(),
         ];
     }
 }
-

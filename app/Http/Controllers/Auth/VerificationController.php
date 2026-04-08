@@ -7,7 +7,6 @@ use App\Providers\RouteServiceProvider;
 use Illuminate\Foundation\Auth\VerifiesEmails;
 use Carbon\Carbon;
 use App\Models\User;
-use App\Services\ReferralService;
 
 class VerificationController extends Controller
 {
@@ -73,13 +72,6 @@ class VerificationController extends Controller
         if($user != null){
             $user->email_verified_at = Carbon::now();
             $user->save();
-
-            try {
-                (new ReferralService())->checkAndQualifyReferral($user->id);
-            } catch (\Exception $e) {
-                \Log::error('Referral qualification check failed after web email verification: ' . $e->getMessage(), ['user_id' => $user->id]);
-            }
-
             auth()->login($user, true);
             flash(translate('Your email has been verified successfully'))->success();
         }

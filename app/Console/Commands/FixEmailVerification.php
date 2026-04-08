@@ -14,7 +14,7 @@ class FixEmailVerification extends Command
     {
         $email = $this->argument('email');
 
-        $user = User::where('email', $email)->whereNull('deleted_at')->first();
+        $user = User::where('email', $email)->first();
 
         if (!$user) {
             $this->error("User with email {$email} not found.");
