@@ -17,7 +17,7 @@ const FloatingContactButton: React.FC<FloatingContactButtonProps> = ({ placement
     const containerRef = useRef<HTMLDivElement>(null);
     const isChatPlacement = placement === 'chat';
     const containerPositionClass = isChatPlacement
-        ? 'fixed bottom-24 right-4 sm:bottom-24 md:bottom-8 md:right-6'
+        ? 'fixed bottom-28 right-4 sm:bottom-28 md:bottom-32 md:right-6'
         : 'fixed bottom-6 right-6';
     const actionButtonSizeClass = isChatPlacement
         ? 'w-11 h-11 sm:w-12 sm:h-12'

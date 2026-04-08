@@ -10,6 +10,7 @@ import StepUpVerificationModal from './StepUpVerificationModal';
 import TwoFactorSetupModal from './TwoFactorSetupModal';
 import { api } from '../utils/api';
 import CredentialVerificationModal from './CredentialVerificationModal';
+import PasswordResetModal from './PasswordResetModal';
 import CountryCodeSelector from './CountryCodeSelector';
 import { Country, getDefaultCountry, countries } from '../utils/countries';
 import { useTranslation } from 'react-i18next';
@@ -27,8 +28,10 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onLaunchOnboarding, onOpenB
     const { t } = useTranslation();
     const { user, setUser } = useAuthStore();
 
-    const handleChangePasswordRedirect = () => {
-        window.location.assign('/password/reset');
+    const [showPasswordResetModal, setShowPasswordResetModal] = useState(false);
+
+    const openPasswordResetModal = () => {
+        setShowPasswordResetModal(true);
     };
     const [activeTab, setActiveTab] = useState<'account' | 'privacy' | 'safety' | 'billing'>('account');
     const [loading, setLoading] = useState(true);
@@ -728,7 +731,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onLaunchOnboarding, onOpenB
 
                                                 <button
                                                     type="button"
-                                                    onClick={handleChangePasswordRedirect}
+                                                    onClick={openPasswordResetModal}
                                                     className="w-full flex items-center justify-between gap-3 p-4 bg-white border border-slate-200 rounded-xl hover:border-primary/40 hover:bg-primary/5 transition-all text-left group"
                                                 >
                                                     <div className="flex items-center gap-3 min-w-0">
@@ -1708,6 +1711,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onLaunchOnboarding, onOpenB
             </div >
 
             {showVerification && <VerificationModal onClose={() => setShowVerification(false)} />}
+            <PasswordResetModal isOpen={showPasswordResetModal} onClose={() => setShowPasswordResetModal(false)} defaultEmail={user?.email ?? ''} />
             {
                 stepUpContext && (
                     <StepUpVerificationModal

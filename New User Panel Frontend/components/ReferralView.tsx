@@ -300,6 +300,7 @@ const ReferralView: React.FC = () => {
                           <div>
                             <h4 className="font-bold text-slate-900">{t('referral.progressTitle')}</h4>
                             <p className="text-sm text-slate-500 mt-0.5">{stats.rule_name}</p>
+                            <p className="text-xs text-slate-400 mt-1">{t('referral.qualificationNote')}</p>
                           </div>
                           <div className="text-right">
                             <span className="text-2xl font-bold text-primary">{stats.qualified_count}</span>
@@ -323,15 +324,30 @@ const ReferralView: React.FC = () => {
                           </span>
                           <span className="font-bold text-primary">{progressPercent}%</span>
                         </div>
+                        <div className="grid grid-cols-3 gap-3 mt-4">
+                          <div className="rounded-xl bg-emerald-50 border border-emerald-100 p-3">
+                            <p className="text-[11px] uppercase tracking-wide text-emerald-600 font-bold">{t('referral.qualifiedCounted')}</p>
+                            <p className="text-lg font-bold text-emerald-700 mt-1">{stats.qualified_count}</p>
+                          </div>
+                          <div className="rounded-xl bg-amber-50 border border-amber-100 p-3">
+                            <p className="text-[11px] uppercase tracking-wide text-amber-600 font-bold">{t('referral.pendingReview')}</p>
+                            <p className="text-lg font-bold text-amber-700 mt-1">{stats.pending_count}</p>
+                          </div>
+                          <div className="rounded-xl bg-purple-50 border border-purple-100 p-3">
+                            <p className="text-[11px] uppercase tracking-wide text-purple-600 font-bold">{t('referral.appliedRewards')}</p>
+                            <p className="text-lg font-bold text-purple-700 mt-1">{stats.rewards?.length || 0}</p>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
                     {/* Stats Grid */}
+
                     <div className="grid grid-cols-2 gap-4">
                       <StatCard icon={<Users size={18} />} label={t('referral.totalReferred')} value={stats.total_referred} color="primary" />
-                      <StatCard icon={<Check size={18} />} label={t('referral.qualified')} value={stats.qualified_count} color="green" />
+                      <StatCard icon={<Check size={18} />} label={t('referral.qualifiedCounted')} value={stats.qualified_count} color="green" />
                       <StatCard icon={<Clock size={18} />} label={t('referral.pending')} value={stats.pending_count} color="amber" />
-                      <StatCard icon={<Award size={18} />} label={t('referral.rewards')} value={stats.rewards?.length || 0} color="purple" />
+                      <StatCard icon={<Award size={18} />} label={t('referral.appliedRewards')} value={stats.rewards?.length || 0} color="purple" />
                     </div>
 
                     {/* Active Reward Rules */}

@@ -19,7 +19,8 @@ class DiscoveryController extends Controller
     private function buildBaseQuery(Request $request): Builder
     {
         $user = auth()->user();
-        $opposite_gender = ($user->member->gender == 1) ? 2 : 1;
+        $memberGender = $user?->member?->gender;
+        $opposite_gender = ($memberGender == 1) ? 2 : 1;
 
         $query = User::with([
                 'member',
@@ -32,7 +33,7 @@ class DiscoveryController extends Controller
                 'addresses.country',
             ])
             ->where('user_type', 'member')
-            ->where('id', '!=', $user->id)
+            ->where('id', '!=', $user?->id)
             ->where('blocked', 0)
             ->where('deactivated', 0)
             ->where('approved', 1)

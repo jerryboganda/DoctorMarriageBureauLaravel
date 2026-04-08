@@ -722,6 +722,9 @@ class AuthController extends Controller
     public function authData($user)
     {
         // $user = auth()->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
         $member = $user->member;
         $maritial_status = $member ? MaritalStatus::where('id', $member->marital_status_id)->first() : null;
         return response()->json(

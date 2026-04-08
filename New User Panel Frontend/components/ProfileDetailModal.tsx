@@ -3,7 +3,7 @@ import {
   X, MapPin, Briefcase, GraduationCap, Heart, Calendar, Users, Globe, BookOpen, Star,
   Zap, CheckCircle2, AlertTriangle, ArrowLeftRight, BrainCircuit, UserCheck, Loader2,
   Send, Lock, FileText, ChevronRight, Eye, Phone, Mail, Ruler, Moon, Home, MessageSquare, Clock,
-  Mic, Play, Pause, Volume2, Image as ImageIcon,
+  Mic, Play, Pause, Volume2, Image as ImageIcon, EyeOff, Flag, Trash2,
 } from 'lucide-react';
 import { ProfileMatch, MatchIntelligence } from '../types';
 import { api } from '../utils/api';
@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { BTN_TAP } from '../utils/motion';
 import { resolveInterestState } from '../utils/interestStatus';
 import { useAuthStore } from '../src/stores/authStore';
+import ReportModal from './ReportModal';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://api.doctormarriagebureau.com.pk';
 const DEFAULT_AVATAR = `${API_BASE}/assets/img/avatar-place.png`;
@@ -50,6 +51,9 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({ profile, onClos
   const [intelLoading, setIntelLoading] = useState(false);
   const [intelError, setIntelError] = useState<string | null>(null);
   const [showFriction, setShowFriction] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [hiding, setHiding] = useState(false);
+  const [removingFromShortlist, setRemovingFromShortlist] = useState(false);
 
   // interest_status from API: 1 = no interest, 0 = I sent interest, 'do_response' = they sent to me
   // interest_text tells us if it was accepted or pending
@@ -130,6 +134,34 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({ profile, onClos
   const handleSendProposal = () => {
     if (interestState !== 'none') return;
     onSendProposal(profile);
+  };
+
+  const handleHideFromDiscovery = async () => {
+    if (!isLiveProfile || !displayProfile.id || hiding) return;
+    try {
+      setHiding(true);
+      await api.post('/member/add-to-ignore-list', { user_id: displayProfile.id });
+      onClose();
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to hide user from discovery', error);
+    } finally {
+      setHiding(false);
+    }
+  };
+
+  const handleRemoveFromShortlist = async () => {
+    if (!isLiveProfile || !displayProfile.id || removingFromShortlist) return;
+    try {
+      setRemovingFromShortlist(true);
+      await api.post('/member/remove-from-shortlist', { user_id: displayProfile.id });
+      onClose();
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to remove user from shortlist', error);
+    } finally {
+      setRemovingFromShortlist(false);
+    }
   };
 
   const basicInfo = profileData?.basic_info;
@@ -400,6 +432,41 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({ profile, onClos
               </motion.button>
             )}
           </div>
+
+          {!isOwnProfile && (
+            <div className='px-4 sm:px-5 pb-3'>
+              <div className='rounded-xl border border-slate-200 bg-slate-50 p-3'>
+                <div className='mb-2'>
+                  <span className='text-[11px] font-bold uppercase tracking-wide text-slate-400'>{t('profile.safetyActions')}</span>
+                </div>
+                <div className='grid grid-cols-1 sm:grid-cols-3 gap-2'>
+                  <button
+                    onClick={handleHideFromDiscovery}
+                    disabled={hiding || removingFromShortlist}
+                    className='w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-slate-700 hover:bg-slate-100 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed'
+                  >
+                    <EyeOff size={14} className='text-slate-500' />
+                    {hiding ? t('profile.blocking') : t('profile.hideFromDiscovery')}
+                  </button>
+                  <button
+                    onClick={handleRemoveFromShortlist}
+                    disabled={hiding || removingFromShortlist}
+                    className='w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-slate-700 hover:bg-slate-100 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed'
+                  >
+                    <Trash2 size={14} className='text-slate-500' />
+                    {removingFromShortlist ? t('profile.removingFromShortlist') : t('profile.removeFromShortlist')}
+                  </button>
+                  <button
+                    onClick={() => setShowReportModal(true)}
+                    className='w-full rounded-xl border border-red-200 bg-red-50 px-3 py-3 text-sm font-bold text-red-700 hover:bg-red-100 flex items-center justify-center gap-2'
+                  >
+                    <Flag size={14} />
+                    {t('profile.reportProfile')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Tab bar */}
           <div className="px-4 sm:px-5 border-b border-slate-200 flex items-stretch gap-2 bg-white overflow-x-auto scrollbar-hide">
@@ -853,6 +920,14 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({ profile, onClos
           )}
         </div>
       </div>
+      {!isOwnProfile && showReportModal && (
+        <ReportModal
+          onClose={() => setShowReportModal(false)}
+          userName={displayName}
+          userId={profile.id}
+          defaultBlockUser={false}
+        />
+      )}
     </div>
   );
 };

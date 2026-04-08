@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 class RequirePasswordChangeApi
 {
@@ -31,11 +32,14 @@ class RequirePasswordChangeApi
             }
         }
 
-        Log::warning('Blocked API access until password change is completed', [
-            'user_id' => $user->id,
-            'path' => $request->path(),
-            'ip' => $request->ip(),
-        ]);
+        $warningKey = 'password_change_block:' . $user->id . ':' . $request->path();
+        if (Cache::add($warningKey, true, now()->addHour())) {
+            Log::warning('Blocked API access until password change is completed', [
+                'user_id' => $user->id,
+                'path' => $request->path(),
+                'ip' => $request->ip(),
+            ]);
+        }
 
         return response()->json([
             'result' => false,

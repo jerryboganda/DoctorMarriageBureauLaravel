@@ -77,6 +77,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Cache;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use App\Notifications\DbStoreNotification;
 use App\Services\FirbaseNotification;
@@ -721,7 +722,7 @@ class ProfileController extends Controller
                             // fcm 
                             if (get_setting('firebase_push_notification') == 1) {
                                 $fcmTokens = User::where('id', $user->id)->whereNotNull('fcm_token')->pluck('fcm_token')->toArray();
-                                self::sendFirebaseNotification($fcmTokens, $user, $notify_type, $message, $notify_by);
+                                self::sendFirebaseNotification($user, $notify_type, $message, $notify_by, $fcmTokens);
                             }
                             // end of fcm
 
@@ -739,7 +740,7 @@ class ProfileController extends Controller
         }
     }
 
-    public static function sendFirebaseNotification($fcmTokens = null, $notify_user, $notify_type, $message, $notify_by = null)
+    public static function sendFirebaseNotification($notify_user, $notify_type, $message, $notify_by = null, $fcmTokens = null)
     {
         // send firebase notification for mobile app
         if ($notify_user->fcm_token != null) {
@@ -1774,7 +1775,10 @@ class ProfileController extends Controller
 
             $missingFields = $this->getOnboardingMissingFields($user, $member);
             if (!empty($missingFields)) {
-                \Log::warning('Onboarding incomplete for user ' . $user->id, ['missing' => $missingFields]);
+                $warningKey = 'onboarding_warning:' . $user->id;
+                if (Cache::add($warningKey, true, now()->addHours(6))) {
+                    \Log::warning('Onboarding incomplete for user ' . $user->id, ['missing' => $missingFields]);
+                }
                 return response()->json([
                     'result' => false,
                     'message' => 'Missing: ' . implode(', ', $missingFields),

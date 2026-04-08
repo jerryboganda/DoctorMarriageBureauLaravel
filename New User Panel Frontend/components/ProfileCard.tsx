@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BadgeCheck, MapPin, Cake, GraduationCap, Briefcase, Check, X, Lock, MoreVertical, ShieldAlert, Flag } from 'lucide-react';
+import { BadgeCheck, MapPin, Cake, GraduationCap, Briefcase, Check, X, Lock, MoreVertical, ShieldAlert, Flag, EyeOff, Trash2 } from 'lucide-react';
 import { ProfileMatch } from '../types';
 import { api } from '../utils/api';
 import ReportModal from './ReportModal';
@@ -26,6 +26,8 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ profile, interestId, onDeclin
   const [blocking, setBlocking] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [hiding, setHiding] = useState(false);
+  const [removingFromShortlist, setRemovingFromShortlist] = useState(false);
 
   if (!profile) {
     return (
@@ -88,13 +90,55 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ profile, interestId, onDeclin
       setBlocking(false);
       setShowMenu(false);
     }
+
+  const handleHideFromDiscovery = async () => {
+    if (!isLiveProfile || !displayProfile.id || hiding) return;
+    try {
+      setHiding(true);
+      await api.post('/member/add-to-ignore-list', { user_id: displayProfile.id });
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to hide user from discovery', error);
+    } finally {
+      setHiding(false);
+      setShowMenu(false);
+    }
   };
 
-  return (
-    <div className="bg-white rounded-xl shadow-lg shadow-slate-200/50 overflow-hidden border border-white relative">
-      {/* Cover Image area */}
-      <div className={`h-32 md:h-40 ${coverGradient} relative`}>
-        <div className="absolute top-4 right-4 bg-white/80 backdrop-blur-md px-3 py-1 rounded-full flex items-center gap-1 text-primary text-xs font-bold shadow-sm">
+  const handleRemoveFromShortlist = async () => {
+    if (!isLiveProfile || !displayProfile.id || removingFromShortlist) return;
+             {showMenu && (
+                 <div className= absolute top-full left-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-20 animate-in fade-in zoom-in-95 duration-200>
+                     <button
+                        onClick={handleHideFromDiscovery}
+                        disabled={!isLiveProfile || hiding || removingFromShortlist}
+                        className=w-full text-left px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed
+                     >
+                         <EyeOff size={16} /> {hiding ? t('profile.blocking') : t('profile.hideFromDiscovery')}
+                     </button>
+                     <button
+                        onClick={handleRemoveFromShortlist}
+                        disabled={!isLiveProfile || hiding || removingFromShortlist}
+                        className=w-full text-left px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed
+                     >
+                         <Trash2 size={16} /> {removingFromShortlist ? t('profile.removingFromShortlist') : t('profile.removeFromShortlist')}
+                     </button>
+                     <button 
+                        onClick={() => { if (isLiveProfile) { setShowReportModal(true); } setShowMenu(false); }}
+                        disabled={!isLiveProfile}
+                        className=w-full text-left px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed
+                     >
+                         <Flag size={16} /> {t('profile.reportProfile')}
+                     </button>
+                     <button
+                        onClick={handleBlock}
+                        disabled={!isLiveProfile || blocking}
+                        className=w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed
+                     >
+                         <ShieldAlert size={16} /> {blocking ? t('profile.blocking') : t('profile.blockUser')}
+                     </button>
+                 </div>
+             )}
           <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
           {displayProfile.matchPercentage ?? 0}% {t('common.match')}
         </div>
