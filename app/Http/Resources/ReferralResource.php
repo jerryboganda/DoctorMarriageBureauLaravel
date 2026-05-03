@@ -2,6 +2,8 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Referral;
+use App\Models\User;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class ReferralResource extends JsonResource
@@ -14,9 +16,13 @@ class ReferralResource extends JsonResource
      */
     public function toArray($request)
     {
+        $resource = $this->resource;
+        $referredUser = $resource instanceof Referral ? $resource->referred : ($resource instanceof User ? $resource : null);
+        $displayDate = $resource instanceof Referral ? $resource->created_at : ($resource->created_at ?? null);
+
         return [
-            'name' => $this->first_name.' '.$this->last_name,
-            'date' => date('d-m-Y', strtotime($this->created_at)),
+            'name' => trim(($referredUser->first_name ?? '') . ' ' . ($referredUser->last_name ?? '')),
+            'date' => $displayDate ? date('d-m-Y', strtotime($displayDate)) : null,
         ];
     }
 }

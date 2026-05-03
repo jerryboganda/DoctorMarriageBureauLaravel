@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { Compass, UserCheck, Heart, MessageSquare, Route, Users, Globe, Bell, UserCircle, ShieldCheck, LogOut, HeartPulse, X, Camera, Loader2, ChevronDown } from 'lucide-react';
+import { Compass, UserCheck, Heart, MessageSquare, Globe, Bell, UserCircle, ShieldCheck, LogOut, HeartPulse, X, Camera, Loader2, ChevronDown, Gift, Wallet, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { BTN_TAP } from '../utils/motion';
@@ -11,11 +11,26 @@ import LanguageToggle from './LanguageToggle';
 interface SidebarProps {
   currentView: string;
   onNavigate: (view: string) => void;
+  dataSyncVersion?: number;
   onUpgrade?: () => void;
   onCloseMobile?: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, onUpgrade, onCloseMobile }) => {
+const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://api.doctormarriagebureau.com.pk';
+const DEFAULT_AVATAR = `${API_BASE}/assets/img/avatar-place.png`;
+
+const resolveAvatarUrl = (value?: string | null): string => {
+  const candidate = `${value ?? ''}`.trim();
+
+  if (!candidate) return DEFAULT_AVATAR;
+  if (candidate.startsWith('http://') || candidate.startsWith('https://')) return candidate;
+  if (candidate.startsWith('//')) return `https:${candidate}`;
+  if (candidate.startsWith('/')) return `${API_BASE}${candidate}`;
+
+  return `${API_BASE}/${candidate.replace(/^\/+/, '')}`;
+};
+
+const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, dataSyncVersion, onUpgrade, onCloseMobile }) => {
   const { user, setUser } = useAuthStore();
   const { t } = useTranslation();
   const [counts, setCounts] = useState({
@@ -26,6 +41,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, onUpgrade, o
   });
   const [uploading, setUploading] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const lastDiscoveryFetchAtRef = useRef(0);
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
@@ -66,45 +82,74 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, onUpgrade, o
 
   useEffect(() => {
     let isActive = true;
+    let isFetching = false;
 
     const fetchCounts = async () => {
-      const results = await Promise.allSettled([
-        api.get('/discovery'),
-        api.get('/member/interest-requests'),
-        api.get('/member/chat-list'),
-        api.get('/member/notifications/feed'),
-      ]);
+      if (isFetching) return;
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
+        return;
+      }
+      isFetching = true;
 
-      if (!isActive) return;
+      try {
+        const now = Date.now();
+        const shouldFetchDiscovery = now - lastDiscoveryFetchAtRef.current > 120000;
+        const discoveryTask = shouldFetchDiscovery ? api.get('/discovery') : Promise.resolve({ data: null });
+        const results = await Promise.allSettled([
+          discoveryTask,
+          api.get('/member/interest-requests'),
+          api.get('/member/chat-list'),
+          api.get('/member/notifications/feed'),
+        ]);
 
-      const discoveryRes = results[0].status === 'fulfilled' ? results[0].value : null;
-      const interestsRes = results[1].status === 'fulfilled' ? results[1].value : null;
-      const chatsRes = results[2].status === 'fulfilled' ? results[2].value : null;
-      const notificationsRes = results[3].status === 'fulfilled' ? results[3].value : null;
+        if (!isActive) return;
 
-      const agentPicks = discoveryRes?.data?.data?.agent_picks?.length ?? 0;
-      const proposals = interestsRes?.data?.meta?.total ?? interestsRes?.data?.data?.length ?? 0;
-      const messages = (chatsRes?.data?.data ?? []).reduce((sum: number, thread: any) => {
-        const count = Number(thread?.unseen_message_count ?? 0);
-        return sum + (Number.isFinite(count) ? count : 0);
-      }, 0);
-      const notifications = notificationsRes?.data?.unread_count ?? 0;
+        const discoveryRes = results[0].status === 'fulfilled' ? results[0].value : null;
+        const interestsRes = results[1].status === 'fulfilled' ? results[1].value : null;
+        const chatsRes = results[2].status === 'fulfilled' ? results[2].value : null;
+        const notificationsRes = results[3].status === 'fulfilled' ? results[3].value : null;
 
-      setCounts({ agentPicks, proposals, messages, notifications });
+        const agentPicks = discoveryRes?.data?.data?.agent_picks?.length;
+        const proposals = interestsRes?.data?.meta?.total ?? interestsRes?.data?.data?.length ?? 0;
+        const messages = (chatsRes?.data?.data ?? []).reduce((sum: number, thread: any) => {
+          const count = Number(thread?.unseen_message_count ?? 0);
+          return sum + (Number.isFinite(count) ? count : 0);
+        }, 0);
+        const notifications = notificationsRes?.data?.unread_count ?? 0;
+
+        setCounts((prev) => ({
+          agentPicks: Number.isFinite(agentPicks) ? Number(agentPicks) : prev.agentPicks,
+          proposals,
+          messages,
+          notifications,
+        }));
+        if (discoveryRes?.data?.data) {
+          lastDiscoveryFetchAtRef.current = now;
+        }
+      } finally {
+        isFetching = false;
+      }
     };
 
     fetchCounts();
     const interval = setInterval(fetchCounts, 30000);
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') fetchCounts();
+    };
+    const onFocus = () => fetchCounts();
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('focus', onFocus);
 
     return () => {
       isActive = false;
       clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('focus', onFocus);
     };
-  }, []);
+  }, [dataSyncVersion]);
 
-  const avatarUrl = user?.avatar_original || user?.avatar || '';
-  const displayName = user?.name ?? t('nav.defaultName');
-  const membershipLabel = user?.membership === 2 ? t('nav.premiumMember') : t('nav.basicMember');
+  const avatarUrl = resolveAvatarUrl(user?.avatar_original || user?.avatar); // kept for potential future use
+  const isPremiumMessagingMember = Number(user?.membership) === 2;
 
   // Scroll indicator state
   const navRef = useRef<HTMLElement>(null);
@@ -141,59 +186,27 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, onUpgrade, o
       </div>
 
       <nav ref={navRef} className="flex-1 flex flex-col px-4 gap-1 py-4 overflow-y-auto scrollbar-hide relative">
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8 p-4 bg-slate-50/80 rounded-2xl flex items-center gap-3 border border-slate-100"
-        >
-          <div className="relative group">
-            <div
-              className={`size-10 rounded-full bg-slate-200 bg-cover bg-center border border-white shadow-sm transition-all cursor-pointer ${uploading ? 'opacity-50' : 'group-hover:brightness-90'}`}
-              style={avatarUrl ? { backgroundImage: `url(${avatarUrl})` } : undefined}
-              onClick={handleAvatarClick}
-            />
-            <div
-              onClick={handleAvatarClick}
-              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity bg-black/20 rounded-full"
-            >
-              <Camera size={14} className="text-white" />
-            </div>
-            {uploading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-white/40 rounded-full">
-                <Loader2 size={14} className="animate-spin text-primary" />
-              </div>
-            )}
-            <input
-              type="file"
-              ref={fileInputRef}
-              className="hidden"
-              accept="image/*"
-              onChange={handleFileChange}
-            />
-          </div>
-          <div className="overflow-hidden">
-            <h2 className="text-sm font-bold text-slate-900 truncate">{displayName}</h2>
-            <p className="text-xs text-slate-500 truncate">{membershipLabel}</p>
-          </div>
-        </motion.div>
-
         <div className="space-y-1">
           <NavItem icon={<Compass size={20} />} label={t('nav.exploreProfiles')} active={currentView === 'discovery'} onClick={() => onNavigate('discovery')} />
           <NavItem icon={<UserCheck size={20} />} label={t('nav.matchmakerProposals')} active={currentView === 'agent_picks'} onClick={() => onNavigate('agent_picks')} badge={counts.agentPicks || undefined} />
           <NavItem icon={<Heart size={20} />} label={t('nav.proposals')} active={currentView === 'dashboard'} onClick={() => onNavigate('dashboard')} badge={counts.proposals || undefined} />
-          <NavItem icon={<MessageSquare size={20} />} label={t('nav.messages')} active={currentView === 'messages'} onClick={() => onNavigate('messages')} badge={counts.messages || undefined} />
-        </div>
-
-        <p className="px-4 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 mt-8">{t('nav.familySocial')}</p>
-        <div className="space-y-1">
-          <NavItem icon={<Users size={20} />} label={t('nav.familyPortal')} sublabel={t('nav.familyPortalSublabel')} active={currentView === 'family'} onClick={() => onNavigate('family')} />
-          <NavItem icon={<Globe size={20} />} label={t('nav.communities')} active={currentView === 'communities'} onClick={() => onNavigate('communities')} />
-          <NavItem icon={<Route size={20} />} label={t('nav.journeyTracking')} active={currentView === 'progression'} onClick={() => onNavigate('progression')} />
-        </div>
-
-        <p className="px-4 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 mt-8">{t('nav.settingsHeader')}</p>
-        <div className="space-y-1">
+          <NavItem icon={<MessageSquare size={20} />} label={t('nav.messages')} active={currentView === 'messages'} onClick={() => { if (isPremiumMessagingMember) { onNavigate('messages'); } else { onUpgrade?.(); } }} badge={isPremiumMessagingMember ? (counts.messages || undefined) : undefined} />
           <NavItem icon={<Bell size={20} />} label={t('nav.notifications')} active={currentView === 'notifications'} onClick={() => onNavigate('notifications')} badge={counts.notifications || undefined} />
+        </div>
+
+        <p className="px-4 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 mt-4">{t('nav.familySocial')}</p>
+        <div className="space-y-1">
+          <NavItem icon={<Globe size={20} />} label={t('nav.communities')} active={currentView === 'communities'} onClick={() => onNavigate('communities')} />
+        </div>
+
+        <p className="px-4 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 mt-4">{t('nav.referralHeader')}</p>
+        <div className="space-y-1">
+          <NavItem icon={<Wallet size={20} />} label={t('nav.wallet')} active={currentView === 'wallet'} onClick={() => onNavigate('wallet')} />
+          <NavItem icon={<Gift size={20} />} label={t('nav.referralSystem')} sublabel={t('nav.referralSublabel')} active={currentView === 'referral'} onClick={() => onNavigate('referral')} />
+        </div>
+
+        <p className="px-4 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 mt-4">{t('nav.settingsHeader')}</p>
+        <div className="space-y-1">
           <NavItem icon={<UserCircle size={20} />} label={t('nav.myProfile')} active={currentView === 'profile'} onClick={() => onNavigate('profile')} />
           <NavItem icon={<ShieldCheck size={20} />} label={t('nav.privacyTrust')} active={currentView === 'settings'} onClick={() => onNavigate('settings')} />
         </div>

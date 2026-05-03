@@ -9,6 +9,10 @@ import { api } from '../utils/api';
 import { compressImage } from '../utils/compression';
 import { useTranslation } from 'react-i18next';
 
+interface FamilyPortalViewProps {
+    biodataOnly?: boolean;
+}
+
 interface FamilyProfile {
     description: string;
     traditionLevel: string;
@@ -39,12 +43,12 @@ interface Approval {
     approved: boolean;
 }
 
-const FamilyPortalView: React.FC = () => {
+const FamilyPortalView: React.FC<FamilyPortalViewProps> = ({ biodataOnly = false }) => {
     const { t } = useTranslation();
     const { user } = useAuthStore();
-    const [activeTab, setActiveTab] = useState<'profile' | 'guardians' | 'approvals' | 'biodata'>('profile');
     const [showQr, setShowQr] = useState(false);
-    const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState<'profile' | 'guardians' | 'approvals' | 'biodata'>('profile');
+    const [loading, setLoading] = useState(!biodataOnly);
     const [familyData, setFamilyData] = useState<{
         profile: FamilyProfile;
         guardians: Guardian[];
@@ -52,8 +56,13 @@ const FamilyPortalView: React.FC = () => {
     } | null>(null);
 
     useEffect(() => {
+        if (biodataOnly) {
+            setLoading(false);
+            return;
+        }
+
         fetchFamilyData();
-    }, []);
+    }, [biodataOnly]);
 
     const fetchFamilyData = async () => {
         try {
@@ -66,6 +75,34 @@ const FamilyPortalView: React.FC = () => {
             setLoading(false);
         }
     };
+
+    if (biodataOnly) {
+        return (
+            <div className="flex-1 flex flex-col h-full min-h-0 bg-slate-50 relative">
+                <div className="flex-1 overflow-y-auto p-4 md:p-8 scrollbar-hide">
+                    <div className="max-w-6xl mx-auto">
+                        <BiodataSection onShowQr={() => setShowQr(true)} />
+                    </div>
+                </div>
+
+                {showQr && (
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl p-8 text-center max-w-sm w-full animate-in zoom-in-95">
+                            <h3 className="text-xl font-bold text-slate-900 mb-2">{t('family.shareBiodata')}</h3>
+                            <p className="text-sm text-slate-500 mb-6">{t('family.scanToView', { name: user?.name ?? 'member' })}</p>
+                            <div className="bg-white p-4 rounded-xl border-2 border-slate-900 inline-block mb-6">
+                                <QrCode size={160} className="text-slate-900" />
+                            </div>
+                            <div className="flex gap-3">
+                                <button onClick={() => setShowQr(false)} className="flex-1 py-2 text-slate-500 font-bold hover:bg-slate-50 rounded-lg">{t('family.close')}</button>
+                                <button className="flex-1 py-2 bg-primary text-white font-bold rounded-lg hover:bg-primary-hover">{t('family.copyLink')}</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    }
 
     if (loading) {
         return (
@@ -452,9 +489,8 @@ const GuardiansSection: React.FC<{ guardians: Guardian[]; onRefresh: () => void 
         <div className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4">
             {/* Toast notification */}
             {toast && (
-                <div className={`fixed top-6 right-6 z-50 flex items-center gap-2 px-5 py-3 rounded-xl shadow-lg text-sm font-medium animate-in slide-in-from-right-5 ${
-                    toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
-                }`}>
+                <div className={`fixed top-6 right-6 z-50 flex items-center gap-2 px-5 py-3 rounded-xl shadow-lg text-sm font-medium animate-in slide-in-from-right-5 ${toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+                    }`}>
                     {toast.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
                     {toast.message}
                     <button onClick={() => setToast(null)} className="ml-2 opacity-70 hover:opacity-100"><X size={14} /></button>
@@ -675,9 +711,8 @@ const GuardiansSection: React.FC<{ guardians: Guardian[]; onRefresh: () => void 
                                 </div>
 
                                 <div className="flex items-center gap-3 shrink-0 border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6">
-                                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                                        g.status === 'Verified' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                                    }`}>
+                                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${g.status === 'Verified' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                                        }`}>
                                         {g.status === 'Verified' ? '✓ ' : '◷ '}{g.status}
                                     </span>
                                     {g.isOwner ? (
@@ -775,6 +810,7 @@ const ApprovalsSection: React.FC<{ approvals: Approval[]; onRefresh: () => void 
                         busy={processingId === a.id}
                         onApprove={() => handleApprove(a.id)}
                         onReject={() => handleReject(a.id)}
+                        t={t}
                     />
                 ))}
             </div>
@@ -792,7 +828,8 @@ const ApprovalCard: React.FC<{
     busy?: boolean;
     onApprove?: () => void;
     onReject?: () => void;
-}> = ({ name, desc, status, img, time, approved, busy, onApprove, onReject }) => (
+    t: any;
+}> = ({ name, desc, status, img, time, approved, busy, onApprove, onReject, t }) => (
     <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between group hover:border-primary/30 transition-all">
         <div className="flex items-center gap-4">
             <img src={img} className="size-12 rounded-full object-cover" />
@@ -828,96 +865,99 @@ const ApprovalCard: React.FC<{
 const BiodataSection: React.FC<{ onShowQr: () => void }> = ({ onShowQr }) => {
     const { t } = useTranslation();
     const [downloading, setDownloading] = useState(false);
-    const [selectedTemplate, setSelectedTemplate] = useState('modern');
 
     const handleDownload = async () => {
         try {
             setDownloading(true);
-            const response = await api.get(`/profile/download-biodata?template=${selectedTemplate}`, {
-                responseType: 'blob'
+            const response = await api.get('/profile/download-biodata', {
+                responseType: 'blob',
             });
-            const blobUrl = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
-            window.open(blobUrl, '_blank', 'noopener');
-            setTimeout(() => window.URL.revokeObjectURL(blobUrl), 10000);
+
+            const disposition = response.headers?.['content-disposition'] || '';
+            const fileNameMatch = disposition.match(/filename="?([^"]+)"?/i);
+            const fileName = fileNameMatch?.[1] || `Biodata-Profile.pdf`;
+
+            const blob = new Blob([response.data], { type: 'application/pdf' });
+            const blobUrl = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(blobUrl);
         } catch (error) {
             console.error('Failed to download biodata', error);
-            alert('Failed to download biodata');
-        } finally {
+            alert(t('family.biodataDownloadFailed') || 'Failed to download biodata. Please try again.');
+        }
+        finally {
             setDownloading(false);
         }
     };
 
-    const templates = [
-        { id: 'modern', name: t('family.modernProfessional'), desc: t('family.modernProfessionalDesc'), icon: <CheckCircle2 size={20} /> },
-        { id: 'traditional', name: t('family.traditionalDetailed'), desc: t('family.traditionalDetailedDesc'), icon: <CheckCircle2 size={20} /> },
-        { id: 'minimalist', name: t('family.minimalist'), desc: t('family.minimalistDesc'), icon: <CheckCircle2 size={20} /> }
-    ];
-
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4">
-            <div>
-                <h3 className="text-lg font-bold text-slate-900 mb-2">{t('family.biodataBuilder')}</h3>
-                <p className="text-sm text-slate-500 mb-6">{t('family.biodataBuilderDesc')}</p>
-
-                <div className="space-y-4 mb-8">
-                    {templates.map((tmpl) => (
-                        <div
-                            key={tmpl.id}
-                            onClick={() => setSelectedTemplate(tmpl.id)}
-                            className={`p-4 rounded-xl border-2 cursor-pointer relative transition-all ${selectedTemplate === tmpl.id
-                                    ? 'border-primary bg-primary/5'
-                                    : 'border-slate-200 hover:border-slate-400 bg-white'
-                                }`}
-                        >
-                            {selectedTemplate === tmpl.id && (
-                                <div className="absolute top-3 right-3 text-primary">{tmpl.icon}</div>
-                            )}
-                            <h4 className="font-bold text-slate-900">{tmpl.name}</h4>
-                            <p className="text-xs text-slate-500">{tmpl.desc}</p>
-                        </div>
-                    ))}
+        <div className="max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4">
+            <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-2xl mb-4">
+                    <FileText size={28} className="text-primary" />
                 </div>
-
-                <div className="flex gap-3">
-                    <button
-                        onClick={handleDownload}
-                        disabled={downloading}
-                        className="flex-1 py-3 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 flex items-center justify-center gap-2 disabled:opacity-60"
-                    >
-                        {downloading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />} {t('family.downloadPDF')}
-                    </button>
-                    <button
-                        onClick={onShowQr}
-                        className="flex-1 py-3 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-50 flex items-center justify-center gap-2"
-                    >
-                        <QrCode size={16} /> {t('family.shareLink')}
-                    </button>
-                </div>
+                <h3 className="text-xl font-bold text-slate-900 mb-2">{t('family.biodataBuilder')}</h3>
+                <p className="text-sm text-slate-500 max-w-md mx-auto">{t('family.biodataBuilderDesc')}</p>
             </div>
 
-            {/* Live Preview */}
-            <div className="bg-slate-200 rounded-xl p-8 flex items-center justify-center border border-slate-300">
-                <div className="bg-white w-[300px] h-[420px] shadow-2xl rounded-sm p-4 text-[8px] text-slate-400 overflow-hidden relative">
-                    <div className="absolute top-0 right-0 size-16 bg-primary/10 rounded-bl-full"></div>
-                    <div className="flex gap-3 mb-4">
-                        <div className="size-16 bg-slate-200 rounded-lg"></div>
-                        <div className="flex-1 pt-1">
-                            <div className="h-2 w-3/4 bg-slate-800 rounded mb-1"></div>
-                            <div className="h-1.5 w-1/2 bg-primary rounded"></div>
+            {/* Preview Card */}
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 mb-6">
+                <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+                    {/* Mini Preview Header */}
+                    <div className="bg-slate-900 px-5 py-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-slate-700 border-2 border-primary"></div>
+                            <div>
+                                <div className="h-2.5 w-32 bg-white rounded mb-1.5"></div>
+                                <div className="h-1.5 w-20 bg-slate-400 rounded"></div>
+                            </div>
                         </div>
                     </div>
-                    <div className="space-y-2">
-                        <div className="h-1.5 w-full bg-slate-100 rounded"></div>
-                        <div className="h-1.5 w-full bg-slate-100 rounded"></div>
-                        <div className="h-1.5 w-2/3 bg-slate-100 rounded"></div>
+                    {/* Mini Preview Body */}
+                    <div className="px-5 py-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <div className="h-1.5 w-16 bg-primary/30 rounded mb-2"></div>
+                                <div className="space-y-1.5">
+                                    <div className="h-1.5 w-full bg-slate-100 rounded"></div>
+                                    <div className="h-1.5 w-full bg-slate-100 rounded"></div>
+                                    <div className="h-1.5 w-3/4 bg-slate-100 rounded"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div className="h-1.5 w-16 bg-primary/30 rounded mb-2"></div>
+                                <div className="space-y-1.5">
+                                    <div className="h-1.5 w-full bg-slate-100 rounded"></div>
+                                    <div className="h-1.5 w-full bg-slate-100 rounded"></div>
+                                    <div className="h-1.5 w-2/3 bg-slate-100 rounded"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div className="mt-4 grid grid-cols-2 gap-2">
-                        <div className="h-10 bg-slate-50 rounded border border-slate-100"></div>
-                        <div className="h-10 bg-slate-50 rounded border border-slate-100"></div>
-                    </div>
-                    <div className="mt-4 h-20 bg-slate-50 rounded border border-slate-100"></div>
-                    <div className="absolute bottom-4 right-4 text-[6px] font-bold text-slate-300">{t('family.doctorsMarriageBureau')}</div>
                 </div>
+                <p className="text-xs text-slate-400 text-center mt-3">{t('family.biodataPreviewHint') || 'Professional biodata with your profile details'}</p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+                <button
+                    onClick={handleDownload}
+                    disabled={downloading}
+                    className="flex-1 py-3.5 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 flex items-center justify-center gap-2 disabled:opacity-60 transition-all"
+                >
+                    {downloading ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />} {t('family.downloadPDF')}
+                </button>
+                <button
+                    onClick={onShowQr}
+                    className="flex-1 py-3.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-50 flex items-center justify-center gap-2 transition-all"
+                >
+                    <QrCode size={18} /> {t('family.shareLink')}
+                </button>
             </div>
         </div>
     );

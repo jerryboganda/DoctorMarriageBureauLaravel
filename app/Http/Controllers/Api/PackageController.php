@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Models\Wallet;
 use App\Notifications\DbStoreNotification;
 use App\Services\CouponService;
+use App\Services\ReferralService;
 use App\Utility\EmailUtility;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
@@ -52,7 +53,7 @@ class PackageController extends Controller
 
     public function package_purchase_history_invoice(Request $request)
     {
-        $payment = PackagePayment::find($request->package_payment_id);
+        $payment = PackagePayment::where('user_id', auth()->id())->find($request->package_payment_id);
         if ($payment) {
             return (new PackagePaymentInvoiceResource($payment))->additional([
                 'result' => true
@@ -106,6 +107,11 @@ class PackageController extends Controller
                 return $this->package_payment_done($user->id, $payment_data, null);
             }
         } elseif ($request->payment_method == 'manual_payment') {
+            $manualPaymentMethod = ManualPaymentMethod::find($request->manual_payment_id);
+            if (!$manualPaymentMethod) {
+                return $this->failure_message('Please select a valid manual payment method.');
+            }
+
             $payment_proof = null;
             if ($request->hasFile('payment_proof')) {
                 $payment_proof = upload_api_file($request->file('payment_proof'));
@@ -123,7 +129,7 @@ class PackageController extends Controller
             $package_payment->coupon_code = $coupon ? $coupon->code : null;
             $package_payment->payment_details = '';
             $package_payment->offline_payment = 1;
-            $package_payment->custom_payment_name = ManualPaymentMethod::find($request->manual_payment_id)->heading;
+            $package_payment->custom_payment_name = $manualPaymentMethod->heading;
             $package_payment->custom_payment_transaction_id = $request->transaction_id;
             $package_payment->custom_payment_proof = $payment_proof;
             $package_payment->custom_payment_details = $request->payment_details;
@@ -132,7 +138,7 @@ class PackageController extends Controller
             // Package Payment Store Notification for member
             try {
                 $notify_type = 'package_purchase';
-                $id = unique_notify_id();
+                $id = null;
                 $notify_by = $user->id;
                 $info_id = $package_payment->id;
                 $message = $user->first_name . ' ' . $user->last_name . translate('has been purchased a new package. Payment Code: ') . $package_payment->payment_code;
@@ -197,28 +203,20 @@ class PackageController extends Controller
             $user->membership = 2;
             $user->save();
 
-            if (addon_activation('referral_system') && $user->referred_by != null && $user->referral_comission == 0) {
-                // For Referred by user
-                $reffered_by = User::where('id', $user->referred_by)->first();
-                $wallet = new Wallet();
-                $wallet->user_id = $reffered_by->id;
-                $wallet->amount = get_setting('referred_by_user_commission');
-                $wallet->payment_method = 'reffered_commission';
-                $wallet->payment_details = '';
-                $wallet->referral_user = $user->id;
-                $wallet->save();
-
-                $reffered_by->balance = $reffered_by->balance + get_setting('referred_by_user_commission');
-                $reffered_by->save();
-
-                $user->referral_comission = 1;
-                $user->save();
+            if (addon_activation('referral_system')) {
+                try {
+                    $referralService = new ReferralService();
+                    $referralService->applyReferralCommissionIfEligible($user);
+                    $referralService->checkAndQualifyReferral($user->id);
+                } catch (\Exception $e) {
+                    \Log::error('Referral post-purchase processing failed: ' . $e->getMessage(), ['user_id' => $user->id]);
+                }
             }
 
             // Package Payment Store Notification for member
             try {
                 $notify_type = 'package_purchase';
-                $id = unique_notify_id();
+                $id = null;
                 $notify_by = $user->id;
                 $info_id = $package_payment->id;
                 $message = $user->first_name . ' ' . $user->last_name . translate('has been purchased a new package. Payment Code: ') . $package_payment->payment_code;

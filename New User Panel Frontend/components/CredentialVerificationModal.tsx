@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, ShieldCheck, Mail, Smartphone, Loader2, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
+import { X, ShieldCheck, Mail, Loader2, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
 import { api } from '../utils/api';
 
 interface CredentialVerificationModalProps {
     isOpen: boolean;
     onClose: () => void;
     type: 'email' | 'phone';
-    value: string; // The email or phone to verify
+    value: string;
     onVerified: () => void;
 }
 
@@ -35,16 +35,18 @@ const CredentialVerificationModal: React.FC<CredentialVerificationModalProps> = 
     if (!isOpen) return null;
 
     const handleSendCode = async () => {
+        if (type === 'phone') {
+            setError('Only email verification is available. Please verify with email.');
+            return;
+        }
+        if (!contactValue.includes('@')) {
+            setError('Please enter a valid email address.');
+            return;
+        }
         setLoading(true);
         setError(null);
         try {
-            const endpoint = type === 'email'
-                ? '/send-email-verification'
-                : '/send-phone-verification';
-
-            const payload = type === 'email' ? { email: contactValue } : { phone: contactValue };
-
-            await api.post(endpoint, payload);
+            await api.post('/send-email-verification', { email: contactValue });
             setStep('verify');
         } catch (err: any) {
             setError(err.response?.data?.message || t('errors.failedSendVerification'));
@@ -54,6 +56,10 @@ const CredentialVerificationModal: React.FC<CredentialVerificationModalProps> = 
     };
 
     const handleVerifyCode = async () => {
+        if (type === 'phone') {
+            setError('Only email verification is available. Please verify with email.');
+            return;
+        }
         if (code.length < 6) {
             setError(t('errors.pleaseEnterSixDigitCode'));
             return;
@@ -62,15 +68,7 @@ const CredentialVerificationModal: React.FC<CredentialVerificationModalProps> = 
         setLoading(true);
         setError(null);
         try {
-            const endpoint = type === 'email'
-                ? '/verify-email-code'
-                : '/verify-phone-code';
-
-            const payload = type === 'email'
-                ? { email: contactValue, code }
-                : { phone: contactValue, code };
-
-            const response = await api.post(endpoint, payload);
+            const response = await api.post('/verify-email-code', { email: contactValue, code });
 
             if (response.data?.success || response.data?.result) {
                 setStep('success');
@@ -105,7 +103,7 @@ const CredentialVerificationModal: React.FC<CredentialVerificationModalProps> = 
                 <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                     <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">
                         <ShieldCheck className="text-primary" size={20} />
-                        {type === 'email' ? t('modals.credentialVerification.verifyEmail') : t('modals.credentialVerification.verifyPhone')}
+                        {t('modals.credentialVerification.verifyEmail')}
                     </h3>
                     <button
                         onClick={onClose}
@@ -122,7 +120,7 @@ const CredentialVerificationModal: React.FC<CredentialVerificationModalProps> = 
                             <div className="space-y-4">
                                 <div className="text-center space-y-2">
                                     <div className="size-16 bg-blue-50 text-primary rounded-full flex items-center justify-center mx-auto">
-                                        {type === 'email' ? <Mail size={32} /> : <Smartphone size={32} />}
+                                        <Mail size={32} />
                                     </div>
                                     <h4 className="font-bold text-slate-900 text-lg">
                                         {t('modals.credentialVerification.confirmDetail')}
@@ -134,14 +132,14 @@ const CredentialVerificationModal: React.FC<CredentialVerificationModalProps> = 
 
                                 <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
                                     <label className="block text-xs font-bold text-slate-500 mb-1 uppercase">
-                                        {type === 'email' ? t('modals.credentialVerification.emailLabel') : t('modals.credentialVerification.phoneLabel')}
+                                        {t('modals.credentialVerification.emailLabel')}
                                     </label>
                                     <input
-                                        type={type === 'email' ? 'email' : 'tel'}
+                                        type="email"
                                         value={contactValue}
                                         onChange={(e) => setContactValue(e.target.value)}
                                         className="w-full bg-transparent font-bold text-slate-900 outline-none text-lg"
-                                        placeholder={type === 'email' ? t('modals.credentialVerification.emailPlaceholder') : t('modals.credentialVerification.phonePlaceholder')}
+                                        placeholder={t('modals.credentialVerification.emailPlaceholder')}
                                     />
                                 </div>
                             </div>
@@ -220,7 +218,7 @@ const CredentialVerificationModal: React.FC<CredentialVerificationModalProps> = 
                             </div>
                             <div>
                                 <h4 className="font-bold text-slate-900 text-xl">{t('modals.credentialVerification.verified')}</h4>
-                                <p className="text-slate-500 mt-1">{type === 'email' ? t('modals.credentialVerification.successEmail') : t('modals.credentialVerification.successPhone')}</p>
+                                <p className="text-slate-500 mt-1">{t('modals.credentialVerification.successEmail')}</p>
                             </div>
                         </div>
                     )}

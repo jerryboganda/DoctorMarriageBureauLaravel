@@ -85,7 +85,10 @@ class TrustedContact extends Model
      */
     public function sendVerification(): bool
     {
-        if (!$this->email && !$this->phone) {
+        if (!$this->email) {
+            Log::warning('Trusted contact verification requires email because SMS is disabled.', [
+                'trusted_contact_id' => $this->id,
+            ]);
             return false;
         }
 
@@ -111,25 +114,14 @@ class TrustedContact extends Model
                         ->to($this->email)
                         ->subject($subject);
                 });
+                return true;
             } catch (\Exception $e) {
                 Log::error('Trusted contact email failed: ' . $e->getMessage());
+                return false;
             }
         }
 
-        if ($this->phone) {
-            $smsBody = 'Verify trusted contact for ' . env('APP_NAME', 'Matrimonial Site') . ': ' . $verifyUrl;
-            if (function_exists('sendSMS')) {
-                try {
-                    sendSMS($this->phone, env('APP_NAME'), $smsBody, null);
-                } catch (\Exception $e) {
-                    Log::error('Trusted contact SMS failed: ' . $e->getMessage());
-                }
-            } else {
-                Log::info('Trusted contact SMS (no provider): ' . $this->phone . ' - ' . $smsBody);
-            }
-        }
-        
-        return true;
+        return false;
     }
 
     /**

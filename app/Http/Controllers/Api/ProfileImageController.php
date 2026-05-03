@@ -55,7 +55,7 @@ class ProfileImageController extends Controller
                 // View Profile Picture Store Notification for member
                 try {
                     $notify_type   = 'profile_picture_view';
-                    $id            = unique_notify_id();
+                    $id            = null;
                     $notify_by     = $auth_user->id;
                     $info_id       = $view_profile_picture->id;
                     $message       = $auth_user->first_name . ' ' . $auth_user->last_name . ' ' . translate(' wants to see your profile picture.');
@@ -104,7 +104,7 @@ class ProfileImageController extends Controller
             // Express Interest Store Notification for member
             try {
                 $notify_type = 'accept_profile_picture_view_request';
-                $id = unique_notify_id();
+                $id = null;
                 $notify_by = $auth_user->id;
                 $info_id = $view_profile_picture->id;
                 $message = $auth_user->first_name . ' ' . $auth_user->last_name . ' ' . translate(' has accepted your profile picture view request.');
@@ -146,7 +146,7 @@ class ProfileImageController extends Controller
             $notify_user = User::where('id', $profile_pic_view_request->requested_by)->first();
             try {
                 $notify_type = 'reject_profile_image_view_request';
-                $id = unique_notify_id();
+                $id = null;
                 $notify_by = auth()->id();
                 $info_id = $profile_pic_view_request->id;
                 $message = $auth_user->first_name . ' ' . $auth_user->last_name . ' ' . translate(' has rejected your profile picture view request.');

@@ -11,6 +11,7 @@ use App\Models\Wallet;
 use App\Notifications\DbStoreNotification;
 use App\Services\FirbaseNotification;
 use App\Services\CouponService;
+use App\Services\ReferralService;
 use App\Utility\EmailUtility;
 use App\Utility\SmsUtility;
 use Auth;
@@ -112,7 +113,13 @@ class PackagePaymentController extends Controller
             $package_payment->amount = $request->amount;
             $package_payment->payment_details = '';
             $package_payment->offline_payment = 1;
-            $package_payment->custom_payment_name = ManualPaymentMethod::find($request->manual_payment_id)->heading;
+            $manualPaymentMethod = ManualPaymentMethod::find($request->manual_payment_id);
+            if (!$manualPaymentMethod) {
+                flash(translate('Please select a valid manual payment method.'))->error();
+                return back();
+            }
+
+            $package_payment->custom_payment_name = $manualPaymentMethod->heading;
             $package_payment->custom_payment_transaction_id = $request->transaction_id;
             $package_payment->custom_payment_proof = $request->payment_proof;
             $package_payment->custom_payment_details = $request->payment_details;
@@ -121,7 +128,7 @@ class PackagePaymentController extends Controller
             // Package Payment Store Notification for member
             try {
                 $notify_type = 'package_purchase';
-                $id = unique_notify_id();
+                $id = null;
                 $notify_by = $user->id;
                 $info_id = $package_payment->id;
                 $message = $user->first_name . ' ' . $user->last_name . translate('has been purchased a new package. Payment Code: ') . $package_payment->payment_code;
@@ -189,28 +196,20 @@ class PackagePaymentController extends Controller
             $user->membership = 2;
             $user->save();
 
-            if (addon_activation('referral_system') && $user->referred_by != null && $user->referral_comission == 0) {
-                // For Referred by user
-                $reffered_by = User::where('id', $user->referred_by)->first();
-                $wallet = new Wallet();
-                $wallet->user_id = $reffered_by->id;
-                $wallet->amount = get_setting('referred_by_user_commission');
-                $wallet->payment_method = 'reffered_commission';
-                $wallet->payment_details = '';
-                $wallet->referral_user = $user->id;
-                $wallet->save();
-
-                $reffered_by->balance = $reffered_by->balance + get_setting('referred_by_user_commission');
-                $reffered_by->save();
-
-                $user->referral_comission = 1;
-                $user->save();
+            if (addon_activation('referral_system')) {
+                try {
+                    $referralService = new ReferralService();
+                    $referralService->applyReferralCommissionIfEligible($user);
+                    $referralService->checkAndQualifyReferral($user->id);
+                } catch (\Exception $e) {
+                    \Log::error('Referral post-purchase processing failed: ' . $e->getMessage(), ['user_id' => $user->id]);
+                }
             }
 
             // Package Payment Store Notification for member
             try {
                 $notify_type = 'package_purchase';
-                $id = unique_notify_id();
+                $id = null;
                 $notify_by = $user->id;
                 $info_id = $package_payment->id;
                 $message = $user->first_name . ' ' . $user->last_name . translate('has been purchased a new package. Payment Code: ') . $package_payment->payment_code;
@@ -266,7 +265,7 @@ class PackagePaymentController extends Controller
 
     public function package_payment_invoice($id)
     {
-        $payment = PackagePayment::findOrFail($id);
+        $payment = PackagePayment::where('user_id', auth()->id())->findOrFail($id);
         return view('frontend.member.payment_invoice', compact('payment'));
     }
 
@@ -344,27 +343,20 @@ class PackagePaymentController extends Controller
                 }
             }
 
-            if (addon_activation('referral_system') && $user->referred_by != null && $user->referral_comission == 0) {
-                // For Referred by user
-                $reffered_by = User::where('id', $user->referred_by)->first();
-                $wallet = new Wallet();
-                $wallet->user_id = $reffered_by->id;
-                $wallet->amount = get_setting('referred_by_user_commission');
-                $wallet->payment_method = 'reffered_commission';
-                $wallet->referral_user = $user->id;
-                $wallet->save();
-
-                $reffered_by->balance = $reffered_by->balance + get_setting('referred_by_user_commission');
-                $reffered_by->save();
-
-                $user->referral_comission = 1;
-                $user->save();
+            if (addon_activation('referral_system')) {
+                try {
+                    $referralService = new ReferralService();
+                    $referralService->applyReferralCommissionIfEligible($user);
+                    $referralService->checkAndQualifyReferral($user->id);
+                } catch (\Exception $e) {
+                    \Log::error('Referral post-purchase processing failed during manual acceptance: ' . $e->getMessage(), ['user_id' => $user->id]);
+                }
             }
 
             // Payment approval Store Notification for member
             try {
                 $notify_type = 'payemnt_approval';
-                $id = unique_notify_id();
+                $id = null;
                 $notify_by = $user->id;
                 $info_id = $package_payment->id;
                 $message = translate('Your payment for package ') . $package_payment->package->name . translate(' has been approved. Payment Id: ') . $package_payment->payment_code;

@@ -16,14 +16,15 @@ class DbStoreNotification extends Notification
      *
      * @return void
      */
-    public function __construct($notify_type, $id, $notify_by, $info_id, $message, $route)
+    public function __construct($notify_type, $id, $notify_by, $info_id, $message, $route, $title = null)
     {
         $this->notify_type = $notify_type;
-        $this->id = $id;
+        $this->notify_id = $id;
         $this->notify_by = $notify_by;
         $this->info_id = $info_id;
         $this->message = $message;
         $this->route = $route;
+        $this->title = $title;
     }
 
     /**
@@ -39,14 +40,23 @@ class DbStoreNotification extends Notification
 
     public function toDatabase($notifiable)
     {
-        return [
+        $data = [
             'type' => $this->notify_type,
-            'id' => $this->id,
             'notify_by' => $this->notify_by,
             'info_id' => $this->info_id,
             'message' => $this->message,
             'route' => $this->route,
         ];
+
+        if ($this->notify_id !== null && $this->notify_id !== '') {
+            $data['notify_id'] = $this->notify_id;
+        }
+
+        if ($this->title) {
+            $data['title'] = $this->title;
+        }
+
+        return $data;
     }
 
     /**

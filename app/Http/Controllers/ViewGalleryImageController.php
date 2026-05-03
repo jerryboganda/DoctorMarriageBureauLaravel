@@ -57,7 +57,7 @@ class ViewGalleryImageController extends Controller
             // View Profile Picture Store Notification for member
             try {
                 $notify_type   = 'gallery_image_view';
-                $id            = unique_notify_id();
+                $id            = null;
                 $notify_by     = $auth_user->id;
                 $info_id       = $view_gallert_image->id;
                 $message       = $auth_user->first_name . ' ' . $auth_user->last_name . ' ' . translate(' wants to see your gallery images.');
@@ -104,7 +104,7 @@ class ViewGalleryImageController extends Controller
             // Express Interest Store Notification for member
             try {
                 $notify_type = 'accept_gallery_image_view_request';
-                $id = unique_notify_id();
+                $id = null;
                 $notify_by = $auth_user->id;
                 $info_id = $view_gallery_image->id;
                 $message = $auth_user->first_name . ' ' . $auth_user->last_name . ' ' . translate(' has accepted your gallery image view request.');
@@ -150,7 +150,7 @@ class ViewGalleryImageController extends Controller
             $notify_user = User::where('id', $gallery_view_request->requested_by)->first();
             try {
                 $notify_type = 'reject_gallery_image_view_request';
-                $id = unique_notify_id();
+                $id = null;
                 $notify_by = Auth::user()->id;
                 $info_id = $gallery_view_request->id;
                 $message = $auth_user->first_name . ' ' . $auth_user->last_name . ' ' . translate(' has rejected your gallery image view request.');

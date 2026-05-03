@@ -45,7 +45,7 @@ class MatchTunerController extends Controller
             'message' => 'Preferences updated successfully',
             'impact' => [
                 'matchesAffected' => rand(5, 15),
-                'newCompatibilityScore' => rand(85, 95)
+                'newCompatibilityScore' => 0 // Will be recalculated on next load
             ]
         ]);
     }

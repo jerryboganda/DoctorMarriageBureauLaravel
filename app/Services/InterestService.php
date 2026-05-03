@@ -14,10 +14,70 @@ use Kutia\Larafirebase\Facades\Larafirebase;
 class InterestService
 {
 
+      /**
+       * Send a proposal (express interest) to another user.
+       * Returns ['success' => true] on success, or ['success' => false, 'error_code' => '...', 'message' => '...'] on failure.
+       */
       public function store($user_id)
       {
             $interested_by_user = auth()->user();
+
+            // Check if the sender's account is blocked
+            if ($interested_by_user->blocked) {
+                  return [
+                        'success' => false,
+                        'error_code' => 'account_blocked',
+                        'message' => translate('Your account has been blocked by the administration. Please contact support for assistance.'),
+                  ];
+            }
+
+            // Check if the sender's account is deactivated
+            if ($interested_by_user->deactivated) {
+                  return [
+                        'success' => false,
+                        'error_code' => 'account_deactivated',
+                        'message' => translate('Your account is currently deactivated. Please reactivate your account from Settings before sending proposals.'),
+                  ];
+            }
+
             $interested_by_member = $interested_by_user->member;
+
+            // Check if the sender has a member profile
+            if (!$interested_by_member) {
+                  return [
+                        'success' => false,
+                        'error_code' => 'profile_incomplete',
+                        'message' => translate('Please complete your profile before sending proposals.'),
+                  ];
+            }
+
+            // Check the target user
+            $target_user = User::find($user_id);
+            if (!$target_user) {
+                  return [
+                        'success' => false,
+                        'error_code' => 'invalid_target',
+                        'message' => translate('The profile you are trying to send a proposal to does not exist.'),
+                  ];
+            }
+
+            if ($target_user->deactivated) {
+                  return [
+                        'success' => false,
+                        'error_code' => 'target_deactivated',
+                        'message' => translate('This profile is currently unavailable. The user may have deactivated their account.'),
+                  ];
+            }
+
+            if ($target_user->blocked) {
+                  return [
+                        'success' => false,
+                        'error_code' => 'target_blocked',
+                        'message' => translate('This profile is currently unavailable.'),
+                  ];
+            }
+
+            // Check proposal quota
             if ($interested_by_member->remaining_interest > 0) {
                   // Store express interest data using mass assignment
                   $express_interest = ExpressInterest::create([
@@ -30,12 +90,12 @@ class InterestService
                   $interested_by_member->remaining_interest -= 1;
                   $interested_by_member->save();
 
-                  $notify_user = User::where('id', $user_id)->first();
+                  $notify_user = $target_user;
 
                   $notify_type = 'express_interest';
                   $notify_by = $interested_by_user->id;
                   $info_id = $express_interest->id;
-                  $message = $interested_by_user->first_name . ' ' . $interested_by_user->last_name . ' ' . translate(' has Expressed Interest On You.');
+                  $message = $interested_by_user->first_name . ' ' . $interested_by_user->last_name . ' ' . translate(' has Sent You a Proposal.');
                   $route = route('interest_requests');
 
                   $this->notifyUser($user_id, $notify_user, $notify_type, $notify_by, $info_id, $message, $route);
@@ -50,9 +110,22 @@ class InterestService
                         SmsUtility::sms_on_request($notify_user, 'express_interest');
                   }
 
-                  return true;
+                  return ['success' => true];
             } else {
-                  return false;
+                  // Quota exhausted — provide clear feedback
+                  $package = \App\Models\Package::find($interested_by_member->current_package_id);
+                  $packageName = $package ? $package->name : 'Free';
+                  $totalQuota = $package ? $package->express_interest : 0;
+
+                  return [
+                        'success' => false,
+                        'error_code' => 'quota_exhausted',
+                        'message' => translate('You have used all :used out of :total proposals included in your :package package. Please upgrade to a higher package to send more proposals.', [
+                              'used' => $totalQuota,
+                              'total' => $totalQuota,
+                              'package' => $packageName,
+                        ]),
+                  ];
             }
       }
 
@@ -82,7 +155,7 @@ class InterestService
                   $notify_type = 'accept_interest';
                   $notify_by = auth()->user()->id;
                   $info_id = $interest->id;
-                  $message = auth()->user()->first_name . ' ' . auth()->user()->last_name . ' ' . translate(' has accepted your interest.');
+                  $message = auth()->user()->first_name . ' ' . auth()->user()->last_name . ' ' . translate(' has accepted your proposal.');
                   $route = route('my_interests.index');
 
                   $this->notifyUser($interest->interested_by, $notify_user, $notify_type, $notify_by, $info_id, $message, $route);
@@ -112,7 +185,7 @@ class InterestService
                   $notify_type = 'reject_interest';
                   $notify_by = auth()->user()->id;
                   $info_id = $interest->id;
-                  $message = auth()->user()->first_name . ' ' . auth()->user()->last_name . ' ' . translate(' has rejected your interest.');
+                  $message = auth()->user()->first_name . ' ' . auth()->user()->last_name . ' ' . translate(' has rejected your proposal.');
                   $route = route('my_interests.index');
 
                   $this->notifyUser($interest->interested_by, $notify_user, $notify_type, $notify_by, $info_id, $message, $route);
@@ -125,7 +198,7 @@ class InterestService
       public function notifyUser($user_id, $notify_user, $notify_type, $notify_by, $info_id, $message, $route)
       {
             try {
-                  $id = unique_notify_id();
+                  $id = null;
 
                   // fcm 
                   if (get_setting('firebase_push_notification') == 1) {

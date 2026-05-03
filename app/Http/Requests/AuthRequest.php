@@ -48,9 +48,9 @@ class AuthRequest extends FormRequest
             ],
             'gender'               => 'required',
             'on_behalf'            => 'required|integer',
-            'date_of_birth'        => 'required|date',
+            'date_of_birth'        => 'nullable|date',
             'password'             => 'required|string|min:8|confirmed',
-            'referral_code'        => 'sometimes',
+            'referral_code'        => 'nullable|string|max:50',
             'g-recaptcha-response' => [Rule::when(get_setting('google_recaptcha_activation') == 1, ['required', new RecaptchaRule()], ['sometimes'])]
         ];
     }
@@ -66,7 +66,6 @@ class AuthRequest extends FormRequest
             'gender.required' => translate('gender is required'),
             'on_behalf.required' => translate('on_behalf is required'),
             'on_behalf.integer' => translate('on_behalf should be integer value'),
-            'date_of_birth.required' => translate('date_of_birth is required'),
             'date_of_birth.date' => translate('date_of_birth should be in date format'),
             'first_name.required' => translate('first_name is required'),
             'last_name.required' => translate('last_name is required'),
@@ -86,7 +85,7 @@ class AuthRequest extends FormRequest
         $this->merge([
             'phone' => PhoneUtility::normalize($this->phone),
             'on_behalves_id'  => $this->on_behalf,
-            'birthday'  => date('Y-m-d', strtotime($this->date_of_birth)),
+            'birthday'  => $this->date_of_birth ? date('Y-m-d', strtotime($this->date_of_birth)) : null,
             'membership'  => 1,
             'gender' => ($this->gender == 'Female') ? 2 : 1,
         ]);

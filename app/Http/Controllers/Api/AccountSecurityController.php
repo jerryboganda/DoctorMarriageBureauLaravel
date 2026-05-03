@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 use App\Models\User;
 use App\Models\UserTwoFactorSetting;
@@ -600,6 +601,13 @@ class AccountSecurityController extends Controller
             ], 400);
         }
 
+        if ((int) $stepUp->user_id !== (int) auth()->id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid or expired session.',
+            ], 403);
+        }
+
         if (!$stepUp->verifyPassword($request->password)) {
             return response()->json([
                 'success' => false,
@@ -610,22 +618,26 @@ class AccountSecurityController extends Controller
         // Generate and send OTP
         $otp = $stepUp->generateOtp();
 
-        // Send OTP via SMS if available
         $user = auth()->user();
-        if ($user && $user->phone) {
-            $smsBody = 'Your Doctor Marriage Bureau verification code is ' . $otp;
+        if ($user && $user->email) {
             try {
-                if (function_exists('sendSMS')) {
-                    sendSMS($user->phone, env('APP_NAME'), $smsBody, null);
-                }
-            } catch (\Exception $e) {
-                \Log::error('Step-up OTP SMS failed: ' . $e->getMessage());
+                Mail::raw('Your Doctor Marriage Bureau verification code is ' . $otp, function ($message) use ($user) {
+                    $message->to($user->email)
+                        ->subject('Security verification code');
+                });
+            } catch (\Throwable $e) {
+                \Log::error('Step-up OTP email failed: ' . $e->getMessage());
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unable to send verification email. Please try again.',
+                ], 500);
             }
         }
 
         return response()->json([
             'success' => true,
-            'message' => 'Password verified. OTP sent.',
+            'message' => 'Password verified. Verification code sent to your email.',
             'data' => $stepUp->toApiResponse(),
         ]);
     }
@@ -646,6 +658,13 @@ class AccountSecurityController extends Controller
                 'success' => false,
                 'message' => 'Invalid or expired session.',
             ], 400);
+        }
+
+        if ((int) $stepUp->user_id !== (int) auth()->id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid or expired session.',
+            ], 403);
         }
 
         if (!$stepUp->verifyOtp($request->otp)) {

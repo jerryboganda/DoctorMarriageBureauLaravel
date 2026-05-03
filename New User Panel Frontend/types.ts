@@ -24,7 +24,7 @@ export interface ProfileMatch {
   specialty: string;
   hospital: string;
   location: string;
-  age: number;
+  age: number | null;
   matchPercentage: number;
   avatarUrl: string;
   coverGradient?: string;
@@ -43,11 +43,31 @@ export interface ProfileMatch {
   matchReasons?: string[];
   isOnline?: boolean;
   intelligence?: MatchIntelligence;
-  isAgentPick?: boolean;
-  isHighIntent?: boolean;
-  interestStatus?: number | string;
-  interestText?: string;
-}
+    isAgentPick?: boolean;
+    isHighIntent?: boolean;
+    interestStatus?: number | string;
+    interestText?: string;
+    shortlistStatus?: number | string;
+    shortlistText?: string;
+    photoRequestState?: 'none' | 'pending' | 'approved';
+    photoRequestText?: string;
+    photoRequestRequested?: boolean;
+    photoRequestApproved?: boolean;
+    photoRequestRequired?: boolean;
+    photoAccessible?: boolean;
+    photoExists?: boolean;
+    profilePhotoBlur?: boolean;
+    galleryImageRequestState?: 'none' | 'pending' | 'approved';
+    galleryImageRequestText?: string;
+    galleryImageRequestRequested?: boolean;
+    galleryImageRequestApproved?: boolean;
+    galleryImageRequestRequired?: boolean;
+    galleryImageAccessible?: boolean;
+    galleryImageExists?: boolean;
+    travel_mode?: boolean;
+    travel_city?: string;
+    travel_country?: string;
+  }
 
 export interface CompatibilityMetric {
   label: string;

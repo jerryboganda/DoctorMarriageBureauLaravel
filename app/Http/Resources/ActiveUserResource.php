@@ -3,9 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Models\ViewGalleryImage;
-use App\Models\ViewProfilePicture;
 use App\Utility\MemberUtility;
-use Illuminate\Support\Carbon;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class ActiveUserResource extends JsonResource
@@ -20,45 +18,80 @@ class ActiveUserResource extends JsonResource
     {
         $avatar_image = $this->member->gender == 1 ? 'assets/img/avatar-place.png' : 'assets/img/female-avatar-place.png';
         $profile_picture_show = show_profile_picture($this);
-        $package_update_alert = get_setting('full_profile_show_according_to_membership') == 1 && auth()->user()->membership == 1 ? true : false;
+        $avatar_fallback = static_asset($avatar_image);
+        $resolved_photo = $profile_picture_show ? (uploaded_asset($this->photo) ?? $avatar_fallback) : $avatar_fallback;
+        $package_update_alert = get_setting('full_profile_show_according_to_membership') == 1 && optional(auth()->user())->membership == 1 ? true : false;
+        $identity_verified = ($this->approved == 1) && !empty($this->verification_info);
+        $interestInfo = MemberUtility::member_interest_info($this->id);
+        $shortlistInfo = MemberUtility::member_shortlist_info($this->id);
+        $photoRequestInfo = MemberUtility::member_profile_photo_request_info($this->id);
+        $galleryRequestInfo = MemberUtility::member_gallery_image_request_info($this->id);
+        $profileViewRequestStatus = $photoRequestInfo['profile_photo_request_approved'];
+        $galleryViewRequestStatus = (bool) ($galleryRequestInfo['gallery_image_request_approved'] ?? false);
+        $profilePhotoBlur = MemberUtility::member_profile_photo_blur($this->id);
+        $displayNameParts = MemberUtility::member_display_name_parts($this->id, $this->first_name, $this->last_name);
+        $displayName = trim($displayNameParts['first_name'] . ' ' . $displayNameParts['last_name']);
 
         return [
             'id'                   => $this->id,
             'user_id'              => $this->id,
             'code'                 => $this->code,
             'membership'           => $this->membership,
-            'first_name'           => $this->first_name,
-            'last_name'            => $this->last_name,
-            'name'                 => $this->first_name . ' ' . $this->last_name,
+            'first_name'           => $displayNameParts['first_name'],
+            'last_name'            => $displayNameParts['last_name'],
+            'name'                 => $displayName,
             'gender'               => $this->member->gender,
-            'photo'                => $profile_picture_show ? uploaded_asset($this->photo) : static_asset($avatar_image),
-            'avatarUrl'            => $profile_picture_show ? uploaded_asset($this->photo) : static_asset($avatar_image),
-            'age'                  => !empty($this->member->birthday) ? Carbon::parse($this->member->birthday)->age : '',
+            'photo'                => $resolved_photo,
+            'avatarUrl'            => $resolved_photo,
+            'age'                  => MemberUtility::member_age($this->id),
             'country'              => MemberUtility::member_country($this->id),
             'location'             => MemberUtility::member_country($this->id),
             'specialty'            => $this->career->first()?->designation ?? $this->member->specialization ?? 'Medical Professional',
             'hospital'             => $this->career->first()?->company ?? 'N/A',
             'matchPercentage'      => rand(85, 98), // Placeholder for Match Tuner logic
-            'isVerified'           => $this->approved == 1,
+            // Verified badge means identity verification was submitted and approved by admin.
+            'isVerified'           => $identity_verified,
+            'identityVerified'     => $identity_verified,
             'height'               => !empty($this->physical_attributes->height) ? $this->physical_attributes->height : '',
             'religion'             => MemberUtility::member_religion($this->id),
             'mothere_tongue'       => MemberUtility::member_mothere_tongue($this->id),
             'marital_status'       => !empty($this->member->marital_status->name) ? $this->member->marital_status->name : '',
             'caste'                => !empty($this->spiritual_backgrounds->caste->name) ? $this->spiritual_backgrounds->caste->name . ', ' : "",
             'package_update_alert' => $package_update_alert,
-            'interest_status'      => MemberUtility::member_interest_info($this->id)['interest_status'],
-            'interest_text'        => MemberUtility::member_interest_info($this->id)['interest_text'],
-            'shortlist_status'     => MemberUtility::member_shortlist_info($this->id)['shortlist_status'],
-            'shortlist_text'       => MemberUtility::member_shortlist_info($this->id)['shortlist_text'],
+            'interest_status'      => $interestInfo['interest_status'],
+            'interest_text'        => $interestInfo['interest_text'],
+            'proposal_status'      => $interestInfo['proposal_status'] ?? 'none',
+            'proposal_updated_at'  => $interestInfo['proposal_updated_at'] ?? null,
+            'shortlist_status'     => $shortlistInfo['shortlist_status'],
+            'shortlist_text'       => $shortlistInfo['shortlist_text'],
             'report_status'        => MemberUtility::member_report_status($this->id) ? true : false,
+            'profile_photo_request_state' => $photoRequestInfo['profile_photo_request_state'],
+            'profile_photo_request_text' => $photoRequestInfo['profile_photo_request_text'],
+            'profile_photo_request_requested' => $photoRequestInfo['profile_photo_request_requested'],
+            'profile_photo_request_approved' => $photoRequestInfo['profile_photo_request_approved'],
+            'profile_photo_request_id' => $photoRequestInfo['profile_photo_request_id'],
+            'profile_photo_request_required' => $photoRequestInfo['profile_photo_request_required'],
+            'profile_photo_accessible' => $photoRequestInfo['profile_photo_accessible'],
+            'profile_photo_exists' => $photoRequestInfo['profile_photo_exists'],
+            'profile_photo_blur' => $profilePhotoBlur,
+            'gallery_image_request_state' => $galleryRequestInfo['gallery_image_request_state'],
+            'gallery_image_request_text' => $galleryRequestInfo['gallery_image_request_text'],
+            'gallery_image_request_requested' => $galleryRequestInfo['gallery_image_request_requested'],
+            'gallery_image_request_approved' => $galleryRequestInfo['gallery_image_request_approved'],
+            'gallery_image_request_id' => $galleryRequestInfo['gallery_image_request_id'],
+            'gallery_image_request_required' => $galleryRequestInfo['gallery_image_request_required'],
+            'gallery_image_accessible' => $galleryRequestInfo['gallery_image_accessible'],
+            'gallery_image_exists' => $galleryRequestInfo['gallery_image_exists'],
             'is_agent_pick'       => $this->member->is_agent_pick == 1,
             'is_high_intent'      => $this->member->is_high_intent == 1,
             'isAgentPick'         => $this->member->is_agent_pick == 1,
             'isHighIntent'        => $this->member->is_high_intent == 1,
             'travel_mode'         => $this->member->travel_mode == 1,
             'is_visible'          => $this->member->is_visible == 1,
-            'profile_view_resquest_status' =>  ViewProfilePicture::where('user_id', $this->id)->where('requested_by', auth()->id())->where('status', 1)->first() ? true : false,
-            'gallery_view_resquest_status' =>  ViewGalleryImage::where('user_id', $this->id)->where('requested_by', auth()->id())->where('status', 1)->first() ? true : false,
+            'travel_city'         => $this->member->travel_city,
+            'travel_country'      => $this->member->travel_country,
+            'profile_view_resquest_status' => $profileViewRequestStatus,
+            'gallery_view_resquest_status' => $galleryViewRequestStatus,
             'education' => $this->education->count() > 0 ? [
                 'degree' => $this->education->first()->degree ?? '',
                 'institution' => $this->education->first()->institution ?? '',

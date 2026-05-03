@@ -23,6 +23,46 @@ const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialTab }) => {
     const [saving, setSaving] = useState(false);
     const [qualityScore, setQualityScore] = useState<any | null>(null);
 
+    const normalizeMaritalStatuses = (raw: any): Array<{ id: string | number; name: string }> => {
+        const items = Array.isArray(raw) ? raw : [];
+        return items
+            .map((item: any) => {
+                const id = item?.id ?? item?.value ?? '';
+                const name = item?.name ?? item?.label ?? item?.value ?? '';
+                return { id, name: String(name).trim() };
+            })
+            .filter((item) => item.id !== '' && item.name !== '');
+    };
+
+    const fetchMaritalStatusesFallback = async (): Promise<Array<{ id: string | number; name: string }>> => {
+        try {
+            const res = await api.get('/member/maritial-status');
+            const payload = res?.data;
+            const candidates = [payload?.data, payload?.marital_statuses, payload];
+            for (const candidate of candidates) {
+                const normalized = normalizeMaritalStatuses(candidate);
+                if (normalized.length) return normalized;
+            }
+        } catch (e) {
+            console.error('Failed to fetch marital statuses fallback', e);
+        }
+        return [];
+    };
+
+    const emptyProfile = () => ({
+        basics: {},
+        lifestyle: {},
+        career: {},
+        family: {},
+        expectations: {},
+        media: {},
+        salaryRanges: [],
+        visibility: {},
+        optionSets: {
+            maritalStatuses: [],
+        },
+    });
+
     useEffect(() => {
         if (initialTab) {
             setActiveTab(initialTab);
@@ -42,12 +82,55 @@ const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialTab }) => {
             ]);
             const profileRes = results[0].status === 'fulfilled' ? results[0].value : null;
             const qualityRes = results[1].status === 'fulfilled' ? results[1].value : null;
-            if (profileRes?.data) {
-                setProfileData(profileRes.data);
+            const payload = profileRes?.data ?? {};
+            const sourceOptionSets = payload?.optionSets ?? {};
+            let maritalStatuses = normalizeMaritalStatuses(sourceOptionSets?.maritalStatuses || sourceOptionSets?.marital_statuses);
+            if (!maritalStatuses.length) {
+                maritalStatuses = await fetchMaritalStatusesFallback();
             }
+
+            const normalizedProfile = {
+                ...emptyProfile(),
+                ...(payload && typeof payload === 'object' ? payload : {}),
+                basics: {
+                    ...emptyProfile().basics,
+                    ...(payload?.basics || {}),
+                },
+                lifestyle: {
+                    ...emptyProfile().lifestyle,
+                    ...(payload?.lifestyle || {}),
+                },
+                career: {
+                    ...emptyProfile().career,
+                    ...(payload?.career || {}),
+                },
+                family: {
+                    ...emptyProfile().family,
+                    ...(payload?.family || {}),
+                },
+                expectations: {
+                    ...emptyProfile().expectations,
+                    ...(payload?.expectations || {}),
+                },
+                media: {
+                    ...emptyProfile().media,
+                    ...(payload?.media || {}),
+                },
+                salaryRanges: Array.isArray(payload?.salaryRanges) ? payload.salaryRanges : [],
+                visibility: {
+                    ...emptyProfile().visibility,
+                    ...(payload?.visibility || {}),
+                },
+                optionSets: {
+                    ...(sourceOptionSets || {}),
+                    maritalStatuses,
+                },
+            };
+            setProfileData(normalizedProfile);
             setQualityScore(qualityRes?.data?.data ?? null);
         } catch (error) {
             console.error('Failed to fetch profile', error);
+            setProfileData(emptyProfile());
         } finally {
             setLoading(false);
         }
@@ -1278,9 +1361,11 @@ const CareerSection: React.FC<{ data: any, salaryRanges?: any[], optionSets?: an
                 end: data.careerEnd || '',
                 present: data.careerPresent || false,
                 workLocationType: data.workLocationType || '',
+                jobTitleId: data.jobTitleId || '',
+                specialityId: data.specialityId || '',
             }];
         }
-        return [{ id: null, designation: '', company: '', start: '', end: '', present: false, workLocationType: '' }];
+        return [{ id: null, designation: '', company: '', start: '', end: '', present: false, workLocationType: '', jobTitleId: '', specialityId: '' }];
     });
 
     // Sync educations array to parent data on change
@@ -1309,6 +1394,8 @@ const CareerSection: React.FC<{ data: any, salaryRanges?: any[], optionSets?: an
             updateData('careerEnd', updated[0].end);
             updateData('careerPresent', updated[0].present);
             updateData('workLocationType', updated[0].workLocationType);
+            updateData('jobTitleId', updated[0].jobTitleId);
+            updateData('specialityId', updated[0].specialityId);
         }
     }, [updateData]);
 
@@ -1335,7 +1422,7 @@ const CareerSection: React.FC<{ data: any, salaryRanges?: any[], optionSets?: an
     };
 
     const addCareer = () => {
-        syncCareers([...careers, { id: null, designation: '', company: '', start: '', end: '', present: false, workLocationType: '' }]);
+        syncCareers([...careers, { id: null, designation: '', company: '', start: '', end: '', present: false, workLocationType: '', jobTitleId: '', specialityId: '' }]);
     };
 
     const removeCareer = (index: number) => {
@@ -1460,15 +1547,46 @@ const CareerSection: React.FC<{ data: any, salaryRanges?: any[], optionSets?: an
                             )}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <InputGroup label={t('profile.edit.professionDesignation')}>
-                                    <input
-                                        type="text"
+                                    <select
                                         className="form-input"
-                                        placeholder={t('profile.edit.professionPlaceholder')}
-                                        defaultValue={career.designation}
-                                        onBlur={(e) => updateCareer(index, 'designation', e.target.value)}
-                                    />
+                                        value={String(career.jobTitleId ?? '')}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            const selected = (optionSets?.jobTitles ?? []).find((jt: any) => String(jt.id) === val);
+                                            // Update both fields in a single call to avoid stale-state race condition
+                                            const updated = [...careers];
+                                            updated[index] = {
+                                                ...updated[index],
+                                                jobTitleId: val ? Number(val) : '',
+                                                ...(selected ? { designation: selected.name } : {}),
+                                            };
+                                            syncCareers(updated);
+                                        }}
+                                    >
+                                        <option value="">{t('profile.edit.professionPlaceholder')}</option>
+                                        {(optionSets?.jobTitles ?? []).map((jt: any) => (
+                                            <option key={jt.id} value={String(jt.id)}>{jt.name}</option>
+                                        ))}
+                                    </select>
                                 </InputGroup>
 
+                                <InputGroup label={t('profile.edit.speciality', 'Speciality')}>
+                                    <select
+                                        className="form-input"
+                                        value={String(career.specialityId ?? '')}
+                                        onChange={(e) => {
+                                            updateCareer(index, 'specialityId', e.target.value ? Number(e.target.value) : '');
+                                        }}
+                                    >
+                                        <option value="">{t('profile.edit.selectSpeciality', 'Select Speciality')}</option>
+                                        {(optionSets?.specialities ?? []).map((sp: any) => (
+                                            <option key={sp.id} value={String(sp.id)}>{sp.name}</option>
+                                        ))}
+                                    </select>
+                                </InputGroup>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <InputGroup label={t('profile.edit.employerHospital')}>
                                     <div className="flex gap-2">
                                         <input
@@ -1601,14 +1719,54 @@ const CareerSection: React.FC<{ data: any, salaryRanges?: any[], optionSets?: an
 
 const FamilySection: React.FC<{ data: any, optionSets?: any, updateData: (field: string, val: any) => void }> = ({ data, optionSets, updateData }) => {
     const { t } = useTranslation();
+    const [liveCastes, setLiveCastes] = useState<any[]>([]);
+    const [liveSects, setLiveSects] = useState<any[]>([]);
+    const [loadingCastes, setLoadingCastes] = useState(false);
     const familyTypeOptions = ensureOptionValue(data?.familyType, optionSets?.familyTypeOptions ?? []);
     const religionOptions = optionSets?.religions ?? [];
-    const casteOptions = optionSets?.castes ?? [];
+    const casteOptions = liveCastes.length ? liveCastes : (optionSets?.castes ?? []);
     const selectedReligionId = resolveIdByName(data?.religionId, data?.religion, religionOptions);
-    const filteredCastes = selectedReligionId
-        ? casteOptions.filter((caste: any) => String(caste.religion_id) === selectedReligionId)
-        : casteOptions;
-    const selectedCasteId = resolveIdByName(data?.casteId, data?.caste, filteredCastes);
+    const selectedCasteId = resolveIdByName(data?.casteId, data?.caste, casteOptions);
+
+    useEffect(() => {
+        let isMounted = true;
+        const fetchLiveCastes = async () => {
+            try {
+                setLoadingCastes(true);
+                const res = await api.get('/member/casts');
+                const payload = Array.isArray(res.data?.data) ? res.data.data : (Array.isArray(res.data) ? res.data : []);
+                if (isMounted) {
+                    setLiveCastes(payload);
+                }
+            } catch (error) {
+                if (isMounted) {
+                    setLiveCastes([]);
+                }
+            } finally {
+                if (isMounted) {
+                    setLoadingCastes(false);
+                }
+            }
+        };
+        const fetchLiveSects = async () => {
+            try {
+                const res = await api.get('/member/sects');
+                const payload = Array.isArray(res.data?.data) ? res.data.data : (Array.isArray(res.data) ? res.data : []);
+                if (isMounted) {
+                    setLiveSects(payload);
+                }
+            } catch (error) {
+                if (isMounted) {
+                    setLiveSects([]);
+                }
+            }
+        };
+        fetchLiveCastes();
+        fetchLiveSects();
+        return () => {
+            isMounted = false;
+        };
+    }, []);
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1710,12 +1868,22 @@ const FamilySection: React.FC<{ data: any, optionSets?: any, updateData: (field:
                             </select>
                         </InputGroup>
                         <InputGroup label={t('profile.edit.sect')} optional>
-                            <input
-                                type="text"
+                            <select
                                 className="form-input"
-                                defaultValue={data.sect}
-                                onChange={(e) => updateData('sect', e.target.value)}
-                            />
+                                value={data.sectId || ''}
+                                onChange={(e) => {
+                                    const nextValue = e.target.value ? Number(e.target.value) : null;
+                                    updateData('sectId', nextValue);
+                                    const selected = liveSects.find((item: any) => String(item.id) === e.target.value);
+                                    updateData('sect', selected?.name ?? '');
+                                }}
+                                disabled={!liveSects.length}
+                            >
+                                <option value="">{t('profile.edit.selectSect', 'Select sect')}</option>
+                                {liveSects.map((option: any) => (
+                                    <option key={option.id} value={option.id}>{option.name}</option>
+                                ))}
+                            </select>
                         </InputGroup>
                         <InputGroup label={t('profile.edit.casteClan')} optional>
                             <select
@@ -1724,13 +1892,13 @@ const FamilySection: React.FC<{ data: any, optionSets?: any, updateData: (field:
                                 onChange={(e) => {
                                     const nextValue = e.target.value ? Number(e.target.value) : null;
                                     updateData('casteId', nextValue);
-                                    const selected = filteredCastes.find((item: any) => String(item.id) === e.target.value);
+                                    const selected = casteOptions.find((item: any) => String(item.id) === e.target.value);
                                     updateData('caste', selected?.name ?? '');
                                 }}
-                                disabled={!selectedReligionId}
+                                disabled={!casteOptions.length || loadingCastes}
                             >
-                                <option value="">{selectedReligionId ? t('profile.edit.selectCaste') : t('profile.edit.selectReligionFirst')}</option>
-                                {filteredCastes.map((option: any) => (
+                                <option value="">{t('profile.edit.selectCaste')}</option>
+                                {casteOptions.map((option: any) => (
                                     <option key={option.id} value={option.id}>{option.name}</option>
                                 ))}
                             </select>

@@ -104,13 +104,25 @@ class SettingController extends Controller
         return view('admin.website_settings.appearances');
     }
 
-    public function system_update()
+    /**
+     * Send a test SMTP email (used by smtp_settings page).
+     */
+    public function testSmtp(Request $request)
     {
-        return view('admin.system.update');
-    }
-    public function system_server()
-    {
-        return view('admin.system.server_status');
+        $array['view']    = 'emails.verification';
+        $array['subject'] = 'SMTP Test';
+        $array['from']    = env('MAIL_USERNAME');
+        $array['content'] = 'This is a test email.';
+
+        try {
+            \Mail::to($request->email)->queue(new \App\Mail\EmailManager($array));
+        } catch (\Exception $e) {
+            flash(translate('Failed to send: ' . $e->getMessage()))->error();
+            return back();
+        }
+
+        flash(translate('An email has been sent.'))->success();
+        return back();
     }
 
 

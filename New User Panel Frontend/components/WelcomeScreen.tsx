@@ -1,7 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-    Smartphone,
     Heart,
     ArrowRight,
     ShieldCheck,
@@ -15,37 +14,45 @@ import {
     CheckCircle2,
     Loader2,
     User,
-    Calendar,
     Stethoscope,
     Check
 } from 'lucide-react';
 import { api } from '../utils/api';
 import { useAuthStore } from '../src/stores/authStore';
 import CountryCodeSelector from './CountryCodeSelector';
+import PasswordField from './PasswordField';
 import { Country, getDefaultCountry, countries } from '../utils/countries';
 import { useGoogleLogin } from '@react-oauth/google';
 
+type WelcomeStep = 'landing' | 'input' | 'otp' | 'onboarding' | 'forgot-password' | 'reset-otp' | 'new-password' | 'two-factor';
+
 interface WelcomeScreenProps {
     onComplete: () => void;
+    initialStep?: Extract<WelcomeStep, 'landing' | 'input' | 'forgot-password'>;
 }
 
-const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
+const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep = 'landing' }) => {
     const { t } = useTranslation();
     const { setUser } = useAuthStore();
-    const [step, setStep] = useState<'landing' | 'input' | 'otp' | 'onboarding' | 'forgot-password' | 'reset-otp' | 'new-password' | 'two-factor'>('landing');
-    const [authMethod, setAuthMethod] = useState<'phone' | 'email'>('phone');
+    const [step, setStep] = useState<WelcomeStep>(initialStep);
+    const [authMethod, setAuthMethod] = useState<'phone' | 'email'>('email');
     const defaultCountry = getDefaultCountry();
-    const [identifier, setIdentifier] = useState(defaultCountry.dialCode);
+    const [identifier, setIdentifier] = useState('');
     const [selectedCountry, setSelectedCountry] = useState<Country>(defaultCountry);
     const [contactPhone, setContactPhone] = useState('');
     const [requiresPhone, setRequiresPhone] = useState(false);
     const [profileFor, setProfileFor] = useState('Myself');
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [twoFactorToken, setTwoFactorToken] = useState('');
-    const [referralCode, setReferralCode] = useState<string | null>(null);
+    const [referralCode, setReferralCode] = useState('');
+    const [referralCodeStatus, setReferralCodeStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle');
+    const [referralCodeMessage, setReferralCodeMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    const isGoogleConfigured = Boolean(googleClientId && googleClientId !== 'YOUR_GOOGLE_CLIENT_ID_PLACEHOLDER');
     const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+    const referralValidationRequestId = useRef(0);
 
     // Onboarding Form State
     const [formData, setFormData] = useState({
@@ -53,23 +60,105 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
         last_name: '',
         gender: 'Male',
         on_behalf: '1',
-        date_of_birth: '',
         password: '',
         password_confirmation: ''
     });
-
     // Password Reset State
     const [resetOtp, setResetOtp] = useState(['', '', '', '', '', '']);
     const [newPassword, setNewPassword] = useState('');
     const [confirmNewPassword, setConfirmNewPassword] = useState('');
     const resetOtpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-    // Capture referral code from URL
+    const normalizeReferralCode = (value?: string | null) => {
+        if (!value) return '';
+        return value.toUpperCase().replace(/\s+/g, '').trim();
+    };
+
+    const setReferralCodeValue = (value: string) => {
+        const normalized = normalizeReferralCode(value);
+        setReferralCode(normalized);
+        if (normalized) {
+            localStorage.setItem('pending_referral_code', normalized);
+        } else {
+            localStorage.removeItem('pending_referral_code');
+        }
+        setReferralCodeStatus('idle');
+        setReferralCodeMessage('');
+    };
+
+    const getStoredReferralCode = () => normalizeReferralCode(localStorage.getItem('pending_referral_code'));
+
+    const currentReferralCode = () => normalizeReferralCode(referralCode || getStoredReferralCode());
+
+    const validateReferralCode = async (value?: string): Promise<boolean> => {
+        const code = normalizeReferralCode(value ?? currentReferralCode());
+        if (!code) {
+            setReferralCodeStatus('idle');
+            setReferralCodeMessage('');
+            return true;
+        }
+
+        const requestId = ++referralValidationRequestId.current;
+        setReferralCodeStatus('checking');
+        setReferralCodeMessage(t('auth.welcome.referralCodeChecking'));
+
+        try {
+            const response = await api.post('/referral/validate-signup-code', { code });
+            if (requestId !== referralValidationRequestId.current) return false;
+
+            if (response.data?.result) {
+                setReferralCodeStatus('valid');
+                setReferralCodeMessage(
+                    response.data?.data?.referrer_name
+                        ? t('auth.welcome.referralCodeValid', { name: response.data.data.referrer_name })
+                        : t('auth.welcome.referralCodeAccepted')
+                );
+                return true;
+            }
+
+            setReferralCodeStatus('invalid');
+            setReferralCodeMessage(response.data?.message || t('auth.welcome.referralCodeInvalid'));
+            return false;
+        } catch (err: any) {
+            if (requestId !== referralValidationRequestId.current) return false;
+            setReferralCodeStatus('invalid');
+            setReferralCodeMessage(err.response?.data?.message || t('auth.welcome.referralCodeInvalid'));
+            return false;
+        }
+    };
+
+    const handleReferralCodeChange = (value: string) => {
+        setReferralCodeValue(value);
+    };
+
+    const handleReferralCodeBlur = () => {
+        void validateReferralCode();
+    };
+
     React.useEffect(() => {
+        setStep(initialStep);
+        setError('');
+    }, [initialStep]);
+
+    // Capture referral code from URL (robust: check URL params, hash, and localStorage)
+    React.useEffect(() => {
+        let code: string | null = null;
+
         const params = new URLSearchParams(window.location.search);
-        const ref = params.get('ref');
-        if (ref) {
-            setReferralCode(ref);
+        code = params.get('ref');
+
+        if (!code && window.location.hash) {
+            const hashParams = new URLSearchParams(window.location.hash.replace(/^#\/?/, '').split('?')[1] || '');
+            code = hashParams.get('ref');
+        }
+
+        if (code) {
+            setReferralCodeValue(code);
+        } else {
+            const stored = localStorage.getItem('pending_referral_code');
+            if (stored) {
+                setReferralCodeValue(stored);
+            }
         }
     }, []);
 
@@ -77,12 +166,25 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
         setIsLoading(true);
         setError('');
         try {
+            const effectiveReferralCode = currentReferralCode();
+            if (effectiveReferralCode) {
+                const valid = await validateReferralCode(effectiveReferralCode);
+                if (!valid) {
+                    setError(t('auth.welcome.referralCodeInvalid'));
+                    return;
+                }
+            }
             const response = await api.post('/social-login', {
                 social_provider: provider,
-                access_token: token
+                access_token: token,
+                referral_code: effectiveReferralCode
             });
             if (response.data.result) {
                 const { user, access_token } = response.data;
+                localStorage.removeItem('pending_referral_code');
+                setReferralCode('');
+                setReferralCodeStatus('idle');
+                setReferralCodeMessage('');
                 localStorage.setItem('auth_token', access_token);
                 setUser(user);
                 onComplete();
@@ -164,18 +266,10 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
         setIsLoading(true);
         setError('');
         try {
-            let response;
-            if (authMethod === 'phone') {
-                response = await api.post('/send-phone-verification', {
-                    phone: identifier,
-                    intent: 'signup'
-                });
-            } else {
-                response = await api.post('/send-email-verification', {
-                    email: identifier,
-                    intent: 'signup'
-                });
-            }
+            const response = await api.post('/send-email-verification', {
+                email: identifier,
+                intent: 'signup'
+            });
 
             if (response.data.success) {
                 setStep('otp');
@@ -221,6 +315,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
                     return;
                 }
                 const { user, access_token } = response.data;
+                localStorage.removeItem('pending_referral_code');
                 localStorage.setItem('auth_token', access_token);
                 setUser(user);
                 onComplete();
@@ -276,19 +371,10 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
         setIsLoading(true);
         setError('');
         try {
-            let response;
-            if (authMethod === 'phone') {
-                const fullPhone = identifier.startsWith('+') ? identifier : `${selectedCountry.dialCode}${identifier.replace(/^0+/, '')}`;
-                response = await api.post('/verify-phone-code', {
-                    phone: fullPhone,
-                    code: code
-                });
-            } else {
-                response = await api.post('/verify-email-code', {
-                    email: identifier,
-                    code: code
-                });
-            }
+            const response = await api.post('/verify-email-code', {
+                email: identifier,
+                code: code
+            });
 
             if (response.data.result && response.data.user) {
                 // Existing user logged in
@@ -317,7 +403,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
         }
 
         // Basic validation
-        if (!formData.first_name || !formData.last_name || !formData.date_of_birth || !formData.password) {
+        if (!formData.first_name || !formData.last_name || !formData.password) {
             setError(t('errors.fillRequired'));
             return;
         }
@@ -337,18 +423,31 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
                     : null;
             const email = authMethod === 'email' ? identifier : null;
 
+            const effectiveReferralCode = currentReferralCode();
+            if (effectiveReferralCode) {
+                const valid = await validateReferralCode(effectiveReferralCode);
+                if (!valid) {
+                    setError(t('auth.welcome.referralCodeInvalid'));
+                    return;
+                }
+            }
+
             const payload = {
                 ...formData,
                 phone: fullPhone,
                 email: email,
                 on_behalf: parseInt(formData.on_behalf),
-                referral_code: referralCode
+                referral_code: effectiveReferralCode
             };
 
             const response = await api.post('/signup', payload);
 
             if (response.data.result && response.data.user) {
                 const { user, access_token } = response.data;
+                localStorage.removeItem('pending_referral_code');
+                setReferralCode('');
+                setReferralCodeStatus('idle');
+                setReferralCodeMessage('');
                 localStorage.setItem('auth_token', access_token);
                 setUser(user);
                 onComplete();
@@ -363,6 +462,42 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
             setIsLoading(false);
         }
     };
+
+    const ReferralCodeField = () => (
+        <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-700 uppercase tracking-wide block">
+                {t('auth.welcome.referralCode')}
+                <span className="ml-2 text-[10px] font-semibold text-slate-400 normal-case">
+                    {t('auth.welcome.optional')}
+                </span>
+            </label>
+            <div className={`flex items-stretch rounded-xl border transition-all focus-within:ring-2 focus-within:ring-primary/15 ${referralCodeStatus === 'invalid' ? 'border-red-500 bg-red-50/60' : referralCodeStatus === 'valid' ? 'border-emerald-500 bg-emerald-50/50' : 'border-slate-200 bg-slate-50'}`}>
+                <input
+                    type="text"
+                    value={referralCode}
+                    onChange={(e) => handleReferralCodeChange(e.target.value)}
+                    onBlur={handleReferralCodeBlur}
+                    className="flex-1 bg-transparent px-4 py-3 outline-none font-bold text-slate-900 uppercase tracking-widest placeholder:tracking-normal placeholder:normal-case"
+                    placeholder={t('auth.welcome.enterReferralCode')}
+                    autoComplete="off"
+                />
+                {referralCode && (
+                    <button
+                        type="button"
+                        onClick={() => handleReferralCodeChange('')}
+                        className="px-4 text-xs font-bold text-slate-400 hover:text-slate-700"
+                    >
+                        {t('auth.welcome.clear')}
+                    </button>
+                )}
+            </div>
+            {referralCodeMessage && (
+                <p className={`text-[11px] font-medium ${referralCodeStatus === 'invalid' ? 'text-red-600' : referralCodeStatus === 'valid' ? 'text-emerald-600' : 'text-slate-500'}`}>
+                    {referralCodeMessage}
+                </p>
+            )}
+        </div>
+    );
 
     return (
         <div className="flex min-h-screen w-full bg-white font-sans overflow-hidden lg:overflow-hidden">
@@ -426,10 +561,20 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
                                     <p className="text-slate-500">{t('auth.welcome.welcomeBackSubtitle')}</p>
                                 </div>
 
+                                {/* Referral code badge on landing */}
+                                {(referralCode || localStorage.getItem('pending_referral_code')) && (
+                                    <div className="flex items-center justify-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2.5">
+                                        <CheckCircle2 className="text-emerald-600 flex-shrink-0" size={16} />
+                                        <span className="text-sm font-medium text-emerald-700">
+                                            Referral code <span className="font-bold">{referralCode || localStorage.getItem('pending_referral_code')}</span> will be applied
+                                        </span>
+                                    </div>
+                                )}
+
                                 <div className="space-y-6">
                                     <div className="space-y-4">
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold text-slate-700 uppercase mb-1 block">{t('auth.welcome.emailOrPhone')}</label>
+                                            <label className="text-xs font-bold text-slate-700 uppercase mb-1 block">{t('auth.welcome.emailAddress')}</label>
                                             <div className={`flex items-stretch bg-slate-50 border ${error ? 'border-red-500' : 'border-slate-200'} rounded-xl focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all`}>
                                                 {authMethod === 'phone' && (
                                                     <CountryCodeSelector
@@ -445,25 +590,22 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
                                                     placeholder={authMethod === 'phone' ? t('auth.welcome.phoneNumber') : t('auth.welcome.emailAddress')}
                                                 />
                                             </div>
-                                            <div className="flex gap-2 text-[10px] font-bold text-slate-500 uppercase justify-end">
-                                                <button onClick={() => { setAuthMethod('phone'); setIdentifier(selectedCountry.dialCode); }} className={`${authMethod === 'phone' ? 'text-primary' : 'hover:text-primary'}`}>{t('auth.welcome.usePhone')}</button>
-                                                <span>|</span>
-                                                <button onClick={() => { setAuthMethod('email'); setIdentifier(''); }} className={`${authMethod === 'email' ? 'text-primary' : 'hover:text-primary'}`}>{t('auth.welcome.useEmail')}</button>
-                                            </div>
+
                                         </div>
                                         <div>
-                                            <label className="text-xs font-bold text-slate-700 uppercase mb-1 block">{t('auth.welcome.password')}</label>
-                                            <input
-                                                type="password"
-                                                value={formData.password}
-                                                onChange={(e) => { setFormData({ ...formData, password: e.target.value }); setError(''); }}
-                                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-primary focus:bg-white transition-all font-medium"
-                                                placeholder="••••••••"
-                                            />
+                                        <PasswordField
+                                            label={t('auth.welcome.password')}
+                                            value={formData.password}
+                                            onChange={(e) => { setFormData({ ...formData, password: e.target.value }); setError(''); }}
+                                            placeholder="••••••••"
+                                            inputClassName="w-full py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-primary focus:bg-white transition-all font-medium"
+                                            containerClassName="space-y-0"
+                                            labelClassName="text-xs font-bold text-slate-700 uppercase mb-1 block"
+                                        />
                                         </div>
                                         <div className="flex justify-end">
                                             <button
-                                                onClick={() => { setStep('forgot-password'); setIdentifier(''); setError(''); }}
+                                                onClick={() => { window.history.replaceState(null, '', '/forgot-password'); setStep('forgot-password'); setIdentifier(''); setError(''); }}
                                                 className="text-sm font-bold text-primary hover:underline"
                                             >
                                                 {t('auth.welcome.forgotPassword')}
@@ -492,14 +634,18 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
-                                        <button onClick={() => googleLogin()} className="p-3 border border-slate-200 rounded-xl font-bold text-slate-700 hover:bg-slate-50 flex items-center justify-center gap-2 transition-colors">
+                                        <button
+                                            onClick={() => isGoogleConfigured ? googleLogin() : setError(t('auth.welcome.socialUnavailable', { provider: t('auth.welcome.google') }))}
+                                            className={`p-3 border border-slate-200 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors ${isGoogleConfigured ? 'text-slate-700 hover:bg-slate-50' : 'text-slate-400 bg-slate-50 cursor-not-allowed'}`}
+                                            aria-disabled={!isGoogleConfigured}
+                                        >
                                             <Globe size={18} /> {t('auth.welcome.google')}
                                         </button>
                                         <button
                                             onClick={() => {
-                                                alert(t('auth.welcome.appleComingSoon'));
+                                                setError(t('auth.welcome.socialUnavailable', { provider: t('auth.welcome.apple') }));
                                             }}
-                                            className="p-3 border border-slate-200 rounded-xl font-bold text-slate-700 hover:bg-slate-50 flex items-center justify-center gap-2 transition-colors"
+                                            className="p-3 border border-slate-200 rounded-xl font-bold text-slate-400 bg-slate-50 cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
                                         >
                                             <svg viewBox="0 0 24 24" className="size-5" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" /></svg> {t('auth.welcome.apple')}
                                         </button>
@@ -530,7 +676,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
 
                                 <div className="space-y-4">
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-700 uppercase mb-1 block">{t('auth.welcome.emailOrPhone')}</label>
+                                        <label className="text-xs font-bold text-slate-700 uppercase mb-1 block">{t('auth.welcome.emailAddress')}</label>
                                         <div className={`flex items-stretch bg-slate-50 border ${error ? 'border-red-500' : 'border-slate-200'} rounded-xl focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all`}>
                                             {authMethod === 'phone' && (
                                                 <CountryCodeSelector
@@ -546,11 +692,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
                                                 placeholder={authMethod === 'phone' ? t('auth.welcome.phoneNumber') : t('auth.welcome.emailAddress')}
                                             />
                                         </div>
-                                        <div className="flex gap-2 text-[10px] font-bold text-slate-500 uppercase justify-end">
-                                            <button onClick={() => { setAuthMethod('phone'); setIdentifier(selectedCountry.dialCode); }} className={`${authMethod === 'phone' ? 'text-primary' : 'hover:text-primary'}`}>{t('auth.welcome.usePhone')}</button>
-                                            <span>|</span>
-                                            <button onClick={() => { setAuthMethod('email'); setIdentifier(''); }} className={`${authMethod === 'email' ? 'text-primary' : 'hover:text-primary'}`}>{t('auth.welcome.useEmail')}</button>
-                                        </div>
+
                                     </div>
 
                                     {error && (
@@ -565,10 +707,9 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
                                             if (!identifier) { setError(t('errors.enterCredentials')); return; }
                                             setIsLoading(true);
                                             try {
-                                                const type = identifier.includes('@') ? 'email' : 'phone';
                                                 await api.post('/forgot/password', {
                                                     email_or_phone: identifier,
-                                                    send_code_by: type
+                                                    send_code_by: 'email'
                                                 });
                                                 setResetOtp(['', '', '', '', '', '']);
                                                 setStep('reset-otp');
@@ -659,30 +800,28 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
                                 </div>
                                 <div className="space-y-4">
                                     <div>
-                                        <label className="text-xs font-bold text-slate-700 uppercase mb-1 block">{t('auth.welcome.newPassword')}</label>
-                                        <div className="relative">
-                                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                                            <input
-                                                type="password"
-                                                value={newPassword}
-                                                onChange={(e) => { setNewPassword(e.target.value); setError(''); }}
-                                                className="w-full px-4 py-3 pl-10 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-primary focus:bg-white transition-all font-medium"
-                                                placeholder="••••••••"
-                                            />
-                                        </div>
+                                        <PasswordField
+                                            label={t('auth.welcome.newPassword')}
+                                            value={newPassword}
+                                            onChange={(e) => { setNewPassword(e.target.value); setError(''); }}
+                                            placeholder="••••••••"
+                                            leftIcon={<Lock size={18} />}
+                                            inputClassName="w-full py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-primary focus:bg-white transition-all font-medium"
+                                            containerClassName="space-y-0"
+                                            labelClassName="text-xs font-bold text-slate-700 uppercase mb-1 block"
+                                        />
                                     </div>
                                     <div>
-                                        <label className="text-xs font-bold text-slate-700 uppercase mb-1 block">{t('auth.welcome.confirmPassword')}</label>
-                                        <div className="relative">
-                                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                                            <input
-                                                type="password"
-                                                value={confirmNewPassword}
-                                                onChange={(e) => { setConfirmNewPassword(e.target.value); setError(''); }}
-                                                className="w-full px-4 py-3 pl-10 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-primary focus:bg-white transition-all font-medium"
-                                                placeholder="••••••••"
-                                            />
-                                        </div>
+                                        <PasswordField
+                                            label={t('auth.welcome.confirmPassword')}
+                                            value={confirmNewPassword}
+                                            onChange={(e) => { setConfirmNewPassword(e.target.value); setError(''); }}
+                                            placeholder="••••••••"
+                                            leftIcon={<Lock size={18} />}
+                                            inputClassName="w-full py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-primary focus:bg-white transition-all font-medium"
+                                            containerClassName="space-y-0"
+                                            labelClassName="text-xs font-bold text-slate-700 uppercase mb-1 block"
+                                        />
                                     </div>
 
                                     {error && (
@@ -705,10 +844,9 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
                                             setIsLoading(true);
                                             setError('');
                                             try {
-                                                const type = identifier.includes('@') ? 'email' : 'phone';
                                                 await api.post('/reset/password', {
                                                     email_or_phone: identifier,
-                                                    send_code_by: type,
+                                                    send_code_by: 'email',
                                                     verification_code: resetOtp.join(''),
                                                     password: newPassword,
                                                     password_confirmation: confirmNewPassword
@@ -831,11 +969,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
                                         />
                                     </div>
 
-                                    <div className="flex gap-2 text-xs font-bold text-slate-500 uppercase justify-end">
-                                        <button onClick={() => { setAuthMethod('phone'); setIdentifier(''); }} className={`${authMethod === 'phone' ? 'text-primary' : 'hover:text-primary'}`}>{t('auth.welcome.usePhone')}</button>
-                                        <span>|</span>
-                                        <button onClick={() => { setAuthMethod('email'); setIdentifier(''); }} className={`${authMethod === 'email' ? 'text-primary' : 'hover:text-primary'}`}>{t('auth.welcome.useEmail')}</button>
-                                    </div>
+
 
                                     {error && (
                                         <div className="p-3 bg-red-50 text-red-600 rounded-xl text-xs flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
@@ -928,6 +1062,16 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
                                     <p className="text-slate-500 text-sm">{t('auth.welcome.completeProfileDesc')}</p>
                                 </div>
 
+                                {/* Referral code badge */}
+                                {(referralCode || localStorage.getItem('pending_referral_code')) && (
+                                    <div className="flex items-center justify-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2.5">
+                                        <CheckCircle2 className="text-emerald-600 flex-shrink-0" size={16} />
+                                        <span className="text-sm font-medium text-emerald-700">
+                                            Referral code <span className="font-bold">{referralCode || localStorage.getItem('pending_referral_code')}</span> applied
+                                        </span>
+                                    </div>
+                                )}
+
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1 col-span-2">
                                         <label className="text-xs font-bold text-slate-400 uppercase">{t('auth.welcome.creatingProfileFor')}</label>
@@ -976,58 +1120,42 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1">
-                                        <label className="text-xs font-bold text-slate-400 uppercase">{t('auth.welcome.gender')}</label>
-                                        <select
-                                            value={formData.gender}
-                                            onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                                            className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 outline-none focus:border-primary focus:bg-white transition-all text-sm font-medium appearance-none"
-                                        >
-                                            <option value="Male">{t('auth.welcome.male')}</option>
-                                            <option value="Female">{t('auth.welcome.female')}</option>
-                                        </select>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-xs font-bold text-slate-400 uppercase">{t('auth.welcome.dateOfBirth')}</label>
-                                        <div className="relative">
-                                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                                            <input
-                                                type="date"
-                                                value={formData.date_of_birth}
-                                                onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
-                                                className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-4 py-3 outline-none focus:border-primary focus:bg-white transition-all text-sm font-medium"
-                                            />
-                                        </div>
-                                    </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-slate-400 uppercase">{t('auth.welcome.gender')}</label>
+                                    <select
+                                        value={formData.gender}
+                                        onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 outline-none focus:border-primary focus:bg-white transition-all text-sm font-medium appearance-none"
+                                    >
+                                        <option value="Male">{t('auth.welcome.male')}</option>
+                                        <option value="Female">{t('auth.welcome.female')}</option>
+                                    </select>
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-xs font-bold text-slate-400 uppercase">{t('auth.welcome.setPasswordLabel')}</label>
-                                    <div className="relative">
-                                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                                        <input
-                                            type="password"
-                                            value={formData.password}
-                                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                            className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-4 py-3 outline-none focus:border-primary focus:bg-white transition-all text-sm font-medium"
-                                            placeholder="••••••••"
-                                        />
-                                    </div>
+                                    <PasswordField
+                                        label={t('auth.welcome.setPasswordLabel')}
+                                        value={formData.password}
+                                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                        placeholder="••••••••"
+                                        leftIcon={<Lock size={18} />}
+                                        inputClassName="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 outline-none focus:border-primary focus:bg-white transition-all text-sm font-medium"
+                                        containerClassName="space-y-1"
+                                        labelClassName="text-xs font-bold text-slate-400 uppercase"
+                                    />
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-xs font-bold text-slate-400 uppercase">{t('auth.welcome.confirmPassword')}</label>
-                                    <div className="relative">
-                                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                                        <input
-                                            type="password"
-                                            value={formData.password_confirmation}
-                                            onChange={(e) => setFormData({ ...formData, password_confirmation: e.target.value })}
-                                            className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-4 py-3 outline-none focus:border-primary focus:bg-white transition-all text-sm font-medium"
-                                            placeholder="••••••••"
-                                        />
-                                    </div>
+                                    <PasswordField
+                                        label={t('auth.welcome.confirmPassword')}
+                                        value={formData.password_confirmation}
+                                        onChange={(e) => setFormData({ ...formData, password_confirmation: e.target.value })}
+                                        placeholder="••••••••"
+                                        leftIcon={<Lock size={18} />}
+                                        inputClassName="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 outline-none focus:border-primary focus:bg-white transition-all text-sm font-medium"
+                                        containerClassName="space-y-1"
+                                        labelClassName="text-xs font-bold text-slate-400 uppercase"
+                                    />
                                 </div>
 
                                 {(authMethod === 'email' || requiresPhone) && (
@@ -1073,11 +1201,11 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete }) => {
                 {/* Footer */}
                 <div className="p-6 border-t border-slate-50 flex flex-col md:flex-row justify-between items-center text-xs text-slate-400 gap-4 bg-white">
                     <div className="flex gap-4 sm:gap-6 flex-wrap justify-center">
-                        <a href="#" className="hover:text-slate-600 transition-colors">{t('auth.welcome.termsOfService')}</a>
-                        <a href="#" className="hover:text-slate-600 transition-colors">{t('auth.welcome.privacyPolicy')}</a>
-                        <a href="#" className="hover:text-slate-600 transition-colors">{t('auth.welcome.cookiePolicy')}</a>
+                        <a href="/terms" className="hover:text-slate-600 transition-colors">{t('auth.welcome.termsOfService')}</a>
+                        <a href="/privacy" className="hover:text-slate-600 transition-colors">{t('auth.welcome.privacyPolicy')}</a>
+                        <a href="/cookies" className="hover:text-slate-600 transition-colors">{t('auth.welcome.cookiePolicy')}</a>
                     </div>
-                    <a href="#" className="flex items-center gap-1 hover:text-slate-600 transition-colors">
+                    <a href="mailto:support@doctormarriagebureau.com.pk" className="flex items-center gap-1 hover:text-slate-600 transition-colors">
                         <HelpCircle size={14} /> {t('auth.welcome.helpSupport')}
                     </a>
                 </div>

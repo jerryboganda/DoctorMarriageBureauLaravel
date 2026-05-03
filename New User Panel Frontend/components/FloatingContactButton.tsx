@@ -2,13 +2,29 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Phone, Mail, X, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const PHONE_NUMBER = '+923110798623';
+const PHONE_NUMBER = '+923368899996';
 const EMAIL_ADDRESS = 'support@doctormarriagebureau.com.pk';
-const WHATSAPP_URL = `https://wa.me/923110798623`;
+const EMAIL_BODY = 'I would like to get customer support for an issue. Please contact me early as possible !';
+const EMAIL_HREF = `mailto:${EMAIL_ADDRESS}?body=${encodeURIComponent(EMAIL_BODY)}`;
+const WHATSAPP_URL = `https://wa.me/923368899996`;
 
-const FloatingContactButton: React.FC = () => {
+type FloatingContactButtonProps = {
+    placement?: 'default' | 'chat';
+};
+
+const FloatingContactButton: React.FC<FloatingContactButtonProps> = ({ placement = 'default' }) => {
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
+    const isChatPlacement = placement === 'chat';
+    const containerPositionClass = isChatPlacement
+        ? 'fixed bottom-28 right-4 sm:bottom-28 md:bottom-32 md:right-6'
+        : 'fixed bottom-6 right-6';
+    const actionButtonSizeClass = isChatPlacement
+        ? 'w-11 h-11 sm:w-12 sm:h-12'
+        : 'w-12 h-12';
+    const mainButtonSizeClass = isChatPlacement
+        ? 'w-12 h-12 sm:w-14 sm:h-14'
+        : 'w-14 h-14';
 
     // Close on outside click
     useEffect(() => {
@@ -46,14 +62,14 @@ const FloatingContactButton: React.FC = () => {
         {
             label: 'Email Us',
             icon: Mail,
-            href: `mailto:${EMAIL_ADDRESS}`,
+            href: EMAIL_HREF,
             bg: 'bg-blue-500 hover:bg-blue-600',
             shadow: 'shadow-blue-500/30',
         },
     ];
 
     return (
-        <div ref={containerRef} className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-3">
+        <div ref={containerRef} className={`${containerPositionClass} z-[9999] flex flex-col items-end gap-3`}>
             {/* Action Buttons */}
             <AnimatePresence>
                 {isOpen && (
@@ -91,7 +107,7 @@ const FloatingContactButton: React.FC = () => {
                                     </span>
                                     {/* Icon circle */}
                                     <div
-                                        className={`w-12 h-12 rounded-full ${action.bg} text-white flex items-center justify-center shadow-lg ${action.shadow} transition-all duration-200 hover:scale-110`}
+                                        className={`${actionButtonSizeClass} rounded-full ${action.bg} text-white flex items-center justify-center shadow-lg ${action.shadow} transition-all duration-200 hover:scale-110`}
                                     >
                                         <IconComponent className="w-5 h-5" />
                                     </div>
@@ -105,7 +121,7 @@ const FloatingContactButton: React.FC = () => {
             {/* Main FAB Button */}
             <motion.button
                 onClick={() => setIsOpen((prev) => !prev)}
-                className="w-14 h-14 rounded-full bg-primary hover:bg-primary-hover text-white flex items-center justify-center shadow-xl shadow-primary/30 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2"
+                className={`${mainButtonSizeClass} rounded-full bg-primary hover:bg-primary-hover text-white flex items-center justify-center shadow-xl shadow-primary/30 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2`}
                 whileHover={{ scale: 1.08 }}
                 whileTap={{ scale: 0.95 }}
                 aria-label="Contact us"

@@ -1,6 +1,6 @@
 # 🏥 DOCTOR MARRIAGE BUREAU (DMB) — Single Source of Truth
 
-> **Last Updated**: February 13, 2026
+> **Last Updated**: February 23, 2026
 > **Document Purpose**: THE ONLY file any AI agent or developer needs to fully understand this project.
 > **Supersedes**: `memory_bank.md`, `QUICK_START.md`, `AUTH_PRODUCTION_READY.md`, `linux vps memory file.md`, `DMB Mobile App/INTEGRATION_STATUS.md`, `DMB Mobile App/DEPLOYMENT_READY.md`, `DMB Mobile App/README.md`, `New User Panel Frontend/README.md`
 
@@ -17,7 +17,7 @@
 | **Mobile App** | ✅ 100% Feature Parity |
 | **Web Panel** | ✅ Production Live |
 | **GitHub Repo** | `github.com/jerryboganda/DoctorMarriageBureauLaravel` |
-| **Branch** | `main` |
+| **Branch** | `master` |
 
 ---
 
@@ -52,7 +52,7 @@ Three synchronized components. **Any change to Backend API responses requires im
 | **Icons** | Lucide React |
 | **State** | React Context + Local State |
 | **Build** | Docker (Node 18-alpine → Nginx) |
-| **Bundle** | ~894 KB JS (gzipped ~246 KB) |
+| **Bundle** | Route-split Vite bundles; `FamilyPortalView` reduced to ~30 KB and heavy PDF engine lazy-loaded (`html2pdf` ~985 KB chunk loaded on demand) |
 
 ### 2.3 Mobile App (React Native) — The Native Experience
 
@@ -145,25 +145,25 @@ VITE_PUSHER_SCHEME: https
 
 ```powershell
 # 1. LOCAL: Commit and push
-cd c:\laragon\www\marriagebureau
+cd e:\laragon\www\DMB
 git add -A
 git commit -m "descriptive commit message"
-git push origin main
+git push origin master
 
 # 2. VPS: Pull, rebuild, deploy (single SSH command)
-ssh root@185.252.233.186 "cd /root/doctormarriagebureau && git pull && docker exec marriagebureau-app php artisan optimize:clear && docker compose build frontend --no-cache && docker stop marriagebureau-frontend && docker rm marriagebureau-frontend && docker compose up -d frontend"
+ssh root@185.252.233.186 "cd /root/doctormarriagebureau && git pull origin master && docker exec marriagebureau-app php artisan optimize:clear && docker compose build frontend && docker compose up -d frontend"
 ```
 
 ### 5.2 Backend-Only Deploy (No frontend changes)
 
 ```powershell
-ssh root@185.252.233.186 "cd /root/doctormarriagebureau && git pull && docker exec marriagebureau-app php artisan optimize:clear"
+ssh root@185.252.233.186 "cd /root/doctormarriagebureau && git pull origin master && docker exec marriagebureau-app php artisan optimize:clear"
 ```
 
 ### 5.3 Frontend-Only Deploy
 
 ```powershell
-ssh root@185.252.233.186 "cd /root/doctormarriagebureau && git pull && docker compose build frontend --no-cache && docker stop marriagebureau-frontend && docker rm marriagebureau-frontend && docker compose up -d frontend"
+ssh root@185.252.233.186 "cd /root/doctormarriagebureau && git pull origin master && docker compose build frontend && docker compose up -d frontend"
 ```
 
 ### 5.4 Database Migrations
@@ -670,6 +670,23 @@ The `ProfileDetailModal.tsx` does **NOT** use `framer-motion`'s `motion.div` for
 
 ## 13. RECENT CHANGES LOG
 
+### February 22, 2026 - SPA Sync, Status Consistency, and Performance Hardening
+
+| Commit | Change | Files | Status |
+|--------|--------|-------|--------|
+| `e01300a` | Fixed notification `View Details` action to route into dashboard proposals view | `New User Panel Frontend/components/NotificationsView.tsx` | Deployed |
+| `54e61e9` | Added app-level sync trigger and immediate refresh wiring across App, Sidebar, Notifications, and Discovery | `New User Panel Frontend/App.tsx`, `New User Panel Frontend/components/Sidebar.tsx`, `New User Panel Frontend/components/NotificationsView.tsx`, `New User Panel Frontend/components/DiscoveryView.tsx` | Deployed |
+| `de8a975` | Introduced canonical interest-status parser and unified proposal status handling across discovery/profile/proposal flows | `New User Panel Frontend/utils/interestStatus.ts`, `New User Panel Frontend/components/DiscoveryView.tsx`, `New User Panel Frontend/components/ProfileDetailModal.tsx`, `New User Panel Frontend/components/ProposalModal.tsx` | Deployed |
+| `d0761b4` | Removed per-card member-info request pattern and switched to shared proposal status map from sent/received interests | `New User Panel Frontend/components/DiscoveryView.tsx`, `New User Panel Frontend/components/MatchIntelligenceModal.tsx` | Deployed |
+| `960e22c` | Reduced background polling/load pressure, deduped refresh cycles, and improved fallback retry without hard reloads | `New User Panel Frontend/App.tsx`, `New User Panel Frontend/components/LoadingTimeoutFallback.tsx`, `New User Panel Frontend/components/MessagesView.tsx`, `New User Panel Frontend/components/Sidebar.tsx`, `New User Panel Frontend/components/RightSidebar.tsx`, `New User Panel Frontend/components/SettingsView.tsx` | Deployed |
+| `1693d83` | Lazy-loaded biodata PDF dependencies so heavy PDF engine is no longer part of core Family Portal chunk | `New User Panel Frontend/components/FamilyPortalView.tsx` | Deployed |
+
+Key outcomes:
+- Proposal state now stays consistent after action, navigation, and reload.
+- Notification updates are lighter and no longer force unnecessary broad refresh paths.
+- Polling is visibility-aware to reduce wasted API/network work in inactive tabs.
+- Family Portal initial load is faster; `html2pdf` is loaded only when download is requested.
+
 ### February 13, 2026 — Interest Status Awareness & i18n Completion
 
 | Change | Files | Status |
@@ -873,7 +890,7 @@ The `Dockerfile` in `New User Panel Frontend/` handles:
 
 | Problem | Solution |
 |---------|----------|
-| **Frontend not updating after deploy** | Hard refresh (Ctrl+Shift+R). Nginx caches static assets for 1y |
+| **Frontend not updating after deploy** | Verify deployed git SHA on VPS, confirm new hashed `assets/index-*.js` is served, then hard refresh only if browser still has stale index |
 | **Migration fails "column already exists"** | Mark old migration as ran: insert into `migrations` table |
 | **API returns 500** | Check `docker exec marriagebureau-app tail -100 /var/www/html/storage/logs/laravel.log` |
 | **OTP not received** | Check logs: `grep "OTP\|VERIFICATION" laravel.log` (SMS not active for MVP) |
@@ -887,3 +904,97 @@ The `Dockerfile` in `New User Panel Frontend/` handles:
 ---
 
 > **Protocol**: This SSOT must be updated after any structural change, new feature deployment, or infrastructure modification. It is the ONLY document that matters.
+
+---
+
+## 22. PERFORMANCE WAVE 1 (2026-02-23)
+
+### 22.1 Objective
+- Eliminate stale proposal status behavior and hard-refresh dependency.
+- Improve realtime consistency and reduce polling/request waste.
+- Fix unread counter backend mismatch and add safe query/index optimizations.
+
+### 22.2 Implemented Changes
+- Frontend realtime consistency:
+  - Canonical proposal-state upsert path in `New User Panel Frontend/App.tsx`.
+  - Optimistic proposal status with TTL to avoid stale-refresh overwrite.
+  - Discovery request cancellation + sequence guards in `New User Panel Frontend/components/DiscoveryView.tsx`.
+  - Local profile state patching on send-interest actions for immediate UI coherence.
+  - Notifications `View Details` routing hardening in `New User Panel Frontend/components/NotificationsView.tsx`.
+  - Polling overlap guards and visibility/focus-triggered refresh in sidebar/message components.
+- Backend/API consistency:
+  - Unread count field fixed from `read_at` to `seen` in chat preview endpoints.
+  - Canonical `proposal_status` and `proposal_updated_at` added to profile/interest payload paths.
+  - Interest send flow hardened to avoid duplicate reverse-interest inconsistencies.
+  - Discovery and interest endpoints updated with eager loading to reduce N+1 pressure.
+  - `MemberUtility` now uses request-level caches for repeated profile metadata lookups.
+- DB performance:
+  - Added reversible additive index migration:
+    - `express_interests (user_id, interested_by, status)`
+    - `profile_viewers (user_id, viewed_by)`
+    - `ignored_users (user_id, ignored_by)`
+    - `chats (chat_thread_id, created_at)`
+    - `chat_threads (sender_user_id, receiver_user_id, updated_at)`
+
+### 22.3 Artifacts
+- `docs/perf-audit-baseline.md`
+- `docs/perf-validation-checklist.md`
+- `docs/perf-release-2026-02.md`
+
+### 22.4 Baseline/Verification Notes
+- Frontend build passes on Wave 1 code.
+- Main app chunk remains ~266 KB; heavy PDF dependency remains lazy-loaded.
+- Runtime smoke + production observation required immediately after deploy.
+
+---
+
+## 23. ROUTE NAME NORMALIZATION (2026-02-23)
+
+### 23.1 Objective
+- Eliminate global route-name collisions across `routes/web.php`, `routes/admin.php`, `routes/api.php`, and `routes/support_tickets.php`.
+- Keep existing in-use custom route names stable for backward compatibility.
+- Normalize only conflicting generated/default names and unblock production `route:cache`.
+
+### 23.2 Backward-Safe Mapping Rules
+- Preserve existing custom names referenced by Blade/controllers/frontend (examples: `members.index`, `members.destroy`, `education.create`, `career.edit`, `settings.update`, `support-tickets.destroy`).
+- Remap conflicting generated resource names to scoped names:
+  - Pattern: `{resource}.{action}` -> `{resource}.resource.{action}` for collided actions.
+- Namespace member API resource route names under `api.member.*`.
+- Preserve Laravel auth canonical route names where required and move custom GET/legacy variants to explicit names.
+
+### 23.3 Route Mapping Ledger (Key)
+- `password.email` (custom GET form) -> `password.email.form`
+- `password.update` (custom code reset POST) -> `password.update.email_code`
+- `logout` (custom GET) -> `logout.get`
+- `verification.resend` (custom GET) -> `verification.resend.get`
+- `logout` (api) -> `api.logout`
+- `upload.profile.picture` (api) -> `api.upload.profile.picture`
+- API member resources:
+  - `gallery-image.*` -> `api.member.gallery-image.*`
+  - `career.*` -> `api.member.career.*`
+  - `education.*` -> `api.member.education.*`
+  - `support-ticket.*` -> `api.member.support-ticket.*`
+- Support ticket web resource:
+  - `support-tickets.destroy` (generated) -> `support-tickets.resource.destroy`
+- Collided admin/web resource actions remapped to `*.resource.*` for:
+  - `profile`, `contact-us`, `members`, `packages`, `blog-category`, `blog`, `religions`, `castes`, `sub-castes`, `member-languages`, `countries`, `states`, `cities`, `family-status`, `family-values`, `on-behalf`, `marital-statuses`, `annual-salaries`, `profile-option-values`, `email-templates`, `languages`, `settings`, `additional-attributes`, `custom-pages`, `staffs`, `roles`, `uploaded-files`, `manual_payment_methods`, plus web `education` and `career`.
+
+### 23.4 Cleanup Included
+- Removed duplicate trailing route block accidentally duplicated in `routes/web.php`.
+- Removed duplicate `Route::resource('/languages', ...)` declaration in `routes/admin.php`.
+
+### 23.5 Validation Gates
+- Local syntax check:
+  - `php -l routes/web.php`
+  - `php -l routes/admin.php`
+  - `php -l routes/api.php`
+  - `php -l routes/support_tickets.php`
+- Local compile gate:
+  - `php artisan route:clear`
+  - `php artisan route:cache` -> success
+
+### 23.6 Staged Deploy Procedure
+1. Deploy code only, clear route cache, and run `php artisan route:cache`.
+2. Smoke test auth/logout, password reset, verification resend, member/admin listing, support tickets.
+3. Rebuild frontend container if frontend assets changed, then monitor logs for 30-60 minutes.
+4. Rollback path: checkout prior release commit and rebuild runtime caches.

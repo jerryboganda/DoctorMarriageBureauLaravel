@@ -12,7 +12,6 @@ use App\Models\SmsTemplate;
 use App\Models\Notification;
 use App\Models\User;
 use App\Utility\MimoUtility;
-use Twilio\Rest\Client;
 use Carbon\Carbon;
 use AizPackages\ColorCodeConverter\Services\ColorCodeConverter;
 use App\Models\AdditionalMemberInfo;
@@ -40,13 +39,18 @@ if (!function_exists('areActiveRoutes')) {
 if (!function_exists('uploaded_asset')) {
     function uploaded_asset($id)
     {
-        if (is_numeric($id) && ($asset = Upload::find($id)) != null && $asset->file_name && $asset->file_name != '0') {
-            return static_asset($asset->file_name);
+        if ($id === null || $id === '' || $id === 0 || $id === '0') {
+            return null;
         }
-        if ($id != null && !is_numeric($id)) {
-            return static_asset($id);
+        if (is_numeric($id)) {
+            $asset = Upload::find($id);
+            if ($asset && $asset->file_name && $asset->file_name != '0') {
+                return static_asset($asset->file_name);
+            }
+            return null;
         }
-        return static_asset(null);
+        // Non-numeric: treat as direct path
+        return static_asset($id);
     }
 }
 
@@ -97,10 +101,25 @@ if (!function_exists('getFileBaseURL')) {
     }
 }
 
-function translate($key, $lang = null)
+function translate($key, $lang = null, $replace = [])
 {
+    // Support translate('key', ['placeholder' => 'value']) short-hand
+    if (is_array($lang)) {
+        $replace = $lang;
+        $lang = null;
+    }
+
     if ($lang == null) {
         $lang = App::getLocale();
+    }
+
+    if (!is_string($key)) {
+        if (is_scalar($key)) {
+            $key = (string) $key;
+        } else {
+            \Log::warning('translate called with non-string key', ['type' => gettype($key)]);
+            $key = json_encode($key, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '';
+        }
     }
 
     $lang_key = preg_replace('/[^A-Za-z0-9\_]/', '', str_replace(' ', '_', strtolower($key)));
@@ -124,12 +143,21 @@ function translate($key, $lang = null)
 
     //Check for session lang
     if (isset($translation_locale[$lang_key])) {
-        return $translation_locale[$lang_key];
+        $result = $translation_locale[$lang_key];
     } elseif (isset($translations_default[$lang_key])) {
-        return $translations_default[$lang_key];
+        $result = $translations_default[$lang_key];
     } else {
-        return $key;
+        $result = $key;
     }
+
+    // Apply placeholder replacements (:key → value)
+    if (!empty($replace)) {
+        foreach ($replace as $k => $v) {
+            $result = str_replace(':' . $k, (string) $v, $result);
+        }
+    }
+
+    return $result;
 }
 
 if (!function_exists('formatBytes')) {
@@ -231,176 +259,11 @@ if (!function_exists('addon_activation')) {
 if (!function_exists('sendSMS')) {
     function sendSMS($to, $from, $text, $template_id)
     {
-        if (get_setting('nexmo_activation') == 1 || (env('NEXMO_KEY') && env('NEXMO_SECRET'))) {
-            $api_key = env("NEXMO_KEY"); //put ssl provided api_token here
-            $api_secret = env("NEXMO_SECRET"); // put ssl provided sid here
+        \Log::info('SMS delivery skipped because verification is email-only.', [
+            'to' => $to,
+        ]);
 
-            $params = [
-                "api_key" => $api_key,
-                "api_secret" => $api_secret,
-                "from" => env("NEXMO_SENDER_ID"),
-                "text" => $text,
-                "to" => $to
-            ];
-
-            $url = "https://rest.nexmo.com/sms/json";
-            $params = json_encode($params);
-
-            $ch = curl_init(); // Initialize cURL
-            curl_setopt($ch, CURLOPT_URL, $url);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $params);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-                'Content-Type: application/json',
-                'Content-Length: ' . strlen($params),
-                'accept:application/json'
-            ));
-            $response = curl_exec($ch);
-            curl_close($ch);
-
-            return $response;
-        } elseif (get_setting('twillo_activation') == 1 || (env('TWILIO_SID') && env('TWILIO_AUTH_TOKEN'))) {
-            $sid = env("TWILIO_SID"); // Your Account SID from www.twilio.com/console
-            $token = env("TWILIO_AUTH_TOKEN"); // Your Auth Token from www.twilio.com/console
-            $from = env('VALID_TWILLO_NUMBER');
-
-            // Check if all required credentials are available
-            if (!$sid || !$token || !$from) {
-                \Log::error('Twilio SMS failed: Missing required credentials (SID, Token, or From Number)');
-                return false;
-            }
-
-            $client = new Client($sid, $token);
-            try {
-                $message = $client->messages->create(
-                    $to, // Text this number
-                    array(
-                        'from' => $from, // From a valid Twilio number
-                        'body' => $text
-                    )
-                );
-                \Log::info('Twilio SMS sent successfully: ' . $message->sid);
-                return $message->sid;
-            } catch (\Exception $e) {
-                \Log::error('Twilio SMS failed: ' . $e->getMessage());
-                return false;
-            }
-        } elseif (get_setting('ssl_wireless_activation') == 1 || (env('SSL_SMS_API_TOKEN') && env('SSL_SMS_SID'))) {
-            $token = env("SSL_SMS_API_TOKEN"); //put ssl provided api_token here
-            $sid = env("SSL_SMS_SID"); // put ssl provided sid here
-
-            $params = [
-                "api_token" => $token,
-                "sid" => $sid,
-                "msisdn" => $to,
-                "sms" => $text,
-                "csms_id" => date('dmYhhmi') . rand(10000, 99999)
-            ];
-
-            $url = env("SSL_SMS_URL");
-            $params = json_encode($params);
-
-            $ch = curl_init(); // Initialize cURL
-            curl_setopt($ch, CURLOPT_URL, $url);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $params);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-                'Content-Type: application/json',
-                'Content-Length: ' . strlen($params),
-                'accept:application/json'
-            ));
-
-            $response = curl_exec($ch);
-
-            curl_close($ch);
-
-            return $response;
-        } elseif (get_setting('fast2sms_activation') == 1 || env('AUTH_KEY')) {
-
-            if (strpos($to, '+91') !== false) {
-                $to = substr($to, 3);
-            }
-
-            if (env("ROUTE") == 'dlt_manual') {
-                $fields = array(
-                    "sender_id" => env("SENDER_ID"),
-                    "message" => $text,
-                    "template_id" => $template_id,
-                    "entity_id" => env("ENTITY_ID"),
-                    "language" => env("LANGUAGE"),
-                    "route" => env("ROUTE"),
-                    "numbers" => $to,
-                );
-            } else {
-                $fields = array(
-                    "sender_id" => env("SENDER_ID"),
-                    "message" => $text,
-                    "language" => env("LANGUAGE"),
-                    "route" => env("ROUTE"),
-                    "numbers" => $to,
-                );
-            }
-
-
-            $auth_key = env('AUTH_KEY');
-
-            $curl = curl_init();
-
-            curl_setopt_array($curl, array(
-                CURLOPT_URL => "https://www.fast2sms.com/dev/bulkV2",
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_ENCODING => "",
-                CURLOPT_MAXREDIRS => 10,
-                CURLOPT_TIMEOUT => 30,
-                CURLOPT_SSL_VERIFYHOST => 0,
-                CURLOPT_SSL_VERIFYPEER => 0,
-                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-                CURLOPT_CUSTOMREQUEST => "POST",
-                CURLOPT_POSTFIELDS => json_encode($fields),
-                CURLOPT_HTTPHEADER => array(
-                    "authorization: $auth_key",
-                    "accept: */*",
-                    "cache-control: no-cache",
-                    "content-type: application/json"
-                ),
-            ));
-
-            $response = curl_exec($curl);
-            $err = curl_error($curl);
-
-            curl_close($curl);
-
-            return $response;
-        } elseif (get_setting('mimo_activation') == 1) {
-            $token = MimoUtility::getToken();
-
-            MimoUtility::sendMessage($text, $to, $token);
-            MimoUtility::logout($token);
-        } elseif (get_setting('mimsms_activation') == 1) {
-            $url = "https://esms.mimsms.com/smsapi";
-            $data = [
-                "api_key" => env('MIM_API_KEY'),
-                "type" => "text",
-                "contacts" => $to,
-                "senderid" => env('MIM_SENDER_ID'),
-                "msg" => $text,
-            ];
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $url);
-            curl_setopt($ch, CURLOPT_POST, 1);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-            $response = curl_exec($ch);
-            curl_close($ch);
-            return $response;
-        }
+        return false;
     }
 }
 
@@ -438,6 +301,10 @@ if (!function_exists('single_price')) {
 if (!function_exists('log_otp_for_testing')) {
     function log_otp_for_testing($type, $code, $destination, $message = null)
     {
+        if (app()->environment('production')) {
+            return;
+        }
+
         \Log::info('=== ' . strtoupper($type) . ' OTP VERIFICATION ===');
         \Log::info('OTP Code: ' . $code . ' - Destination: ' . $destination);
         \Log::info('Timestamp: ' . now()->format('Y-m-d H:i:s'));
@@ -508,8 +375,7 @@ if (!function_exists('unique_code')) {
 if (!function_exists('unique_notify_id')) {
     function unique_notify_id()
     {
-        $id = (Notification::all()->count() > 0) ? (Notification::latest('id')->first()->id + 1) : 1;
-        return $id;
+        return null;
     }
 }
 
@@ -713,34 +579,35 @@ if (!function_exists('get_max_date')) {
 if (!function_exists('show_profile_picture')) {
     function show_profile_picture($user)
     {
-        $profile_picture_privacy = get_setting('profile_picture_privacy');
-        if (Auth::check()) {
-            $profile_picture_show = true;
-
-            if (Auth::user()->id != $user->id) {
-                if ($user->photo != null && $user->photo_approved == 1) {
-                    if ($profile_picture_privacy == 'only_me') {
-                        $profile_picture_show = false;
-                        $photo_view_request = \App\Models\ViewProfilePicture::where('user_id', $user->id)->where('requested_by', Auth::user()->id)->first();
-                        if ($photo_view_request != null && $photo_view_request->status == 1) {
-                            $profile_picture_show = true;
-                        }
-                    } elseif ($profile_picture_privacy == 'premium_members') {
-                        if (Auth::user()->membership == 1) {
-                            $profile_picture_show = false;
-                        }
-                    }
-                } elseif ($user->photo == null || $user->photo_approved == 0) {
-                    $profile_picture_show = false;
-                }
-            }
-        } else {
-            $profile_picture_show = false;
-            if ($profile_picture_privacy == 'all' && $user->photo != null && $user->photo_approved == 1) {
-                $profile_picture_show = true;
-            }
+        if (!$user || $user->photo == null || (int) $user->photo_approved !== 1) {
+            return false;
         }
-        return $profile_picture_show;
+
+        if (Auth::check() && Auth::user()->id === $user->id) {
+            return true;
+        }
+
+        $visibility = \App\Utility\MemberUtility::resolve_media_visibility($user->id, 'profile');
+        $effectiveLevel = (int) ($visibility['effective_level'] ?? 0);
+
+        if ($effectiveLevel === 0) {
+            return true;
+        }
+
+        if (!Auth::check()) {
+            return false;
+        }
+
+        if ($effectiveLevel === 1) {
+            return (int) (Auth::user()->membership ?? 0) === 2;
+        }
+
+        if ($effectiveLevel === 2) {
+            return true;
+        }
+
+        $photo_request = \App\Utility\MemberUtility::member_profile_photo_request_info($user->id);
+        return ($photo_request['profile_photo_request_state'] ?? 'none') === 'approved';
     }
 }
 
@@ -748,8 +615,8 @@ if (!function_exists('show_profile_picture')) {
 if (!function_exists('upload_api_file')) {
     function upload_api_file($image)
     {
-        $extension = $image->getClientOriginalExtension();
-        $allowed_extensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+        $extension = strtolower((string) $image->getClientOriginalExtension());
+        $convertible_extensions = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif'];
 
         $filename = time() . '_' . uniqid();
         $destinationPath = public_path('uploads/all');
@@ -758,30 +625,48 @@ if (!function_exists('upload_api_file')) {
             mkdir($destinationPath, 0777, true);
         }
 
-        if (in_array(strtolower($extension), $allowed_extensions)) {
-            // Optimize image
-            $img = Image::make($image->path());
+        if (in_array($extension, $convertible_extensions, true)) {
+            try {
+                // Optimize image
+                $img = Image::make($image->path());
 
-            // Resize if too large
-            if ($img->width() > 1200 || $img->height() > 1200) {
-                $img->resize(1200, 1200, function ($constraint) {
-                    $constraint->aspectRatio();
-                    $constraint->upsize();
-                });
+                // Resize if too large
+                if ($img->width() > 1200 || $img->height() > 1200) {
+                    $img->resize(1200, 1200, function ($constraint) {
+                        $constraint->aspectRatio();
+                        $constraint->upsize();
+                    });
+                }
+
+                // Convert to webp for better compression
+                $filename .= '.webp';
+                $path = 'uploads/all/' . $filename;
+                $fullPath = $destinationPath . '/' . $filename;
+
+                $img->encode('webp', 80)->save($fullPath);
+                $extension = 'webp';
+            } catch (\Throwable $e) {
+                // Fallback to original file when optimization/conversion fails.
+                \Log::warning('Image optimization failed; storing original file', [
+                    'user_id' => auth()->id(),
+                    'original_name' => $image->getClientOriginalName(),
+                    'extension' => $extension,
+                    'error' => $e->getMessage(),
+                ]);
+
+                $safeExtension = $extension !== '' ? $extension : 'bin';
+                $filename .= '.' . $safeExtension;
+                $path = 'uploads/all/' . $filename;
+                $image->move($destinationPath, $filename);
+                $extension = $safeExtension;
             }
-
-            // Convert to webp for better compression
-            $filename .= '.webp';
-            $path = 'uploads/all/' . $filename;
-            $fullPath = $destinationPath . '/' . $filename;
-
-            $img->encode('webp', 80)->save($fullPath);
-            $extension = 'webp';
         } else {
             // Non-image or non-optimizable file
-            $filename .= '.' . $extension;
+            $safeExtension = $extension !== '' ? $extension : 'bin';
+            $filename .= '.' . $safeExtension;
             $path = 'uploads/all/' . $filename;
             $image->move($destinationPath, $filename);
+            $extension = $safeExtension;
         }
 
         $upload = new App\Models\Upload();

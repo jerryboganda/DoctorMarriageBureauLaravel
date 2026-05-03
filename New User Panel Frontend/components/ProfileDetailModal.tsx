@@ -3,13 +3,16 @@ import {
   X, MapPin, Briefcase, GraduationCap, Heart, Calendar, Users, Globe, BookOpen, Star,
   Zap, CheckCircle2, AlertTriangle, ArrowLeftRight, BrainCircuit, UserCheck, Loader2,
   Send, Lock, FileText, ChevronRight, Eye, Phone, Mail, Ruler, Moon, Home, MessageSquare, Clock,
-  Mic, Play, Pause, Volume2,
+  Mic, Play, Pause, Volume2, Image as ImageIcon, EyeOff, Flag, Trash2,
 } from 'lucide-react';
 import { ProfileMatch, MatchIntelligence } from '../types';
 import { api } from '../utils/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { BTN_TAP } from '../utils/motion';
+import { resolveInterestState } from '../utils/interestStatus';
+import { useAuthStore } from '../src/stores/authStore';
+import ReportModal from './ReportModal';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://api.doctormarriagebureau.com.pk';
 const DEFAULT_AVATAR = `${API_BASE}/assets/img/avatar-place.png`;
@@ -19,6 +22,7 @@ interface ProfileDetailModalProps {
   profile: ProfileMatch;
   onClose: () => void;
   onSendProposal: (profile: ProfileMatch) => void;
+  onRequestMediaAccess?: (profile: ProfileMatch, kind?: 'photo' | 'gallery') => void;
   onNavigate?: (view: string) => void;
 }
 
@@ -35,8 +39,9 @@ function hasAnyValue(obj: any, keys: string[]): boolean {
   });
 }
 
-const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({ profile, onClose, onSendProposal, onNavigate }) => {
+const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({ profile, onClose, onSendProposal, onRequestMediaAccess, onNavigate }) => {
   const { t } = useTranslation();
+  const currentUserId = useAuthStore((state) => state.user?.id);
   const [activeTab, setActiveTab] = useState<'about' | 'compatibility'>('about');
   const [profileData, setProfileData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -46,20 +51,19 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({ profile, onClos
   const [intelLoading, setIntelLoading] = useState(false);
   const [intelError, setIntelError] = useState<string | null>(null);
   const [showFriction, setShowFriction] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [hiding, setHiding] = useState(false);
+  const [removingFromShortlist, setRemovingFromShortlist] = useState(false);
 
   // interest_status from API: 1 = no interest, 0 = I sent interest, 'do_response' = they sent to me
   // interest_text tells us if it was accepted or pending
   const [interestState, setInterestState] = useState<'none' | 'sent_pending' | 'sent_accepted' | 'received_pending' | 'received_accepted'>(() => {
-    const status = profile.interestStatus;
-    const text = profile.interestText || '';
-    if (status === 0 || status === '0') {
-      return text.toLowerCase().includes('accepted') ? 'sent_accepted' : 'sent_pending';
-    }
-    if (status === 'do_response') {
-      return text.toLowerCase().includes('accepted') ? 'received_accepted' : 'received_pending';
-    }
-    return 'none';
+    return resolveInterestState(profile.interestStatus, profile.interestText);
   });
+
+  useEffect(() => {
+    setInterestState(resolveInterestState(profile.interestStatus, profile.interestText));
+  }, [profile.id, profile.interestStatus, profile.interestText]);
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -69,16 +73,18 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({ profile, onClos
   }, []);
 
   useEffect(() => {
+    const controller = new AbortController();
+    let isActive = true;
     const fetchProfile = async () => {
       try {
         setLoading(true);
         const [profileRes, memberInfoRes] = await Promise.all([
-          api.get(`/member/public-profile/${profile.id}`),
-          api.get(`/member/member-info/${profile.id}`).catch(() => null),
+          api.get(`/member/public-profile/${profile.id}`, { signal: controller.signal }),
+          api.get(`/member/member-info/${profile.id}`, { signal: controller.signal }).catch(() => null),
         ]);
+        if (!isActive) return;
         if (profileRes.data.result) {
           const data = profileRes.data.data;
-          console.log('Profile data received:', { id: profile.id, voice_intro_url: data?.voice_intro_url, has_voice: !!data?.voice_intro_url });
           setProfileData(data);
         } else {
           setError('Could not load profile.');
@@ -86,32 +92,21 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({ profile, onClos
         // Update interest state from fresh member_info data
         if (memberInfoRes?.data?.data) {
           const info = memberInfoRes.data.data;
-          const status = info.interest_status;
-          const text = (info.interest_text || '').toLowerCase();
-          // member_info returns: 'mutual', 'sent interest', 'received interest', 'no interest'
-          // ActiveUserResource returns: 0 (sent), 1 (none), 'do_response' (received) + interest_text with 'accepted'
-          if (status === 'mutual') {
-            setInterestState('sent_accepted');
-          } else if (status === 'sent interest') {
-            setInterestState(text.includes('accepted') ? 'sent_accepted' : 'sent_pending');
-          } else if (status === 'received interest') {
-            setInterestState(text.includes('accepted') ? 'received_accepted' : 'received_pending');
-          } else if (status === 0 || status === '0') {
-            setInterestState(text.includes('accepted') ? 'sent_accepted' : 'sent_pending');
-          } else if (status === 'do_response') {
-            setInterestState(text.includes('accepted') ? 'received_accepted' : 'received_pending');
-          } else {
-            setInterestState('none');
-          }
+          setInterestState(resolveInterestState(info.interest_status, info.interest_text));
         }
       } catch (err: any) {
+        if (err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') return;
         console.error('Failed to fetch profile', err);
         setError('Failed to load profile details.');
       } finally {
-        setLoading(false);
+        if (isActive) setLoading(false);
       }
     };
     fetchProfile();
+    return () => {
+      isActive = false;
+      controller.abort();
+    };
   }, [profile.id]);
 
   useEffect(() => {
@@ -141,6 +136,34 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({ profile, onClos
     onSendProposal(profile);
   };
 
+  const handleHideFromDiscovery = async () => {
+    if (!isLiveProfile || !displayProfile.id || hiding) return;
+    try {
+      setHiding(true);
+      await api.post('/member/add-to-ignore-list', { user_id: displayProfile.id });
+      onClose();
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to hide user from discovery', error);
+    } finally {
+      setHiding(false);
+    }
+  };
+
+  const handleRemoveFromShortlist = async () => {
+    if (!isLiveProfile || !displayProfile.id || removingFromShortlist) return;
+    try {
+      setRemovingFromShortlist(true);
+      await api.post('/member/remove-from-shortlist', { user_id: displayProfile.id });
+      onClose();
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to remove user from shortlist', error);
+    } finally {
+      setRemovingFromShortlist(false);
+    }
+  };
+
   const basicInfo = profileData?.basic_info;
   const introduction = profileData?.intoduction?.introduction;
   const education = profileData?.education;
@@ -154,18 +177,143 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({ profile, onClos
   const hobbies = profileData?.hobbies_interest;
   const gallery = profileData?.photo_gallery;
   const screenshotDeterrence = profileData?.screenshot_deterrence;
+  const galleryRequestState = `${profile.galleryImageRequestState ?? profileData?.gallery_image_request_state ?? 'none'}` as 'none' | 'pending' | 'approved';
+  const galleryRequestAccessible = Boolean(profile.galleryImageAccessible ?? profileData?.gallery_image_accessible);
+  const profilePhotoBlur = Boolean(
+    profile.profilePhotoBlur ??
+    profileData?.profile_photo_blur ??
+    basicInfo?.profile_photo_blur
+  );
+  const isOwnProfile = String(currentUserId ?? '') === String(profile.id ?? basicInfo?.id ?? '');
 
   const displayName = basicInfo ? `${basicInfo.firs_name || ''} ${basicInfo.last_name || ''}`.trim() : profile.name;
   const photoUrl = basicInfo?.photo || profile.avatarUrl || DEFAULT_AVATAR;
+  const shouldBlurPhoto = Boolean(
+    profilePhotoBlur &&
+    currentUserId != null &&
+    !isOwnProfile &&
+    photoUrl !== DEFAULT_AVATAR &&
+    photoUrl !== DEFAULT_FEMALE_AVATAR
+  );
+
+  const primaryProfession = useMemo(() => {
+    const values: string[] = [];
+    const append = (value: unknown) => {
+      if (typeof value === 'number') {
+        values.push(String(value));
+        return;
+      }
+      if (typeof value !== 'string') return;
+      const normalized = value.trim();
+      if (normalized) values.push(normalized);
+    };
+
+    const profileAny = profile as any;
+
+    const collectCareerItem = (item: any) => {
+      if (!item) return;
+      if (typeof item === 'string') {
+        append(item);
+        return;
+      }
+      append(item?.designation);
+      append(item?.position);
+      append(item?.occupation);
+      append(item?.profession);
+      append(item?.job_title);
+      append(item?.title);
+      append(item?.career);
+      append(item?.company);
+      append(item?.institution);
+    };
+
+    if (Array.isArray(career)) {
+      career.forEach(collectCareerItem);
+    } else {
+      collectCareerItem(career);
+    }
+
+    if (Array.isArray(profileAny?.careers)) {
+      profileAny.careers.forEach(collectCareerItem);
+    }
+
+    collectCareerItem(profileAny?.career);
+
+    append(profileAny?.profession);
+    append(profileAny?.occupation);
+    append(profileAny?.job_title);
+    append(profile.specialty);
+
+    return values[0] || 'Not shared';
+  }, [career, profile]);
+
+  const primaryEducation = useMemo(() => {
+    const values: string[] = [];
+    const append = (value: unknown) => {
+      if (typeof value === 'number') {
+        values.push(String(value));
+        return;
+      }
+      if (typeof value !== 'string') return;
+      const normalized = value.trim();
+      if (normalized) values.push(normalized);
+    };
+
+    const profileAny = profile as any;
+
+    const collectEducationItem = (item: any) => {
+      if (!item) return;
+      if (typeof item === 'string') {
+        append(item);
+        return;
+      }
+      append(item?.degree);
+      append(item?.education);
+      append(item?.qualification);
+      append(item?.title);
+      append(item?.field_of_study);
+      append(item?.institution);
+      append(item?.school);
+    };
+
+    if (Array.isArray(education)) {
+      education.forEach(collectEducationItem);
+    } else {
+      collectEducationItem(education);
+    }
+
+    if (Array.isArray(profileAny?.educations)) {
+      profileAny.educations.forEach(collectEducationItem);
+    }
+
+    collectEducationItem(profileAny?.education);
+
+    append(profileAny?.highest_education);
+    append(profileAny?.qualification);
+
+    return values[0] || 'Not shared';
+  }, [education, profile]);
 
   const quickInfo = useMemo(() => {
-    const items: { icon: React.ReactNode; text: string }[] = [];
-    if (basicInfo?.age) items.push({ icon: <Calendar size={12} />, text: `${basicInfo.age} yrs` });
+    const items: { icon: React.ReactNode; text: string; wrap?: boolean }[] = [];
+    if (Number(basicInfo?.age) > 0) items.push({ icon: <Calendar size={12} />, text: `${basicInfo.age} yrs` });
     if (basicInfo?.religion) items.push({ icon: <Moon size={12} />, text: basicInfo.religion });
     if (basicInfo?.maritial_status) items.push({ icon: <Heart size={12} />, text: basicInfo.maritial_status });
     if (profile.location) items.push({ icon: <MapPin size={12} />, text: profile.location });
+
+    const professionText = primaryProfession.trim();
+    const educationText = primaryEducation.trim();
+
+    if (professionText && professionText !== 'Not shared') {
+      items.push({ icon: <Briefcase size={12} />, text: `Profession: ${professionText}`, wrap: true });
+    }
+
+    if (educationText && educationText !== 'Not shared') {
+      items.push({ icon: <GraduationCap size={12} />, text: `Education: ${educationText}`, wrap: true });
+    }
+
     return items;
-  }, [basicInfo, profile.location]);
+  }, [basicInfo, profile.location, primaryProfession, primaryEducation]);
 
   const visibleGallery = useMemo(() => {
     if (!gallery || !Array.isArray(gallery)) return [];
@@ -181,6 +329,12 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({ profile, onClos
     if (!gallery || !Array.isArray(gallery)) return 0;
     return gallery.filter((img: any) => !img.image && !img.thumbnail).length;
   }, [gallery]);
+  const hasLockedGallery = blurredGallery.length > 0 || lockedCount > 0;
+  const galleryAccessLabel = galleryRequestAccessible || galleryRequestState === 'approved'
+    ? t('discovery.manageMediaAccess')
+    : galleryRequestState === 'pending'
+      ? t('discovery.galleryAccessRequested')
+      : t('profile.galleryAccess');
 
   return (
     <div
@@ -220,19 +374,24 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({ profile, onClos
               <img
                 src={photoUrl}
                 alt={displayName}
-                className="w-full h-full object-cover"
+                className={`w-full h-full object-cover transition duration-300 ${shouldBlurPhoto ? 'scale-110 blur-2xl' : ''}`}
                 onError={(e) => { (e.target as HTMLImageElement).src = DEFAULT_AVATAR; }}
               />
             </div>
             <div className="flex-1 min-w-0 pt-12 pb-0.5">
               <h2 className="text-base sm:text-lg font-bold text-slate-900 leading-snug truncate">{displayName}</h2>
-              <div className="flex items-center gap-x-2.5 gap-y-0.5 mt-0.5 flex-wrap">
-                {quickInfo.map((item, i) => (
-                  <span key={i} className="inline-flex items-center gap-1 text-[11px] text-slate-500 whitespace-nowrap">
-                    {item.icon}
-                    {item.text}
-                  </span>
-                ))}
+              <div className="mt-0.5">
+                <div className="flex items-center gap-x-2.5 gap-y-0.5 flex-wrap">
+                  {quickInfo.map((item, i) => (
+                    <span
+                      key={i}
+                      className={`inline-flex items-center gap-1 text-[11px] text-slate-500 ${item.wrap ? 'max-w-full sm:max-w-[320px]' : 'whitespace-nowrap'}`}
+                    >
+                      {item.icon}
+                      <span className={item.wrap ? 'truncate' : ''}>{item.text}</span>
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -274,8 +433,43 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({ profile, onClos
             )}
           </div>
 
+          {!isOwnProfile && (
+            <div className='px-4 sm:px-5 pb-3'>
+              <div className='rounded-xl border border-slate-200 bg-slate-50 p-3'>
+                <div className='mb-2'>
+                  <span className='text-[11px] font-bold uppercase tracking-wide text-slate-400'>{t('profile.safetyActions')}</span>
+                </div>
+                <div className='grid grid-cols-1 sm:grid-cols-3 gap-2'>
+                  <button
+                    onClick={handleHideFromDiscovery}
+                    disabled={hiding || removingFromShortlist}
+                    className='w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-slate-700 hover:bg-slate-100 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed'
+                  >
+                    <EyeOff size={14} className='text-slate-500' />
+                    {hiding ? t('profile.blocking') : t('profile.hideFromDiscovery')}
+                  </button>
+                  <button
+                    onClick={handleRemoveFromShortlist}
+                    disabled={hiding || removingFromShortlist}
+                    className='w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-slate-700 hover:bg-slate-100 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed'
+                  >
+                    <Trash2 size={14} className='text-slate-500' />
+                    {removingFromShortlist ? t('profile.removingFromShortlist') : t('profile.removeFromShortlist')}
+                  </button>
+                  <button
+                    onClick={() => setShowReportModal(true)}
+                    className='w-full rounded-xl border border-red-200 bg-red-50 px-3 py-3 text-sm font-bold text-red-700 hover:bg-red-100 flex items-center justify-center gap-2'
+                  >
+                    <Flag size={14} />
+                    {t('profile.reportProfile')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Tab bar */}
-          <div className="px-4 sm:px-5 border-b border-slate-200 flex bg-white">
+          <div className="px-4 sm:px-5 border-b border-slate-200 flex items-stretch gap-2 bg-white overflow-x-auto scrollbar-hide">
             <button
               onClick={() => setActiveTab('about')}
               className={`flex-1 sm:flex-none sm:px-5 py-2.5 text-xs sm:text-sm font-bold border-b-2 transition-colors text-center ${
@@ -297,6 +491,16 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({ profile, onClos
               <BrainCircuit size={13} />
               {t('profile.compatibility')}
             </button>
+            {onRequestMediaAccess && (
+              <button
+                onClick={() => onRequestMediaAccess(profile, 'gallery')}
+                className="flex-1 sm:flex-none sm:px-5 py-2.5 text-xs sm:text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap"
+                title={galleryAccessLabel}
+              >
+                <ImageIcon size={13} />
+                {galleryAccessLabel}
+              </button>
+            )}
           </div>
         </div>
 
@@ -341,7 +545,7 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({ profile, onClos
                 <Section title={t('profile.basicInformation')} icon={<Users size={15} />}>
                   <InfoGrid>
                     <InfoItem label="Gender" value={basicInfo.gender} />
-                    <InfoItem label="Age" value={basicInfo.age ? `${basicInfo.age} years` : null} />
+                     <InfoItem label="Age" value={Number(basicInfo.age) > 0 ? `${basicInfo.age} years` : null} />
                     <InfoItem label="Religion" value={basicInfo.religion} />
                     <InfoItem label="Caste" value={basicInfo.caste} />
                     <InfoItem label="Marital Status" value={basicInfo.maritial_status} />
@@ -546,6 +750,18 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({ profile, onClos
                       <span>{lockedCount} {t('profile.photosLocked', { count: lockedCount })}</span>
                     </div>
                   )}
+                  {onRequestMediaAccess && hasLockedGallery && (
+                    <button
+                      onClick={() => onRequestMediaAccess(profile, 'gallery')}
+                      className="mt-3 w-full sm:w-auto sm:px-4 py-2 rounded-xl border border-primary/15 bg-primary/5 text-primary font-bold text-sm hover:bg-primary/10 transition-colors"
+                    >
+                      {galleryRequestAccessible
+                        ? t('discovery.manageMediaAccess')
+                        : galleryRequestState === 'pending'
+                          ? t('discovery.galleryAccessRequested')
+                          : t('discovery.requestMediaAccess')}
+                    </button>
+                  )}
                 </Section>
               )}
 
@@ -556,6 +772,18 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({ profile, onClos
                     <Lock size={14} />
                     <span>{lockedCount} {t('profile.photosLocked', { count: lockedCount })}</span>
                   </div>
+                  {onRequestMediaAccess && (
+                    <button
+                      onClick={() => onRequestMediaAccess(profile, 'gallery')}
+                      className="mt-3 w-full sm:w-auto sm:px-4 py-2 rounded-xl border border-primary/15 bg-primary/5 text-primary font-bold text-sm hover:bg-primary/10 transition-colors"
+                    >
+                      {galleryRequestAccessible
+                        ? t('discovery.manageMediaAccess')
+                        : galleryRequestState === 'pending'
+                          ? t('discovery.galleryAccessRequested')
+                          : t('discovery.requestMediaAccess')}
+                    </button>
+                  )}
                 </Section>
               )}
             </div>
@@ -692,6 +920,14 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({ profile, onClos
           )}
         </div>
       </div>
+      {!isOwnProfile && showReportModal && (
+        <ReportModal
+          onClose={() => setShowReportModal(false)}
+          userName={displayName}
+          userId={profile.id}
+          defaultBlockUser={false}
+        />
+      )}
     </div>
   );
 };

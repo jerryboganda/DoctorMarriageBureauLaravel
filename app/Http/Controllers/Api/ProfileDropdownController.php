@@ -11,6 +11,7 @@ use App\Http\Resources\Profile\LanguageResource;
 use App\Http\Resources\Profile\MaritialStatusResource;
 use App\Http\Resources\Profile\OnBehalfResource;
 use App\Http\Resources\Profile\ReligionResource;
+use App\Http\Resources\Profile\SectResource;
 use App\Http\Resources\Profile\StateResource;
 use App\Http\Resources\Profile\SubCasteResource;
 use App\Models\Caste;
@@ -22,6 +23,7 @@ use App\Models\MaritalStatus;
 use App\Models\MemberLanguage;
 use App\Models\OnBehalf;
 use App\Models\Religion;
+use App\Models\Sect;
 use App\Models\State;
 use App\Models\SubCaste;
 use Illuminate\Http\Request;
@@ -60,8 +62,15 @@ class ProfileDropdownController extends Controller
     public function religion_list(){
         return ReligionResource::collection(Religion::all());
     }
-    public function caste_list($id){
-        return CasteResource::collection(Caste::where('religion_id',$id)->get());
+    public function sect_list(){
+        return SectResource::collection(Sect::orderBy('name')->get());
+    }
+    public function caste_list($id = null){
+        $query = Caste::query();
+        if ($id !== null && $id !== '') {
+            $query->where('religion_id', $id);
+        }
+        return CasteResource::collection($query->orderBy('name')->get());
     }
     public function sub_caste_list($id){
         return SubCasteResource::collection(SubCaste::where('caste_id',$id)->get());

@@ -27,6 +27,9 @@ i18n
       ur: { translation: ur },
     },
     fallbackLng: 'en',
+    debug: false,
+    saveMissing: false,
+    updateMissing: false,
     supportedLngs: ['en', 'ur'],
     interpolation: {
       escapeValue: false, // React already escapes

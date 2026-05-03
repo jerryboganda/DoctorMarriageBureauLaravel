@@ -12,8 +12,8 @@ class UserService
         $collection = collect($data);
         $password = Hash::make($data['password']);
         $code = unique_code();
-        $approved = 1; // Auto-approve all users since email and phone verification is completed
-        $verification_code = rand(100000, 999999);
+        $approved = 0;
+        $verification_code = random_int(100000, 999999);
         $referred_by = null;
 
         $membership = 1; // Default membership
@@ -21,14 +21,9 @@ class UserService
         
         $data = $collection->merge(compact('password', 'code', 'approved', 'verification_code', 'membership', 'user_type'))->toArray();
 
-        if (addon_activation('referral_system')) {
-
-            $reffered_user = User::where('code', '!=', null)->where('code', $data['referral_code'])->first();
-            if ($reffered_user) {
-                $referred_by['referred_by'] = $reffered_user->id;
-                $data = array_merge($data, $referred_by);
-            }
-        }
+        // Remove referral_code from data before creating user - it's not a column in users table
+        // Referral processing is handled by AuthController via ReferralService
+        unset($data['referral_code']);
 
         return User::create($data);
     }

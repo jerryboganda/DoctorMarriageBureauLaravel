@@ -9,6 +9,7 @@ use App\Models\SupportTicket;
 use App\Models\SupportTicketReply;
 use App\Models\SupportCategory;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class SupportTicketController extends Controller
 {
@@ -37,7 +38,7 @@ class SupportTicketController extends Controller
                 ]);
             }
         }
-        return $this->failure_message('You are not authorized to access!!');
+        return response()->json(['result' => false, 'message' => translate('You are not authorized to access!!')], 403);
     }
 
     /**
@@ -75,7 +76,7 @@ class SupportTicketController extends Controller
             $submit_id = $support_ticket->ticket_id;
             return $this->response_data($submit_id);
         }
-        return $this->failure_message('You are not authorized to access!!');
+        return response()->json(['result' => false, 'message' => translate('You are not authorized to access!!')], 403);
     }
 
     /**
@@ -99,7 +100,7 @@ class SupportTicketController extends Controller
             }
             return new SupportTicketResource($support_ticket);
         }
-        return $this->failure_message('You are not authorized to access!!');
+        return response()->json(['result' => false, 'message' => translate('You are not authorized to access!!')], 403);
     }
 
     /**
@@ -148,7 +149,7 @@ class SupportTicketController extends Controller
                 return $this->failure_message('Sorry! Something went wrong.');
             }
         }
-        return $this->failure_message('You are not authorized to access!!');
+        return response()->json(['result' => false, 'message' => translate('You are not authorized to access!!')], 403);
     }
 
     /**
@@ -162,8 +163,14 @@ class SupportTicketController extends Controller
         //
     }
 
-    public function support_ticket_categories(){
-        $support_categories = SupportCategory::orderBy('created_at','desc')->paginate(10);
+    public function support_ticket_categories()
+    {
+        if (! Schema::hasTable('support_categories')) {
+            return SupportTicketCategoryResource::collection(collect());
+        }
+
+        $support_categories = SupportCategory::orderBy('created_at', 'desc')->paginate(10);
+
         return SupportTicketCategoryResource::collection($support_categories);
     }
 }

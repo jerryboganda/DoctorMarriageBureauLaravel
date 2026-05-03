@@ -48,6 +48,7 @@ use Hash;
 use Validator;
 use Redirect;
 use Auth;
+use Illuminate\Support\Facades\Log;
 use App\Utility\EmailUtility;
 use App\Utility\SmsUtility;
 use MehediIitdu\CoreComponentRepository\CoreComponentRepository;
@@ -68,6 +69,12 @@ class MemberController extends Controller
         $this->middleware(['permission:show_unapproved_profile_picrures'])->only('unapproved_profile_pictures');
         $this->middleware(['permission:approve_profile_picrures'])->only('approve_profile_image');
         $this->middleware(['permission:approve_member'])->only('show_verification_info');
+        $this->middleware(['permission:edit_member'])->only([
+            'basic_info_update',
+            'introduction_update',
+            'language_info_update',
+            'setMemberPassword',
+        ]);
         
 
         $this->rules = [
@@ -114,18 +121,13 @@ class MemberController extends Controller
         $members = User::latest()->where('user_type', 'member')->where('membership', $id);
 
         if ($request->has('search')) {
-            $sort_search = $request->search;
-            $members = $members->where(function ($q) use ($sort_search) {
-                $q->where('code', $sort_search)
-                    ->orWhere('first_name', 'like', '%' . $sort_search . '%')
-                    ->orWhere('last_name', 'like', '%' . $sort_search . '%')
-                    ->orWhere('phone', 'like', '%' . $sort_search . '%')
-                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) like ?", ["%{$sort_search}%"]);
-            });
+            $sort_search = trim((string) $request->search);
+            $this->applyMemberSearch($members, $sort_search);
         }
 
 
         $members = $members->paginate(10);
+        $this->appendWhatsappMetadataToMembers($members, 'general');
         return view('admin.members.index', compact('members', 'sort_search'));
     }
 
@@ -162,11 +164,11 @@ class MemberController extends Controller
         }
 
         if (filter_var($request->email, FILTER_VALIDATE_EMAIL)) {
-            if (User::where('email', $request->email)->first() != null) {
+            if (User::where('email', $request->email)->whereNull('deleted_at')->first() != null) {
                 flash(translate('Email or Phone already exists.'))->error();
                 return back();
             }
-        } elseif (User::where('phone', '+' . $request->country_code . $request->phone)->first() != null) {
+        } elseif (User::where('phone', '+' . $request->country_code . $request->phone)->whereNull('deleted_at')->first() != null) {
             flash(translate('Phone already exists.'))->error();
             return back();
         }
@@ -414,6 +416,45 @@ class MemberController extends Controller
         return back();
     }
 
+    public function setMemberPassword(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'new_password' => [
+                'required',
+                'string',
+                'min:8',
+                'confirmed',
+            ],
+        ], [
+            'new_password.required' => translate('Password is required'),
+            'new_password.min' => translate('Minimum 8 characters'),
+            'new_password.confirmed' => translate('Password confirmation does not match'),
+        ]);
+
+        if ($validator->fails()) {
+            flash($validator->errors()->first() ?: translate('Please fix validation errors.'))->error();
+            return Redirect::back()->withErrors($validator)->withInput();
+        }
+
+        $member = User::findOrFail($id);
+        $member->password = Hash::make($request->new_password);
+        $member->must_change_password = 1;
+        $member->save();
+
+        // Force fresh login with the admin-set temporary password.
+        $member->tokens()->delete();
+
+        Log::info('Admin set member password', [
+            'action' => 'admin_set_member_password',
+            'admin_user_id' => auth()->id(),
+            'target_user_id' => $member->id,
+            'ip' => request()->ip(),
+        ]);
+
+        flash(translate('Member password has been set. User must change it on next login.'))->success();
+        return Redirect::back();
+    }
+
     public function show_verification_info ($id)
     {
         $user = User::findOrFail(decrypt($id));
@@ -425,6 +466,12 @@ class MemberController extends Controller
         $user             = User::findOrFail($id);
         $user->approved   = 1;
         if ($user->save()) {
+
+            try {
+                (new \App\Services\ReferralService())->checkAndQualifyReferral($user->id);
+            } catch (\Exception $e) {
+                \Log::error('Referral qualification check failed after verification approval: ' . $e->getMessage(), ['user_id' => $user->id]);
+            }
 
             $status = 'Approved';
             
@@ -468,11 +515,8 @@ class MemberController extends Controller
         $deleted_members    = User::onlyTrashed();
        
         if ($request->has('search')) {
-            $sort_search  = $request->search;
-            $deleted_members  = $deleted_members->where(function ($query) use ($sort_search){
-                $query->where('code', $sort_search)
-                    ->orwhere('first_name', 'like', '%' . $sort_search . '%')->orWhere('last_name', 'like', '%' . $sort_search . '%');
-            });
+            $sort_search  = trim((string) $request->search);
+            $this->applyMemberSearch($deleted_members, $sort_search);
         }
         $deleted_members = $deleted_members->paginate(10);
         return view('admin.members.deleted_members', compact('deleted_members', 'sort_search'));
@@ -711,6 +755,11 @@ class MemberController extends Controller
         $user->deactivated = $user->deactivated ? 0 : 1;
         $user->save();
 
+        // If deactivated, revoke all API tokens so they are immediately logged out
+        if ($user->deactivated == 1) {
+            $user->tokens()->delete();
+        }
+
         $status = $user->deactivated ? translate('deactivated') : translate('activated');
         flash(translate('Member has been ') . $status . ' ' . translate('successfully!'))->success();
         return back();
@@ -763,16 +812,12 @@ class MemberController extends Controller
         }
 
         if ($sort_search) {
-            $members = $members->where(function ($q) use ($sort_search) {
-                $q->where('code', $sort_search)
-                    ->orWhere('first_name', 'like', '%' . $sort_search . '%')
-                    ->orWhere('last_name', 'like', '%' . $sort_search . '%')
-                    ->orWhere('phone', 'like', '%' . $sort_search . '%')
-                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) like ?", ["%{$sort_search}%"]);
-            });
+            $sort_search = trim((string) $sort_search);
+            $this->applyMemberSearch($members, $sort_search);
         }
 
         $members = $members->latest()->paginate(15);
+        $this->appendWhatsappMetadataToMembers($members, 'verification');
         return view('admin.members.verification_requests', compact('members', 'sort_search', 'filter_status'));
     }
 
@@ -824,7 +869,9 @@ class MemberController extends Controller
 
         if (Hash::check($request->old_password, $user->password)) {
             $user->password = Hash::make($request->password);
+            $user->must_change_password = 0;
             $user->save();
+            $user->tokens()->delete();
             flash(translate('Passwoed Updated successfully.'))->success();
             return redirect()->route('member.change_password');
         } else {
@@ -899,21 +946,276 @@ class MemberController extends Controller
 
        // Apply search filter
         if ($request->has('search')) {
-            $sort_search = $request->search;
-
-            $query->where(function ($q) use ($sort_search) {
-                $q->where('code', $sort_search)
-                ->orWhere('first_name', 'like', '%' . $sort_search . '%')
-                ->orWhere('last_name', 'like', '%' . $sort_search . '%')
-                ->orWhere('phone', 'like', '%' . $sort_search . '%')
-                ->orWhereRaw("CONCAT(first_name, ' ', last_name) like ?", ["%{$sort_search}%"]);
-            });
+            $sort_search = trim((string) $request->search);
+            $this->applyMemberSearch($query, $sort_search);
         }
 
 
     // Finally paginate
     $members = $query->paginate(10);
+    $this->appendWhatsappMetadataToMembers($members, 'general');
 
         return view('admin.members.member_types', compact('members', 'sort_search', 'type'));
+    }
+
+    /**
+     * Send notification to a specific member via selected channels (email, sms, whatsapp, push).
+     * Returns JSON so the frontend can handle WhatsApp link opening without popup-blocker issues.
+     */
+    public function sendNotification(Request $request)
+    {
+        $request->validate([
+            'member_id' => 'required|integer|exists:users,id',
+            'title'     => 'required|string|max:255',
+            'body'      => 'required|string|max:5000',
+            'channels'  => 'required|array|min:1',
+            'channels.*'=> 'in:email,sms,whatsapp,push',
+        ]);
+
+        $user = User::findOrFail($request->member_id);
+        $title   = $request->title;
+        $body    = $request->body;
+        $channels = $request->channels;
+        $results = [];
+        $whatsappLink = null;
+
+        // --- EMAIL ---
+        if (in_array('email', $channels)) {
+            if (!empty($user->email)) {
+                try {
+                    \Mail::send('emails.index', ['email_body' => $body], function ($message) use ($user, $title) {
+                        $message->to($user->email, $user->first_name . ' ' . $user->last_name)
+                                ->subject($title)
+                                ->from(\App\Utility\EmailUtility::fromAddress(), \App\Utility\EmailUtility::fromName());
+                    });
+                    $results['email'] = 'sent';
+                } catch (\Throwable $e) {
+                    Log::error('Admin notification email failed: ' . $e->getMessage());
+                    $results['email'] = 'failed';
+                }
+            } else {
+                $results['email'] = 'skipped: no email address';
+            }
+        }
+
+        // --- SMS ---
+        if (in_array('sms', $channels)) {
+            $results['sms'] = 'disabled: SMS sending is email-only';
+        }
+
+        // --- WHATSAPP ---
+        if (in_array('whatsapp', $channels)) {
+            $waDigits = $this->normalizeWhatsappPhone($user->phone);
+            if ($waDigits) {
+                $waMessage = "*{$title}*\n\n{$body}";
+                $whatsappLink = 'https://web.whatsapp.com/send?phone=' . $waDigits . '&text=' . urlencode($waMessage);
+                $results['whatsapp'] = 'link_generated';
+            } else {
+                $results['whatsapp'] = 'skipped: invalid or missing phone number';
+            }
+        }
+
+        // --- PUSH NOTIFICATION (via Soketi WebSocket + Database) ---
+        if (in_array('push', $channels)) {
+            try {
+                // 1. Store in database notifications table so it appears in user's notification list
+                $notifyId = null;
+                \Illuminate\Support\Facades\Notification::send($user, new \App\Notifications\DbStoreNotification(
+                    'admin_notification',
+                    $notifyId,
+                    $user->id,       // notify_by = target user (so their photo shows in notification list)
+                    auth()->id(),    // info_id  = admin who sent it
+                    $body,
+                    'notifications',
+                    $title           // title field for display
+                ));
+
+                // 2. Broadcast via Soketi so user gets real-time popup
+                broadcast(new \App\Events\NotificationReceived($user->id, [
+                    'type'    => 'admin_notification',
+                    'title'   => $title,
+                    'body'    => $body,
+                    'message' => $body,
+                    'sent_by' => auth()->user()->first_name . ' ' . auth()->user()->last_name,
+                ]));
+
+                $results['push'] = 'sent';
+            } catch (\Throwable $e) {
+                Log::error('Admin notification push (Soketi) failed: ' . $e->getMessage());
+                $results['push'] = 'failed';
+            }
+        }
+
+        // Build result summary
+        $successChannels = [];
+        $failedChannels  = [];
+        $skippedChannels = [];
+        foreach ($results as $ch => $status) {
+            if ($status === 'sent' || $status === 'link_generated') {
+                $successChannels[] = ucfirst($ch);
+            } elseif (str_starts_with($status, 'skipped')) {
+                $skippedChannels[] = ucfirst($ch) . ' (' . substr($status, 9) . ')';
+            } else {
+                $failedChannels[] = ucfirst($ch);
+            }
+        }
+
+        $messageParts = [];
+        if (!empty($successChannels)) {
+            $messageParts[] = 'Sent: ' . implode(', ', $successChannels);
+        }
+        if (!empty($skippedChannels)) {
+            $messageParts[] = 'Skipped: ' . implode(', ', $skippedChannels);
+        }
+        if (!empty($failedChannels)) {
+            $messageParts[] = 'Failed: ' . implode(', ', $failedChannels);
+        }
+
+        $msg = implode(' | ', $messageParts);
+
+        // Return JSON for AJAX handling (WhatsApp link + results)
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success'       => empty($failedChannels),
+                'message'       => trim($msg),
+                'results'       => $results,
+                'whatsapp_link' => $whatsappLink,
+            ]);
+        }
+
+        // Fallback for non-AJAX
+        if (!empty($failedChannels)) {
+            flash($msg)->error();
+        } elseif (!empty($skippedChannels) && empty($successChannels)) {
+            flash($msg)->warning();
+        } else {
+            flash($msg)->success();
+        }
+        return back();
+    }
+
+    private function appendWhatsappMetadataToMembers($members, string $context = 'general'): void
+    {
+        if (!method_exists($members, 'getCollection')) {
+            return;
+        }
+
+        $members->getCollection()->transform(function ($member) use ($context) {
+            $whatsapp = $this->buildWhatsappLink($member, $context);
+
+            $member->whatsapp_available = $whatsapp['available'];
+            $member->whatsapp_link = $whatsapp['link'];
+            $member->whatsapp_unavailable_reason = $whatsapp['reason'];
+
+            return $member;
+        });
+    }
+
+    private function normalizeWhatsappPhone(?string $rawPhone): ?string
+    {
+        $phone = trim((string) $rawPhone);
+        if ($phone === '') {
+            return null;
+        }
+
+        $phone = str_replace([' ', '-', '(', ')', '.'], '', $phone);
+        if (strpos($phone, '00') === 0) {
+            $phone = '+' . substr($phone, 2);
+        }
+
+        $normalized = null;
+        if (strpos($phone, '+') === 0) {
+            $digits = preg_replace('/\D+/', '', substr($phone, 1));
+            $normalized = $digits !== '' ? ('+' . $digits) : null;
+        } else {
+            $digits = preg_replace('/\D+/', '', $phone);
+
+            if (strlen($digits) === 11 && strpos($digits, '03') === 0) {
+                $normalized = '+92' . substr($digits, 1);
+            } elseif (strlen($digits) === 10 && strpos($digits, '3') === 0) {
+                $normalized = '+92' . $digits;
+            } elseif (strlen($digits) === 11 && strpos($digits, '0') === 0) {
+                $normalized = '+92' . substr($digits, 1);
+            } elseif (strlen($digits) === 10) {
+                $normalized = '+92' . $digits;
+            } elseif (strlen($digits) > 10 && strlen($digits) <= 15) {
+                $normalized = '+' . $digits;
+            }
+        }
+
+        if ($normalized === null) {
+            return null;
+        }
+
+        $waDigits = ltrim($normalized, '+');
+        if (!ctype_digit($waDigits)) {
+            return null;
+        }
+
+        $length = strlen($waDigits);
+        if ($length < 10 || $length > 15) {
+            return null;
+        }
+
+        return $waDigits;
+    }
+
+    private function buildWhatsappLink(User $member, string $context = 'general'): array
+    {
+        $name = trim(($member->first_name ?? '') . ' ' . ($member->last_name ?? ''));
+        if ($name === '') {
+            $name = translate('Member');
+        }
+
+        $code = $member->code ?? (string) $member->id;
+
+        $message = $context === 'verification'
+            ? "Hello {$name}, this is Doctor Marriage Bureau verification team. Your submitted verification document(s) for profile ({$code}) need correction. Please upload clear and correct documents in your Complete Profile section."
+            : "Hello {$name}, this is Doctor Marriage Bureau support team. We are contacting you regarding your profile ({$code}). Please reply here for assistance.";
+
+        $waDigits = $this->normalizeWhatsappPhone($member->phone);
+        if ($waDigits === null) {
+            return [
+                'available' => false,
+                'link' => null,
+                'reason' => translate('WhatsApp unavailable: invalid or missing phone number'),
+                'message' => $message,
+            ];
+        }
+
+        return [
+            'available' => true,
+            'link' => 'https://web.whatsapp.com/send?phone=' . $waDigits . '&text=' . urlencode($message),
+            'reason' => null,
+            'message' => $message,
+        ];
+    }
+
+    private function applyMemberSearch($query, string $search)
+    {
+        if ($search === '') {
+            return;
+        }
+
+        $normalizedPhone = preg_replace('/\D+/', '', $search);
+        $searchLike = '%' . $search . '%';
+
+        $query->where(function ($q) use ($search, $searchLike, $normalizedPhone) {
+            $q->where('code', 'like', $searchLike)
+                ->orWhere('first_name', 'like', $searchLike)
+                ->orWhere('last_name', 'like', $searchLike)
+                ->orWhere('email', 'like', $searchLike)
+                ->orWhere('phone', 'like', $searchLike)
+                ->orWhereRaw("CONCAT(first_name, ' ', last_name) like ?", [$searchLike])
+                ->orWhereRaw("CAST(id AS CHAR) LIKE ?", [$searchLike]);
+
+            if (!empty($normalizedPhone)) {
+                $q->orWhereRaw("REPLACE(REPLACE(REPLACE(REPLACE(phone, '+', ''), ' ', ''), '-', ''), '(', '') LIKE ?", ['%' . $normalizedPhone . '%']);
+            }
+
+            if (ctype_digit($search)) {
+                $q->orWhere('id', (int) $search);
+            }
+        });
     }
 }

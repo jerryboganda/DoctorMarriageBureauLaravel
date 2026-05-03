@@ -139,10 +139,10 @@ class ExpressInterestController extends Controller
                     // Express Interest Store Notification for member
                     try {
                         $notify_type = 'express_interest';
-                        $id = unique_notify_id();
+                        $id = null;
                         $notify_by = $interested_by_user->id;
                         $info_id = $express_interest->id;
-                        $message = $interested_by_user->first_name . ' ' . $interested_by_user->last_name . ' ' . translate(' has Expressed Interest On You.');
+                        $message = $interested_by_user->first_name . ' ' . $interested_by_user->last_name . ' ' . translate(' has Sent You a Proposal.');
                         $route = route('interest_requests');
 
                         // fcm 
@@ -205,10 +205,10 @@ class ExpressInterestController extends Controller
             // Express Interest Store Notification for member
             try {
                 $notify_type = 'accept_interest';
-                $id = unique_notify_id();
+                $id = null;
                 $notify_by = Auth::user()->id;
                 $info_id = $interest->id;
-                $message = Auth::user()->first_name . ' ' . Auth::user()->last_name . ' ' . translate(' has accepted your interest.');
+                $message = Auth::user()->first_name . ' ' . Auth::user()->last_name . ' ' . translate(' has accepted your proposal.');
                 $route = route('my_interests.index');
 
                 // fcm 
@@ -249,10 +249,10 @@ class ExpressInterestController extends Controller
             $notify_user = User::where('id', $interest->interested_by)->first();
             try {
                 $notify_type = 'reject_interest';
-                $id = unique_notify_id();
+                $id = null;
                 $notify_by = Auth::user()->id;
                 $info_id = $interest->id;
-                $message = Auth::user()->first_name . ' ' . Auth::user()->last_name . ' ' . translate(' has rejected your interest.');
+                $message = Auth::user()->first_name . ' ' . Auth::user()->last_name . ' ' . translate(' has rejected your proposal.');
                 $route = route('my_interests.index');
 
                 // fcm 

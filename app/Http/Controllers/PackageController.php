@@ -34,7 +34,7 @@ class PackageController extends Controller
             'name.required'              => translate('Name is required'),
             'name.max'                   => translate('Max 255 characters'),
             'price.required'             => translate('Package Price is required'),
-            'express_interest.required'  => translate('No. of Express Interest is required'),
+            'express_interest.required'  => translate('No. of Proposals is required'),
             'photo_gallery.required'     => translate('No. of Photo gallery is required'),
             'contact.required'           => translate('No. of Contact View is required'),
             'contact.profile_viewers_view'=> translate('No. of Profile Viewer view is required'),

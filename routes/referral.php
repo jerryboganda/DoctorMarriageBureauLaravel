@@ -2,38 +2,69 @@
 
 /*
 |--------------------------------------------------------------------------
-| referral Routes
+| Referral System Routes
 |--------------------------------------------------------------------------
 |
-| Here is where you can register admin routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| contains the "web" middleware group. Now create something great!
+| Enterprise-grade referral system routes.
+| Loaded by RouteServiceProvider with web middleware.
 |
 */
 
+use App\Http\Controllers\ReferralController;
 
+// Admin Referral Management Routes
+Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin']], function () {
 
-/*
-//Admin
-Route::group(['prefix' =>'admin', 'middleware' => ['auth', 'admin']], function(){
-  Route::get('/set-referral-commission', 'ReferralSystemController@set_referral_commission')->name('set_referral_commission');
+    // Dashboard
+    Route::get('/referral/dashboard', [ReferralController::class, 'dashboard'])
+        ->name('admin.referral.dashboard')
+        ->middleware('can:view_referral_dashboard');
 
-  Route::get('/referal/users', 'ReferralSystemController@index')->name('referals.users');
-  Route::get('/referal/earnings', 'ReferralSystemController@referal_earnings_admin')->name('referal.earnings_admin');
+    // Settings
+    Route::get('/referral/settings', [ReferralController::class, 'settings'])
+        ->name('admin.referral.settings')
+        ->middleware('can:manage_referral_settings');
+    Route::post('/referral/settings', [ReferralController::class, 'updateSettings'])
+        ->name('admin.referral.settings.update')
+        ->middleware('can:manage_referral_settings');
 
-  Route::resource('/wallet-withdraw-requests', 'WalletWithdrawRequestController');
-  Route::post('/wallet-withdraw-request-details', 'WalletWithdrawRequestController@wallet_withdraw_request_details')->name('wallet_withdraw_request_details');
-  Route::get('/wallet-withdraw-request-accept/{id}', 'WalletWithdrawRequestController@withdraw_request_accept')->name('wallet_withdraw_request.accept');
-  Route::get('/wallet-withdraw-request-reject/{id}', 'WalletWithdrawRequestController@withdraw_request_reject')->name('wallet_withdraw_request.reject');
+    // Rules
+    Route::get('/referral/rules', [ReferralController::class, 'rules'])
+        ->name('admin.referral.rules')
+        ->middleware('can:manage_referral_rules');
+    Route::post('/referral/rules', [ReferralController::class, 'storeRule'])
+        ->name('admin.referral.rules.store')
+        ->middleware('can:manage_referral_rules');
+    Route::put('/referral/rules/{id}', [ReferralController::class, 'updateRule'])
+        ->name('admin.referral.rules.update')
+        ->middleware('can:manage_referral_rules');
+    Route::delete('/referral/rules/{id}', [ReferralController::class, 'destroyRule'])
+        ->name('admin.referral.rules.destroy')
+        ->middleware('can:manage_referral_rules');
 
+    // Referrals List
+    Route::get('/referral/referrals', [ReferralController::class, 'referrals'])
+        ->name('admin.referral.referrals')
+        ->middleware('can:view_referral_dashboard');
+    Route::post('/referral/referrals/{id}/invalidate', [ReferralController::class, 'invalidateReferral'])
+        ->name('admin.referral.referrals.invalidate')
+        ->middleware('can:manage_referral_rules');
+
+    // Rewards
+    Route::get('/referral/rewards', [ReferralController::class, 'rewards'])
+        ->name('admin.referral.rewards')
+        ->middleware('can:view_referral_dashboard');
+    Route::post('/referral/rewards/{id}/reverse', [ReferralController::class, 'reverseReward'])
+        ->name('admin.referral.rewards.reverse')
+        ->middleware('can:reverse_referral_reward');
+
+    // Audit Logs
+    Route::get('/referral/audit-logs', [ReferralController::class, 'auditLogs'])
+        ->name('admin.referral.audit_logs')
+        ->middleware('can:view_referral_audit_logs');
+
+    // Backfill
+    Route::post('/referral/backfill-codes', [ReferralController::class, 'backfillCodes'])
+        ->name('admin.referral.backfill')
+        ->middleware('can:manage_referral_settings');
 });
-
-Route::group(['middleware' => ['member','verified']], function(){
-  Route::get('/referred-users', 'ReferralSystemController@my_referred_users')->name('my_referred_users');
-  Route::get('/my-referral-earnings', 'ReferralSystemController@my_referral_earnings')->name('my_referral_earnings');
-
-  Route::get('/wallet-withdraw-request-history', 'WalletWithdrawRequestController@wallet_withdraw_request_history')->name('wallet_withdraw_request_history');
-  Route::post('/wallet/withdraw-request-store', 'WalletWithdrawRequestController@store')->name('wallet_withdraw_request.store');
-
-});
-*/

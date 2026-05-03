@@ -4,6 +4,7 @@ import { Info, CheckCircle2, Lightbulb, Loader2, Eye, Heart, X, User as UserIcon
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { api } from '../utils/api';
+import { normalizePositiveAge } from '../utils/age';
 
 const QUALITY_WEIGHTS: Record<string, number> = {
   basics: 20,
@@ -29,7 +30,7 @@ interface ProfileItem {
   user_id: number;
   name: string;
   photo: string;
-  age?: number;
+  age?: number | null;
   religion?: string;
   country?: string;
   mothere_tongue?: string;
@@ -206,8 +207,15 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ onNavigateToProfile }) => {
 
   useEffect(() => {
     let isActive = true;
+    let isFetching = false;
 
     const fetchData = async () => {
+      if (isFetching) return;
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
+        return;
+      }
+      isFetching = true;
+
       try {
         const results = await Promise.allSettled([
           api.get('/dashboard/stats'),
@@ -280,7 +288,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ onNavigateToProfile }) => {
           id: `interest-${interest.interest_id}`,
           type: 'interest',
           user: interest.name,
-          message: `${interest.age ? `${interest.age} yrs` : 'Member'} - ${interest.location ?? 'Location hidden'}`,
+          message: `${normalizePositiveAge(interest.age) ? `${normalizePositiveAge(interest.age)} yrs` : 'Member'} - ${interest.location ?? 'Location hidden'}`,
           time: 'New interest',
         }));
 
@@ -288,6 +296,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ onNavigateToProfile }) => {
       } catch (error) {
         console.error('Failed to fetch sidebar data:', error);
       } finally {
+        isFetching = false;
         if (isActive) {
           setLoading(false);
         }
@@ -296,10 +305,18 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ onNavigateToProfile }) => {
 
     fetchData();
     const interval = setInterval(fetchData, 45000);
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') fetchData();
+    };
+    const onFocus = () => fetchData();
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('focus', onFocus);
 
     return () => {
       isActive = false;
       clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('focus', onFocus);
     };
   }, []);
 
@@ -314,7 +331,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ onNavigateToProfile }) => {
         user_id: v.user_id,
         name: v.name || 'Unknown',
         photo: v.photo || '',
-        age: v.age,
+        age: normalizePositiveAge(v.age),
         religion: v.religion,
         country: v.country,
         mothere_tongue: v.mothere_tongue,
@@ -339,7 +356,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ onNavigateToProfile }) => {
         user_id: v.user_id,
         name: v.name || 'Unknown',
         photo: v.photo || '',
-        age: v.age,
+        age: normalizePositiveAge(v.age),
         religion: v.religion,
         country: v.country,
         mothere_tongue: v.mothere_tongue,

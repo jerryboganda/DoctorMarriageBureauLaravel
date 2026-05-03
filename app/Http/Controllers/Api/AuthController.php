@@ -16,7 +16,9 @@ use App\Notifications\AppEmailVerificationNotification;
 use App\Notifications\DbStoreNotification;
 use App\Notifications\VerificationCode;
 use App\Services\MemberService;
+use App\Services\ReferralService;
 use App\Services\UserService;
+use App\Utility\MemberUtility;
 use App\Utility\EmailUtility;
 use App\Utility\PhoneUtility;
 use Carbon\Carbon;
@@ -37,8 +39,20 @@ class AuthController extends Controller
      */
     public function signup(AuthRequest $request)
     {
-        // Verification is handled by frontend before API call
-        // Both email and phone are required fields, so proceed with registration
+        $email = (string) $request->email;
+        $verifiedEmail = \App\Models\VerificationCode::where('identifier', $email)
+            ->where('type', 'email')
+            ->where('verified', true)
+            ->where('expires_at', '>', Carbon::now()->subMinutes(30))
+            ->latest()
+            ->first();
+
+        if (!$verifiedEmail) {
+            return response()->json([
+                'result' => false,
+                'message' => 'Please verify your email address before signup.',
+            ], 422);
+        }
 
         $user_service = new UserService();
         $user = $user_service->store($request->safe()->except(['gender', 'birthday', 'on_behalves_id', 'date_of_birth', 'on_behalf']));
@@ -48,41 +62,8 @@ class AuthController extends Controller
         $request->merge(['user_id' => $user->id]);
         $member = $member_service->store($request->only(['gender', 'birthday', 'on_behalves_id', 'user_id']), $package);
 
-        if (addon_activation('otp_system') && $request->phone != null) {
-            try {
-                // Generate verification code for the user
-                $verificationCode = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
-                $user->verification_code = $verificationCode;
-                $user->save();
-
-                // Send SMS verification code
-                $smsBody = 'Your Doctor Marriage Bureau verification code is ' . $verificationCode;
-
-                // Check SMS provider status - either from settings or .env
-                $nexmoActive = get_setting('nexmo_activation') == 1 || (env('NEXMO_KEY') && env('NEXMO_SECRET'));
-                $twilioActive = get_setting('twillo_activation') == 1 || (env('TWILIO_SID') && env('TWILIO_AUTH_TOKEN'));
-                $sslActive = get_setting('ssl_wireless_activation') == 1 || (env('SSL_SMS_API_TOKEN') && env('SSL_SMS_SID'));
-                $fast2smsActive = get_setting('fast2sms_activation') == 1 || env('AUTH_KEY');
-
-                \Log::info('=== OTP VERIFICATION ===');
-                \Log::info('SMS Code for Testing: ' . $verificationCode . ' - Phone: ' . $request->phone);
-                \Log::info('Timestamp: ' . now()->format('Y-m-d H:i:s'));
-
-                // If no SMS provider is active, log the SMS instead of sending
-                if (!$nexmoActive && !$twilioActive && !$sslActive && !$fast2smsActive) {
-                    \Log::info('SMS (No Provider Active): To ' . $request->phone . ' - Code: ' . $verificationCode . ' - Message: ' . $smsBody);
-                    \Log::info('=== END OTP VERIFICATION ===');
-                } else {
-                    if (function_exists('sendSMS')) {
-                        $smsResult = sendSMS($request->phone, env('APP_NAME'), $smsBody, null);
-                        \Log::info('SMS Result: ' . json_encode($smsResult));
-                    }
-                }
-            } catch (\Exception $e) {
-                \Log::error('OTP sending failed during registration: ' . $e->getMessage());
-                // Continue registration even if OTP fails
-            }
-        }
+        // SMS delivery is intentionally disabled. Email verification is enforced
+        // server-side before signup.
         // Email to member
         if ($request->email != null && env('MAIL_USERNAME') != null) {
             $account_oppening_email = EmailTemplate::where('identifier', 'account_oppening_email')->first();
@@ -96,7 +77,7 @@ class AuthController extends Controller
 
         try {
             $notify_type = 'member_registration';
-            $id = unique_notify_id();
+            $id = null;
             $notify_by = $user->id;
             $info_id = $user->id;
             $message = translate('A new member has been registered to your system. Name: ') . $user->first_name . ' ' . $user->last_name;
@@ -111,10 +92,37 @@ class AuthController extends Controller
             $admin = User::where('user_type', 'admin')->first();
             EmailUtility::account_opening_email_to_admin($user, $admin);
         }
-        // Set email_verified_at and approve user since verification is handled in frontend
-        $user->email_verified_at = date('Y-m-d H:m:s');
-        $user->approved = 1; // Auto-approve since verification is handled in frontend
+        $user->email_verified_at = Carbon::now();
+        $user->approved = get_setting('member_verification') == 1 ? 0 : 1;
         $user->save();
+
+        
+        // ===== Referral System Integration =====
+        try {
+            $referralService = new ReferralService();
+
+            // Auto-generate referral code for the new user
+            \App\Models\ReferralCode::getOrCreateForUser($user->id);
+
+            // If a referral code was provided during signup, process the referral
+            $referralCodeInput = $request->input('referral_code');
+            if (!empty($referralCodeInput)) {
+                $referralResult = $referralService->createReferral($user->id, $referralCodeInput, 'link', [
+                    'ip' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                ]);
+
+                if (empty($referralResult['success'])) {
+                    \Log::warning("Referral code could not be applied during signup for user {$user->id}: " . ($referralResult['message'] ?? 'Unknown error'));
+                } else {
+                    \Log::info("Referral created successfully for user {$user->id}");
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error("Referral processing error during signup: " . $e->getMessage());
+            // Don't fail registration if referral processing fails
+        }
+        // ===== End Referral System Integration =====
 
         return $this->authResponse($user, $request);
     }
@@ -127,13 +135,18 @@ class AuthController extends Controller
     {
         // Accept both 'email_or_phone' and 'email' for backward compatibility
         $identifier = $request->email_or_phone ?? $request->email ?? $request->phone;
+        $password = (string) ($request->password ?? '');
+
+        if (empty($identifier) || $password === '') {
+            return response()->json([
+                'result' => false,
+                'code' => 'MISSING_LOGIN_FIELDS',
+                'message' => 'Please enter both your email or phone and password.',
+                'user' => null,
+            ], 422);
+        }
 
         $normalizedPhone = PhoneUtility::normalize($identifier);
-
-        // Debug logging
-        \Log::info('=== SIGNIN ATTEMPT ===');
-        \Log::info('Identifier: ' . $identifier);
-        \Log::info('Normalized Phone: ' . $normalizedPhone);
 
         $user = User::where(function ($query) use ($identifier, $normalizedPhone) {
             $query->where('email', $identifier)
@@ -142,11 +155,16 @@ class AuthController extends Controller
         })->whereNull('deleted_at')->first();
 
         if ($user != null) {
-            \Log::info('User found: ID=' . $user->id . ', Email=' . $user->email . ', Phone=' . $user->phone);
-            \Log::info('Password hash in DB: ' . substr($user->password, 0, 20) . '...');
+            if (empty($user->password)) {
+                return response()->json([
+                    'result' => false,
+                    'code' => 'PASSWORD_NOT_SET',
+                    'message' => 'This account was created with social login. Please use Google login or ask admin to set a password for your account.',
+                    'user' => null
+                ], 401);
+            }
 
-            if (Hash::check($request->password, $user->password)) {
-                \Log::info('Password check PASSED');
+            if (Hash::check($password, $user->password)) {
                 $twoFactor = UserTwoFactorSetting::getOrCreate($user->id);
                 if ($twoFactor->is_enabled) {
                     $user->two_factor_pending = true;
@@ -164,11 +182,19 @@ class AuthController extends Controller
                 }
                 return $this->authResponse($user, $request);
             }
-            \Log::warning('Password check FAILED for user ID=' . $user->id);
-            return response()->json(['result' => false, 'message' => translate('Unauthorized'), 'user' => null], 401);
+            return response()->json([
+                'result' => false,
+                'code' => 'INVALID_PASSWORD',
+                'message' => 'The password you entered is incorrect. Please try again.',
+                'user' => null
+            ], 401);
         }
-        \Log::warning('No user found for identifier: ' . $identifier);
-        return response()->json(['result' => false, 'message' => translate('User not found'), 'user' => null], 401);
+        return response()->json([
+            'result' => false,
+            'code' => 'ACCOUNT_NOT_FOUND',
+            'message' => 'No account was found with this email or phone number.',
+            'user' => null
+        ], 401);
     }
 
     /**
@@ -220,7 +246,12 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             \Log::error('Social Login Error: ' . $e->getMessage());
             \Log::error('Social Login Stack: ' . $e->getTraceAsString());
-            return response()->json(['result' => false, 'message' => translate('Unauthorized: Invalid Token'), 'user' => null], 401);
+            return response()->json([
+                'result' => false,
+                'code' => 'INVALID_OR_EXPIRED_TOKEN',
+                'message' => 'Your login session is invalid or expired. Please sign in again.',
+                'user' => null
+            ], 401);
         }
 
         // 1. Try to find by Provider ID
@@ -228,11 +259,11 @@ class AuthController extends Controller
         $socialEmail = is_object($socialUser) && method_exists($socialUser, 'getEmail') ? $socialUser->getEmail() : ($socialUser->email ?? null);
         $socialName = is_object($socialUser) && method_exists($socialUser, 'getName') ? $socialUser->getName() : ($socialUser->name ?? 'User');
 
-        $user = User::where('provider_id', $socialId)->first();
+            $user = User::where('provider_id', $socialId)->whereNull('deleted_at')->first();
 
         // 2. If not found, try to find by Email
         if (!$user) {
-            $user = User::where('email', $socialEmail)->first();
+            $user = User::where('email', $socialEmail)->whereNull('deleted_at')->first();
             if ($user) {
                 // Link existing account
                 $user->provider_id = $socialId;
@@ -260,6 +291,8 @@ class AuthController extends Controller
         $newUser->approved = get_setting('member_verification') == 1 ? 0 : 1;
         $newUser->save();
 
+        \App\Models\ReferralCode::getOrCreateForUser($newUser->id);
+
         $member = new Member;
         $member->user_id = $newUser->id;
         $member->gender = null;
@@ -279,6 +312,24 @@ class AuthController extends Controller
             $member->package_validity = Date('Y-m-d', strtotime($package->validity . " days"));
         }
         $member->save();
+
+        try {
+            $referralCodeInput = $request->input('referral_code');
+            if (!empty($referralCodeInput)) {
+                $referralService = new ReferralService();
+                $referralResult = $referralService->createReferral($newUser->id, $referralCodeInput, 'link', [
+                    'ip' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                    'source' => 'social_login',
+                ]);
+
+                if (empty($referralResult['success'])) {
+                    \Log::warning("Referral code could not be applied during social signup for user {$newUser->id}: " . ($referralResult['message'] ?? 'Unknown error'));
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error('Referral processing error during social login signup: ' . $e->getMessage());
+        }
 
         if ($newUser->approved == 0) {
             return response()->json(['result' => false, 'message' => translate('Please wait for admin approval'), 'user' => null], 401);
@@ -314,7 +365,7 @@ class AuthController extends Controller
             $this->attachTokenMetadata($tokenResult->accessToken, $request);
         }
         $token = $tokenResult->plainTextToken;
-        $age = ($member && $member->birthday) ? Carbon::parse($member->birthday)->age : null;
+        $age = MemberUtility::member_age($user->id);
 
         return response()->json([
             'result' => true,
@@ -332,8 +383,10 @@ class AuthController extends Controller
                 'blocked' => $user->blocked,
                 'deactivated' => $user->deactivated,
                 'approved' => $user->approved,
+                'must_change_password' => (bool) $user->must_change_password,
                 'email' => $user->email,
-                'birthday' => $age,
+            'birthday' => $member?->birthday ?? null,
+            'age' => $age,
                 'height' => $user->physical_attributes ? $user->physical_attributes->height : 0,
                 'marital_status_id' => $maritial_status ? new MaritialStatusResource($maritial_status) : null,
                 'avatar' => uploaded_asset($user->photo) ?? '',
@@ -361,131 +414,60 @@ class AuthController extends Controller
 
     public function forgotPassword(Request $request)
     {
-        // Auto-detect method and identifier
-        $identifier = $request->email_or_phone ?? $request->email ?? $request->phone;
-        $method = $request->send_code_by;
+        $email = $request->email_or_phone ?? $request->email;
 
-        if (!$identifier) {
+        if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return response()->json([
                 'result' => false,
-                'message' => 'Email or phone number is required',
-            ], 400);
+                'message' => 'Password reset is email-only. Please enter your email address.',
+            ], 422);
         }
 
-        $normalizedPhone = PhoneUtility::normalize($identifier);
-
-        // Auto-detect method if not explicitly provided
-        if (!$method) {
-            if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
-                $method = 'email';
-            } else {
-                $method = 'phone';
-                $identifier = $normalizedPhone;
-            }
-        } else if ($method === 'phone') {
-            $identifier = $normalizedPhone;
-        }
-
-        // Find user based on method
-        if ($method === 'email') {
-            $this->validate($request, [
-                'email_or_phone' => 'required|email',
-            ]);
-            $user = User::where('email', $identifier)->first();
-        } else {
-            // Phone method
-            $this->validate($request, [
-                'email_or_phone' => 'required',
-            ]);
-
-            $phone = PhoneUtility::normalize($identifier);
-
-            $user = User::where('phone', $phone)->whereNull('deleted_at')->first();
-            if (!$user) {
-                $user = User::where('phone', ltrim($phone, '+'))->whereNull('deleted_at')->first();
-            }
-        }
+        $user = User::where('email', $email)->whereNull('deleted_at')->first();
 
         if (!$user) {
             return response()->json([
                 'result' => false,
-                'message' => 'User not found with the provided ' . ($method === 'email' ? 'email address' : 'phone number'),
+                'message' => 'User not found with the provided email address',
             ], 404);
         }
 
-        // Generate 6-digit verification code
-        $verificationCode = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
+        if (\Illuminate\Support\Facades\Cache::get('password_reset_attempts:' . $email, 0) >= 5) {
+            return response()->json([
+                'result' => false,
+                'message' => 'Too many reset attempts. Please try again later.',
+            ], 429);
+        }
+
+        $verificationCode = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
         $user->verification_code = $verificationCode;
         $user->save();
+        \App\Models\VerificationCode::createCode($email, 'password_reset', $verificationCode, 15);
+        \Illuminate\Support\Facades\Cache::put('password_reset_attempts:' . $email, \Illuminate\Support\Facades\Cache::get('password_reset_attempts:' . $email, 0) + 1, now()->addMinutes(15));
 
-        if ($method === 'phone') {
-            try {
-                $phone = $user->phone;
-                $smsBody = 'Your Doctor Marriage Bureau verification code is ' . $verificationCode . '. Do not share this code with anyone.';
+        try {
+            $emailResult = EmailUtility::password_reset_email($user, $verificationCode);
 
-                // Check SMS provider status
-                $nexmoActive = get_setting('nexmo_activation') == 1 || (env('NEXMO_KEY') && env('NEXMO_SECRET'));
-                $twilioActive = get_setting('twillo_activation') == 1 || (env('TWILIO_SID') && env('TWILIO_AUTH_TOKEN'));
-                $sslActive = get_setting('ssl_wireless_activation') == 1 || (env('SSL_SMS_API_TOKEN') && env('SSL_SMS_SID'));
-                $fast2smsActive = get_setting('fast2sms_activation') == 1 || env('AUTH_KEY');
-
-                \Log::info('=== FORGOT PASSWORD OTP (Phone) ===');
-                \Log::info('Verification Code: ' . $verificationCode);
-                \Log::info('Phone: ' . $phone);
-                \Log::info('Timestamp: ' . now()->format('Y-m-d H:i:s'));
-
-                // If no SMS provider is active, log for testing
-                if (!$nexmoActive && !$twilioActive && !$sslActive && !$fast2smsActive) {
-                    \Log::info('SMS (Testing Mode - No Provider Active): ' . $smsBody);
-                    \Log::info('=== END FORGOT PASSWORD OTP ===');
-                } else {
-                    // Try to send SMS using configured provider
-                    if (function_exists('sendSMS')) {
-                        $smsResult = sendSMS($phone, env('APP_NAME'), $smsBody, null);
-                        \Log::info('SMS Result: ' . json_encode($smsResult));
-                    }
-                }
+            if ($emailResult) {
+                \Log::info('Password reset email sent successfully to: ' . $user->email);
 
                 return response()->json([
                     'result' => true,
-                    'message' => 'Verification code sent to your phone number',
+                    'message' => 'Verification code sent to your email address',
                 ], 200);
-
-            } catch (\Exception $e) {
-                \Log::error('Phone OTP sending failed: ' . $e->getMessage());
-                return response()->json([
-                    'result' => false,
-                    'message' => 'Failed to send verification code. Please try again.',
-                ], 500);
             }
-        } else {
-            // Email method
-            try {
-                $emailResult = EmailUtility::password_reset_email($user, $verificationCode);
 
-                if ($emailResult) {
-                    \Log::info('Password reset email sent successfully to: ' . $user->email);
-                    \Log::info('Verification Code (for testing): ' . $verificationCode);
-
-                    return response()->json([
-                        'result' => true,
-                        'message' => 'Verification code sent to your email address',
-                    ], 200);
-                } else {
-                    \Log::error('Failed to send password reset email to: ' . $user->email);
-                    return response()->json([
-                        'result' => false,
-                        'message' => 'Failed to send reset code. Please check your SMTP settings or try again later.',
-                    ], 500);
-                }
-
-            } catch (\Throwable $e) {
-                \Log::error('Email sending fatal error: ' . $e->getMessage());
-                return response()->json([
-                    'result' => false,
-                    'message' => 'An internal server error occurred while sending the reset code.',
-                ], 500);
-            }
+            \Log::error('Failed to send password reset email to: ' . $user->email);
+            return response()->json([
+                'result' => false,
+                'message' => 'Failed to send reset code. Please check your SMTP settings or try again later.',
+            ], 500);
+        } catch (\Throwable $e) {
+            \Log::error('Email sending fatal error: ' . $e->getMessage());
+            return response()->json([
+                'result' => false,
+                'message' => 'An internal server error occurred while sending the reset code.',
+            ], 500);
         }
     }
 
@@ -541,13 +523,11 @@ class AuthController extends Controller
 
     public function resetPassword(Request $request)
     {
-        // Handle parameters from different platforms
-        $identifier = $request->email_or_phone ?? $request->email ?? $request->phone;
+        $email = $request->email_or_phone ?? $request->email;
         $code = $request->code ?? $request->verification_code;
-        $method = $request->send_code_by;
 
-        if (!$identifier) {
-            return $this->failure_message('Email or phone number is required');
+        if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return $this->failure_message('Password reset is email-only. Please enter your email address.');
         }
 
         if (!$code) {
@@ -558,38 +538,20 @@ class AuthController extends Controller
             'password' => 'required|string|min:8|confirmed',
         ]);
 
-        $normalizedPhone = PhoneUtility::normalize($identifier);
-
-        // Auto-detect method if not explicitly provided
-        if (!$method) {
-            if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
-                $method = 'email';
-            } else {
-                $method = 'phone';
-                $identifier = $normalizedPhone;
-            }
-        } else if ($method === 'phone') {
-            $identifier = $normalizedPhone;
-        }
-
-        // Find user based on method
-        if ($method === 'email') {
-            $user = User::where('email', $identifier)->whereNull('deleted_at')->first();
-        } else {
-            $user = User::where('phone', $identifier)->whereNull('deleted_at')->first();
-            if (!$user) {
-                $user = User::where('phone', ltrim($identifier, '+'))->whereNull('deleted_at')->first();
-            }
-        }
+        $user = User::where('email', $email)->whereNull('deleted_at')->first();
 
         if (!$user) {
-            return $this->failure_message('User not found!!');
+            return $this->failure_message('No account was found with the provided email address.');
         }
 
-        if ($user->verification_code == $code) {
+        $validCode = \App\Models\VerificationCode::verifyCode($email, 'password_reset', $code)
+            || hash_equals((string) $user->verification_code, (string) $code);
+
+        if ($validCode) {
             $user->password = Hash::make($request['password']);
             $user->verification_code = null;
             $user->save();
+            \Illuminate\Support\Facades\Cache::forget('password_reset_attempts:' . $email);
 
             return response()->json([
                 'result' => true,
@@ -604,25 +566,24 @@ class AuthController extends Controller
      */
     public function verifyPasswordResetCode(Request $request)
     {
-        $identifier = $request->email_or_phone ?? $request->email ?? $request->phone;
+        $email = $request->email_or_phone ?? $request->email;
         $code = $request->code ?? $request->verification_code;
 
-        if (!$identifier || !$code) {
+        if (!$email || !$code) {
             return response()->json([
                 'result' => false,
-                'message' => 'Identifier and code are required'
+                'message' => 'Email and code are required'
             ], 400);
         }
 
-        $normalizedPhone = PhoneUtility::normalize($identifier);
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return response()->json([
+                'result' => false,
+                'message' => 'Password reset is email-only. Please enter your email address.'
+            ], 422);
+        }
 
-        // Find user by email or phone
-        $user = User::where(function ($query) use ($identifier, $normalizedPhone) {
-            $query->where('email', $identifier)
-                ->orWhere('phone', $identifier)
-                ->orWhere('phone', $normalizedPhone)
-                ->orWhere('phone', ltrim($normalizedPhone, '+'));
-        })->whereNull('deleted_at')->first();
+        $user = User::where('email', $email)->whereNull('deleted_at')->first();
 
         if (!$user) {
             return response()->json([
@@ -631,7 +592,14 @@ class AuthController extends Controller
             ], 404);
         }
 
-        if ($user->verification_code === $code) {
+        $verification = \App\Models\VerificationCode::where('identifier', $email)
+            ->where('type', 'password_reset')
+            ->where('code', $code)
+            ->where('expires_at', '>', Carbon::now())
+            ->latest()
+            ->first();
+
+        if ($verification || hash_equals((string) $user->verification_code, (string) $code)) {
             return response()->json([
                 'result' => true,
                 'message' => 'Code verified successfully'
@@ -647,8 +615,11 @@ class AuthController extends Controller
     public function authData($user)
     {
         // $user = auth()->user();
-        $maritial_status = MaritalStatus::where('id', $user->member->marital_status_id)->first();
-        $age = Carbon::parse($user->member->birthday)->age;
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+        $member = $user->member;
+        $maritial_status = $member ? MaritalStatus::where('id', $member->marital_status_id)->first() : null;
         return response()->json(
             [
                 'id' => $user->id,
@@ -660,13 +631,20 @@ class AuthController extends Controller
                 'blocked' => $user->blocked,
                 'deactivated' => $user->deactivated,
                 'approved' => $user->approved,
+                'must_change_password' => (bool) ($user->must_change_password ?? false),
                 'email' => $user->email,
-                'birthday' => $age,
+                'birthday' => $member?->birthday ?? null,
+                'age' => MemberUtility::member_age($user->id),
                 'height' => $user->physical_attributes ? $user->physical_attributes->height : 0,
                 'marital_status_id' => $maritial_status ? new MaritialStatusResource($maritial_status) : new MaritialStatusResource($maritial_status),
                 'avatar' => uploaded_asset($user->photo) ?? '',
                 'avatar_original' => uploaded_asset($user->photo) ?? '',
                 'phone' => $user->phone ?? '',
+                'is_visible' => (bool) ($member->is_visible ?? true),
+                'incognito' => MemberUtility::member_is_incognito($user->id),
+                'travel_mode' => (bool) ($member->travel_mode ?? false),
+                'travel_city' => $member->travel_city ?? null,
+                'travel_country' => $member->travel_country ?? null,
             ]
         );
     }
@@ -753,12 +731,12 @@ class AuthController extends Controller
             // Check if there's already a valid OTP for this email
             $existingCode = \App\Models\VerificationCode::getActiveCode($email, 'email');
             if ($existingCode) {
-                \Log::info('Using existing valid OTP for: ' . $email);
+                \Log::info('Using existing valid email verification code for: ' . $email);
                 // We'll still try to resend the email to be helpful
                 $verificationCode = $existingCode->code;
             } else {
                 // Generate 6-digit verification code
-                $verificationCode = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
+                $verificationCode = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 
                 // Store verification code in database
                 try {
@@ -773,14 +751,14 @@ class AuthController extends Controller
 
             // Always use the blade view as it's more reliable
             Mail::send('emails.email_verification', ['verificationCode' => $verificationCode], function ($message) use ($email, $subject) {
-                $fromEmail = env('MAIL_FROM_ADDRESS', 'noreply@example.com');
-                $fromName = env('MAIL_FROM_NAME', 'Matrimonial Site');
+                $fromEmail = EmailUtility::fromAddress();
+                $fromName = EmailUtility::fromName();
                 $message->from($fromEmail, $fromName)
                     ->to($email)
                     ->subject($subject);
             });
 
-            \Log::info('Email sent successfully to: ' . $email . ' with code: ' . $verificationCode);
+            \Log::info('Email verification code sent successfully to: ' . $email);
 
             return response()->json([
                 'success' => true,
@@ -801,129 +779,11 @@ class AuthController extends Controller
      */
     public function sendPhoneVerification(Request $request)
     {
-        // Prevent concurrent requests with a simple lock
-        $lockKey = 'phone_otp_lock_' . $request->phone;
-        if (cache()->has($lockKey)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Request already in progress'
-            ], 400);
-        }
-
-        // Set lock for 10 seconds
-        cache()->put($lockKey, true, 10);
-
-        $validator = Validator::make($request->all(), [
-            'phone' => 'required|string|max:20'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid phone number'
-            ], 400);
-        }
-
-        $phone = $request->phone;
-
-        // Clean phone number: remove non-numeric chars except +
-        $phone = preg_replace('/[^\d+]/', '', $phone);
-
-        // Pakistani Number Logic: If starts with 03..., convert to +923...
-        if (str_starts_with($phone, '03') && strlen($phone) === 11) {
-            $phone = '+92' . substr($phone, 1);
-        } elseif (str_starts_with($phone, '3') && strlen($phone) === 10) {
-            $phone = '+92' . $phone;
-        }
-
-        // Check if phone number already exists for signup intent
-        if ($request->intent === 'signup') {
-            $existingUser = User::where('phone', $phone)->whereNull('deleted_at')->first();
-            if ($existingUser) {
-                return response()->json([
-                    'success' => false,
-                    'message' => translate('This phone number is already registered. Please login instead.')
-                ], 400);
-            }
-        }
-
-        // Check if there's already a valid OTP for this phone
-        $existingCode = \App\Models\VerificationCode::getActiveCode($phone, 'phone');
-
-        if ($existingCode) {
-            // Return existing valid code instead of generating new one
-            \Log::info('Using existing valid OTP for phone: ' . $phone . ' - Code: ' . $existingCode->code);
-            return response()->json([
-                'success' => true,
-                'message' => 'Verification code sent to your phone'
-            ]);
-        }
-
-        // Generate 6-digit verification code
-        $verificationCode = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
-
-        // Store verification code in database
-        \App\Models\VerificationCode::createCode($phone, 'phone', $verificationCode, 5); // 5 minutes expiry
-
-        try {
-            // Send SMS verification code using existing SMS utility
-            $smsBody = 'Your Doctor Marriage Bureau verification code is ' . $verificationCode;
-
-            // Check SMS provider status - either from settings or .env
-            $nexmoActive = get_setting('nexmo_activation') == 1;
-            $twilioActive = get_setting('twillo_activation') == 1 || (env('TWILIO_SID') && env('TWILIO_AUTH_TOKEN'));
-            $sslActive = get_setting('ssl_wireless_activation') == 1 || (env('SSL_SMS_API_TOKEN') && env('SSL_SMS_SID'));
-            $fast2smsActive = get_setting('fast2sms_activation') == 1 || env('AUTH_KEY');
-
-            // Log active SMS provider
-            if ($nexmoActive)
-                \Log::info('SMS Provider: Nexmo Active');
-            elseif ($twilioActive)
-                \Log::info('SMS Provider: Twilio Active');
-            elseif ($sslActive)
-                \Log::info('SMS Provider: SSL Wireless Active');
-            elseif ($fast2smsActive)
-                \Log::info('SMS Provider: Fast2SMS Active');
-            else
-                \Log::info('SMS Provider: None Active - Logging only');
-
-            // Always log SMS code for local testing
-            \Log::info('=== PHONE VERIFICATION OTP ===');
-            \Log::info('SMS Code for Testing: ' . $verificationCode . ' - Phone: ' . $phone);
-            \Log::info('Timestamp: ' . now()->format('Y-m-d H:i:s'));
-
-            // If no SMS provider is active, log the SMS instead of sending
-            if (!$nexmoActive && !$twilioActive && !$sslActive && !$fast2smsActive) {
-                \Log::info('SMS (No Provider Active): To ' . $phone . ' - Code: ' . $verificationCode . ' - Message: ' . $smsBody);
-                \Log::info('=== END PHONE VERIFICATION OTP ===');
-            } else {
-                if (function_exists('sendSMS')) {
-                    $smsResult = sendSMS($phone, env('APP_NAME'), $smsBody, null);
-                    \Log::info('SMS Result: ' . json_encode($smsResult));
-                    \Log::info('SMS sent to: ' . $phone . ' - Code: ' . $verificationCode);
-                } else {
-                    // Fallback - you can implement your SMS sending logic here
-                    \Log::info('SMS function not found. SMS to ' . $phone . ': ' . $smsBody);
-                }
-            }
-
-            // Release lock
-            cache()->forget($lockKey);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Verification code sent to your phone'
-            ]);
-        } catch (\Exception $e) {
-            // Release lock on error
-            cache()->forget($lockKey);
-
-            \Log::error('Phone verification error: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to send verification code. Please try again.'
-            ], 500);
-        }
+        return response()->json([
+            'success' => false,
+            'result' => false,
+            'message' => 'Phone verification has been disabled. Please verify with email.',
+        ], 410);
     }
 
     /**
@@ -957,13 +817,19 @@ class AuthController extends Controller
         }
 
         // Find existing user by email
-        $user = User::where('email', $email)->first();
+        $user = User::where('email', $email)->whereNull('deleted_at')->first();
 
         if ($user) {
             // Log in the user if they exist
             $user->email_verified_at = Carbon::now();
             $user->approved = 1;
             $user->save();
+
+            try {
+                (new ReferralService())->checkAndQualifyReferral($user->id);
+            } catch (\Exception $e) {
+                \Log::error('Referral qualification check failed after email verification: ' . $e->getMessage(), ['user_id' => $user->id]);
+            }
 
             return $this->authResponse($user, $request);
         }
@@ -981,83 +847,10 @@ class AuthController extends Controller
      */
     public function verifyPhoneCode(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'phone' => 'required|string',
-            'code' => 'required|string|size:6'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid verification data'
-            ], 400);
-        }
-
-        $phone = PhoneUtility::normalize($request->phone);
-        $code = $request->code;
-
-        \Log::info('Phone verification attempt - Phone: ' . $phone . ', Code entered: ' . $code);
-
-        // Use the VerificationCode model to verify the code
-        $verification = \App\Models\VerificationCode::verifyCode($phone, 'phone', $code);
-
-        // If not found, try without plus prefix if stored differently
-        if (!$verification) {
-            $phoneWithoutPlus = ltrim($phone, '+');
-            \Log::info('Trying without plus: ' . $phoneWithoutPlus);
-            $verification = \App\Models\VerificationCode::verifyCode($phoneWithoutPlus, 'phone', $code);
-        }
-
-        if (!$verification) {
-            \Log::info('Verification failed: Invalid or expired code for phone: ' . $phone);
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid or expired verification code'
-            ], 400);
-        }
-
-        // If user is already logged in, we're done (the verification record is updated)
-        if (auth()->guard('sanctum')->check()) {
-            $user = auth()->guard('sanctum')->user();
-
-            // Sync phone if different
-            if ($user->phone !== $phone) {
-                // Check if this phone is actually one of the variations verified
-                $phoneMatches = ($user->phone === $phone || '+92' . ltrim($user->phone, '0') === $phone || $user->phone === '+92' . ltrim($phone, '0'));
-                if (!$phoneMatches) {
-                    $user->phone = $phone;
-                    $user->save();
-                }
-            }
-
-            return response()->json([
-                'success' => true,
-                'result' => true,
-                'message' => 'Phone verified successfully',
-                'user' => $user
-            ]);
-        }
-
-        // Find existing user by phone (for Login via OTP)
-        $existingUser = User::where('phone', $phone)->whereNull('deleted_at')->first();
-        if (!$existingUser) {
-            $existingUser = User::where('phone', '+91' . $phone)->whereNull('deleted_at')->first();
-        }
-
-        if ($existingUser) {
-            // Log in the user if they exist
-            $existingUser->email_verified_at = Carbon::now();
-            $existingUser->approved = 1;
-            $existingUser->save();
-
-            return $this->authResponse($existingUser, $request);
-        }
-
         return response()->json([
-            'success' => true,
-            'result' => true,
-            'message' => 'Phone verified successfully',
-            'user' => null
-        ]);
+            'success' => false,
+            'result' => false,
+            'message' => 'Phone verification has been disabled. Please verify with email.',
+        ], 410);
     }
 }

@@ -71,9 +71,16 @@ class NotificationCenterController extends Controller
             ->where('created_at', '>', $lastLogin)
             ->count();
         
-        // Count new messages since last login
-        $newMessages = Chat::where('receiver_id', $user->id)
+        // Count new messages since last login. Chats store the sender only;
+        // the recipient is determined through the parent chat thread.
+        $newMessages = Chat::where('sender_user_id', '!=', $user->id)
             ->where('created_at', '>', $lastLogin)
+            ->whereHas('chatThread', function ($query) use ($user) {
+                $query->where(function ($threadQuery) use ($user) {
+                    $threadQuery->where('sender_user_id', $user->id)
+                        ->orWhere('receiver_user_id', $user->id);
+                });
+            })
             ->count();
         
         // Count profile views since last login
