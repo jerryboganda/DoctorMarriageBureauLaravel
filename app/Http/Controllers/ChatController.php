@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\ChatThread;
 use App\Models\Chat;
+use App\Services\MemberCommunicationLimitService;
 use Auth;
 
 class ChatController extends Controller
@@ -73,6 +74,17 @@ class ChatController extends Controller
 
     public function chat_reply(Request $request)
     {
+        $communicationLimits = new MemberCommunicationLimitService();
+        $verificationLimitError = $communicationLimits->ensureCanSendMessage(Auth::user());
+        if ($verificationLimitError) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return $verificationLimitError;
+            }
+
+            $payload = $verificationLimitError->getData(true);
+            abort(403, $payload['message'] ?? 'Verification required.');
+        }
+
         $chat = new Chat;
         $chat->chat_thread_id = $request->chat_thread_id;
         $chat->sender_user_id = Auth::user()->id;
@@ -81,6 +93,7 @@ class ChatController extends Controller
             $chat->attachment = json_encode(explode(',', $request->attachment));
         }
         $chat->save();
+        $communicationLimits->recordMessageSent(Auth::user());
         return view('frontend.member.messages.messages_right_single', compact('chat'));
     }
 

@@ -10,7 +10,7 @@ class Member extends Model
 {
     use SoftDeletes;
     protected $fillable = [
-        'user_id','gender','birthday','on_behalves_id','current_package_id','remaining_interest','remaining_contact_view','remaining_photo_gallery','remaining_profile_image_view','remaining_gallery_image_view','remaining_profile_viewer_view','auto_profile_match','onboarding_completed','package_validity','medical_license_number','specialization','verification_document',
+        'user_id','gender','birthday','on_behalves_id','current_package_id','remaining_interest','unverified_messages_used','unverified_proposals_used','remaining_contact_view','remaining_photo_gallery','remaining_profile_image_view','remaining_gallery_image_view','remaining_profile_viewer_view','auto_profile_match','onboarding_completed','package_validity','medical_license_number','specialization','verification_document',
         'is_agent_pick', 'is_high_intent', 'travel_mode', 'is_visible', 'management_mode', 'primary_manager_id',
         'travel_city', 'travel_country'
     ];

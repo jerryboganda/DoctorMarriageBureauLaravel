@@ -27,6 +27,7 @@ export interface ProfileMatch {
   age: number | null;
   matchPercentage: number;
   avatarUrl: string;
+  gender?: number | string | null;
   coverGradient?: string;
   isVerified: boolean;
   bio?: string;

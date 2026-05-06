@@ -10,6 +10,12 @@ import { useAuthStore } from '../src/stores/authStore';
 // API base URL for assets
 const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://api.doctormarriagebureau.com.pk';
 const DEFAULT_AVATAR = `${API_BASE}/assets/img/avatar-place.png`;
+const DEFAULT_FEMALE_AVATAR = `${API_BASE}/assets/img/female-avatar-place.png`;
+
+const isFemaleProfile = (gender?: number | string | null): boolean => {
+  const normalized = `${gender ?? ''}`.trim().toLowerCase();
+  return normalized === '2' || normalized === 'female' || normalized === 'f';
+};
 
 interface ProfileCardProps {
     profile?: ProfileMatch;
@@ -40,10 +46,11 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ profile, interestId, onDeclin
 
   const displayProfile = profile;
   const coverGradient = displayProfile.coverGradient || 'bg-gradient-to-r from-slate-100 to-slate-200';
+  const fallbackAvatar = isFemaleProfile(displayProfile.gender) ? DEFAULT_FEMALE_AVATAR : DEFAULT_AVATAR;
   let avatarUrl = displayProfile.avatarUrl || '';
   // Use fallback if empty or invalid URL
   if (!avatarUrl || (!avatarUrl.startsWith('http') && !avatarUrl.startsWith('/'))) {
-    avatarUrl = DEFAULT_AVATAR;
+    avatarUrl = fallbackAvatar;
   }
   const shouldBlurAvatar = Boolean(
     displayProfile.profilePhotoBlur &&

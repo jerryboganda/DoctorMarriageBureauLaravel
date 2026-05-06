@@ -83,6 +83,14 @@ class InterestController extends Controller
         }
 
         $authId = $user->id;
+        if ((int) $request->user_id === (int) $authId) {
+            return response()->json([
+                'result' => false,
+                'error_code' => 'self_proposal',
+                'message' => translate('You cannot send a proposal to yourself.'),
+            ]);
+        }
+
         $existingSent = ExpressInterest::query()
             ->where('user_id', $request->user_id)
             ->where('interested_by', $authId)
@@ -123,9 +131,14 @@ class InterestController extends Controller
             }
             return response()->json([
                 'result' => false,
+                'status' => $result['status'] ?? null,
+                'code' => $result['code'] ?? null,
                 'error_code' => $result['error_code'] ?? 'unknown',
+                'limit_type' => $result['limit_type'] ?? null,
+                'free_limit' => $result['free_limit'] ?? null,
+                'used' => $result['used'] ?? null,
                 'message' => $result['message'] ?? translate('Could not send proposal. Please try again.'),
-            ]);
+            ], $result['http_status'] ?? 200);
         }
 
         // Legacy fallback (should not reach here)

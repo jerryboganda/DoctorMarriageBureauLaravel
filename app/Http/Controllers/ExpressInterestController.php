@@ -8,6 +8,7 @@ use App\Models\ExpressInterest;
 use App\Models\User;
 use App\Notifications\DbStoreNotification;
 use App\Services\FirbaseNotification;
+use App\Services\InterestService;
 use App\Utility\EmailUtility;
 use App\Utility\SmsUtility;
 use Auth;
@@ -117,66 +118,32 @@ class ExpressInterestController extends Controller
      */
     public function store(Request $request)
     {
-        $interested_by_user = Auth::user();
-        $interested_by_member = $interested_by_user->member;
-        if ($interested_by_member->remaining_interest > 0) {
-            // Store express interest data using mass assignment
-            // Check interest does not shown on self
-            if ($request->id != $interested_by_user->id) {
-                $express_interest = ExpressInterest::create([
-                    'user_id' => $request->id,
-                    'interested_by' => $interested_by_user->id,
-                    'status' => 0
-                ]);
-                
-                if ($express_interest) {
-                    // Deduct interested by user's remaining express interest value
-                    $interested_by_member->remaining_interest -= 1;
-                    $interested_by_member->save();
-
-                    $notify_user = User::where('id', $request->id)->first();
-
-                    // Express Interest Store Notification for member
-                    try {
-                        $notify_type = 'express_interest';
-                        $id = null;
-                        $notify_by = $interested_by_user->id;
-                        $info_id = $express_interest->id;
-                        $message = $interested_by_user->first_name . ' ' . $interested_by_user->last_name . ' ' . translate(' has Sent You a Proposal.');
-                        $route = route('interest_requests');
-
-                        // fcm 
-                        if (get_setting('firebase_push_notification') == 1) {
-                            $fcmTokens = User::where('id', $request->id)->whereNotNull('fcm_token')->pluck('fcm_token')->toArray();
-                            self::sendFirebaseNotification($fcmTokens, $notify_user, $notify_type, $message, $notify_by);
-                        }
-                        // end of fcm
-
-                        Notification::send($notify_user, new DbStoreNotification($notify_type, $id, $notify_by, $info_id, $message, $route));
-                    } catch (\Exception $e) {
-                        // dd($e);
-                    }
-
-                    // Express Interest email send to member
-                    if ($notify_user->email != null && get_email_template('email_on_express_interest', 'status')) {
-                        EmailUtility::email_on_request($notify_user, 'email_on_express_interest');
-                    }
-
-                    // Express Interest Send SMS to member
-                    if ($notify_user->phone != null && addon_activation('otp_system') && (get_sms_template('express_interest', 'status') == 1)) {
-                        SmsUtility::sms_on_request($notify_user, 'express_interest');
-                    }
-
-                    return true;
-                } else {
-                    return false;
-                }
-            } else {
-                return false;
-            }
-        } else {
+        $targetUserId = $request->id ?? $request->user_id;
+        if (!$targetUserId || (int) $targetUserId === (int) Auth::id()) {
             return false;
         }
+
+        $result = (new InterestService())->store($targetUserId);
+        if (is_array($result) && ($result['success'] ?? false)) {
+            return true;
+        }
+
+        if ($request->expectsJson() || $request->ajax()) {
+            $payload = is_array($result) ? $result : [];
+
+            return response()->json([
+                'result' => false,
+                'status' => $payload['status'] ?? null,
+                'code' => $payload['code'] ?? null,
+                'error_code' => $payload['error_code'] ?? 'unknown',
+                'limit_type' => $payload['limit_type'] ?? null,
+                'free_limit' => $payload['free_limit'] ?? null,
+                'used' => $payload['used'] ?? null,
+                'message' => $payload['message'] ?? translate('Could not send proposal. Please try again.'),
+            ], $payload['http_status'] ?? 200);
+        }
+
+        return false;
     }
 
     public function accept_interest(Request $request)

@@ -61,6 +61,14 @@ class InterestService
                   ];
             }
 
+            if ((int) $target_user->id === (int) $interested_by_user->id) {
+                  return [
+                        'success' => false,
+                        'error_code' => 'self_proposal',
+                        'message' => translate('You cannot send a proposal to yourself.'),
+                  ];
+            }
+
             if ($target_user->deactivated) {
                   return [
                         'success' => false,
@@ -77,8 +85,28 @@ class InterestService
                   ];
             }
 
-            // Check proposal quota
-            if ($interested_by_member->remaining_interest > 0) {
+            $existing_interest = ExpressInterest::where('user_id', $target_user->id)
+                  ->where('interested_by', $interested_by_user->id)
+                  ->first();
+            if ($existing_interest) {
+                  return [
+                        'success' => false,
+                        'error_code' => 'already_sent',
+                        'message' => translate('You have already sent a proposal to this person.'),
+                  ];
+            }
+
+            $communicationLimits = new MemberCommunicationLimitService();
+            $verificationLimitError = $communicationLimits->ensureCanSendProposal($interested_by_user);
+            if ($verificationLimitError) {
+                  $payload = $verificationLimitError->getData(true);
+                  $payload['http_status'] = $verificationLimitError->getStatusCode();
+                  return array_merge(['success' => false], $payload);
+            }
+
+            // Verified users keep the package quota. Unverified users use the new verification quota.
+            if (!$communicationLimits->isVerified($interested_by_user) || $interested_by_member->remaining_interest > 0) {
+
                   // Store express interest data using mass assignment
                   $express_interest = ExpressInterest::create([
                       'user_id' => $user_id,
@@ -86,9 +114,13 @@ class InterestService
                       'status' => 0
                   ]);
 
-                  // Deduct interested by user's remaining express interest value
-                  $interested_by_member->remaining_interest -= 1;
-                  $interested_by_member->save();
+                  if ($communicationLimits->isVerified($interested_by_user)) {
+                        // Deduct interested by user's remaining express interest value
+                        $interested_by_member->remaining_interest -= 1;
+                        $interested_by_member->save();
+                  } else {
+                        $communicationLimits->recordProposalSent($interested_by_user);
+                  }
 
                   $notify_user = $target_user;
 

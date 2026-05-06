@@ -42,7 +42,7 @@ class IsMember
                 return redirect()->route('user.login');
             }
 
-            if (Auth::user()->approved == 0) {
+            if (Auth::user()->approved == 0 && !$this->isLimitedCommunicationRoute($request)) {
                 flash(translate("Please verify your account."));
                 return redirect()->route('member.verification');
             } else {
@@ -56,5 +56,31 @@ class IsMember
             session(['link' => url()->current()]);
             return redirect()->route('user.login');
         }
+    }
+
+    private function isLimitedCommunicationRoute($request): bool
+    {
+        $routeName = optional($request->route())->getName();
+
+        return in_array($routeName, [
+            'my_interests.index',
+            'interest_requests',
+            'express-interest.index',
+            'express-interest.store',
+            'accept_interest',
+            'reject_interest',
+            'express_interest.accept_all',
+            'express_interest.reject_all',
+            'all.messages',
+            'chat_view',
+            'chat.reply',
+            'chat_refresh',
+            'get-old-message',
+        ], true) || $request->is(
+            'legacy-api/check-interest-status/*',
+            'legacy-api/express-interest',
+            'legacy-api/interest/accept',
+            'legacy-api/interest/decline'
+        );
     }
 }

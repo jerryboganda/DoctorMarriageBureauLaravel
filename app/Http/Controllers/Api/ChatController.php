@@ -11,24 +11,36 @@ use App\Models\Chat;
 use App\Models\ChatThread;
 use App\Models\Upload;
 use App\Services\ChatService;
+use App\Services\MemberCommunicationLimitService;
 use Illuminate\Http\Request;
 use PDF;
 
 class ChatController extends Controller
 {
+    private function communicationLimits(): MemberCommunicationLimitService
+    {
+        return new MemberCommunicationLimitService();
+    }
+
     private function ensureMessagingEntitlement()
     {
         $user = auth()->user();
+        $limits = $this->communicationLimits();
 
-        if (!$user || (int) $user->membership !== 2) {
-            return response()->json([
-                'result' => false,
-                'code' => 'SUBSCRIPTION_REQUIRED',
-                'message' => 'Messaging is a premium feature. Please subscribe to a premium package.',
-            ], 403);
+        if ($limits->isVerified($user) && (int) $user->membership !== 2) {
+            return $limits->subscriptionRequiredResponse();
         }
 
         return null;
+    }
+
+    private function ensureCanSendMessage()
+    {
+        if ($entitlementError = $this->ensureMessagingEntitlement()) {
+            return $entitlementError;
+        }
+
+        return $this->communicationLimits()->ensureCanSendMessage(auth()->user());
     }
 
     /**
@@ -181,7 +193,7 @@ class ChatController extends Controller
      */
     public function chat_reply(ChatRequest $request)
     {
-        if ($entitlementError = $this->ensureMessagingEntitlement()) {
+        if ($entitlementError = $this->ensureCanSendMessage()) {
             return $entitlementError;
         }
 
@@ -202,6 +214,7 @@ class ChatController extends Controller
 
         $chatService = new ChatService();
         $newChat = $chatService->store($request->except(['_token']), $attachments);
+        $this->communicationLimits()->recordMessageSent(auth()->user());
 
         return response()->json([
             'result' => true,
@@ -215,7 +228,7 @@ class ChatController extends Controller
      */
     public function share_biodata(Request $request)
     {
-        if ($entitlementError = $this->ensureMessagingEntitlement()) {
+        if ($entitlementError = $this->ensureCanSendMessage()) {
             return $entitlementError;
         }
 
@@ -266,6 +279,7 @@ class ChatController extends Controller
             'chat_thread_id' => $request->chat_thread_id,
             'message' => "📄 I've shared my biodata/profile details with you. You can view my full profile for more information.",
         ], [$upload->id]);
+        $this->communicationLimits()->recordMessageSent($user);
 
         return response()->json([
             'result' => true,

@@ -54,8 +54,8 @@ class IsApiMember
             ], 403);
         }
 
-        // Check approved status
-        if ($user->approved == 0) {
+        // Check approved status, but allow limited communication routes to apply their own quotas.
+        if ($user->approved == 0 && !$this->allowsUnverifiedCommunication($request)) {
             return response()->json([
                 'result' => false,
                 'status' => 'non_verified',
@@ -64,5 +64,19 @@ class IsApiMember
         }
 
         return $next($request);
+    }
+
+    private function allowsUnverifiedCommunication(Request $request): bool
+    {
+        $path = trim($request->path(), '/');
+
+        return in_array($path, [
+            'api/member/chat-list',
+            'api/member/chat-reply',
+            'api/member/chat/old-messages',
+            'api/member/chat/share-biodata',
+            'api/member/express-interest',
+            'api/express-interest',
+        ], true) || preg_match('#^api/member/chat-view/[^/]+$#', $path);
     }
 }

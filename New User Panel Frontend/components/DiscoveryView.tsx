@@ -23,6 +23,11 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http
 const DEFAULT_AVATAR = `${API_BASE}/assets/img/avatar-place.png`;
 const DEFAULT_FEMALE_AVATAR = `${API_BASE}/assets/img/female-avatar-place.png`;
 
+const isFemaleProfile = (gender?: number | string | null): boolean => {
+  const normalized = `${gender ?? ''}`.trim().toLowerCase();
+  return normalized === '2' || normalized === 'female' || normalized === 'f';
+};
+
 const resolveAvatarUrl = (value?: string | null): string => {
   const candidate = `${value ?? ''}`.trim();
   if (!candidate) return DEFAULT_AVATAR;
@@ -64,7 +69,7 @@ type MediaAccessStateMap = Record<string, MediaAccessBundle>;
 const normalizeProfile = (profile: any): ProfileMatch => {
   const fullName = profile.name || [profile.first_name, profile.last_name].filter(Boolean).join(' ').trim();
   const gender = profile.gender;
-  const fallbackAvatar = gender === 2 ? DEFAULT_FEMALE_AVATAR : DEFAULT_AVATAR;
+  const fallbackAvatar = isFemaleProfile(gender) ? DEFAULT_FEMALE_AVATAR : DEFAULT_AVATAR;
   let avatarUrl = profile.avatarUrl ?? profile.photo ?? '';
   const mediaAccess = resolveMediaAccessBundle(profile);
   // If avatarUrl is empty, numeric, or doesn't look like a URL, use fallback
@@ -81,6 +86,7 @@ const normalizeProfile = (profile: any): ProfileMatch => {
     age: normalizePositiveAge(profile.age),
     matchPercentage: profile.matchPercentage ?? profile.match_percentage ?? 0,
     avatarUrl,
+    gender,
     isVerified: profile.isVerified ?? profile.approved ?? false,
     isAgentPick: profile.isAgentPick ?? profile.is_agent_pick ?? false,
     isHighIntent: profile.isHighIntent ?? profile.is_high_intent ?? false,
@@ -1247,7 +1253,8 @@ const ProfileGridCard: React.FC<{
     const { t } = useTranslation();
     const interestFlags = getInterestFlags(profile, Boolean(superLiked));
     const profilePhotoAccess = mediaAccess.profilePhoto;
-    const avatarUrl = profile.avatarUrl || DEFAULT_AVATAR;
+    const fallbackAvatar = isFemaleProfile(profile.gender) ? DEFAULT_FEMALE_AVATAR : DEFAULT_AVATAR;
+    const avatarUrl = profile.avatarUrl || fallbackAvatar;
     const shouldBlurAvatar = Boolean(
       profile.profilePhotoBlur &&
       profile.photoExists &&
@@ -1300,7 +1307,7 @@ const ProfileGridCard: React.FC<{
                     src={avatarUrl}
                     alt={profile.name} 
                     className={`w-full h-full object-cover transition duration-300 ${shouldBlurAvatar ? 'scale-110 blur-2xl' : ''}`}
-                    onError={(e) => { (e.target as HTMLImageElement).src = DEFAULT_AVATAR; }}
+                    onError={(e) => { (e.target as HTMLImageElement).src = fallbackAvatar; }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60"></div>
                 

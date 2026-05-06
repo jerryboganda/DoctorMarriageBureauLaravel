@@ -50,6 +50,7 @@ const formatMessageTime = (dateStr: string) => {
 
 interface MessagesViewProps {
   onSubscriptionRequired?: () => void;
+  onVerificationRequired?: () => void;
   initialMemberId?: string | number | null;
   onInitialMemberIdConsumed?: () => void;
 }
@@ -58,8 +59,13 @@ const isSubscriptionRequiredError = (error: any): boolean => {
   return error?.response?.status === 403 && error?.response?.data?.code === 'SUBSCRIPTION_REQUIRED';
 };
 
+const isVerificationRequiredError = (error: any): boolean => {
+  return error?.response?.status === 403 && error?.response?.data?.code === 'VERIFICATION_REQUIRED';
+};
+
 const MessagesView: React.FC<MessagesViewProps> = ({
   onSubscriptionRequired,
+  onVerificationRequired,
   initialMemberId,
   onInitialMemberIdConsumed,
 }) => {
@@ -407,7 +413,19 @@ const MessagesView: React.FC<MessagesViewProps> = ({
       await fetchThreads();
     } catch (error: any) {
       if (isSubscriptionRequiredError(error)) {
+        setActiveChatData((prev: any) => prev ? {
+          ...prev,
+          messages: (prev.messages || []).filter((m: any) => m.id !== optimisticMsg.id),
+        } : prev);
         onSubscriptionRequired?.();
+        return;
+      }
+      if (isVerificationRequiredError(error)) {
+        setActiveChatData((prev: any) => prev ? {
+          ...prev,
+          messages: (prev.messages || []).filter((m: any) => m.id !== optimisticMsg.id),
+        } : prev);
+        onVerificationRequired?.();
         return;
       }
       console.error('Failed to send message', error);
@@ -451,6 +469,10 @@ const MessagesView: React.FC<MessagesViewProps> = ({
     } catch (error: any) {
       if (isSubscriptionRequiredError(error)) {
         onSubscriptionRequired?.();
+        return;
+      }
+      if (isVerificationRequiredError(error)) {
+        onVerificationRequired?.();
         return;
       }
       console.error('Failed to share biodata', error);

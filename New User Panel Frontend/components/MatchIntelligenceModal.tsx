@@ -8,9 +8,10 @@ import { resolveInterestState } from '../utils/interestStatus';
 interface MatchIntelligenceModalProps {
   profile: ProfileMatch;
   onClose: () => void;
+  onVerificationRequired?: () => void;
 }
 
-const MatchIntelligenceModal: React.FC<MatchIntelligenceModalProps> = ({ profile, onClose }) => {
+const MatchIntelligenceModal: React.FC<MatchIntelligenceModalProps> = ({ profile, onClose, onVerificationRequired }) => {
   const { t } = useTranslation();
   const [showFriction, setShowFriction] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -63,6 +64,10 @@ const MatchIntelligenceModal: React.FC<MatchIntelligenceModalProps> = ({ profile
       setSent(true);
     } catch (err: any) {
       console.error('Failed to send proposal', err);
+      if (err?.response?.data?.code === 'VERIFICATION_REQUIRED') {
+        onVerificationRequired?.();
+        return;
+      }
       setSendError(t('modals.matchIntelligence.couldNotSendProposal'));
     } finally {
       setSending(false);

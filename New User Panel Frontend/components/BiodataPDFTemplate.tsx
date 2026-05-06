@@ -39,6 +39,10 @@ const DEFAULT_FEMALE_AVATAR = `${API_BASE}/assets/img/female-avatar-place.png`;
 
 const humanize = (value: any) => (value ? String(value).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : null);
 const nonEmpty = (value: any) => !(value == null || value === '' || value === 'N/A');
+const isFemaleProfile = (gender?: number | string | null): boolean => {
+    const normalized = `${gender ?? ''}`.trim().toLowerCase();
+    return normalized === '2' || normalized === 'female' || normalized === 'f';
+};
 
 const BiodataPDFTemplate: React.FC<BiodataPDFTemplateProps> = ({ userData }) => {
     if (!userData) return null;
@@ -56,8 +60,9 @@ const BiodataPDFTemplate: React.FC<BiodataPDFTemplateProps> = ({ userData }) => 
     } = userData;
 
     const age = calculateAgeFromDob(member?.birthday);
-    const gender = member?.gender === 2 ? 'Female' : 'Male';
-    const defaultAvatar = member?.gender === 2 ? DEFAULT_FEMALE_AVATAR : DEFAULT_AVATAR;
+    const isFemale = isFemaleProfile(member?.gender);
+    const gender = isFemale ? 'Female' : 'Male';
+    const defaultAvatar = isFemale ? DEFAULT_FEMALE_AVATAR : DEFAULT_AVATAR;
     const rawPhoto = userData?.photo_url || userData?.photo;
     const photoUrl =
         typeof rawPhoto === 'string' &&

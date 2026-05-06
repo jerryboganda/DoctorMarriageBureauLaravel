@@ -10,9 +10,10 @@ interface ProposalModalProps {
   onClose: () => void;
   onNavigate?: (view: string) => void;
   onSent?: (profileId: string) => void;
+  onVerificationRequired?: () => void;
 }
 
-const ProposalModal: React.FC<ProposalModalProps> = ({ profile, onClose, onNavigate, onSent }) => {
+const ProposalModal: React.FC<ProposalModalProps> = ({ profile, onClose, onNavigate, onSent, onVerificationRequired }) => {
   const { t } = useTranslation();
   const [message, setMessage] = useState('');
   const [attachments, setAttachments] = useState({
@@ -90,11 +91,19 @@ const ProposalModal: React.FC<ProposalModalProps> = ({ profile, onClose, onNavig
                 onClose();
             }, 2000);
         } else {
+            if (response.data.code === 'VERIFICATION_REQUIRED') {
+                onVerificationRequired?.();
+                return;
+            }
             setErrorCode(response.data.error_code || null);
             setError(response.data.message || t('errors.couldNotSendProposal'));
         }
     } catch (err: any) {
         const data = err.response?.data;
+        if (data?.code === 'VERIFICATION_REQUIRED') {
+            onVerificationRequired?.();
+            return;
+        }
         setErrorCode(data?.error_code || null);
         setError(data?.message || t('errors.couldNotSendProposal'));
     } finally {

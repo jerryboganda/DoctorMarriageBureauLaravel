@@ -149,7 +149,6 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, dataSyncVers
   }, [dataSyncVersion]);
 
   const avatarUrl = resolveAvatarUrl(user?.avatar_original || user?.avatar); // kept for potential future use
-  const isPremiumMessagingMember = Number(user?.membership) === 2;
 
   // Scroll indicator state
   const navRef = useRef<HTMLElement>(null);
@@ -190,8 +189,9 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, dataSyncVers
           <NavItem icon={<Compass size={20} />} label={t('nav.exploreProfiles')} active={currentView === 'discovery'} onClick={() => onNavigate('discovery')} />
           <NavItem icon={<UserCheck size={20} />} label={t('nav.matchmakerProposals')} active={currentView === 'agent_picks'} onClick={() => onNavigate('agent_picks')} badge={counts.agentPicks || undefined} />
           <NavItem icon={<Heart size={20} />} label={t('nav.proposals')} active={currentView === 'dashboard'} onClick={() => onNavigate('dashboard')} badge={counts.proposals || undefined} />
-          <NavItem icon={<MessageSquare size={20} />} label={t('nav.messages')} active={currentView === 'messages'} onClick={() => { if (isPremiumMessagingMember) { onNavigate('messages'); } else { onUpgrade?.(); } }} badge={isPremiumMessagingMember ? (counts.messages || undefined) : undefined} />
+          <NavItem icon={<MessageSquare size={20} />} label={t('nav.messages')} active={currentView === 'messages'} onClick={() => onNavigate('messages')} badge={counts.messages || undefined} />
           <NavItem icon={<Bell size={20} />} label={t('nav.notifications')} active={currentView === 'notifications'} onClick={() => onNavigate('notifications')} badge={counts.notifications || undefined} />
+          <NavItem icon={<UserCircle size={20} />} label={t('nav.myProfile')} active={currentView === 'profile'} onClick={() => onNavigate('profile')} />
         </div>
 
         <p className="px-4 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 mt-4">{t('nav.familySocial')}</p>
@@ -207,7 +207,6 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, dataSyncVers
 
         <p className="px-4 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 mt-4">{t('nav.settingsHeader')}</p>
         <div className="space-y-1">
-          <NavItem icon={<UserCircle size={20} />} label={t('nav.myProfile')} active={currentView === 'profile'} onClick={() => onNavigate('profile')} />
           <NavItem icon={<ShieldCheck size={20} />} label={t('nav.privacyTrust')} active={currentView === 'settings'} onClick={() => onNavigate('settings')} />
         </div>
       </nav>

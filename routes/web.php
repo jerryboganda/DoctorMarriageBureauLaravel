@@ -311,29 +311,13 @@ Route::group(['middleware' => ['member', 'verified']], function () {
     // Express Interest API
     Route::post('/legacy-api/express-interest', function (Request $request) {
         try {
-            // Debug: Check if user is authenticated
             if (!auth()->check()) {
                 return response()->json(['success' => false, 'message' => 'User not authenticated'], 401);
             }
             
-            
             $user = auth()->user();
             $targetUserId = $request->user_id;
-            
-            // Debug: Log the received data
-            \Log::info('Express Interest Request', [
-                'user_id' => $user->id,
-                'target_user_id' => $targetUserId,
-                'request_data' => $request->all()
-            ]);
-            
-            // Check if user has remaining interests
-            $member = $user->member;
-            if (!$member || $member->remaining_interest <= 0) {
-                return response()->json(['success' => false, 'message' => 'No remaining interests available']);
-            }
-            
-            // Check if interest already exists
+
             $existingInterest = \App\Models\ExpressInterest::where('user_id', $targetUserId)
                 ->where('interested_by', $user->id)
                 ->first();
@@ -346,29 +330,26 @@ Route::group(['middleware' => ['member', 'verified']], function () {
             if ($targetUserId == $user->id) {
                 return response()->json(['success' => false, 'message' => 'Cannot send proposal to yourself']);
             }
-            
-            // Create new interest
-            $express_interest = \App\Models\ExpressInterest::create([
-                'user_id' => $targetUserId,
-                'interested_by' => $user->id,
-                'status' => 0 // Pending
-            ]);
-            
-            if ($express_interest) {
-                // Deduct remaining interest
-                $member->remaining_interest -= 1;
-                $member->save();
-                
-                // Send notification (optional - you can add this later)
-                // $notify_user = \App\Models\User::find($targetUserId);
-                // if ($notify_user) {
-                //     // Send notification logic here
-                // }
-                
+
+            $result = (new \App\Services\InterestService())->store($targetUserId);
+
+            if (is_array($result) && ($result['success'] ?? false)) {
                 return response()->json(['success' => true, 'message' => 'Proposal sent successfully']);
-            } else {
-                return response()->json(['success' => false, 'message' => 'Failed to send proposal']);
             }
+
+            $payload = is_array($result) ? $result : [];
+
+            return response()->json([
+                'success' => false,
+                'result' => false,
+                'status' => $payload['status'] ?? null,
+                'code' => $payload['code'] ?? null,
+                'error_code' => $payload['error_code'] ?? 'unknown',
+                'limit_type' => $payload['limit_type'] ?? null,
+                'free_limit' => $payload['free_limit'] ?? null,
+                'used' => $payload['used'] ?? null,
+                'message' => $payload['message'] ?? 'Failed to send proposal',
+            ], $payload['http_status'] ?? 200);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }

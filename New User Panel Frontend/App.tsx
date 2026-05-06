@@ -6,7 +6,7 @@ import LanguageToggle from './components/LanguageToggle';
 import FloatingContactButton from './components/FloatingContactButton';
 import LoadingTimeoutFallback from './components/LoadingTimeoutFallback';
 import PasswordField from './components/PasswordField';
-import { Bell, Menu, Send, Inbox, ArrowUpRight, ArrowDownLeft, Undo2 } from 'lucide-react';
+import { Bell, Menu, Send, Inbox, ArrowUpRight, ArrowDownLeft, Undo2, ShieldCheck } from 'lucide-react';
 import { ProfileMatch } from './types';
 import { AnimatePresence, motion } from 'framer-motion';
 import { PAGE_VARIANTS } from './utils/motion';
@@ -34,6 +34,7 @@ type CheckoutItem = {
 };
 
 type GateState = 'gateLoading' | 'needsOnboarding' | 'needsVerification' | 'verificationPending' | 'gateUnlocked';
+type VerificationLimitReason = 'message' | 'proposal';
 
 const lazyRetry = <T extends React.ComponentType<any>>(
     importer: () => Promise<{ default: T }>
@@ -112,6 +113,7 @@ const App: React.FC = () => {
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [showVerificationPrompt, setShowVerificationPrompt] = useState(false);
     const [isIdentityVerified, setIsIdentityVerified] = useState<boolean>(false); // true only when admin approved
+    const [hasSubmittedVerification, setHasSubmittedVerification] = useState<boolean>(false);
     const [gateState, setGateState] = useState<GateState>('gateLoading');
     const [showDeclineModal, setShowDeclineModal] = useState(false);
     const [proposalTarget, setProposalTarget] = useState<ProfileMatch | null>(null);
@@ -138,6 +140,7 @@ const App: React.FC = () => {
     // Billing & Subscription State
     const [showSubscription, setShowSubscription] = useState(false);
     const [showPremiumMessagingModal, setShowPremiumMessagingModal] = useState(false);
+    const [verificationLimitReason, setVerificationLimitReason] = useState<VerificationLimitReason | null>(null);
     const [checkoutItem, setCheckoutItem] = useState<CheckoutItem | null>(null);
     const [appliedCouponCode, setAppliedCouponCode] = useState<string | null>(null);
     const [profileTargetSection, setProfileTargetSection] = useState<string | null>(null);
@@ -370,6 +373,7 @@ const evaluateGate = async ({ silent = false }: { silent?: boolean } = {}) => {
 
         if (!onboardingCompleted) {
             setIsIdentityVerified(false);
+            setHasSubmittedVerification(false);
             setShowVerificationPrompt(false);
             setShowOnboarding(true);
             setGateState('needsOnboarding');
@@ -379,19 +383,18 @@ const evaluateGate = async ({ silent = false }: { silent?: boolean } = {}) => {
         setShowOnboarding(false);
         const { isApproved, hasSubmitted } = await fetchApprovalStatus();
         setIsIdentityVerified(isApproved);
+        setHasSubmittedVerification(hasSubmitted);
 
-        if (isApproved) {
-            setShowVerificationPrompt(false);
-            setGateState('gateUnlocked');
-            return;
+        setShowVerificationPrompt(false);
+        setGateState('gateUnlocked');
+        if (!isApproved && !hasSubmitted) {
+            scheduleVerificationPrompt();
         }
-
-        setShowVerificationPrompt(true);
-        setGateState(hasSubmitted ? 'verificationPending' : 'needsVerification');
     } catch (error) {
         console.error('Failed to evaluate onboarding/verification gate', error);
         // Fail closed for mission-critical flows.
         setIsIdentityVerified(false);
+        setHasSubmittedVerification(false);
         setShowVerificationPrompt(false);
         setShowOnboarding(true);
         setGateState('needsOnboarding');
@@ -421,8 +424,9 @@ useEffect(() => {
     } else {
         setGateState('gateLoading');
         setShowOnboarding(false);
-        setShowVerificationPrompt(false);
-        setIsIdentityVerified(false);
+            setShowVerificationPrompt(false);
+            setIsIdentityVerified(false);
+            setHasSubmittedVerification(false);
     }
 }, [isAuthenticated, mustChangePassword]);
 
@@ -543,6 +547,19 @@ useEffect(() => {
         setShowPremiumMessagingModal(true);
     };
 
+    const openVerificationLimitModal = (reason: VerificationLimitReason) => {
+        setVerificationLimitReason(reason);
+    };
+
+    const closeVerificationLimitModal = () => {
+        setVerificationLimitReason(null);
+    };
+
+    const openVerificationFromLimit = () => {
+        setVerificationLimitReason(null);
+        setShowVerificationPrompt(true);
+    };
+
     const handleUpgradeMessaging = () => {
         setShowPremiumMessagingModal(false);
         setShowSubscription(true);
@@ -656,7 +673,7 @@ useEffect(() => {
     const handleProposalMessageClick = (profileId?: string) => {
         const normalizedProfileId = String(profileId || '').trim();
 
-        if (!isPremiumMessagingMember) {
+        if (isIdentityVerified && !isPremiumMessagingMember) {
             setMessageTargetMemberId(null);
             openPremiumMessagingModal();
             return;
@@ -1130,6 +1147,7 @@ useEffect(() => {
                             ) : currentView === 'messages' ? (
                                 <MessagesView
                                     onSubscriptionRequired={openPremiumMessagingModal}
+                                    onVerificationRequired={() => openVerificationLimitModal('message')}
                                     initialMemberId={messageTargetMemberId}
                                     onInitialMemberIdConsumed={() => setMessageTargetMemberId(null)}
                                 />
@@ -1174,7 +1192,7 @@ useEffect(() => {
                         <Suspense fallback={null}>
                             <OnboardingModal onClose={() => {
                                 setShowOnboarding(false);
-                                setGateState('needsVerification');
+                                setGateState('gateUnlocked');
                                 scheduleVerificationPrompt();
                             }} />
                         </Suspense>
@@ -1189,6 +1207,7 @@ useEffect(() => {
                                 approvalPollIntervalMs={10000}
                                 onApproved={() => {
                                     setIsIdentityVerified(true);
+                                    setHasSubmittedVerification(true);
                                     setGateState('gateUnlocked');
                                     setShowVerificationPrompt(false);
                                 }}
@@ -1226,6 +1245,7 @@ useEffect(() => {
                                     upsertProposalState(profileId, 'sent_pending', 120000);
                                     refreshCoreData({ force: true });
                                 }}
+                                onVerificationRequired={() => openVerificationLimitModal('proposal')}
                             />
                         </Suspense>
                     )}
@@ -1241,6 +1261,60 @@ useEffect(() => {
                                 onChoosePackage={handleUpgradeMessaging}
                             />
                         </Suspense>
+                    )}
+                </AnimatePresence>
+
+                <AnimatePresence>
+                    {verificationLimitReason && (
+                        <motion.div
+                            className="fixed inset-0 z-[80] bg-slate-950/60 backdrop-blur-sm flex items-center justify-center px-4"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                        >
+                            <motion.div
+                                className="w-full max-w-md rounded-2xl bg-white shadow-2xl border border-slate-200 p-6"
+                                initial={{ scale: 0.96, y: 16 }}
+                                animate={{ scale: 1, y: 0 }}
+                                exit={{ scale: 0.96, y: 16 }}
+                            >
+                                <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-4">
+                                    <ShieldCheck size={24} />
+                                </div>
+                                <h3 className="text-xl font-bold text-slate-900 mb-2">
+                                    {hasSubmittedVerification && !isIdentityVerified
+                                        ? 'Verification under review'
+                                        : verificationLimitReason === 'proposal'
+                                            ? 'Verify to send more proposals'
+                                            : 'Verify to continue messaging'}
+                                </h3>
+                                <p className="text-sm text-slate-600 leading-relaxed mb-5">
+                                    {isIdentityVerified
+                                        ? 'Your account is verified. Please refresh and try again.'
+                                        : hasSubmittedVerification
+                                            ? 'You have used your free unverified limit, and your candidate verification is already under review. You can continue once it is approved.'
+                                            : verificationLimitReason === 'proposal'
+                                                ? 'You have used your 5 free unverified proposals. Complete candidate verification to continue sending proposals.'
+                                                : 'You have used your 5 free unverified messages. Complete candidate verification to continue messaging.'}
+                                </p>
+                                <div className="flex gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={closeVerificationLimitModal}
+                                        className="flex-1 px-4 py-3 rounded-xl border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition"
+                                    >
+                                        Later
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={openVerificationFromLimit}
+                                        className="flex-1 px-4 py-3 rounded-xl bg-primary text-white font-semibold hover:bg-primary/90 transition"
+                                    >
+                                        {hasSubmittedVerification && !isIdentityVerified ? 'View status' : 'Verify now'}
+                                    </button>
+                                </div>
+                            </motion.div>
+                        </motion.div>
                     )}
                 </AnimatePresence>
 
@@ -1374,5 +1448,3 @@ useEffect(() => {
 };
 
 export default App;
-
-

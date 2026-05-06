@@ -18,6 +18,11 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http
 const DEFAULT_AVATAR = `${API_BASE}/assets/img/avatar-place.png`;
 const DEFAULT_FEMALE_AVATAR = `${API_BASE}/assets/img/female-avatar-place.png`;
 
+const isFemaleProfile = (gender?: number | string | null): boolean => {
+  const normalized = `${gender ?? ''}`.trim().toLowerCase();
+  return normalized === '2' || normalized === 'female' || normalized === 'f';
+};
+
 interface ProfileDetailModalProps {
   profile: ProfileMatch;
   onClose: () => void;
@@ -187,7 +192,10 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({ profile, onClos
   const isOwnProfile = String(currentUserId ?? '') === String(profile.id ?? basicInfo?.id ?? '');
 
   const displayName = basicInfo ? `${basicInfo.firs_name || ''} ${basicInfo.last_name || ''}`.trim() : profile.name;
-  const photoUrl = basicInfo?.photo || profile.avatarUrl || DEFAULT_AVATAR;
+  const profileGender = basicInfo?.gender ?? profile.gender;
+  const initialAvatarLooksDefault = `${profile.avatarUrl ?? ''}`.includes('avatar-place.png');
+  const fallbackAvatar = isFemaleProfile(profileGender) ? DEFAULT_FEMALE_AVATAR : DEFAULT_AVATAR;
+  const photoUrl = basicInfo?.photo || (initialAvatarLooksDefault ? '' : profile.avatarUrl) || fallbackAvatar;
   const shouldBlurPhoto = Boolean(
     profilePhotoBlur &&
     currentUserId != null &&
@@ -375,7 +383,7 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({ profile, onClos
                 src={photoUrl}
                 alt={displayName}
                 className={`w-full h-full object-cover transition duration-300 ${shouldBlurPhoto ? 'scale-110 blur-2xl' : ''}`}
-                onError={(e) => { (e.target as HTMLImageElement).src = DEFAULT_AVATAR; }}
+                onError={(e) => { (e.target as HTMLImageElement).src = fallbackAvatar; }}
               />
             </div>
             <div className="flex-1 min-w-0 pt-12 pb-0.5">
