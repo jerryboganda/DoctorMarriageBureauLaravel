@@ -107,6 +107,18 @@ class MemberController extends Controller
         ];
     }
 
+    private function isOptionalVerificationField($element): bool
+    {
+        $label = strtolower(trim((string) ($element->label ?? '')));
+
+        return in_array($label, [
+            'professional degree',
+            'degree',
+            'medical degree',
+            'qualification',
+        ], true);
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -260,7 +272,15 @@ class MemberController extends Controller
             } elseif ($element->type == 'file') {
                 $item['type'] = 'file';
                 $item['label'] = $element->label;
-                $item['value'] = $request['element_' . $i]->store('uploads/verification_form');
+                $file = $request->file('element_' . $i);
+                if (!$file && $this->isOptionalVerificationField($element)) {
+                    $item['value'] = '';
+                } elseif ($file) {
+                    $item['value'] = $file->store('uploads/verification_form');
+                } else {
+                    flash(translate('Please upload the required document: :label', ['label' => $element->label]))->error();
+                    return back();
+                }
             }
             array_push($data, $item);
             $i++;

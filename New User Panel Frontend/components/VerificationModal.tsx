@@ -18,6 +18,11 @@ type VerificationField = {
   options?: string[] | string;
 };
 
+const isOptionalVerificationField = (field: VerificationField) => {
+  const label = field.label.trim().toLowerCase();
+  return ['professional degree', 'degree', 'medical degree', 'qualification'].includes(label);
+};
+
 // -- PREMIUM FILE UPLOADER COMPONENT --
 const FileUploader = ({
   label,
@@ -257,7 +262,7 @@ const VerificationModal: React.FC<VerificationModalProps> = ({
   const getMissingRequiredFileIndexes = () => {
     return fileFields
       .map((field) => fields.indexOf(field))
-      .filter((index) => index >= 0 && !values[index]);
+      .filter((index) => index >= 0 && !isOptionalVerificationField(fields[index]) && !values[index]);
   };
 
   const handleSubmit = async () => {
@@ -591,7 +596,9 @@ const VerificationModal: React.FC<VerificationModalProps> = ({
                     <div key={`${field.label}-${idx}`} className="space-y-2">
                       <div className="flex justify-between items-baseline">
                         <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">{field.label}</span>
-                        <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-bold">{t('modals.verification.required')}</span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${isOptionalVerificationField(field) ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>
+                          {isOptionalVerificationField(field) ? t('modals.verification.optional', 'Optional') : t('modals.verification.required')}
+                        </span>
                       </div>
                       {renderField(field, fields.indexOf(field))}
                     </div>
@@ -641,7 +648,13 @@ const VerificationModal: React.FC<VerificationModalProps> = ({
                             <FileText size={14} />
                             {values[index].name}
                           </span>
-                        ) : <span className="text-red-400 italic">{t('modals.verification.notProvided')}</span>
+                        ) : (
+                          <span className={isOptionalVerificationField(field) ? 'text-slate-400 italic' : 'text-red-400 italic'}>
+                            {isOptionalVerificationField(field)
+                              ? t('modals.verification.optionalNotProvided', 'Optional - not provided')
+                              : t('modals.verification.notProvided')}
+                          </span>
+                        )
                       ) : (
                         Array.isArray(values[index]) ? values[index].join(', ') : (values[index] || <span className="text-slate-300 italic">{t('modals.verification.empty')}</span>)
                       )}
@@ -705,4 +718,3 @@ const VerificationModal: React.FC<VerificationModalProps> = ({
 };
 
 export default VerificationModal;
-

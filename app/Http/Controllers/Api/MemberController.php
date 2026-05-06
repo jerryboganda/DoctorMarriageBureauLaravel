@@ -25,6 +25,18 @@ use Laravel\Sanctum\PersonalAccessToken;
 
 class MemberController extends Controller
 {
+    private function isOptionalVerificationField($element): bool
+    {
+        $label = strtolower(trim((string) ($element->label ?? '')));
+
+        return in_array($label, [
+            'professional degree',
+            'degree',
+            'medical degree',
+            'qualification',
+        ], true);
+    }
+
     public function member_listing(Request $request)
     {
         $authUser = auth()->user();
@@ -489,6 +501,13 @@ class MemberController extends Controller
                     $item['label'] = $element->label;
                     $file = $request->file('element_' . $i);
                     if (!$file) {
+                        if ($this->isOptionalVerificationField($element)) {
+                            $item['value'] = '';
+                            array_push($data, $item);
+                            $i++;
+                            continue;
+                        }
+
                         return response()->json([
                             'result' => false,
                             'error_code' => 'missing_document',
