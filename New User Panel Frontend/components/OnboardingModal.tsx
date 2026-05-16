@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { User, ArrowRight, ArrowLeft, Check, Loader2, AlertCircle, MapPin, Briefcase, Ruler, Heart, Camera, Upload, Sparkles } from 'lucide-react';
 import { api } from '../utils/api';
 import LoadingTimeoutFallback from './LoadingTimeoutFallback';
+import { compressImage } from '../utils/compression';
 
 interface OnboardingModalProps {
     onClose: () => void;
@@ -384,10 +385,17 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
             if (step === 6 && photoFile) {
                 try {
                     const formData = new FormData();
-                    formData.append('photo', photoFile);
-                    await api.post('/upload-profile-picture', formData, {
+                    const uploadFile = await compressImage(photoFile);
+                    formData.append('photo', uploadFile);
+                    const uploadResponse = await api.post('/upload-profile-picture', formData, {
                         headers: { 'Content-Type': 'multipart/form-data' },
                     });
+                    const uploadedPhotoUrl = uploadResponse?.data?.data?.photo_url || uploadResponse?.data?.photo_url;
+                    setData((current: any) => ({
+                        ...current,
+                        avatarUrl: uploadedPhotoUrl || current.avatarUrl,
+                        hasProfilePhoto: true,
+                    }));
                 } catch (uploadErr: any) {
                     const status = uploadErr?.response?.status;
                     const serverMessage = uploadErr?.response?.data?.message;
