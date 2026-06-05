@@ -188,7 +188,7 @@ jobs:
             : "${DEPLOY_PATH:?DEPLOY_PATH is required}"
             git bundle create /tmp/dmb-main.bundle HEAD
             scp /tmp/dmb-main.bundle "$VPS_USER@$VPS_HOST:/tmp/dmb-main.bundle"
-            ssh "$VPS_USER@$VPS_HOST" "DEPLOY_PATH='$DEPLOY_PATH' bash -s" <<'REMOTE'
+            ssh "$VPS_USER@$VPS_HOST" "DEPLOY_PATH='$DEPLOY_PATH' bash -s" \<<'REMOTE'
             set -euo pipefail
             cd "$DEPLOY_PATH"
             git fetch /tmp/dmb-main.bundle HEAD
