@@ -36,8 +36,46 @@ try {
     echo "[✓] SQL baseline file loaded (".strlen($sqlContent)." bytes)\n";
 
     echo "Importing baseline schema...\n";
-    // Split statements recursively and execute
-    $statements = preg_split('/;(?=(?:[^\']*\'[^\']*\')*[^\']*$)/', $sqlContent);
+    $statements = [];
+    $current = '';
+    $inString = false;
+    $stringChar = '';
+    $escaped = false;
+    $len = strlen($sqlContent);
+
+    for ($i = 0; $i < $len; $i++) {
+        $c = $sqlContent[$i];
+        
+        if ($escaped) {
+            $current .= $c;
+            $escaped = false;
+            continue;
+        }
+        if ($c === '\\') {
+            $current .= $c;
+            $escaped = true;
+            continue;
+        }
+
+        if (($c === "'" || $c === '"') && !$inString) {
+            $inString = true;
+            $stringChar = $c;
+        } elseif ($c === $stringChar && $inString) {
+            $inString = false;
+            $stringChar = '';
+        }
+
+        $current .= $c;
+
+        if ($c === ';' && !$inString) {
+            $statements[] = $current;
+            $current = '';
+        }
+    }
+    if (trim($current) !== '') {
+        $statements[] = $current;
+    }
+
     $count = 0;
     foreach ($statements as $statement) {
         $statement = trim($statement);
