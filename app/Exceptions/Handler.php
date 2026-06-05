@@ -39,7 +39,7 @@ class Handler extends ExceptionHandler
      */
     public function report(Throwable $exception)
     {
-        if (request()?->is('api/*')) {
+        if (app()->bound('request') && request()->is('api/*')) {
             $request = request();
 
             Log::error('API exception', [
