@@ -110,7 +110,7 @@ services:
 
   flutter-app:
     build:
-      context: ./dmb_app
+      context: ./DMB Mobile App
       dockerfile: Dockerfile
     image: marriagebureau-flutter-app
     container_name: marriagebureau-flutter-app
