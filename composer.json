@@ -58,7 +58,8 @@
     "extra": {
         "laravel": {
             "dont-discover": [
-                "barryvdh/laravel-debugbar"
+                "barryvdh/laravel-debugbar",
+                "beyondcode/laravel-dump-server"
             ]
         }
     },
