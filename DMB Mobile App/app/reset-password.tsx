@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
+import {
+    View,
+    Text,
+    TouchableOpacity,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    Alert,
+} from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -40,7 +48,7 @@ export default function ResetPassword() {
                 email_or_phone: identifier,
                 code: code,
                 password: password,
-                password_confirmation: confirmPassword
+                password_confirmation: confirmPassword,
             });
 
             if (response.data.result) {
@@ -51,7 +59,10 @@ export default function ResetPassword() {
             }
         } catch (error: any) {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-            const message = error.response?.data?.message || error.message || t('auth.resetPassword.resetFailed');
+            const message =
+                error.response?.data?.message ||
+                error.message ||
+                t('auth.resetPassword.resetFailed');
             Alert.alert(t('common.error'), message);
             console.error('Password reset error:', error);
         } finally {
@@ -75,11 +86,17 @@ export default function ResetPassword() {
                     >
                         <CheckCircleIcon size={40} color="white" />
                     </MotiView>
-                    <Text className="text-2xl font-bold text-slate-900 text-center mb-2">{t('auth.resetPassword.passwordUpdated')}</Text>
+                    <Text className="text-2xl font-bold text-slate-900 text-center mb-2">
+                        {t('auth.resetPassword.passwordUpdated')}
+                    </Text>
                     <Text className="text-slate-500 text-center mb-8 leading-6">
                         {t('auth.resetPassword.passwordUpdatedDesc')}
                     </Text>
-                    <Button variant="primary" onPress={() => router.replace('/login')} title={t('auth.forgotPassword.backToLogin')} />
+                    <Button
+                        variant="primary"
+                        onPress={() => router.replace('/login')}
+                        title={t('auth.forgotPassword.backToLogin')}
+                    />
                 </View>
             </View>
         );
@@ -101,13 +118,20 @@ export default function ResetPassword() {
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
                 >
-                    <View className="flex-1 px-8" style={{ marginTop: insets.top + 20, paddingBottom: 40 }}>
+                    <View
+                        className="flex-1 px-8"
+                        style={{ marginTop: insets.top + 20, paddingBottom: 40 }}
+                    >
                         {/* Back Button */}
                         <TouchableOpacity
                             onPress={() => router.back()}
                             className="w-10 h-10 rounded-full bg-white shadow-sm border border-slate-100 items-center justify-center mb-10"
                         >
-                            <ChevronRightIcon size={20} color="#64748b" style={{ transform: [{ rotate: '180deg' }] }} />
+                            <ChevronRightIcon
+                                size={20}
+                                color="#64748b"
+                                style={{ transform: [{ rotate: '180deg' }] }}
+                            />
                         </TouchableOpacity>
 
                         {/* Header */}
@@ -156,7 +180,11 @@ export default function ResetPassword() {
 
                             <Button
                                 variant="primary"
-                                title={loading ? t('common.updating') : t('auth.resetPassword.resetPassword')}
+                                title={
+                                    loading
+                                        ? t('common.updating')
+                                        : t('auth.resetPassword.resetPassword')
+                                }
                                 fullWidth
                                 onPress={handleResetPassword}
                                 isLoading={loading}

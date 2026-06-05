@@ -5,17 +5,16 @@ import ErrorBoundary from './components/ErrorBoundary';
 import './utils/i18n';
 import './utils/echo';
 
-
 const rootElement = document.getElementById('root');
 if (!rootElement) {
-  throw new Error("Could not find root element to mount to");
+    throw new Error('Could not find root element to mount to');
 }
 
 const root = ReactDOM.createRoot(rootElement);
 root.render(
-  <React.StrictMode>
-    <ErrorBoundary>
-      <App />
-    </ErrorBoundary>
-  </React.StrictMode>
+    <React.StrictMode>
+        <ErrorBoundary>
+            <App />
+        </ErrorBoundary>
+    </React.StrictMode>,
 );

@@ -1,12 +1,19 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
+import {
+    View,
+    Text,
+    TouchableOpacity,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    Alert,
+} from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { MotiView } from 'moti';
-import Button from '../components/Button';
 import OtpInput from '../components/OtpInput';
-import { MailIcon, PhoneIcon, ChevronRightIcon, RefreshCwIcon, ShieldIcon } from '../components/Icons';
+import { ChevronRightIcon, RefreshCwIcon, ShieldIcon } from '../components/Icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../utils/api';
 import * as Haptics from 'expo-haptics';
@@ -26,21 +33,22 @@ export default function VerifyOtp() {
         try {
             const response = await api.post('/verify/password/reset', {
                 email_or_phone: identifier,
-                code: code
+                code: code,
             });
 
             if (response.data.result) {
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                 router.push({
                     pathname: '/reset-password',
-                    params: { identifier, code }
+                    params: { identifier, code },
                 });
             } else {
                 throw new Error(response.data.message);
             }
         } catch (error: any) {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-            const message = error.response?.data?.message || error.message || t('auth.verifyOtp.invalidCode');
+            const message =
+                error.response?.data?.message || error.message || t('auth.verifyOtp.invalidCode');
             Alert.alert(t('auth.verifyOtp.verificationFailed'), message);
             console.error('OTP verification error:', error);
         } finally {
@@ -56,7 +64,7 @@ export default function VerifyOtp() {
             const payload = {
                 [method === 'phone' ? 'phone' : 'email']: identifier,
                 send_code_by: method,
-                email_or_phone: identifier
+                email_or_phone: identifier,
             };
 
             const response = await api.post('/forgot/password', payload);
@@ -91,13 +99,20 @@ export default function VerifyOtp() {
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
                 >
-                    <View className="flex-1 px-8" style={{ marginTop: insets.top + 20, paddingBottom: 40 }}>
+                    <View
+                        className="flex-1 px-8"
+                        style={{ marginTop: insets.top + 20, paddingBottom: 40 }}
+                    >
                         {/* Back Button */}
                         <TouchableOpacity
                             onPress={() => router.back()}
                             className="w-10 h-10 rounded-full bg-white shadow-sm border border-slate-100 items-center justify-center mb-10"
                         >
-                            <ChevronRightIcon size={20} color="#64748b" style={{ transform: [{ rotate: '180deg' }] }} />
+                            <ChevronRightIcon
+                                size={20}
+                                color="#64748b"
+                                style={{ transform: [{ rotate: '180deg' }] }}
+                            />
                         </TouchableOpacity>
 
                         {/* Header */}
@@ -113,7 +128,8 @@ export default function VerifyOtp() {
                                 {t('auth.verifyOtp.title')}
                             </Text>
                             <Text className="text-slate-500 text-lg mt-3 text-center leading-relaxed">
-                                {t('auth.verifyOtp.subtitle')}{"\n"}
+                                {t('auth.verifyOtp.subtitle')}
+                                {'\n'}
                                 <Text className="font-bold text-slate-700">{identifier}</Text>
                             </Text>
                         </MotiView>
@@ -134,9 +150,17 @@ export default function VerifyOtp() {
                                 disabled={resending}
                                 className="flex-row items-center justify-center gap-2"
                             >
-                                <RefreshCwIcon size={16} color={resending ? "#94a3b8" : "#2563eb"} className={resending ? "animate-spin" : ""} />
-                                <Text className={`font-bold ${resending ? "text-slate-400" : "text-blue-600"}`}>
-                                    {resending ? t('common.sending') : t('auth.verifyOtp.resendCode')}
+                                <RefreshCwIcon
+                                    size={16}
+                                    color={resending ? '#94a3b8' : '#2563eb'}
+                                    className={resending ? 'animate-spin' : ''}
+                                />
+                                <Text
+                                    className={`font-bold ${resending ? 'text-slate-400' : 'text-blue-600'}`}
+                                >
+                                    {resending
+                                        ? t('common.sending')
+                                        : t('auth.verifyOtp.resendCode')}
                                 </Text>
                             </TouchableOpacity>
                         </MotiView>

@@ -6,7 +6,16 @@ import LanguageToggle from './components/LanguageToggle';
 import FloatingContactButton from './components/FloatingContactButton';
 import LoadingTimeoutFallback from './components/LoadingTimeoutFallback';
 import PasswordField from './components/PasswordField';
-import { Bell, Menu, Send, Inbox, ArrowUpRight, ArrowDownLeft, Undo2, ShieldCheck } from 'lucide-react';
+import {
+    Bell,
+    Menu,
+    Send,
+    Inbox,
+    ArrowUpRight,
+    ArrowDownLeft,
+    Undo2,
+    ShieldCheck,
+} from 'lucide-react';
 import { ProfileMatch } from './types';
 import { AnimatePresence, motion } from 'framer-motion';
 import { PAGE_VARIANTS } from './utils/motion';
@@ -33,12 +42,15 @@ type CheckoutItem = {
     type: 'package' | 'addon';
 };
 
-type GateState = 'gateLoading' | 'needsOnboarding' | 'needsVerification' | 'verificationPending' | 'gateUnlocked';
+type GateState =
+    | 'gateLoading'
+    | 'needsOnboarding'
+    | 'needsVerification'
+    | 'verificationPending'
+    | 'gateUnlocked';
 type VerificationLimitReason = 'message' | 'proposal';
 
-const lazyRetry = <T extends React.ComponentType<any>>(
-    importer: () => Promise<{ default: T }>
-) => {
+const lazyRetry = <T extends React.ComponentType<any>>(importer: () => Promise<{ default: T }>) => {
     return () =>
         importer().catch((error) => {
             const message = String(error?.message || '');
@@ -81,7 +93,9 @@ const AuthModal = lazy(lazyRetry(() => import('./components/AuthModal')));
 const WelcomeScreen = lazy(lazyRetry(() => import('./components/WelcomeScreen')));
 const ProfileDetailModal = lazy(lazyRetry(() => import('./components/ProfileDetailModal')));
 const ReferralPopupModal = lazy(lazyRetry(() => import('./components/ReferralPopupModal')));
-const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://api.doctormarriagebureau.com.pk';
+const API_BASE =
+    import.meta.env.VITE_API_BASE_URL?.replace('/api', '') ||
+    'https://api.doctormarriagebureau.com.pk';
 const DEFAULT_AVATAR = `${API_BASE}/assets/img/avatar-place.png`;
 
 const buildNotificationProfileTarget = (profileId: string): ProfileMatch => ({
@@ -122,9 +136,13 @@ const App: React.FC = () => {
     const [declineInterestId, setDeclineInterestId] = useState<number | null>(null);
     const [dashboardTab, setDashboardTab] = useState<'all' | 'verified' | 'unverified'>('all');
     const [proposalDirection, setProposalDirection] = useState<'received' | 'sent'>('received');
-    const [selectedProposalProfile, setSelectedProposalProfile] = useState<ProfileMatch | null>(null);
+    const [selectedProposalProfile, setSelectedProposalProfile] = useState<ProfileMatch | null>(
+        null,
+    );
     const [sentProposalMap, setSentProposalMap] = useState<Record<string, boolean>>({});
-    const [proposalStatusMap, setProposalStatusMap] = useState<Record<string, CanonicalInterestState>>({});
+    const [proposalStatusMap, setProposalStatusMap] = useState<
+        Record<string, CanonicalInterestState>
+    >({});
     const [dataSyncVersion, setDataSyncVersion] = useState(0);
     const optimisticProposalMapRef = useRef<Record<string, ProposalStateMapValue>>({});
 
@@ -140,7 +158,8 @@ const App: React.FC = () => {
     // Billing & Subscription State
     const [showSubscription, setShowSubscription] = useState(false);
     const [showPremiumMessagingModal, setShowPremiumMessagingModal] = useState(false);
-    const [verificationLimitReason, setVerificationLimitReason] = useState<VerificationLimitReason | null>(null);
+    const [verificationLimitReason, setVerificationLimitReason] =
+        useState<VerificationLimitReason | null>(null);
     const [checkoutItem, setCheckoutItem] = useState<CheckoutItem | null>(null);
     const [appliedCouponCode, setAppliedCouponCode] = useState<string | null>(null);
     const [profileTargetSection, setProfileTargetSection] = useState<string | null>(null);
@@ -175,7 +194,9 @@ const App: React.FC = () => {
 
         const fetchAndShow = async () => {
             try {
-                const res = await api.get('/referral/settings-public', { signal: controller.signal });
+                const res = await api.get('/referral/settings-public', {
+                    signal: controller.signal,
+                });
                 const popup = res.data?.popup;
                 if (!popup?.enabled) return;
 
@@ -230,10 +251,14 @@ const App: React.FC = () => {
         const statusText = String(item.status ?? '').toLowerCase();
         const isAccepted = proposalStatus.includes('accepted') || statusText === 'approved';
         const isReceived = proposalStatus.startsWith('received') || direction === 'received';
-        const interestStatus = isReceived ? 'do_response' : (isAccepted ? 'mutual' : 'sent interest');
+        const interestStatus = isReceived ? 'do_response' : isAccepted ? 'mutual' : 'sent interest';
         const interestText = isReceived
-            ? (isAccepted ? 'You Accepted Proposal' : 'Reply to Proposal')
-            : (isAccepted ? 'Proposal Accepted' : 'Proposal Sent');
+            ? isAccepted
+                ? 'You Accepted Proposal'
+                : 'Reply to Proposal'
+            : isAccepted
+              ? 'Proposal Accepted'
+              : 'Proposal Sent';
 
         return {
             interestId,
@@ -250,7 +275,7 @@ const App: React.FC = () => {
                 isVerified: !!item.is_verified,
                 interestStatus,
                 interestText,
-            }
+            },
         };
     };
 
@@ -308,7 +333,7 @@ const App: React.FC = () => {
                 [normalizedId]: state === 'sent_pending' || state === 'sent_accepted',
             }));
         },
-        []
+        [],
     );
 
     const refreshCoreData = async ({ force = false }: { force?: boolean } = {}) => {
@@ -357,191 +382,195 @@ const App: React.FC = () => {
     };
 
     const fetchApprovalStatus = async () => {
-    const res = await api.get('/member/is-approved');
-    const hasSubmitted = !!res.data?.verification_info;
-    const isApproved = (res.data?.is_approved == 1) && hasSubmitted;
-    return { isApproved, hasSubmitted };
-};
+        const res = await api.get('/member/is-approved');
+        const hasSubmitted = !!res.data?.verification_info;
+        const isApproved = res.data?.is_approved == 1 && hasSubmitted;
+        return { isApproved, hasSubmitted };
+    };
 
-const evaluateGate = async ({ silent = false }: { silent?: boolean } = {}) => {
-    if (!silent) {
-        setGateState('gateLoading');
-    }
-    try {
-        const profileRes = await api.get('/full-profile');
-        const onboardingCompleted = profileRes.data?.result && profileRes.data?.basics?.onboardingCompleted === true;
+    const evaluateGate = async ({ silent = false }: { silent?: boolean } = {}) => {
+        if (!silent) {
+            setGateState('gateLoading');
+        }
+        try {
+            const profileRes = await api.get('/full-profile');
+            const onboardingCompleted =
+                profileRes.data?.result && profileRes.data?.basics?.onboardingCompleted === true;
 
-        if (!onboardingCompleted) {
+            if (!onboardingCompleted) {
+                setIsIdentityVerified(false);
+                setHasSubmittedVerification(false);
+                setShowVerificationPrompt(false);
+                setShowOnboarding(true);
+                setGateState('needsOnboarding');
+                return;
+            }
+
+            setShowOnboarding(false);
+            const { isApproved, hasSubmitted } = await fetchApprovalStatus();
+            setIsIdentityVerified(isApproved);
+            setHasSubmittedVerification(hasSubmitted);
+
+            setShowVerificationPrompt(false);
+            setGateState('gateUnlocked');
+            if (!isApproved && !hasSubmitted) {
+                scheduleVerificationPrompt();
+            }
+        } catch (error) {
+            console.error('Failed to evaluate onboarding/verification gate', error);
+            // Fail closed for mission-critical flows.
             setIsIdentityVerified(false);
             setHasSubmittedVerification(false);
             setShowVerificationPrompt(false);
             setShowOnboarding(true);
             setGateState('needsOnboarding');
-            return;
         }
+    };
 
-        setShowOnboarding(false);
-        const { isApproved, hasSubmitted } = await fetchApprovalStatus();
-        setIsIdentityVerified(isApproved);
-        setHasSubmittedVerification(hasSubmitted);
-
-        setShowVerificationPrompt(false);
-        setGateState('gateUnlocked');
-        if (!isApproved && !hasSubmitted) {
-            scheduleVerificationPrompt();
-        }
-    } catch (error) {
-        console.error('Failed to evaluate onboarding/verification gate', error);
-        // Fail closed for mission-critical flows.
-        setIsIdentityVerified(false);
-        setHasSubmittedVerification(false);
-        setShowVerificationPrompt(false);
-        setShowOnboarding(true);
-        setGateState('needsOnboarding');
-    }
-};
-
-const scheduleVerificationPrompt = () => {
-    if (verificationDelayRef.current) {
-        clearTimeout(verificationDelayRef.current);
-    }
-    verificationDelayRef.current = setTimeout(() => {
-        setShowVerificationPrompt(true);
-    }, 5000);
-};
-
-useEffect(() => {
-    if (isAuthenticated) {
-        if (mustChangePassword) {
-            setGateState('gateUnlocked');
-            setShowOnboarding(false);
-            setShowVerificationPrompt(false);
-            setIsIdentityVerified(true);
-            return;
-        }
-        refreshCoreData({ force: true });
-        evaluateGate();
-    } else {
-        setGateState('gateLoading');
-        setShowOnboarding(false);
-            setShowVerificationPrompt(false);
-            setIsIdentityVerified(false);
-            setHasSubmittedVerification(false);
-    }
-}, [isAuthenticated, mustChangePassword]);
-
-useEffect(() => {
-    const next: Record<string, CanonicalInterestState> = {};
-
-    sentInterests.forEach((interest) => {
-        const profileId = String(interest.profile?.id ?? '');
-        if (!profileId) return;
-        const statusText = String(interest.status ?? '').toLowerCase();
-        next[profileId] = statusText === 'approved' ? 'sent_accepted' : 'sent_pending';
-    });
-
-    incomingInterests.forEach((interest) => {
-        const profileId = String(interest.profile?.id ?? '');
-        if (!profileId) return;
-        const statusText = String(interest.status ?? '').toLowerCase();
-        next[profileId] = statusText === 'approved' ? 'received_accepted' : 'received_pending';
-    });
-
-    const now = Date.now();
-    Object.entries(optimisticProposalMapRef.current).forEach(([profileId, optimistic]) => {
-        if (optimistic.expiresAt < now) {
-            delete optimisticProposalMapRef.current[profileId];
-            return;
-        }
-        if (!(profileId in next)) {
-            next[profileId] = optimistic.state;
-        } else {
-            delete optimisticProposalMapRef.current[profileId];
-        }
-    });
-
-    setProposalStatusMap(next);
-    setSentProposalMap((prev) => {
-        const merged: Record<string, boolean> = { ...prev };
-        Object.entries(next).forEach(([profileId, state]) => {
-            merged[profileId] = state === 'sent_pending' || state === 'sent_accepted';
-        });
-        return merged;
-    });
-}, [sentInterests, incomingInterests]);
-
-useEffect(() => {
-    return () => {
+    const scheduleVerificationPrompt = () => {
         if (verificationDelayRef.current) {
             clearTimeout(verificationDelayRef.current);
         }
-    };
-}, []);
-
-useEffect(() => {
-    if (!isAuthenticated || gateState !== 'gateUnlocked') return;
-
-    const MIN_PASSIVE_RECHECK_INTERVAL_MS = 30000;
-    const MIN_HIDDEN_DURATION_MS = 5000;
-
-    const runPassiveGateCheck = () => {
-        const now = Date.now();
-        if (now - lastPassiveGateCheckAtRef.current < MIN_PASSIVE_RECHECK_INTERVAL_MS) {
-            return;
-        }
-        lastPassiveGateCheckAtRef.current = now;
-        evaluateGate({ silent: true });
+        verificationDelayRef.current = setTimeout(() => {
+            setShowVerificationPrompt(true);
+        }, 5000);
     };
 
-    const handleFocus = () => {
-        runPassiveGateCheck();
-    };
-    const handleVisibilityChange = () => {
-        if (document.visibilityState === 'hidden') {
-            lastHiddenAtRef.current = Date.now();
-            return;
-        }
-        if (document.visibilityState === 'visible') {
-            const hiddenFor = lastHiddenAtRef.current ? Date.now() - lastHiddenAtRef.current : 0;
-            lastHiddenAtRef.current = null;
-            if (hiddenFor >= MIN_HIDDEN_DURATION_MS) {
-                runPassiveGateCheck();
+    useEffect(() => {
+        if (isAuthenticated) {
+            if (mustChangePassword) {
+                setGateState('gateUnlocked');
+                setShowOnboarding(false);
+                setShowVerificationPrompt(false);
+                setIsIdentityVerified(true);
+                return;
             }
+            refreshCoreData({ force: true });
+            evaluateGate();
+        } else {
+            setGateState('gateLoading');
+            setShowOnboarding(false);
+            setShowVerificationPrompt(false);
+            setIsIdentityVerified(false);
+            setHasSubmittedVerification(false);
         }
-    };
+    }, [isAuthenticated, mustChangePassword]);
 
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('pageshow', handleFocus);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    useEffect(() => {
+        const next: Record<string, CanonicalInterestState> = {};
 
-    return () => {
-        window.removeEventListener('focus', handleFocus);
-        window.removeEventListener('pageshow', handleFocus);
-        document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-}, [isAuthenticated, gateState]);
+        sentInterests.forEach((interest) => {
+            const profileId = String(interest.profile?.id ?? '');
+            if (!profileId) return;
+            const statusText = String(interest.status ?? '').toLowerCase();
+            next[profileId] = statusText === 'approved' ? 'sent_accepted' : 'sent_pending';
+        });
 
+        incomingInterests.forEach((interest) => {
+            const profileId = String(interest.profile?.id ?? '');
+            if (!profileId) return;
+            const statusText = String(interest.status ?? '').toLowerCase();
+            next[profileId] = statusText === 'approved' ? 'received_accepted' : 'received_pending';
+        });
 
-useEffect(() => {
-    if (!isAuthenticated) return;
+        const now = Date.now();
+        Object.entries<ProposalStateMapValue>(optimisticProposalMapRef.current).forEach(
+            ([profileId, optimistic]) => {
+                if (optimistic.expiresAt < now) {
+                    delete optimisticProposalMapRef.current[profileId];
+                    return;
+                }
+                if (!(profileId in next)) {
+                    next[profileId] = optimistic.state;
+                } else {
+                    delete optimisticProposalMapRef.current[profileId];
+                }
+            },
+        );
 
-    const onVisibility = () => {
-        if (document.visibilityState === 'visible') {
+        setProposalStatusMap(next);
+        setSentProposalMap((prev) => {
+            const merged: Record<string, boolean> = { ...prev };
+            Object.entries(next).forEach(([profileId, state]) => {
+                merged[profileId] = state === 'sent_pending' || state === 'sent_accepted';
+            });
+            return merged;
+        });
+    }, [sentInterests, incomingInterests]);
+
+    useEffect(() => {
+        return () => {
+            if (verificationDelayRef.current) {
+                clearTimeout(verificationDelayRef.current);
+            }
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!isAuthenticated || gateState !== 'gateUnlocked') return;
+
+        const MIN_PASSIVE_RECHECK_INTERVAL_MS = 30000;
+        const MIN_HIDDEN_DURATION_MS = 5000;
+
+        const runPassiveGateCheck = () => {
+            const now = Date.now();
+            if (now - lastPassiveGateCheckAtRef.current < MIN_PASSIVE_RECHECK_INTERVAL_MS) {
+                return;
+            }
+            lastPassiveGateCheckAtRef.current = now;
+            evaluateGate({ silent: true });
+        };
+
+        const handleFocus = () => {
+            runPassiveGateCheck();
+        };
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'hidden') {
+                lastHiddenAtRef.current = Date.now();
+                return;
+            }
+            if (document.visibilityState === 'visible') {
+                const hiddenFor = lastHiddenAtRef.current
+                    ? Date.now() - lastHiddenAtRef.current
+                    : 0;
+                lastHiddenAtRef.current = null;
+                if (hiddenFor >= MIN_HIDDEN_DURATION_MS) {
+                    runPassiveGateCheck();
+                }
+            }
+        };
+
+        window.addEventListener('focus', handleFocus);
+        window.addEventListener('pageshow', handleFocus);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            window.removeEventListener('focus', handleFocus);
+            window.removeEventListener('pageshow', handleFocus);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [isAuthenticated, gateState]);
+
+    useEffect(() => {
+        if (!isAuthenticated) return;
+
+        const onVisibility = () => {
+            if (document.visibilityState === 'visible') {
+                refreshCoreData();
+            }
+        };
+        const onFocus = () => {
             refreshCoreData();
-        }
-    };
-    const onFocus = () => {
-        refreshCoreData();
-    };
+        };
 
-    document.addEventListener('visibilitychange', onVisibility);
-    window.addEventListener('focus', onFocus);
+        document.addEventListener('visibilitychange', onVisibility);
+        window.addEventListener('focus', onFocus);
 
-    return () => {
-        document.removeEventListener('visibilitychange', onVisibility);
-        window.removeEventListener('focus', onFocus);
-    };
-}, [isAuthenticated]);
+        return () => {
+            document.removeEventListener('visibilitychange', onVisibility);
+            window.removeEventListener('focus', onFocus);
+        };
+    }, [isAuthenticated]);
 
     const openPremiumMessagingModal = () => {
         setShowPremiumMessagingModal(true);
@@ -587,7 +616,7 @@ useEffect(() => {
         }
         await logout();
         setCurrentView('dashboard');
-    }
+    };
 
     const handleForcedPasswordChange = async () => {
         if (!forcePasswordOld || !forcePasswordNew || !forcePasswordConfirm) {
@@ -693,18 +722,32 @@ useEffect(() => {
 
     if (!isAuthenticated) {
         const authPath = window.location.pathname.toLowerCase().replace(/\/+$/, '');
-        const initialAuthStep = authPath === '/register' || authPath === '/signup'
-            ? 'input'
-            : authPath === '/forgot-password'
-                ? 'forgot-password'
-                : 'landing';
+        const initialAuthStep =
+            authPath === '/register' || authPath === '/signup'
+                ? 'input'
+                : authPath === '/forgot-password'
+                  ? 'forgot-password'
+                  : 'landing';
 
         return (
-            <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID_PLACEHOLDER"}>
-                <Suspense fallback={<div className="h-screen w-full flex items-center justify-center bg-white"><LoadingTimeoutFallback message="Loading welcome screen..." compact /></div>}>
+            <GoogleOAuthProvider
+                clientId={
+                    import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID_PLACEHOLDER'
+                }
+            >
+                <Suspense
+                    fallback={
+                        <div className="h-screen w-full flex items-center justify-center bg-white">
+                            <LoadingTimeoutFallback message="Loading welcome screen..." compact />
+                        </div>
+                    }
+                >
                     <AnimatePresence mode="wait">
                         <motion.div key={initialAuthStep} exit={{ opacity: 0 }}>
-                            <WelcomeScreen initialStep={initialAuthStep} onComplete={() => checkAuth()} />
+                            <WelcomeScreen
+                                initialStep={initialAuthStep}
+                                onComplete={() => checkAuth()}
+                            />
                         </motion.div>
                     </AnimatePresence>
                 </Suspense>
@@ -715,11 +758,13 @@ useEffect(() => {
     if (gateState === 'gateLoading') {
         return (
             <div className="h-screen w-full flex items-center justify-center bg-white">
-                <LoadingTimeoutFallback message="Checking onboarding and verification..." onReload={() => evaluateGate({ silent: false })} />
+                <LoadingTimeoutFallback
+                    message="Checking onboarding and verification..."
+                    onReload={() => evaluateGate({ silent: false })}
+                />
             </div>
         );
     }
-
 
     const handleDismissReferralPopup = () => {
         setShowReferralPopup(false);
@@ -737,17 +782,23 @@ useEffect(() => {
     };
 
     return (
-        <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID_PLACEHOLDER"}>
+        <GoogleOAuthProvider
+            clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID_PLACEHOLDER'}
+        >
             <div className="flex h-screen w-full bg-background-light overflow-hidden">
                 {mustChangePassword && (
                     <div className="fixed inset-0 z-[120] bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
                         <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-6">
-                            <h2 className="text-xl font-bold text-slate-900 mb-2">Change Password Required</h2>
+                            <h2 className="text-xl font-bold text-slate-900 mb-2">
+                                Change Password Required
+                            </h2>
                             <p className="text-sm text-slate-600 mb-4">
                                 For security, please change your password to continue.
                             </p>
                             {forcePasswordError && (
-                                <div className="mb-3 rounded-lg bg-red-50 text-red-700 text-sm px-3 py-2">{forcePasswordError}</div>
+                                <div className="mb-3 rounded-lg bg-red-50 text-red-700 text-sm px-3 py-2">
+                                    {forcePasswordError}
+                                </div>
                             )}
                             <div className="space-y-3">
                                 <PasswordField
@@ -807,7 +858,9 @@ useEffect(() => {
                     initial={false}
                     animate={{ x: isMobileMenuOpen ? 0 : '0%' }}
                 >
-                    <div className={`h-full transition-transform duration-300 pointer-events-auto ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+                    <div
+                        className={`h-full transition-transform duration-300 pointer-events-auto ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+                    >
                         <Sidebar
                             currentView={currentView}
                             onNavigate={handleNavigate}
@@ -823,17 +876,23 @@ useEffect(() => {
 
                 {/* Center Main Content */}
                 <main className="flex-1 flex flex-col h-full min-h-0 min-w-0 relative">
-
                     {/* Mobile Header Toggle */}
                     <div className="lg:hidden h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 z-30">
-                        <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 text-slate-600" aria-label={t('common.openMenu')}>
+                        <button
+                            onClick={() => setIsMobileMenuOpen(true)}
+                            className="p-2 text-slate-600"
+                            aria-label={t('common.openMenu')}
+                        >
                             <Menu size={24} />
                         </button>
                         <img src="/logo-v2.png" alt={t('common.logoAlt')} className="h-8 w-auto" />
                         <div className="flex items-center gap-1">
                             <LanguageToggle compact className="text-slate-500" />
                             <button
-                                onClick={() => { setCurrentView('notifications'); fetchNotificationCount(); }}
+                                onClick={() => {
+                                    setCurrentView('notifications');
+                                    fetchNotificationCount();
+                                }}
                                 className="relative p-2 text-slate-600 hover:text-primary transition-colors"
                                 aria-label={t('common.notifications')}
                             >
@@ -856,320 +915,511 @@ useEffect(() => {
                             animate="animate"
                             exit="exit"
                         >
-                            <Suspense fallback={<div className="h-full w-full flex items-center justify-center bg-white"><LoadingTimeoutFallback message="Loading view..." compact /></div>}>
+                            <Suspense
+                                fallback={
+                                    <div className="h-full w-full flex items-center justify-center bg-white">
+                                        <LoadingTimeoutFallback message="Loading view..." compact />
+                                    </div>
+                                }
+                            >
                                 {currentView === 'dashboard' ? (
-                                <>
-                                    {/* Dashboard Header/Tabs */}
-                                    <header className="h-auto py-4 lg:h-20 shrink-0 flex flex-col lg:flex-row items-start lg:items-center justify-between px-4 lg:px-8 bg-background-light/95 backdrop-blur-sm sticky top-0 z-10 gap-4">
-                                        <div className="flex gap-1 bg-white p-1 rounded-full shadow-sm border border-slate-100 overflow-x-auto max-w-full scrollbar-hide">
-                                            <motion.button 
-                                                whileTap={{ scale: 0.95 }} 
-                                                onClick={() => setDashboardTab('all')}
-                                                className={`px-4 lg:px-6 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
-                                                    dashboardTab === 'all' 
-                                                        ? 'bg-slate-900 text-white font-bold shadow-md' 
-                                                        : 'text-slate-500 hover:text-slate-900'
-                                                }`}
-                                            >
-                                                {t('dashboard.tabs.allProposals')}
-                                            </motion.button>
-                                            <motion.button 
-                                                whileTap={{ scale: 0.95 }} 
-                                                onClick={() => setDashboardTab('verified')}
-                                                className={`px-4 lg:px-6 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
-                                                    dashboardTab === 'verified' 
-                                                        ? 'bg-slate-900 text-white font-bold shadow-md' 
-                                                        : 'text-slate-500 hover:text-slate-900'
-                                                }`}
-                                            >
-                                                {t('dashboard.tabs.verifiedProposals')}
-                                            </motion.button>
-                                            <motion.button 
-                                                whileTap={{ scale: 0.95 }} 
-                                                onClick={() => setDashboardTab('unverified')}
-                                                className={`px-4 lg:px-6 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
-                                                    dashboardTab === 'unverified' 
-                                                        ? 'bg-slate-900 text-white font-bold shadow-md' 
-                                                        : 'text-slate-500 hover:text-slate-900'
-                                                }`}
-                                            >
-                                                {t('dashboard.tabs.unverifiedProposals')}
-                                            </motion.button>
-                                        </div>
-
-                                        <div className="flex items-center gap-3">
-                                            {/* Sent / Received Toggle Switch */}
-                                            <div className="flex bg-white p-1 rounded-full shadow-sm border border-slate-100">
+                                    <>
+                                        {/* Dashboard Header/Tabs */}
+                                        <header className="h-auto py-4 lg:h-20 shrink-0 flex flex-col lg:flex-row items-start lg:items-center justify-between px-4 lg:px-8 bg-background-light/95 backdrop-blur-sm sticky top-0 z-10 gap-4">
+                                            <div className="flex gap-1 bg-white p-1 rounded-full shadow-sm border border-slate-100 overflow-x-auto max-w-full scrollbar-hide">
                                                 <motion.button
                                                     whileTap={{ scale: 0.95 }}
-                                                    onClick={() => setProposalDirection('received')}
-                                                    className={`flex items-center gap-1.5 px-3 lg:px-4 py-2 rounded-full text-xs lg:text-sm font-medium transition-colors whitespace-nowrap ${
-                                                        proposalDirection === 'received'
-                                                            ? 'bg-primary text-white font-bold shadow-md'
+                                                    onClick={() => setDashboardTab('all')}
+                                                    className={`px-4 lg:px-6 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
+                                                        dashboardTab === 'all'
+                                                            ? 'bg-slate-900 text-white font-bold shadow-md'
                                                             : 'text-slate-500 hover:text-slate-900'
                                                     }`}
                                                 >
-                                                    <ArrowDownLeft size={14} />
-                                                    {t('dashboard.received')}
-                                                    {incomingInterests.length > 0 && (
-                                                        <span className={`ml-1 text-[10px] font-bold rounded-full size-5 flex items-center justify-center ${
-                                                            proposalDirection === 'received' ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'
-                                                        }`}>{incomingInterests.length}</span>
-                                                    )}
+                                                    {t('dashboard.tabs.allProposals')}
                                                 </motion.button>
                                                 <motion.button
                                                     whileTap={{ scale: 0.95 }}
-                                                    onClick={() => setProposalDirection('sent')}
-                                                    className={`flex items-center gap-1.5 px-3 lg:px-4 py-2 rounded-full text-xs lg:text-sm font-medium transition-colors whitespace-nowrap ${
-                                                        proposalDirection === 'sent'
-                                                            ? 'bg-primary text-white font-bold shadow-md'
+                                                    onClick={() => setDashboardTab('verified')}
+                                                    className={`px-4 lg:px-6 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
+                                                        dashboardTab === 'verified'
+                                                            ? 'bg-slate-900 text-white font-bold shadow-md'
                                                             : 'text-slate-500 hover:text-slate-900'
                                                     }`}
                                                 >
-                                                    <ArrowUpRight size={14} />
-                                                    {t('dashboard.sent')}
-                                                    {sentInterests.length > 0 && (
-                                                        <span className={`ml-1 text-[10px] font-bold rounded-full size-5 flex items-center justify-center ${
-                                                            proposalDirection === 'sent' ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'
-                                                        }`}>{sentInterests.length}</span>
-                                                    )}
+                                                    {t('dashboard.tabs.verifiedProposals')}
+                                                </motion.button>
+                                                <motion.button
+                                                    whileTap={{ scale: 0.95 }}
+                                                    onClick={() => setDashboardTab('unverified')}
+                                                    className={`px-4 lg:px-6 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
+                                                        dashboardTab === 'unverified'
+                                                            ? 'bg-slate-900 text-white font-bold shadow-md'
+                                                            : 'text-slate-500 hover:text-slate-900'
+                                                    }`}
+                                                >
+                                                    {t('dashboard.tabs.unverifiedProposals')}
                                                 </motion.button>
                                             </div>
 
-                                            <motion.button
-                                                whileHover={{ scale: 1.05 }}
-                                                whileTap={{ scale: 0.95 }}
-                                                onClick={() => { setCurrentView('notifications'); fetchNotificationCount(); }}
-                                                className="hidden lg:flex size-10 rounded-full items-center justify-center transition-colors shadow-sm border border-slate-100 relative bg-white text-slate-600 hover:text-primary"
-                                            >
-                                                <Bell size={20} />
-                                                {unreadNotifCount > 0 && (
-                                                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 border-2 border-white">
-                                                        {unreadNotifCount > 99 ? '99+' : unreadNotifCount}
-                                                    </span>
-                                                )}
-                                            </motion.button>
-                                        </div>
-                                    </header>
-
-                                    {/* Scrollable Content */}
-                                    <div className="flex-1 overflow-y-auto px-4 lg:px-8 pb-8 pt-2">
-                                        <div className="max-w-3xl mx-auto flex flex-col gap-4">
-                                            {(() => {
-                                                const isReceived = proposalDirection === 'received';
-                                                const source = isReceived ? incomingInterests : sentInterests;
-                                                let filtered = [...source];
-                                                if (dashboardTab === 'verified') {
-                                                    filtered = filtered.filter((a) => a.profile.isVerified === true);
-                                                } else if (dashboardTab === 'unverified') {
-                                                    filtered = filtered.filter((a) => a.profile.isVerified !== true);
-                                                }
-                                                
-                                                if (filtered.length === 0) {
-                                                    return (
-                                                        <div className="bg-white rounded-2xl p-8 text-center shadow-sm border border-slate-100">
-                                                            <div className="size-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                                                {isReceived ? <Inbox className="text-slate-400" size={28} /> : <Send className="text-slate-400" size={28} />}
-                                                            </div>
-                                                            <h3 className="font-bold text-slate-900 text-lg mb-2">
-                                                                {isReceived ? t('empty.noReceivedProposals') : t('empty.noSentProposals')}
-                                                            </h3>
-                                                            <p className="text-slate-500 text-sm">
-                                                                {isReceived
-                                                                    ? t('empty.noReceivedProposalsDesc')
-                                                                    : t('empty.noSentProposalsDesc')}
-                                                            </p>
-                                                            {!isReceived && (
-                                                                <motion.button
-                                                                    whileTap={{ scale: 0.95 }}
-                                                                    onClick={() => setCurrentView('discovery')}
-                                                                    className="mt-4 px-6 py-2 bg-primary text-white rounded-full text-sm font-medium hover:bg-primary/90 transition-colors"
-                                                                >
-                                                                    {t('dashboard.exploreProfiles')}
-                                                                </motion.button>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                }
-                                                
-                                                return filtered.map((interest) => {
-                                                    const statusText = interest.status || 'Pending';
-                                                    const isApproved = statusText === 'Approved';
-                                                    const isPending = statusText === 'Pending';
-
-                                                    return (
-                                                        <motion.div
-                                                            key={interest.interestId}
-                                                            className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-md transition-shadow"
-                                                            whileHover={{ scale: 1.005 }}
-                                                        >
-                                                            {/* Clickable profile area */}
-                                                            <div
-                                                                className="flex items-center gap-3 sm:gap-4 p-4 cursor-pointer active:bg-slate-50 transition-colors"
-                                                                onClick={() => setSelectedProposalProfile(interest.profile)}
+                                            <div className="flex items-center gap-3">
+                                                {/* Sent / Received Toggle Switch */}
+                                                <div className="flex bg-white p-1 rounded-full shadow-sm border border-slate-100">
+                                                    <motion.button
+                                                        whileTap={{ scale: 0.95 }}
+                                                        onClick={() =>
+                                                            setProposalDirection('received')
+                                                        }
+                                                        className={`flex items-center gap-1.5 px-3 lg:px-4 py-2 rounded-full text-xs lg:text-sm font-medium transition-colors whitespace-nowrap ${
+                                                            proposalDirection === 'received'
+                                                                ? 'bg-primary text-white font-bold shadow-md'
+                                                                : 'text-slate-500 hover:text-slate-900'
+                                                        }`}
+                                                    >
+                                                        <ArrowDownLeft size={14} />
+                                                        {t('dashboard.received')}
+                                                        {incomingInterests.length > 0 && (
+                                                            <span
+                                                                className={`ml-1 text-[10px] font-bold rounded-full size-5 flex items-center justify-center ${
+                                                                    proposalDirection === 'received'
+                                                                        ? 'bg-white/20 text-white'
+                                                                        : 'bg-primary/10 text-primary'
+                                                                }`}
                                                             >
-                                                                <div
-                                                                    className="size-12 sm:size-14 rounded-full bg-cover bg-center shrink-0 border-2 border-white shadow-sm hover:ring-2 hover:ring-primary/40 transition-all"
-                                                                    style={{ backgroundImage: `url('${resolveAvatarUrl(interest.profile.avatarUrl)}')` }}
-                                                                />
-                                                                <div className="flex-1 min-w-0">
-                                                                    <div className="flex items-center gap-2 flex-wrap">
-                                                                        <h4 className="font-bold text-slate-900 truncate hover:text-primary transition-colors">{interest.profile.name}</h4>
-                                                                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
-                                                                            isApproved
-                                                                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                                                                : 'bg-amber-50 text-amber-700 border border-amber-200'
-                                                                        }`}>
-                                                                            <span className={`size-1.5 rounded-full ${isApproved ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                                                                            {isApproved ? t('dashboard.accepted') : t('dashboard.pending')}
-                                                                        </span>
-                                                                    </div>
-                                                                    <div className="flex items-center gap-2 text-sm text-slate-500 mt-0.5">
-                                                                        {interest.profile.age > 0 && <span>{interest.profile.age} {t('dashboard.yrs')}</span>}
-                                                                        {interest.profile.age > 0 && interest.profile.location && <span>Â·</span>}
-                                                                        {interest.profile.location && <span>{interest.profile.location}</span>}
-                                                                    </div>
-                                                                    {interest.profile.specialty && (
-                                                                        <p className="text-xs text-slate-400 mt-0.5">{interest.profile.specialty}</p>
+                                                                {incomingInterests.length}
+                                                            </span>
+                                                        )}
+                                                    </motion.button>
+                                                    <motion.button
+                                                        whileTap={{ scale: 0.95 }}
+                                                        onClick={() => setProposalDirection('sent')}
+                                                        className={`flex items-center gap-1.5 px-3 lg:px-4 py-2 rounded-full text-xs lg:text-sm font-medium transition-colors whitespace-nowrap ${
+                                                            proposalDirection === 'sent'
+                                                                ? 'bg-primary text-white font-bold shadow-md'
+                                                                : 'text-slate-500 hover:text-slate-900'
+                                                        }`}
+                                                    >
+                                                        <ArrowUpRight size={14} />
+                                                        {t('dashboard.sent')}
+                                                        {sentInterests.length > 0 && (
+                                                            <span
+                                                                className={`ml-1 text-[10px] font-bold rounded-full size-5 flex items-center justify-center ${
+                                                                    proposalDirection === 'sent'
+                                                                        ? 'bg-white/20 text-white'
+                                                                        : 'bg-primary/10 text-primary'
+                                                                }`}
+                                                            >
+                                                                {sentInterests.length}
+                                                            </span>
+                                                        )}
+                                                    </motion.button>
+                                                </div>
+
+                                                <motion.button
+                                                    whileHover={{ scale: 1.05 }}
+                                                    whileTap={{ scale: 0.95 }}
+                                                    onClick={() => {
+                                                        setCurrentView('notifications');
+                                                        fetchNotificationCount();
+                                                    }}
+                                                    className="hidden lg:flex size-10 rounded-full items-center justify-center transition-colors shadow-sm border border-slate-100 relative bg-white text-slate-600 hover:text-primary"
+                                                >
+                                                    <Bell size={20} />
+                                                    {unreadNotifCount > 0 && (
+                                                        <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 border-2 border-white">
+                                                            {unreadNotifCount > 99
+                                                                ? '99+'
+                                                                : unreadNotifCount}
+                                                        </span>
+                                                    )}
+                                                </motion.button>
+                                            </div>
+                                        </header>
+
+                                        {/* Scrollable Content */}
+                                        <div className="flex-1 overflow-y-auto px-4 lg:px-8 pb-8 pt-2">
+                                            <div className="max-w-3xl mx-auto flex flex-col gap-4">
+                                                {(() => {
+                                                    const isReceived =
+                                                        proposalDirection === 'received';
+                                                    const source = isReceived
+                                                        ? incomingInterests
+                                                        : sentInterests;
+                                                    let filtered = [...source];
+                                                    if (dashboardTab === 'verified') {
+                                                        filtered = filtered.filter(
+                                                            (a) => a.profile.isVerified === true,
+                                                        );
+                                                    } else if (dashboardTab === 'unverified') {
+                                                        filtered = filtered.filter(
+                                                            (a) => a.profile.isVerified !== true,
+                                                        );
+                                                    }
+
+                                                    if (filtered.length === 0) {
+                                                        return (
+                                                            <div className="bg-white rounded-2xl p-8 text-center shadow-sm border border-slate-100">
+                                                                <div className="size-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                                    {isReceived ? (
+                                                                        <Inbox
+                                                                            className="text-slate-400"
+                                                                            size={28}
+                                                                        />
+                                                                    ) : (
+                                                                        <Send
+                                                                            className="text-slate-400"
+                                                                            size={28}
+                                                                        />
                                                                     )}
                                                                 </div>
-                                                                {/* Desktop action buttons */}
-                                                                <div className="hidden sm:flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                                                                <h3 className="font-bold text-slate-900 text-lg mb-2">
+                                                                    {isReceived
+                                                                        ? t(
+                                                                              'empty.noReceivedProposals',
+                                                                          )
+                                                                        : t(
+                                                                              'empty.noSentProposals',
+                                                                          )}
+                                                                </h3>
+                                                                <p className="text-slate-500 text-sm">
+                                                                    {isReceived
+                                                                        ? t(
+                                                                              'empty.noReceivedProposalsDesc',
+                                                                          )
+                                                                        : t(
+                                                                              'empty.noSentProposalsDesc',
+                                                                          )}
+                                                                </p>
+                                                                {!isReceived && (
+                                                                    <motion.button
+                                                                        whileTap={{ scale: 0.95 }}
+                                                                        onClick={() =>
+                                                                            setCurrentView(
+                                                                                'discovery',
+                                                                            )
+                                                                        }
+                                                                        className="mt-4 px-6 py-2 bg-primary text-white rounded-full text-sm font-medium hover:bg-primary/90 transition-colors"
+                                                                    >
+                                                                        {t(
+                                                                            'dashboard.exploreProfiles',
+                                                                        )}
+                                                                    </motion.button>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    }
+
+                                                    return filtered.map((interest) => {
+                                                        const statusText =
+                                                            interest.status || 'Pending';
+                                                        const isApproved =
+                                                            statusText === 'Approved';
+                                                        const isPending = statusText === 'Pending';
+
+                                                        return (
+                                                            <motion.div
+                                                                key={interest.interestId}
+                                                                className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-md transition-shadow"
+                                                                whileHover={{ scale: 1.005 }}
+                                                            >
+                                                                {/* Clickable profile area */}
+                                                                <div
+                                                                    className="flex items-center gap-3 sm:gap-4 p-4 cursor-pointer active:bg-slate-50 transition-colors"
+                                                                    onClick={() =>
+                                                                        setSelectedProposalProfile(
+                                                                            interest.profile,
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    <div
+                                                                        className="size-12 sm:size-14 rounded-full bg-cover bg-center shrink-0 border-2 border-white shadow-sm hover:ring-2 hover:ring-primary/40 transition-all"
+                                                                        style={{
+                                                                            backgroundImage: `url('${resolveAvatarUrl(interest.profile.avatarUrl)}')`,
+                                                                        }}
+                                                                    />
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                                            <h4 className="font-bold text-slate-900 truncate hover:text-primary transition-colors">
+                                                                                {
+                                                                                    interest.profile
+                                                                                        .name
+                                                                                }
+                                                                            </h4>
+                                                                            <span
+                                                                                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
+                                                                                    isApproved
+                                                                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                                                                        : 'bg-amber-50 text-amber-700 border border-amber-200'
+                                                                                }`}
+                                                                            >
+                                                                                <span
+                                                                                    className={`size-1.5 rounded-full ${isApproved ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                                                                                />
+                                                                                {isApproved
+                                                                                    ? t(
+                                                                                          'dashboard.accepted',
+                                                                                      )
+                                                                                    : t(
+                                                                                          'dashboard.pending',
+                                                                                      )}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-2 text-sm text-slate-500 mt-0.5">
+                                                                            {interest.profile.age >
+                                                                                0 && (
+                                                                                <span>
+                                                                                    {
+                                                                                        interest
+                                                                                            .profile
+                                                                                            .age
+                                                                                    }{' '}
+                                                                                    {t(
+                                                                                        'dashboard.yrs',
+                                                                                    )}
+                                                                                </span>
+                                                                            )}
+                                                                            {interest.profile.age >
+                                                                                0 &&
+                                                                                interest.profile
+                                                                                    .location && (
+                                                                                    <span>Â·</span>
+                                                                                )}
+                                                                            {interest.profile
+                                                                                .location && (
+                                                                                <span>
+                                                                                    {
+                                                                                        interest
+                                                                                            .profile
+                                                                                            .location
+                                                                                    }
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                        {interest.profile
+                                                                            .specialty && (
+                                                                            <p className="text-xs text-slate-400 mt-0.5">
+                                                                                {
+                                                                                    interest.profile
+                                                                                        .specialty
+                                                                                }
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+                                                                    {/* Desktop action buttons */}
+                                                                    <div
+                                                                        className="hidden sm:flex items-center gap-2 shrink-0"
+                                                                        onClick={(e) =>
+                                                                            e.stopPropagation()
+                                                                        }
+                                                                    >
+                                                                        {isReceived &&
+                                                                            isPending && (
+                                                                                <>
+                                                                                    <motion.button
+                                                                                        whileTap={{
+                                                                                            scale: 0.9,
+                                                                                        }}
+                                                                                        onClick={() =>
+                                                                                            handleAcceptInterest(
+                                                                                                interest.interestId,
+                                                                                            )
+                                                                                        }
+                                                                                        className="px-4 py-2 bg-primary text-white rounded-full text-xs font-bold hover:bg-primary/90 transition-colors"
+                                                                                    >
+                                                                                        {t(
+                                                                                            'dashboard.accept',
+                                                                                        )}
+                                                                                    </motion.button>
+                                                                                    <motion.button
+                                                                                        whileTap={{
+                                                                                            scale: 0.9,
+                                                                                        }}
+                                                                                        onClick={() =>
+                                                                                            handleDeclineInterestClick(
+                                                                                                interest.interestId,
+                                                                                            )
+                                                                                        }
+                                                                                        className="px-4 py-2 bg-slate-100 text-slate-600 rounded-full text-xs font-bold hover:bg-slate-200 transition-colors"
+                                                                                    >
+                                                                                        {t(
+                                                                                            'dashboard.decline',
+                                                                                        )}
+                                                                                    </motion.button>
+                                                                                </>
+                                                                            )}
+                                                                        {!isReceived &&
+                                                                            isPending && (
+                                                                                <motion.button
+                                                                                    whileTap={{
+                                                                                        scale: 0.9,
+                                                                                    }}
+                                                                                    onClick={() =>
+                                                                                        handleWithdrawInterest(
+                                                                                            interest.interestId,
+                                                                                        )
+                                                                                    }
+                                                                                    className="flex items-center gap-1.5 px-4 py-2 bg-red-50 text-red-600 rounded-full text-xs font-bold hover:bg-red-100 transition-colors"
+                                                                                >
+                                                                                    <Undo2
+                                                                                        size={12}
+                                                                                    />
+                                                                                    {t(
+                                                                                        'dashboard.withdraw',
+                                                                                    )}
+                                                                                </motion.button>
+                                                                            )}
+                                                                        {isApproved && (
+                                                                            <motion.button
+                                                                                whileTap={{
+                                                                                    scale: 0.9,
+                                                                                }}
+                                                                                onClick={() =>
+                                                                                    handleProposalMessageClick(
+                                                                                        interest
+                                                                                            .profile
+                                                                                            .id,
+                                                                                    )
+                                                                                }
+                                                                                className="flex items-center gap-1.5 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold hover:bg-emerald-100 transition-colors"
+                                                                            >
+                                                                                {t(
+                                                                                    'dashboard.message',
+                                                                                )}
+                                                                            </motion.button>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                                {/* Mobile action buttons â€” full-width row below the card */}
+                                                                <div className="flex sm:hidden items-center gap-2 px-4 pb-3 pt-0">
                                                                     {isReceived && isPending && (
                                                                         <>
                                                                             <motion.button
-                                                                                whileTap={{ scale: 0.9 }}
-                                                                                onClick={() => handleAcceptInterest(interest.interestId)}
-                                                                                className="px-4 py-2 bg-primary text-white rounded-full text-xs font-bold hover:bg-primary/90 transition-colors"
+                                                                                whileTap={{
+                                                                                    scale: 0.9,
+                                                                                }}
+                                                                                onClick={() =>
+                                                                                    handleAcceptInterest(
+                                                                                        interest.interestId,
+                                                                                    )
+                                                                                }
+                                                                                className="flex-1 py-2.5 bg-primary text-white rounded-full text-xs font-bold hover:bg-primary/90 transition-colors text-center"
                                                                             >
-                                                                                {t('dashboard.accept')}
+                                                                                {t(
+                                                                                    'dashboard.accept',
+                                                                                )}
                                                                             </motion.button>
                                                                             <motion.button
-                                                                                whileTap={{ scale: 0.9 }}
-                                                                                onClick={() => handleDeclineInterestClick(interest.interestId)}
-                                                                                className="px-4 py-2 bg-slate-100 text-slate-600 rounded-full text-xs font-bold hover:bg-slate-200 transition-colors"
+                                                                                whileTap={{
+                                                                                    scale: 0.9,
+                                                                                }}
+                                                                                onClick={() =>
+                                                                                    handleDeclineInterestClick(
+                                                                                        interest.interestId,
+                                                                                    )
+                                                                                }
+                                                                                className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-full text-xs font-bold hover:bg-slate-200 transition-colors text-center"
                                                                             >
-                                                                                {t('dashboard.decline')}
+                                                                                {t(
+                                                                                    'dashboard.decline',
+                                                                                )}
                                                                             </motion.button>
                                                                         </>
                                                                     )}
                                                                     {!isReceived && isPending && (
                                                                         <motion.button
-                                                                            whileTap={{ scale: 0.9 }}
-                                                                            onClick={() => handleWithdrawInterest(interest.interestId)}
-                                                                            className="flex items-center gap-1.5 px-4 py-2 bg-red-50 text-red-600 rounded-full text-xs font-bold hover:bg-red-100 transition-colors"
+                                                                            whileTap={{
+                                                                                scale: 0.9,
+                                                                            }}
+                                                                            onClick={() =>
+                                                                                handleWithdrawInterest(
+                                                                                    interest.interestId,
+                                                                                )
+                                                                            }
+                                                                            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-red-50 text-red-600 rounded-full text-xs font-bold hover:bg-red-100 transition-colors"
                                                                         >
                                                                             <Undo2 size={12} />
-                                                                            {t('dashboard.withdraw')}
+                                                                            {t(
+                                                                                'dashboard.withdraw',
+                                                                            )}
                                                                         </motion.button>
                                                                     )}
                                                                     {isApproved && (
                                                                         <motion.button
-                                                                            whileTap={{ scale: 0.9 }}
-                                                                            onClick={() => handleProposalMessageClick(interest.profile.id)}
-                                                                            className="flex items-center gap-1.5 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold hover:bg-emerald-100 transition-colors"
+                                                                            whileTap={{
+                                                                                scale: 0.9,
+                                                                            }}
+                                                                            onClick={() =>
+                                                                                handleProposalMessageClick(
+                                                                                    interest.profile
+                                                                                        .id,
+                                                                                )
+                                                                            }
+                                                                            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold hover:bg-emerald-100 transition-colors"
                                                                         >
                                                                             {t('dashboard.message')}
                                                                         </motion.button>
                                                                     )}
                                                                 </div>
-                                                            </div>
-                                                            {/* Mobile action buttons â€” full-width row below the card */}
-                                                            <div className="flex sm:hidden items-center gap-2 px-4 pb-3 pt-0">
-                                                                {isReceived && isPending && (
-                                                                    <>
-                                                                        <motion.button
-                                                                            whileTap={{ scale: 0.9 }}
-                                                                            onClick={() => handleAcceptInterest(interest.interestId)}
-                                                                            className="flex-1 py-2.5 bg-primary text-white rounded-full text-xs font-bold hover:bg-primary/90 transition-colors text-center"
-                                                                        >
-                                                                            {t('dashboard.accept')}
-                                                                        </motion.button>
-                                                                        <motion.button
-                                                                            whileTap={{ scale: 0.9 }}
-                                                                            onClick={() => handleDeclineInterestClick(interest.interestId)}
-                                                                            className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-full text-xs font-bold hover:bg-slate-200 transition-colors text-center"
-                                                                        >
-                                                                            {t('dashboard.decline')}
-                                                                        </motion.button>
-                                                                    </>
-                                                                )}
-                                                                {!isReceived && isPending && (
-                                                                    <motion.button
-                                                                        whileTap={{ scale: 0.9 }}
-                                                                        onClick={() => handleWithdrawInterest(interest.interestId)}
-                                                                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-red-50 text-red-600 rounded-full text-xs font-bold hover:bg-red-100 transition-colors"
-                                                                    >
-                                                                        <Undo2 size={12} />
-                                                                        {t('dashboard.withdraw')}
-                                                                    </motion.button>
-                                                                )}
-                                                                {isApproved && (
-                                                                    <motion.button
-                                                                        whileTap={{ scale: 0.9 }}
-                                                                        onClick={() => handleProposalMessageClick(interest.profile.id)}
-                                                                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold hover:bg-emerald-100 transition-colors"
-                                                                    >
-                                                                        {t('dashboard.message')}
-                                                                    </motion.button>
-                                                                )}
-                                                            </div>
-                                                        </motion.div>
-                                                    );
-                                                });
-                                            })()}
+                                                            </motion.div>
+                                                        );
+                                                    });
+                                                })()}
+                                            </div>
                                         </div>
-                                    </div>
-                                </>
-                            ) : currentView === 'settings' ? (
-                                <SettingsView
-                                    onLaunchOnboarding={() => setShowOnboarding(true)}
-                                    onOpenBilling={() => setShowSubscription(true)}
-                                    onSelectPlan={handleSelectPlan}
-                                    appliedCouponCode={appliedCouponCode}
-                                    onApplyCoupon={(code) => setAppliedCouponCode(code)}
-                                />
-                            ) : currentView === 'profile' ? (
-                                <ProfileEditView initialTab={profileTargetSection} />
-                            ) : currentView === 'communities' ? (
-                                <CommunityView />
-                            ) : currentView === 'wallet' ? (
-                                <WalletView />
-                            ) : currentView === 'referral' ? (
-                                <ReferralView />
-                            ) : currentView === 'notifications' ? (
-                                <NotificationsView
-                                    onNavigate={handleNavigate}
-                                    onOpenProfile={handleOpenNotificationProfile}
-                                    refreshVersion={dataSyncVersion}
-                                    onDataChanged={refreshCoreData}
-                                />
-                            ) : currentView === 'messages' ? (
-                                <MessagesView
-                                    onSubscriptionRequired={openPremiumMessagingModal}
-                                    onVerificationRequired={() => openVerificationLimitModal('message')}
-                                    initialMemberId={messageTargetMemberId}
-                                    onInitialMemberIdConsumed={() => setMessageTargetMemberId(null)}
-                                />
-                            ) : (
-                                <DiscoveryView
-                                    initialTab={'all'}
-                                    onSendProposal={(p) => setProposalTarget(p)}
-                                    onProposalStateChange={(profileId, state) => {
-                                        upsertProposalState(profileId, state, 120000);
-                                        refreshCoreData({ force: true });
-                                    }}
-                                    isIdentityVerified={isIdentityVerified}
-                                    onRequireVerification={() => {
-                                        setGateState('needsVerification');
-                                        setShowVerificationPrompt(true);
-                                    }}
-                                    onNavigate={handleNavigate}
-                                    unreadNotifCount={unreadNotifCount}
-                                    sentProposalMap={sentProposalMap}
-                                    proposalStatusMap={proposalStatusMap}
-                                    refreshVersion={dataSyncVersion}
-                                />
+                                    </>
+                                ) : currentView === 'settings' ? (
+                                    <SettingsView
+                                        onLaunchOnboarding={() => setShowOnboarding(true)}
+                                        onOpenBilling={() => setShowSubscription(true)}
+                                        onSelectPlan={handleSelectPlan}
+                                        appliedCouponCode={appliedCouponCode}
+                                        onApplyCoupon={(code) => setAppliedCouponCode(code)}
+                                    />
+                                ) : currentView === 'profile' ? (
+                                    <ProfileEditView initialTab={profileTargetSection} />
+                                ) : currentView === 'communities' ? (
+                                    <CommunityView />
+                                ) : currentView === 'wallet' ? (
+                                    <WalletView />
+                                ) : currentView === 'referral' ? (
+                                    <ReferralView />
+                                ) : currentView === 'notifications' ? (
+                                    <NotificationsView
+                                        onNavigate={handleNavigate}
+                                        onOpenProfile={handleOpenNotificationProfile}
+                                        refreshVersion={dataSyncVersion}
+                                        onDataChanged={refreshCoreData}
+                                    />
+                                ) : currentView === 'messages' ? (
+                                    <MessagesView
+                                        onSubscriptionRequired={openPremiumMessagingModal}
+                                        onVerificationRequired={() =>
+                                            openVerificationLimitModal('message')
+                                        }
+                                        initialMemberId={messageTargetMemberId}
+                                        onInitialMemberIdConsumed={() =>
+                                            setMessageTargetMemberId(null)
+                                        }
+                                    />
+                                ) : (
+                                    <DiscoveryView
+                                        initialTab={'all'}
+                                        onSendProposal={(p) => setProposalTarget(p)}
+                                        onProposalStateChange={(profileId, state) => {
+                                            upsertProposalState(profileId, state, 120000);
+                                            refreshCoreData({ force: true });
+                                        }}
+                                        isIdentityVerified={isIdentityVerified}
+                                        onRequireVerification={() => {
+                                            setGateState('needsVerification');
+                                            setShowVerificationPrompt(true);
+                                        }}
+                                        onNavigate={handleNavigate}
+                                        unreadNotifCount={unreadNotifCount}
+                                        sentProposalMap={sentProposalMap}
+                                        proposalStatusMap={proposalStatusMap}
+                                        refreshVersion={dataSyncVersion}
+                                    />
                                 )}
                             </Suspense>
                         </motion.div>
@@ -1190,11 +1440,13 @@ useEffect(() => {
                 <AnimatePresence>
                     {showOnboarding && (
                         <Suspense fallback={null}>
-                            <OnboardingModal onClose={() => {
-                                setShowOnboarding(false);
-                                setGateState('gateUnlocked');
-                                scheduleVerificationPrompt();
-                            }} />
+                            <OnboardingModal
+                                onClose={() => {
+                                    setShowOnboarding(false);
+                                    setGateState('gateUnlocked');
+                                    scheduleVerificationPrompt();
+                                }}
+                            />
                         </Suspense>
                     )}
                 </AnimatePresence>
@@ -1228,7 +1480,9 @@ useEffect(() => {
                                     setShowDeclineModal(false);
                                     setDeclineInterestId(null);
                                 }}
-                                onDeclineSuccess={() => { refreshCoreData(); }}
+                                onDeclineSuccess={() => {
+                                    refreshCoreData();
+                                }}
                             />
                         </Suspense>
                     )}
@@ -1245,7 +1499,9 @@ useEffect(() => {
                                     upsertProposalState(profileId, 'sent_pending', 120000);
                                     refreshCoreData({ force: true });
                                 }}
-                                onVerificationRequired={() => openVerificationLimitModal('proposal')}
+                                onVerificationRequired={() =>
+                                    openVerificationLimitModal('proposal')
+                                }
                             />
                         </Suspense>
                     )}
@@ -1285,17 +1541,17 @@ useEffect(() => {
                                     {hasSubmittedVerification && !isIdentityVerified
                                         ? 'Verification under review'
                                         : verificationLimitReason === 'proposal'
-                                            ? 'Verify to send more proposals'
-                                            : 'Verify to continue messaging'}
+                                          ? 'Verify to send more proposals'
+                                          : 'Verify to continue messaging'}
                                 </h3>
                                 <p className="text-sm text-slate-600 leading-relaxed mb-5">
                                     {isIdentityVerified
                                         ? 'Your account is verified. Please refresh and try again.'
                                         : hasSubmittedVerification
-                                            ? 'You have used your free unverified limit, and your candidate verification is already under review. You can continue once it is approved.'
-                                            : verificationLimitReason === 'proposal'
-                                                ? 'You have used your 5 free unverified proposals. Complete candidate verification to continue sending proposals.'
-                                                : 'You have used your 5 free unverified messages. Complete candidate verification to continue messaging.'}
+                                          ? 'You have used your free unverified limit, and your candidate verification is already under review. You can continue once it is approved.'
+                                          : verificationLimitReason === 'proposal'
+                                            ? 'You have used your 5 free unverified proposals. Complete candidate verification to continue sending proposals.'
+                                            : 'You have used your 5 free unverified messages. Complete candidate verification to continue messaging.'}
                                 </p>
                                 <div className="flex gap-3">
                                     <button
@@ -1310,7 +1566,9 @@ useEffect(() => {
                                         onClick={openVerificationFromLimit}
                                         className="flex-1 px-4 py-3 rounded-xl bg-primary text-white font-semibold hover:bg-primary/90 transition"
                                     >
-                                        {hasSubmittedVerification && !isIdentityVerified ? 'View status' : 'Verify now'}
+                                        {hasSubmittedVerification && !isIdentityVerified
+                                            ? 'View status'
+                                            : 'Verify now'}
                                     </button>
                                 </div>
                             </motion.div>
@@ -1363,7 +1621,10 @@ useEffect(() => {
                             <ProfileDetailModal
                                 profile={selectedProposalProfile}
                                 onClose={() => setSelectedProposalProfile(null)}
-                                onSendProposal={(p) => { setSelectedProposalProfile(null); setProposalTarget(p); }}
+                                onSendProposal={(p) => {
+                                    setSelectedProposalProfile(null);
+                                    setProposalTarget(p);
+                                }}
                                 onNavigate={handleNavigate}
                             />
                         </Suspense>
@@ -1428,20 +1689,25 @@ useEffect(() => {
             scrollbar-width: none;
         }
       `}</style>
-                
+
                 <AnimatePresence>
                     {showReferralPopup && referralPopupConfig && (
                         <Suspense fallback={null}>
                             <ReferralPopupModal
                                 onClose={handleDismissReferralPopup}
-                                onNavigate={(view) => { handleDismissReferralPopup(); handleNavigate(view); }}
+                                onNavigate={(view) => {
+                                    handleDismissReferralPopup();
+                                    handleNavigate(view);
+                                }}
                                 popupConfig={referralPopupConfig}
                             />
                         </Suspense>
                     )}
                 </AnimatePresence>
 
-                <FloatingContactButton placement={currentView === 'messages' ? 'chat' : 'default'} />
+                <FloatingContactButton
+                    placement={currentView === 'messages' ? 'chat' : 'default'}
+                />
             </div>
         </GoogleOAuthProvider>
     );

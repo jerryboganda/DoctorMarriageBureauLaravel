@@ -4,65 +4,85 @@
 import 'react-native';
 
 declare module 'react-native' {
-  interface ViewProps {
-    className?: string;
-  }
-  interface TextProps {
-    className?: string;
-  }
-  interface ImageProps {
-    className?: string;
-  }
-  interface ScrollViewProps {
-    className?: string;
-  }
-  interface TextInputProps {
-    className?: string;
-  }
-  interface TouchableOpacityProps {
-    className?: string;
-  }
-  interface TouchableHighlightProps {
-    className?: string;
-  }
-  interface TouchableWithoutFeedbackProps {
-    className?: string;
-  }
-  interface PressableProps {
-    className?: string;
-  }
-  interface FlatListProps<T> {
-    className?: string;
-  }
-  interface SectionListProps<T, S> {
-    className?: string;
-  }
-  interface SafeAreaViewProps {
-    className?: string;
-  }
-  interface KeyboardAvoidingViewProps {
-    className?: string;
-  }
-  interface ModalProps {
-    className?: string;
-  }
-  interface ActivityIndicatorProps {
-    className?: string;
-  }
-  interface SwitchProps {
-    className?: string;
-  }
+    interface ViewProps {
+        className?: string;
+    }
+    interface TextProps {
+        className?: string;
+    }
+    interface ImageProps {
+        className?: string;
+    }
+    interface ScrollViewProps {
+        className?: string;
+    }
+    interface TextInputProps {
+        className?: string;
+    }
+    interface TouchableOpacityProps {
+        className?: string;
+    }
+    interface TouchableHighlightProps {
+        className?: string;
+    }
+    interface TouchableWithoutFeedbackProps {
+        className?: string;
+    }
+    interface PressableProps {
+        className?: string;
+    }
+    interface FlatListProps<T> {
+        className?: string;
+    }
+    interface SectionListProps<T, S> {
+        className?: string;
+    }
+    interface SafeAreaViewProps {
+        className?: string;
+    }
+    interface KeyboardAvoidingViewProps {
+        className?: string;
+    }
+    interface ModalProps {
+        className?: string;
+    }
+    interface ActivityIndicatorProps {
+        className?: string;
+    }
+    interface SwitchProps {
+        className?: string;
+    }
 }
 
 // Augment moti to support className
 declare module 'moti' {
-  interface MotiViewProps {
-    className?: string;
-  }
-  interface MotiTextProps {
-    className?: string;
-  }
-  interface MotiImageProps {
-    className?: string;
-  }
+    interface MotiViewProps {
+        className?: string;
+    }
+    interface MotiTextProps {
+        className?: string;
+    }
+    interface MotiImageProps {
+        className?: string;
+    }
+}
+
+declare module 'framer-motion' {
+    import type { ComponentType, HTMLAttributes, PropsWithChildren } from 'react';
+
+    type MotionProps = HTMLAttributes<HTMLElement> & {
+        initial?: unknown;
+        animate?: unknown;
+        exit?: unknown;
+        transition?: unknown;
+        variants?: unknown;
+        custom?: unknown;
+        layoutId?: string;
+        whileHover?: unknown;
+    };
+
+    export const AnimatePresence: ComponentType<PropsWithChildren<Record<string, unknown>>>;
+    export const motion: {
+        div: ComponentType<PropsWithChildren<MotionProps>>;
+    };
 }

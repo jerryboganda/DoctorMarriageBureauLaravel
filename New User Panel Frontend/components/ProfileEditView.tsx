@@ -1,9 +1,30 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-    User, Briefcase, Heart, Home, Image as ImageIcon, Sparkles,
-    Lock, Eye, EyeOff, Mic, Video, Plus, Check, AlertCircle,
-    Globe, Ruler, Moon, Coffee, Dumbbell, Shield, Umbrella, Loader2, Save, Star,
-    FileDown, GraduationCap, Play, Square, Trash2, X, Camera, ChevronLeft, ChevronRight
+    User,
+    Home,
+    Image as ImageIcon,
+    Lock,
+    Eye,
+    EyeOff,
+    Mic,
+    Plus,
+    Check,
+    AlertCircle,
+    Globe,
+    Ruler,
+    Moon,
+    Umbrella,
+    Loader2,
+    Save,
+    Star,
+    FileDown,
+    GraduationCap,
+    Play,
+    Square,
+    Trash2,
+    Camera,
+    ChevronLeft,
+    ChevronRight,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../utils/api';
@@ -34,7 +55,9 @@ const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialTab }) => {
             .filter((item) => item.id !== '' && item.name !== '');
     };
 
-    const fetchMaritalStatusesFallback = async (): Promise<Array<{ id: string | number; name: string }>> => {
+    const fetchMaritalStatusesFallback = async (): Promise<
+        Array<{ id: string | number; name: string }>
+    > => {
         try {
             const res = await api.get('/member/maritial-status');
             const payload = res?.data;
@@ -69,10 +92,6 @@ const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialTab }) => {
         }
     }, [initialTab]);
 
-    useEffect(() => {
-        fetchProfile();
-    }, []);
-
     const fetchProfile = async () => {
         try {
             setLoading(true);
@@ -84,7 +103,9 @@ const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialTab }) => {
             const qualityRes = results[1].status === 'fulfilled' ? results[1].value : null;
             const payload = profileRes?.data ?? {};
             const sourceOptionSets = payload?.optionSets ?? {};
-            let maritalStatuses = normalizeMaritalStatuses(sourceOptionSets?.maritalStatuses || sourceOptionSets?.marital_statuses);
+            let maritalStatuses = normalizeMaritalStatuses(
+                sourceOptionSets?.maritalStatuses || sourceOptionSets?.marital_statuses,
+            );
             if (!maritalStatuses.length) {
                 maritalStatuses = await fetchMaritalStatusesFallback();
             }
@@ -136,17 +157,50 @@ const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialTab }) => {
         }
     };
 
+    useEffect(() => {
+        fetchProfile();
+    }, []);
+
     const handleNudgeClick = (action: string, section?: string) => {
         if (section) {
             setActiveTab(section);
             return;
         }
         const lower = action.toLowerCase();
-        if (lower.includes('photo') || lower.includes('voice') || lower.includes('video')) setActiveTab('media');
-        else if (lower.includes('employment') || lower.includes('career') || lower.includes('education')) setActiveTab('career');
-        else if (lower.includes('value') || lower.includes('lifestyle') || lower.includes('diet') || lower.includes('hobbi') || lower.includes('interest') || lower.includes('drink') || lower.includes('smok') || lower.includes('sleep')) setActiveTab('lifestyle');
-        else if (lower.includes('preference') || lower.includes('criteria') || lower.includes('preferred') || lower.includes('age range')) setActiveTab('preferences');
-        else if (lower.includes('family') || lower.includes('father') || lower.includes('mother') || lower.includes('religion') || lower.includes('caste')) setActiveTab('family');
+        if (lower.includes('photo') || lower.includes('voice') || lower.includes('video'))
+            setActiveTab('media');
+        else if (
+            lower.includes('employment') ||
+            lower.includes('career') ||
+            lower.includes('education')
+        )
+            setActiveTab('career');
+        else if (
+            lower.includes('value') ||
+            lower.includes('lifestyle') ||
+            lower.includes('diet') ||
+            lower.includes('hobbi') ||
+            lower.includes('interest') ||
+            lower.includes('drink') ||
+            lower.includes('smok') ||
+            lower.includes('sleep')
+        )
+            setActiveTab('lifestyle');
+        else if (
+            lower.includes('preference') ||
+            lower.includes('criteria') ||
+            lower.includes('preferred') ||
+            lower.includes('age range')
+        )
+            setActiveTab('preferences');
+        else if (
+            lower.includes('family') ||
+            lower.includes('father') ||
+            lower.includes('mother') ||
+            lower.includes('religion') ||
+            lower.includes('caste')
+        )
+            setActiveTab('family');
         else setActiveTab('basics');
     };
 
@@ -156,11 +210,14 @@ const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialTab }) => {
             ...prev,
             visibility: {
                 ...prev.visibility,
-                [fieldName]: !currentValue
-            }
+                [fieldName]: !currentValue,
+            },
         }));
         try {
-            await api.post('/member/profile/visibility', { field_name: fieldName, is_visible: !currentValue });
+            await api.post('/member/profile/visibility', {
+                field_name: fieldName,
+                is_visible: !currentValue,
+            });
         } catch (e) {
             // Revert on failure
             console.error('Failed to toggle visibility', e);
@@ -168,8 +225,8 @@ const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialTab }) => {
                 ...prev,
                 visibility: {
                     ...prev.visibility,
-                    [fieldName]: currentValue
-                }
+                    [fieldName]: currentValue,
+                },
             }));
         }
     };
@@ -179,17 +236,19 @@ const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialTab }) => {
             ...prev,
             [section]: {
                 ...prev[section],
-                [field]: value
-            }
+                [field]: value,
+            },
         }));
     };
 
     const handleDownloadBiodata = async () => {
         try {
             const response = await api.get('/profile/download-biodata', {
-                responseType: 'blob'
+                responseType: 'blob',
             });
-            const blobUrl = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+            const blobUrl = window.URL.createObjectURL(
+                new Blob([response.data], { type: 'application/pdf' }),
+            );
             window.open(blobUrl, '_blank', 'noopener');
             setTimeout(() => window.URL.revokeObjectURL(blobUrl), 10000);
         } catch (error) {
@@ -209,7 +268,8 @@ const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialTab }) => {
             }
         } catch (error) {
             console.error('Failed to save profile', error);
-            const message = (error as any)?.response?.data?.message || t('profile.edit.updateFailed');
+            const message =
+                (error as any)?.response?.data?.message || t('profile.edit.updateFailed');
             alert(message);
         } finally {
             setSaving(false);
@@ -247,7 +307,9 @@ const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialTab }) => {
                 <div className="flex flex-wrap items-center gap-2 md:gap-4 w-full md:w-auto">
                     <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-50 text-orange-700 rounded-full border border-orange-100 text-xs font-bold whitespace-nowrap">
                         <AlertCircle size={14} />
-                        <span>{t('profile.edit.completeness', { n: qualityScore?.total ?? 0 })}</span>
+                        <span>
+                            {t('profile.edit.completeness', { n: qualityScore?.total ?? 0 })}
+                        </span>
                     </div>
                     <button
                         onClick={handleDownloadBiodata}
@@ -261,7 +323,11 @@ const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialTab }) => {
                         disabled={saving}
                         className="flex items-center justify-center gap-2 flex-1 md:flex-none bg-primary hover:bg-primary-hover text-white px-6 py-2 rounded-full font-bold text-sm shadow-md transition-all whitespace-nowrap disabled:opacity-50"
                     >
-                        {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                        {saving ? (
+                            <Loader2 size={16} className="animate-spin" />
+                        ) : (
+                            <Save size={16} />
+                        )}
                         {t('profile.edit.saveChanges')}
                     </button>
                 </div>
@@ -271,29 +337,32 @@ const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialTab }) => {
             <div className="flex-1 flex overflow-hidden min-h-0">
                 {/* Navigation Tabs */}
                 <div className="flex-1 min-w-0 flex flex-col overflow-y-auto p-4 md:p-8 scrollbar-hide">
-
-                        {/* Tabs */}
-                        <div className="flex gap-2 mb-6 md:mb-8 overflow-x-auto pb-2 scrollbar-hide max-w-full shrink-0">
-                            {tabs.map(tab => (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setActiveTab(tab.id)}
-                                    className={`
+                    {/* Tabs */}
+                    <div className="flex gap-2 mb-6 md:mb-8 overflow-x-auto pb-2 scrollbar-hide max-w-full shrink-0">
+                        {tabs.map((tab) => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`
                                 flex items-center gap-2 px-4 md:px-5 py-2 md:py-3 rounded-full font-bold text-sm whitespace-nowrap transition-all border shrink-0
-                                ${activeTab === tab.id
-                                            ? 'bg-slate-900 text-white border-slate-900 shadow-md'
-                                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
-                                        }
+                                ${
+                                    activeTab === tab.id
+                                        ? 'bg-slate-900 text-white border-slate-900 shadow-md'
+                                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
+                                }
                             `}
+                            >
+                                <span
+                                    className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold shrink-0 ${activeTab === tab.id ? 'bg-white text-slate-900' : 'bg-slate-200 text-slate-600'}`}
                                 >
-                                    <span className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold shrink-0 ${activeTab === tab.id ? 'bg-white text-slate-900' : 'bg-slate-200 text-slate-600'}`}>{tab.step}</span>
-                                    {tab.label}
-                                </button>
-                            ))}
-                        </div>
+                                    {tab.step}
+                                </span>
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
 
                     <div className="max-w-5xl mx-auto w-full">
-
                         {/* Content Area */}
                         <div className="animate-in fade-in slide-in-from-bottom-4 duration-300 pb-8">
                             {activeTab === 'basics' && (
@@ -334,7 +403,9 @@ const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialTab }) => {
                                 <PreferencesSection
                                     data={profileData.expectations}
                                     optionSets={profileData.optionSets}
-                                    updateData={(field, val) => updateData('expectations', field, val)}
+                                    updateData={(field, val) =>
+                                        updateData('expectations', field, val)
+                                    }
                                 />
                             )}
                             {activeTab === 'media' && (
@@ -349,26 +420,48 @@ const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialTab }) => {
                             {/* Back / Next Navigation */}
                             <div className="flex items-center justify-between mt-8 pt-6 border-t border-slate-200">
                                 {(() => {
-                                    const currentIndex = tabs.findIndex(t => t.id === activeTab);
-                                    const prevTab = currentIndex > 0 ? tabs[currentIndex - 1] : null;
-                                    const nextTab = currentIndex < tabs.length - 1 ? tabs[currentIndex + 1] : null;
+                                    const currentIndex = tabs.findIndex((t) => t.id === activeTab);
+                                    const prevTab =
+                                        currentIndex > 0 ? tabs[currentIndex - 1] : null;
+                                    const nextTab =
+                                        currentIndex < tabs.length - 1
+                                            ? tabs[currentIndex + 1]
+                                            : null;
                                     return (
                                         <>
                                             {prevTab ? (
                                                 <button
-                                                    onClick={() => { setActiveTab(prevTab.id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                                                    onClick={() => {
+                                                        setActiveTab(prevTab.id);
+                                                        window.scrollTo({
+                                                            top: 0,
+                                                            behavior: 'smooth',
+                                                        });
+                                                    }}
                                                     className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-slate-600 bg-white border border-slate-200 rounded-full hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm"
                                                 >
                                                     <ChevronLeft size={16} />
-                                                    {t('profile.edit.backTo', { label: prevTab.label })}
+                                                    {t('profile.edit.backTo', {
+                                                        label: prevTab.label,
+                                                    })}
                                                 </button>
-                                            ) : <div />}
+                                            ) : (
+                                                <div />
+                                            )}
                                             {nextTab ? (
                                                 <button
-                                                    onClick={() => { setActiveTab(nextTab.id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                                                    onClick={() => {
+                                                        setActiveTab(nextTab.id);
+                                                        window.scrollTo({
+                                                            top: 0,
+                                                            behavior: 'smooth',
+                                                        });
+                                                    }}
                                                     className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white bg-primary hover:bg-primary-hover rounded-full transition-all shadow-md"
                                                 >
-                                                    {t('profile.edit.nextLabel', { label: nextTab.label })}
+                                                    {t('profile.edit.nextLabel', {
+                                                        label: nextTab.label,
+                                                    })}
                                                     <ChevronRight size={16} />
                                                 </button>
                                             ) : (
@@ -377,7 +470,14 @@ const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialTab }) => {
                                                     disabled={saving}
                                                     className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold text-white bg-green-600 hover:bg-green-700 rounded-full transition-all shadow-md disabled:opacity-50"
                                                 >
-                                                    {saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                                                    {saving ? (
+                                                        <Loader2
+                                                            size={16}
+                                                            className="animate-spin"
+                                                        />
+                                                    ) : (
+                                                        <Check size={16} />
+                                                    )}
                                                     {t('profile.edit.saveProfile')}
                                                 </button>
                                             )}
@@ -386,13 +486,14 @@ const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialTab }) => {
                                 })()}
                             </div>
                         </div>
-
                     </div>
                 </div>
 
                 {/* Quality Sidebar (Right) */}
                 <div className="w-72 bg-white border-l border-slate-200 p-5 hidden xl:block overflow-y-auto shrink-0">
-                    <h3 className="font-bold text-slate-900 mb-4">{t('profile.edit.qualityScore')}</h3>
+                    <h3 className="font-bold text-slate-900 mb-4">
+                        {t('profile.edit.qualityScore')}
+                    </h3>
                     <div className="relative pt-1 mb-6">
                         <div className="flex mb-2 items-center justify-between">
                             <div>
@@ -407,11 +508,16 @@ const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialTab }) => {
                             </div>
                         </div>
                         <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-primary/10">
-                            <div style={{ width: `${qualityScore?.total ?? 0}%` }} className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary"></div>
+                            <div
+                                style={{ width: `${qualityScore?.total ?? 0}%` }}
+                                className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary"
+                            ></div>
                         </div>
                     </div>
 
-                    <h4 className="font-bold text-sm text-slate-800 mb-3">{t('profile.edit.improveProfile')}</h4>
+                    <h4 className="font-bold text-sm text-slate-800 mb-3">
+                        {t('profile.edit.improveProfile')}
+                    </h4>
                     <div className="space-y-3">
                         {qualityScore?.improvements?.length ? (
                             qualityScore.improvements.map((item: any, index: number) => (
@@ -423,17 +529,23 @@ const ProfileEditView: React.FC<ProfileEditViewProps> = ({ initialTab }) => {
                                 />
                             ))
                         ) : (
-                            <p className="text-xs text-green-600 font-medium">{t('profile.edit.profileComplete')}</p>
+                            <p className="text-xs text-green-600 font-medium">
+                                {t('profile.edit.profileComplete')}
+                            </p>
                         )}
                     </div>
 
                     <div className="mt-8 p-4 bg-slate-50 rounded-xl border border-slate-100">
-                        <h4 className="font-bold text-xs text-slate-400 uppercase tracking-wide mb-2">{t('profile.edit.duplicateCheck')}</h4>
+                        <h4 className="font-bold text-xs text-slate-400 uppercase tracking-wide mb-2">
+                            {t('profile.edit.duplicateCheck')}
+                        </h4>
                         <div className="flex items-center gap-2 text-green-600 text-sm font-medium">
                             <Check size={16} />
                             <span>{t('profile.edit.noDuplicates')}</span>
                         </div>
-                        <p className="text-xs text-slate-500 mt-1">{t('profile.edit.duplicateDesc')}</p>
+                        <p className="text-xs text-slate-500 mt-1">
+                            {t('profile.edit.duplicateDesc')}
+                        </p>
                     </div>
                 </div>
             </div>
@@ -460,7 +572,9 @@ const resolveOptionValue = (currentValue: any, options: Array<{ value: any; labe
     if (currentValue === null || currentValue === undefined || currentValue === '') {
         return '';
     }
-    const match = options.find((option) => option.value === currentValue || option.label === currentValue);
+    const match = options.find(
+        (option) => option.value === currentValue || option.label === currentValue,
+    );
     return match ? match.value : currentValue;
 };
 
@@ -470,8 +584,12 @@ const ensureOptionValue = (currentValue: any, options: Array<{ value: any; label
     }
     const cv = String(currentValue).toLowerCase().trim();
     const exists = options.some((option) => {
-        const v = String(option.value ?? '').toLowerCase().trim();
-        const l = String(option.label ?? '').toLowerCase().trim();
+        const v = String(option.value ?? '')
+            .toLowerCase()
+            .trim();
+        const l = String(option.label ?? '')
+            .toLowerCase()
+            .trim();
         return v === cv || l === cv;
     });
     if (exists) {
@@ -488,7 +606,7 @@ const resolveIdByName = (id: any, name: any, options: Array<{ id: any; name: str
         return '';
     }
     const match = options.find(
-        (option) => option.name && option.name.toLowerCase() === String(name).toLowerCase()
+        (option) => option.name && option.name.toLowerCase() === String(name).toLowerCase(),
     );
     return match ? String(match.id) : '';
 };
@@ -504,7 +622,14 @@ const formatHeightLabel = (heightCm: any) => {
     return `${feet}'${inches}"`;
 };
 
-const BasicsSection: React.FC<{ data: any, optionSets?: any, updateData: (field: string, val: any) => void, onRefresh: () => void, visibility?: any, onToggleVisibility?: (fieldName: string, currentValue: boolean) => void }> = ({ data, optionSets, updateData, onRefresh, visibility, onToggleVisibility }) => {
+const BasicsSection: React.FC<{
+    data: any;
+    optionSets?: any;
+    updateData: (field: string, val: any) => void;
+    onRefresh: () => void;
+    visibility?: any;
+    onToggleVisibility?: (fieldName: string, currentValue: boolean) => void;
+}> = ({ data, optionSets, updateData, onRefresh, visibility, onToggleVisibility }) => {
     const { t } = useTranslation();
     const [uploading, setUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -527,7 +652,7 @@ const BasicsSection: React.FC<{ data: any, optionSets?: any, updateData: (field:
             const formData = new FormData();
             formData.append('photo', compressedFile);
             const response = await api.post('/upload-profile-picture', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
+                headers: { 'Content-Type': 'multipart/form-data' },
             });
 
             if (response.data.success || response.data.result) {
@@ -536,16 +661,16 @@ const BasicsSection: React.FC<{ data: any, optionSets?: any, updateData: (field:
                 setUser({
                     ...user,
                     avatar: newPhotoUrl,
-                    avatar_original: newPhotoUrl
+                    avatar_original: newPhotoUrl,
                 } as any);
 
                 // Refresh local data
                 onRefresh();
-                alert("Profile picture updated successfully!");
+                alert('Profile picture updated successfully!');
             }
         } catch (error: any) {
-            console.error("Avatar upload failed", error);
-            alert(error.response?.data?.message || "Failed to upload profile picture.");
+            console.error('Avatar upload failed', error);
+            alert(error.response?.data?.message || 'Failed to upload profile picture.');
         } finally {
             setUploading(false);
             if (fileInputRef.current) fileInputRef.current.value = '';
@@ -553,9 +678,18 @@ const BasicsSection: React.FC<{ data: any, optionSets?: any, updateData: (field:
     };
 
     const genderOptions = ensureOptionValue(data?.gender, optionSets?.genders ?? []);
-    const marriageTimelineOptions = ensureOptionValue(data?.marriageTimeline, optionSets?.marriageTimeline ?? []);
-    const relocationOptions = ensureOptionValue(data?.relocationWillingness, optionSets?.relocationWillingness ?? []);
-    const immigrationOptions = ensureOptionValue(data?.immigrationStatus, optionSets?.immigrationStatusOptions ?? []);
+    const marriageTimelineOptions = ensureOptionValue(
+        data?.marriageTimeline,
+        optionSets?.marriageTimeline ?? [],
+    );
+    const relocationOptions = ensureOptionValue(
+        data?.relocationWillingness,
+        optionSets?.relocationWillingness ?? [],
+    );
+    const immigrationOptions = ensureOptionValue(
+        data?.immigrationStatus,
+        optionSets?.immigrationStatusOptions ?? [],
+    );
     const countryOptions = optionSets?.countries ?? [];
     const languageOptions = optionSets?.languages ?? [];
     const heightValue = Number.isFinite(Number(data?.height)) ? Number(data.height) : 170;
@@ -659,7 +793,12 @@ const BasicsSection: React.FC<{ data: any, optionSets?: any, updateData: (field:
                             style={avatarUrl ? { backgroundImage: `url(${avatarUrl})` } : undefined}
                             onClick={handleAvatarClick}
                         >
-                            {!avatarUrl && !uploading && <User size={40} className="text-slate-300 absolute inset-0 m-auto" />}
+                            {!avatarUrl && !uploading && (
+                                <User
+                                    size={40}
+                                    className="text-slate-300 absolute inset-0 m-auto"
+                                />
+                            )}
                         </div>
                         <div
                             onClick={handleAvatarClick}
@@ -680,7 +819,9 @@ const BasicsSection: React.FC<{ data: any, optionSets?: any, updateData: (field:
                             onChange={handleFileChange}
                         />
                     </div>
-                    <p className="text-[10px] font-bold text-slate-400 mt-3 uppercase tracking-widest">{t('profile.edit.clickToChangePhoto')}</p>
+                    <p className="text-[10px] font-bold text-slate-400 mt-3 uppercase tracking-widest">
+                        {t('profile.edit.clickToChangePhoto')}
+                    </p>
                 </div>
 
                 <div className="space-y-4">
@@ -717,7 +858,9 @@ const BasicsSection: React.FC<{ data: any, optionSets?: any, updateData: (field:
                             >
                                 <option value="">{t('profile.edit.selectGender')}</option>
                                 {genderOptions.map((option: any) => (
-                                    <option key={option.value} value={option.value}>{option.label ?? option.value}</option>
+                                    <option key={option.value} value={option.value}>
+                                        {option.label ?? option.value}
+                                    </option>
                                 ))}
                             </select>
                         </InputGroup>
@@ -734,7 +877,9 @@ const BasicsSection: React.FC<{ data: any, optionSets?: any, updateData: (field:
                                 value={heightValue}
                                 onChange={(e) => updateData('height', Number(e.target.value))}
                             />
-                            <span className="text-sm font-bold text-slate-700 w-16">{heightLabel || "5'7\""}</span>
+                            <span className="text-sm font-bold text-slate-700 w-16">
+                                {heightLabel || '5\'7"'}
+                            </span>
                         </div>
                     </InputGroup>
 
@@ -746,7 +891,9 @@ const BasicsSection: React.FC<{ data: any, optionSets?: any, updateData: (field:
                             onChange={(e) => updateData('introduction', e.target.value)}
                             maxLength={1000}
                         />
-                        <p className="text-[10px] text-slate-400 mt-1 text-right">{(data.introduction?.length ?? 0)}/1000</p>
+                        <p className="text-[10px] text-slate-400 mt-1 text-right">
+                            {data.introduction?.length ?? 0}/1000
+                        </p>
                     </InputGroup>
                 </div>
             </Card>
@@ -756,7 +903,11 @@ const BasicsSection: React.FC<{ data: any, optionSets?: any, updateData: (field:
                     <InputGroup label={t('profile.edit.languagesSpoken')}>
                         <div className="flex flex-wrap gap-2 items-center">
                             {languages.map((label) => (
-                                <Badge key={label} label={label} onRemove={() => handleRemoveLanguage(label)} />
+                                <Badge
+                                    key={label}
+                                    label={label}
+                                    onRemove={() => handleRemoveLanguage(label)}
+                                />
                             ))}
                             <input
                                 type="text"
@@ -797,11 +948,16 @@ const BasicsSection: React.FC<{ data: any, optionSets?: any, updateData: (field:
                                 onChange={(e) => updateData('nationality', e.target.value)}
                             >
                                 <option value="">{t('profile.edit.selectNationality')}</option>
-                                {data.nationality && !countryOptions.some((country: any) => country.name === data.nationality) && (
-                                    <option value={data.nationality}>{data.nationality}</option>
-                                )}
+                                {data.nationality &&
+                                    !countryOptions.some(
+                                        (country: any) => country.name === data.nationality,
+                                    ) && (
+                                        <option value={data.nationality}>{data.nationality}</option>
+                                    )}
                                 {countryOptions.map((country: any) => (
-                                    <option key={country.id ?? country.code} value={country.name}>{country.name}</option>
+                                    <option key={country.id ?? country.code} value={country.name}>
+                                        {country.name}
+                                    </option>
                                 ))}
                             </select>
                         </div>
@@ -815,7 +971,9 @@ const BasicsSection: React.FC<{ data: any, optionSets?: any, updateData: (field:
                         >
                             <option value="">{t('profile.edit.selectStatus')}</option>
                             {immigrationOptions.map((option: any) => (
-                                <option key={option.value} value={option.value}>{option.label ?? option.value}</option>
+                                <option key={option.value} value={option.value}>
+                                    {option.label ?? option.value}
+                                </option>
                             ))}
                         </select>
                     </InputGroup>
@@ -826,7 +984,9 @@ const BasicsSection: React.FC<{ data: any, optionSets?: any, updateData: (field:
                                 className="form-input"
                                 value={data.currentResidencyCountryId ?? ''}
                                 onChange={(e) => {
-                                    const nextValue = e.target.value ? Number(e.target.value) : null;
+                                    const nextValue = e.target.value
+                                        ? Number(e.target.value)
+                                        : null;
                                     updateData('currentResidencyCountryId', nextValue);
                                     updateData('currentResidencyStateId', null);
                                     updateData('currentResidencyCityId', null);
@@ -834,33 +994,54 @@ const BasicsSection: React.FC<{ data: any, optionSets?: any, updateData: (field:
                             >
                                 <option value="">{t('profile.edit.selectCountry')}</option>
                                 {countryOptions.map((country: any) => (
-                                    <option key={country.id ?? country.code} value={country.id}>{country.name}</option>
+                                    <option key={country.id ?? country.code} value={country.id}>
+                                        {country.name}
+                                    </option>
                                 ))}
                             </select>
                             <select
                                 className="form-input"
                                 value={data.currentResidencyStateId ?? ''}
                                 onChange={(e) => {
-                                    const nextValue = e.target.value ? Number(e.target.value) : null;
+                                    const nextValue = e.target.value
+                                        ? Number(e.target.value)
+                                        : null;
                                     updateData('currentResidencyStateId', nextValue);
                                     updateData('currentResidencyCityId', null);
                                 }}
                                 disabled={!data.currentResidencyCountryId || loadingStates}
                             >
-                                <option value="">{loadingStates ? t('profile.edit.loadingStates') : t('profile.edit.selectState')}</option>
+                                <option value="">
+                                    {loadingStates
+                                        ? t('profile.edit.loadingStates')
+                                        : t('profile.edit.selectState')}
+                                </option>
                                 {stateOptions.map((state: any) => (
-                                    <option key={state.id} value={state.id}>{state.name}</option>
+                                    <option key={state.id} value={state.id}>
+                                        {state.name}
+                                    </option>
                                 ))}
                             </select>
                             <select
                                 className="form-input"
                                 value={data.currentResidencyCityId ?? ''}
-                                onChange={(e) => updateData('currentResidencyCityId', e.target.value ? Number(e.target.value) : null)}
+                                onChange={(e) =>
+                                    updateData(
+                                        'currentResidencyCityId',
+                                        e.target.value ? Number(e.target.value) : null,
+                                    )
+                                }
                                 disabled={!data.currentResidencyStateId || loadingCities}
                             >
-                                <option value="">{loadingCities ? t('profile.edit.loadingCities') : t('profile.edit.selectCity')}</option>
+                                <option value="">
+                                    {loadingCities
+                                        ? t('profile.edit.loadingCities')
+                                        : t('profile.edit.selectCity')}
+                                </option>
                                 {cityOptions.map((city: any) => (
-                                    <option key={city.id} value={city.id}>{city.name}</option>
+                                    <option key={city.id} value={city.id}>
+                                        {city.name}
+                                    </option>
                                 ))}
                             </select>
                         </div>
@@ -874,24 +1055,36 @@ const BasicsSection: React.FC<{ data: any, optionSets?: any, updateData: (field:
                         <InputGroup label={t('profile.edit.timeline')} optional>
                             <select
                                 className="form-input"
-                                value={resolveOptionValue(data.marriageTimeline, marriageTimelineOptions)}
+                                value={resolveOptionValue(
+                                    data.marriageTimeline,
+                                    marriageTimelineOptions,
+                                )}
                                 onChange={(e) => updateData('marriageTimeline', e.target.value)}
                             >
                                 <option value="">{t('profile.edit.selectTimeline')}</option>
                                 {marriageTimelineOptions.map((option: any) => (
-                                    <option key={option.value} value={option.value}>{option.label}</option>
+                                    <option key={option.value} value={option.value}>
+                                        {option.label}
+                                    </option>
                                 ))}
                             </select>
                         </InputGroup>
                         <InputGroup label={t('profile.edit.relocationWillingness')} optional>
                             <select
                                 className="form-input"
-                                value={resolveOptionValue(data.relocationWillingness, relocationOptions)}
-                                onChange={(e) => updateData('relocationWillingness', e.target.value)}
+                                value={resolveOptionValue(
+                                    data.relocationWillingness,
+                                    relocationOptions,
+                                )}
+                                onChange={(e) =>
+                                    updateData('relocationWillingness', e.target.value)
+                                }
                             >
                                 <option value="">{t('profile.edit.selectPreference')}</option>
                                 {relocationOptions.map((option: any) => (
-                                    <option key={option.value} value={option.value}>{option.label}</option>
+                                    <option key={option.value} value={option.value}>
+                                        {option.label}
+                                    </option>
                                 ))}
                             </select>
                         </InputGroup>
@@ -902,22 +1095,42 @@ const BasicsSection: React.FC<{ data: any, optionSets?: any, updateData: (field:
     );
 };
 
-const LifestyleSection: React.FC<{ data: any, optionSets?: any, updateData: (field: string, val: any) => void }> = ({ data, optionSets, updateData }) => {
+const LifestyleSection: React.FC<{
+    data: any;
+    optionSets?: any;
+    updateData: (field: string, val: any) => void;
+}> = ({ data, optionSets, updateData }) => {
     const { t } = useTranslation();
     const dietOptions = ensureOptionValue(data?.diet, optionSets?.dietOptions ?? []);
     const drinkOptions = ensureOptionValue(data?.drink, optionSets?.drinkOptions ?? []);
     const smokeOptions = ensureOptionValue(data?.smoke, optionSets?.smokeOptions ?? []);
-    const sleepOptions = ensureOptionValue(data?.sleepSchedule, optionSets?.sleepScheduleOptions ?? []);
+    const sleepOptions = ensureOptionValue(
+        data?.sleepSchedule,
+        optionSets?.sleepScheduleOptions ?? [],
+    );
     const propertyOptions = ensureOptionValue(data?.property, optionSets?.propertyOptions ?? []);
-    const livingWithOptions = ensureOptionValue(data?.livingWith, optionSets?.livingWithOptions ?? []);
+    const livingWithOptions = ensureOptionValue(
+        data?.livingWith,
+        optionSets?.livingWithOptions ?? [],
+    );
     const personalityOptions = optionSets?.personalityTags ?? [];
-    const personalValueOptions = ensureOptionValue(data?.personalValue, optionSets?.personalValues ?? []);
-    const communityValueOptions = ensureOptionValue(data?.communityValue, optionSets?.communityValues ?? []);
+    const personalValueOptions = ensureOptionValue(
+        data?.personalValue,
+        optionSets?.personalValues ?? [],
+    );
+    const communityValueOptions = ensureOptionValue(
+        data?.communityValue,
+        optionSets?.communityValues ?? [],
+    );
     const familyValues = optionSets?.familyValues ?? [];
 
     const [hobbies, setHobbies] = useState<string[]>(() => normalizeStringList(data?.hobbies));
-    const [interests, setInterests] = useState<string[]>(() => normalizeStringList(data?.interests));
-    const [personalityTags, setPersonalityTags] = useState<string[]>(() => normalizeStringList(data?.personalityTags));
+    const [interests, setInterests] = useState<string[]>(() =>
+        normalizeStringList(data?.interests),
+    );
+    const [personalityTags, setPersonalityTags] = useState<string[]>(() =>
+        normalizeStringList(data?.personalityTags),
+    );
     const [hobbyInput, setHobbyInput] = useState('');
     const [interestInput, setInterestInput] = useState('');
     const [personalityInput, setPersonalityInput] = useState('');
@@ -929,23 +1142,28 @@ const LifestyleSection: React.FC<{ data: any, optionSets?: any, updateData: (fie
         }
         // Fallback: single legacy entry
         if (data?.propertyDetails) {
-            return [{
-                id: null,
-                details: data.propertyDetails || '',
-            }];
+            return [
+                {
+                    id: null,
+                    details: data.propertyDetails || '',
+                },
+            ];
         }
         return [{ id: null, details: '' }];
     });
 
     // Sync properties array to parent data on change
-    const syncProperties = React.useCallback((updated: any[]) => {
-        setProperties(updated);
-        updateData('properties', updated);
-        // Also keep legacy field from first entry for backward compat
-        if (updated.length > 0) {
-            updateData('propertyDetails', updated[0].details);
-        }
-    }, [updateData]);
+    const syncProperties = React.useCallback(
+        (updated: any[]) => {
+            setProperties(updated);
+            updateData('properties', updated);
+            // Also keep legacy field from first entry for backward compat
+            if (updated.length > 0) {
+                updateData('propertyDetails', updated[0].details);
+            }
+        },
+        [updateData],
+    );
 
     const updateProperty = (index: number, field: string, value: any) => {
         const updated = [...properties];
@@ -983,33 +1201,57 @@ const LifestyleSection: React.FC<{ data: any, optionSets?: any, updateData: (fie
         }
     }, [data?.properties, data?.propertyDetails]);
 
-    const applyTagList = (nextList: string[], field: string, setter: React.Dispatch<React.SetStateAction<string[]>>) => {
+    const applyTagList = (
+        nextList: string[],
+        field: string,
+        setter: React.Dispatch<React.SetStateAction<string[]>>,
+    ) => {
         setter(nextList);
         updateData(field, nextList);
     };
 
-    const addTag = (value: string, field: string, list: string[], setter: React.Dispatch<React.SetStateAction<string[]>>) => {
+    const addTag = (
+        value: string,
+        field: string,
+        list: string[],
+        setter: React.Dispatch<React.SetStateAction<string[]>>,
+    ) => {
         const nextValue = value.trim();
         if (!nextValue) return;
         if (list.some((item) => item.toLowerCase() === nextValue.toLowerCase())) return;
         applyTagList([...list, nextValue], field, setter);
     };
 
-    const removeTag = (value: string, field: string, list: string[], setter: React.Dispatch<React.SetStateAction<string[]>>) => {
-        applyTagList(list.filter((item) => item !== value), field, setter);
+    const removeTag = (
+        value: string,
+        field: string,
+        list: string[],
+        setter: React.Dispatch<React.SetStateAction<string[]>>,
+    ) => {
+        applyTagList(
+            list.filter((item) => item !== value),
+            field,
+            setter,
+        );
     };
 
     const togglePersonalityTag = (value: string) => {
         const exists = personalityTags.some((tag) => tag.toLowerCase() === value.toLowerCase());
         if (exists) {
-            applyTagList(personalityTags.filter((tag) => tag.toLowerCase() !== value.toLowerCase()), 'personalityTags', setPersonalityTags);
+            applyTagList(
+                personalityTags.filter((tag) => tag.toLowerCase() !== value.toLowerCase()),
+                'personalityTags',
+                setPersonalityTags,
+            );
         } else {
             applyTagList([...personalityTags, value], 'personalityTags', setPersonalityTags);
         }
     };
 
     const personalityLabel = (value: string) => {
-        const match = personalityOptions.find((option: any) => option.value === value || option.label === value);
+        const match = personalityOptions.find(
+            (option: any) => option.value === value || option.label === value,
+        );
         return match?.label ?? value;
     };
 
@@ -1025,7 +1267,9 @@ const LifestyleSection: React.FC<{ data: any, optionSets?: any, updateData: (fie
                         >
                             <option value="">{t('profile.edit.selectDiet')}</option>
                             {dietOptions.map((option: any) => (
-                                <option key={option.value} value={option.value}>{option.label ?? option.value}</option>
+                                <option key={option.value} value={option.value}>
+                                    {option.label ?? option.value}
+                                </option>
                             ))}
                         </select>
                     </InputGroup>
@@ -1037,7 +1281,9 @@ const LifestyleSection: React.FC<{ data: any, optionSets?: any, updateData: (fie
                         >
                             <option value="">{t('profile.edit.selectOption')}</option>
                             {drinkOptions.map((option: any) => (
-                                <option key={option.value} value={option.value}>{option.label ?? option.value}</option>
+                                <option key={option.value} value={option.value}>
+                                    {option.label ?? option.value}
+                                </option>
                             ))}
                         </select>
                     </InputGroup>
@@ -1049,7 +1295,9 @@ const LifestyleSection: React.FC<{ data: any, optionSets?: any, updateData: (fie
                         >
                             <option value="">{t('profile.edit.selectOption')}</option>
                             {smokeOptions.map((option: any) => (
-                                <option key={option.value} value={option.value}>{option.label ?? option.value}</option>
+                                <option key={option.value} value={option.value}>
+                                    {option.label ?? option.value}
+                                </option>
                             ))}
                         </select>
                     </InputGroup>
@@ -1061,7 +1309,9 @@ const LifestyleSection: React.FC<{ data: any, optionSets?: any, updateData: (fie
                         >
                             <option value="">{t('profile.edit.selectHouseStatus')}</option>
                             {propertyOptions.map((option: any) => (
-                                <option key={option.value} value={option.value}>{option.label ?? option.value}</option>
+                                <option key={option.value} value={option.value}>
+                                    {option.label ?? option.value}
+                                </option>
                             ))}
                         </select>
                     </InputGroup>
@@ -1073,7 +1323,9 @@ const LifestyleSection: React.FC<{ data: any, optionSets?: any, updateData: (fie
                         >
                             <option value="">{t('profile.edit.selectArrangement')}</option>
                             {livingWithOptions.map((option: any) => (
-                                <option key={option.value} value={option.value}>{option.label ?? option.value}</option>
+                                <option key={option.value} value={option.value}>
+                                    {option.label ?? option.value}
+                                </option>
                             ))}
                         </select>
                     </InputGroup>
@@ -1087,7 +1339,9 @@ const LifestyleSection: React.FC<{ data: any, optionSets?: any, updateData: (fie
                             >
                                 <option value="">{t('profile.edit.selectSchedule')}</option>
                                 {sleepOptions.map((option: any) => (
-                                    <option key={option.value} value={option.value}>{option.label ?? option.value}</option>
+                                    <option key={option.value} value={option.value}>
+                                        {option.label ?? option.value}
+                                    </option>
                                 ))}
                             </select>
                         </div>
@@ -1095,25 +1349,33 @@ const LifestyleSection: React.FC<{ data: any, optionSets?: any, updateData: (fie
                 </div>
             </Card>
 
-            <Card title={t('profile.edit.property')} action={
-                <button 
-                    type="button" 
-                    onClick={addProperty}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-primary bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-full transition-colors"
-                >
-                    <Plus size={14} /> {t('profile.edit.addEntry')}
-                </button>
-            }>
+            <Card
+                title={t('profile.edit.property')}
+                action={
+                    <button
+                        type="button"
+                        onClick={addProperty}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-primary bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-full transition-colors"
+                    >
+                        <Plus size={14} /> {t('profile.edit.addEntry')}
+                    </button>
+                }
+            >
                 <div className="space-y-4">
                     {properties.map((prop, index) => (
-                        <div key={prop.id || `new-prop-${index}`} className="flex items-start gap-4 p-6 bg-slate-50 rounded-xl border border-slate-100 relative group">
+                        <div
+                            key={prop.id || `new-prop-${index}`}
+                            className="flex items-start gap-4 p-6 bg-slate-50 rounded-xl border border-slate-100 relative group"
+                        >
                             <div className="size-12 bg-white rounded-full border border-slate-200 flex items-center justify-center shrink-0 shadow-sm">
                                 <Home size={22} className="text-primary" />
                             </div>
                             <div className="flex-1 space-y-4">
                                 {properties.length > 1 && (
                                     <div className="flex items-center justify-between">
-                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t('profile.edit.entry', { n: index + 1 })}</span>
+                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                            {t('profile.edit.entry', { n: index + 1 })}
+                                        </span>
                                         <button
                                             type="button"
                                             onClick={() => removeProperty(index)}
@@ -1130,7 +1392,9 @@ const LifestyleSection: React.FC<{ data: any, optionSets?: any, updateData: (fie
                                         className="form-input bg-white"
                                         placeholder={t('profile.edit.propertyPlaceholder')}
                                         defaultValue={prop.details}
-                                        onBlur={(e) => updateProperty(index, 'details', e.target.value)}
+                                        onBlur={(e) =>
+                                            updateProperty(index, 'details', e.target.value)
+                                        }
                                     />
                                 </InputGroup>
                             </div>
@@ -1144,7 +1408,12 @@ const LifestyleSection: React.FC<{ data: any, optionSets?: any, updateData: (fie
                     <InputGroup label={t('profile.edit.hobbies')}>
                         <div className="flex flex-wrap gap-2 items-center">
                             {hobbies.map((tag) => (
-                                <Badge key={tag} label={tag} color="blue" onRemove={() => removeTag(tag, 'hobbies', hobbies, setHobbies)} />
+                                <Badge
+                                    key={tag}
+                                    label={tag}
+                                    color="blue"
+                                    onRemove={() => removeTag(tag, 'hobbies', hobbies, setHobbies)}
+                                />
                             ))}
                             <input
                                 type="text"
@@ -1178,7 +1447,14 @@ const LifestyleSection: React.FC<{ data: any, optionSets?: any, updateData: (fie
                     <InputGroup label={t('profile.edit.interests')}>
                         <div className="flex flex-wrap gap-2 items-center">
                             {interests.map((tag) => (
-                                <Badge key={tag} label={tag} color="purple" onRemove={() => removeTag(tag, 'interests', interests, setInterests)} />
+                                <Badge
+                                    key={tag}
+                                    label={tag}
+                                    color="purple"
+                                    onRemove={() =>
+                                        removeTag(tag, 'interests', interests, setInterests)
+                                    }
+                                />
                             ))}
                             <input
                                 type="text"
@@ -1211,24 +1487,41 @@ const LifestyleSection: React.FC<{ data: any, optionSets?: any, updateData: (fie
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div>
-                            <label className="block text-sm font-bold text-slate-800 mb-3">{t('profile.edit.personalityTags')}</label>
+                            <label className="block text-sm font-bold text-slate-800 mb-3">
+                                {t('profile.edit.personalityTags')}
+                            </label>
                             <div className="flex flex-wrap gap-2 mb-3">
                                 {personalityTags.map((tag) => (
-                                    <Badge key={tag} label={personalityLabel(tag)} color="orange" onRemove={() => removeTag(tag, 'personalityTags', personalityTags, setPersonalityTags)} />
+                                    <Badge
+                                        key={tag}
+                                        label={personalityLabel(tag)}
+                                        color="orange"
+                                        onRemove={() =>
+                                            removeTag(
+                                                tag,
+                                                'personalityTags',
+                                                personalityTags,
+                                                setPersonalityTags,
+                                            )
+                                        }
+                                    />
                                 ))}
                             </div>
                             <div className="flex flex-wrap gap-2">
                                 {personalityOptions.map((option: any) => {
-                                    const isSelected = personalityTags.some((tag) => tag.toLowerCase() === option.value.toLowerCase());
+                                    const isSelected = personalityTags.some(
+                                        (tag) => tag.toLowerCase() === option.value.toLowerCase(),
+                                    );
                                     return (
                                         <button
                                             key={option.value}
                                             type="button"
                                             onClick={() => togglePersonalityTag(option.value)}
-                                            className={`px-3 py-1 rounded-full border text-xs transition-colors ${isSelected
-                                                ? 'border-primary bg-primary/10 text-primary'
-                                                : 'border-slate-200 text-slate-600 hover:border-primary hover:text-primary'
-                                                }`}
+                                            className={`px-3 py-1 rounded-full border text-xs transition-colors ${
+                                                isSelected
+                                                    ? 'border-primary bg-primary/10 text-primary'
+                                                    : 'border-slate-200 text-slate-600 hover:border-primary hover:text-primary'
+                                            }`}
                                         >
                                             {option.label ?? option.value}
                                         </button>
@@ -1243,7 +1536,12 @@ const LifestyleSection: React.FC<{ data: any, optionSets?: any, updateData: (fie
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter') {
                                             e.preventDefault();
-                                            addTag(personalityInput, 'personalityTags', personalityTags, setPersonalityTags);
+                                            addTag(
+                                                personalityInput,
+                                                'personalityTags',
+                                                personalityTags,
+                                                setPersonalityTags,
+                                            );
                                             setPersonalityInput('');
                                         }
                                     }}
@@ -1253,7 +1551,12 @@ const LifestyleSection: React.FC<{ data: any, optionSets?: any, updateData: (fie
                                 <button
                                     type="button"
                                     onClick={() => {
-                                        addTag(personalityInput, 'personalityTags', personalityTags, setPersonalityTags);
+                                        addTag(
+                                            personalityInput,
+                                            'personalityTags',
+                                            personalityTags,
+                                            setPersonalityTags,
+                                        );
                                         setPersonalityInput('');
                                     }}
                                     disabled={!personalityInput.trim()}
@@ -1264,26 +1567,45 @@ const LifestyleSection: React.FC<{ data: any, optionSets?: any, updateData: (fie
                             </div>
                         </div>
                         <div>
-                            <label className="block text-sm font-bold text-slate-800 mb-3">{t('profile.edit.religiousCulturalValues')} <span className="text-[10px] font-semibold text-pink-600 bg-pink-100 px-2 py-0.5 rounded-full">{t('profile.edit.optional')}</span></label>
+                            <label className="block text-sm font-bold text-slate-800 mb-3">
+                                {t('profile.edit.religiousCulturalValues')}{' '}
+                                <span className="text-[10px] font-semibold text-pink-600 bg-pink-100 px-2 py-0.5 rounded-full">
+                                    {t('profile.edit.optional')}
+                                </span>
+                            </label>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <select
                                     className="form-input text-sm"
-                                    value={resolveOptionValue(data.personalValue, personalValueOptions)}
+                                    value={resolveOptionValue(
+                                        data.personalValue,
+                                        personalValueOptions,
+                                    )}
                                     onChange={(e) => updateData('personalValue', e.target.value)}
                                 >
-                                    <option value="">{t('profile.edit.selectPersonalValue')}</option>
+                                    <option value="">
+                                        {t('profile.edit.selectPersonalValue')}
+                                    </option>
                                     {personalValueOptions.map((option: any) => (
-                                        <option key={option.value} value={option.value}>{option.label ?? option.value}</option>
+                                        <option key={option.value} value={option.value}>
+                                            {option.label ?? option.value}
+                                        </option>
                                     ))}
                                 </select>
                                 <select
                                     className="form-input text-sm"
-                                    value={resolveOptionValue(data.communityValue, communityValueOptions)}
+                                    value={resolveOptionValue(
+                                        data.communityValue,
+                                        communityValueOptions,
+                                    )}
                                     onChange={(e) => updateData('communityValue', e.target.value)}
                                 >
-                                    <option value="">{t('profile.edit.selectCommunityValue')}</option>
+                                    <option value="">
+                                        {t('profile.edit.selectCommunityValue')}
+                                    </option>
                                     {communityValueOptions.map((option: any) => (
-                                        <option key={option.value} value={option.value}>{option.label ?? option.value}</option>
+                                        <option key={option.value} value={option.value}>
+                                            {option.label ?? option.value}
+                                        </option>
                                     ))}
                                 </select>
                             </div>
@@ -1291,11 +1613,18 @@ const LifestyleSection: React.FC<{ data: any, optionSets?: any, updateData: (fie
                                 <select
                                     className="form-input text-sm"
                                     value={data.familyValueId ?? ''}
-                                    onChange={(e) => updateData('familyValueId', e.target.value ? Number(e.target.value) : null)}
+                                    onChange={(e) =>
+                                        updateData(
+                                            'familyValueId',
+                                            e.target.value ? Number(e.target.value) : null,
+                                        )
+                                    }
                                 >
                                     <option value="">{t('profile.edit.selectFamilyValue')}</option>
                                     {familyValues.map((option: any) => (
-                                        <option key={option.id} value={option.id}>{option.name}</option>
+                                        <option key={option.id} value={option.id}>
+                                            {option.name}
+                                        </option>
                                     ))}
                                 </select>
                             </div>
@@ -1307,9 +1636,19 @@ const LifestyleSection: React.FC<{ data: any, optionSets?: any, updateData: (fie
     );
 };
 
-const CareerSection: React.FC<{ data: any, salaryRanges?: any[], optionSets?: any, updateData: (field: string, val: any) => void, visibility?: any, onToggleVisibility?: (fieldName: string, currentValue: boolean) => void }> = ({ data, salaryRanges = [], optionSets, updateData, visibility, onToggleVisibility }) => {
+const CareerSection: React.FC<{
+    data: any;
+    salaryRanges?: any[];
+    optionSets?: any;
+    updateData: (field: string, val: any) => void;
+    visibility?: any;
+    onToggleVisibility?: (fieldName: string, currentValue: boolean) => void;
+}> = ({ data, salaryRanges = [], optionSets, updateData, visibility, onToggleVisibility }) => {
     const { t } = useTranslation();
-    const workLocationOptions = ensureOptionValue(data?.workLocationType, optionSets?.workLocationOptions ?? []);
+    const workLocationOptions = ensureOptionValue(
+        data?.workLocationType,
+        optionSets?.workLocationOptions ?? [],
+    );
 
     // Initialize education entries from the `educations` array or fallback to single entry
     const [educations, setEducations] = React.useState<any[]>(() => {
@@ -1318,16 +1657,20 @@ const CareerSection: React.FC<{ data: any, salaryRanges?: any[], optionSets?: an
         }
         // Fallback: single legacy entry
         if (data?.education || data?.institution) {
-            return [{
-                id: null,
-                degree: data.education || '',
-                institution: data.institution || '',
-                start: data.educationStart || '',
-                end: data.educationEnd || '',
-                isHighestDegree: data.isHighestDegree || false,
-            }];
+            return [
+                {
+                    id: null,
+                    degree: data.education || '',
+                    institution: data.institution || '',
+                    start: data.educationStart || '',
+                    end: data.educationEnd || '',
+                    isHighestDegree: data.isHighestDegree || false,
+                },
+            ];
         }
-        return [{ id: null, degree: '', institution: '', start: '', end: '', isHighestDegree: false }];
+        return [
+            { id: null, degree: '', institution: '', start: '', end: '', isHighestDegree: false },
+        ];
     });
 
     // Initialize career entries from the `careers` array or fallback to single entry
@@ -1337,51 +1680,71 @@ const CareerSection: React.FC<{ data: any, salaryRanges?: any[], optionSets?: an
         }
         // Fallback: single legacy entry
         if (data?.designation || data?.company) {
-            return [{
-                id: null,
-                designation: data.designation || '',
-                company: data.company || '',
-                start: data.careerStart || '',
-                end: data.careerEnd || '',
-                present: data.careerPresent || false,
-                workLocationType: data.workLocationType || '',
-                jobTitleId: data.jobTitleId || '',
-                specialityId: data.specialityId || '',
-            }];
+            return [
+                {
+                    id: null,
+                    designation: data.designation || '',
+                    company: data.company || '',
+                    start: data.careerStart || '',
+                    end: data.careerEnd || '',
+                    present: data.careerPresent || false,
+                    workLocationType: data.workLocationType || '',
+                    jobTitleId: data.jobTitleId || '',
+                    specialityId: data.specialityId || '',
+                },
+            ];
         }
-        return [{ id: null, designation: '', company: '', start: '', end: '', present: false, workLocationType: '', jobTitleId: '', specialityId: '' }];
+        return [
+            {
+                id: null,
+                designation: '',
+                company: '',
+                start: '',
+                end: '',
+                present: false,
+                workLocationType: '',
+                jobTitleId: '',
+                specialityId: '',
+            },
+        ];
     });
 
     // Sync educations array to parent data on change
-    const syncEducations = React.useCallback((updated: any[]) => {
-        setEducations(updated);
-        updateData('educations', updated);
-        // Also keep legacy fields from first entry for backward compat
-        if (updated.length > 0) {
-            updateData('education', updated[0].degree);
-            updateData('institution', updated[0].institution);
-            updateData('educationStart', updated[0].start);
-            updateData('educationEnd', updated[0].end);
-            updateData('isHighestDegree', updated[0].isHighestDegree);
-        }
-    }, [updateData]);
+    const syncEducations = React.useCallback(
+        (updated: any[]) => {
+            setEducations(updated);
+            updateData('educations', updated);
+            // Also keep legacy fields from first entry for backward compat
+            if (updated.length > 0) {
+                updateData('education', updated[0].degree);
+                updateData('institution', updated[0].institution);
+                updateData('educationStart', updated[0].start);
+                updateData('educationEnd', updated[0].end);
+                updateData('isHighestDegree', updated[0].isHighestDegree);
+            }
+        },
+        [updateData],
+    );
 
     // Sync careers array to parent data on change
-    const syncCareers = React.useCallback((updated: any[]) => {
-        setCareers(updated);
-        updateData('careers', updated);
-        // Also keep legacy fields from first entry for backward compat
-        if (updated.length > 0) {
-            updateData('designation', updated[0].designation);
-            updateData('company', updated[0].company);
-            updateData('careerStart', updated[0].start);
-            updateData('careerEnd', updated[0].end);
-            updateData('careerPresent', updated[0].present);
-            updateData('workLocationType', updated[0].workLocationType);
-            updateData('jobTitleId', updated[0].jobTitleId);
-            updateData('specialityId', updated[0].specialityId);
-        }
-    }, [updateData]);
+    const syncCareers = React.useCallback(
+        (updated: any[]) => {
+            setCareers(updated);
+            updateData('careers', updated);
+            // Also keep legacy fields from first entry for backward compat
+            if (updated.length > 0) {
+                updateData('designation', updated[0].designation);
+                updateData('company', updated[0].company);
+                updateData('careerStart', updated[0].start);
+                updateData('careerEnd', updated[0].end);
+                updateData('careerPresent', updated[0].present);
+                updateData('workLocationType', updated[0].workLocationType);
+                updateData('jobTitleId', updated[0].jobTitleId);
+                updateData('specialityId', updated[0].specialityId);
+            }
+        },
+        [updateData],
+    );
 
     const updateEducation = (index: number, field: string, value: any) => {
         const updated = [...educations];
@@ -1390,7 +1753,10 @@ const CareerSection: React.FC<{ data: any, salaryRanges?: any[], optionSets?: an
     };
 
     const addEducation = () => {
-        syncEducations([...educations, { id: null, degree: '', institution: '', start: '', end: '', isHighestDegree: false }]);
+        syncEducations([
+            ...educations,
+            { id: null, degree: '', institution: '', start: '', end: '', isHighestDegree: false },
+        ]);
     };
 
     const removeEducation = (index: number) => {
@@ -1406,7 +1772,20 @@ const CareerSection: React.FC<{ data: any, salaryRanges?: any[], optionSets?: an
     };
 
     const addCareer = () => {
-        syncCareers([...careers, { id: null, designation: '', company: '', start: '', end: '', present: false, workLocationType: '', jobTitleId: '', specialityId: '' }]);
+        syncCareers([
+            ...careers,
+            {
+                id: null,
+                designation: '',
+                company: '',
+                start: '',
+                end: '',
+                present: false,
+                workLocationType: '',
+                jobTitleId: '',
+                specialityId: '',
+            },
+        ]);
     };
 
     const removeCareer = (index: number) => {
@@ -1417,25 +1796,33 @@ const CareerSection: React.FC<{ data: any, salaryRanges?: any[], optionSets?: an
 
     return (
         <div className="space-y-6">
-            <Card title={t('profile.edit.educationBackground')} action={
-                <button 
-                    type="button" 
-                    onClick={addEducation}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-primary bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-full transition-colors"
-                >
-                    <Plus size={14} /> {t('profile.edit.addEntry')}
-                </button>
-            }>
+            <Card
+                title={t('profile.edit.educationBackground')}
+                action={
+                    <button
+                        type="button"
+                        onClick={addEducation}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-primary bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-full transition-colors"
+                    >
+                        <Plus size={14} /> {t('profile.edit.addEntry')}
+                    </button>
+                }
+            >
                 <div className="space-y-4">
                     {educations.map((edu, index) => (
-                        <div key={edu.id || `new-edu-${index}`} className="flex items-start gap-4 p-6 bg-slate-50 rounded-xl border border-slate-100 relative group">
+                        <div
+                            key={edu.id || `new-edu-${index}`}
+                            className="flex items-start gap-4 p-6 bg-slate-50 rounded-xl border border-slate-100 relative group"
+                        >
                             <div className="size-12 bg-white rounded-full border border-slate-200 flex items-center justify-center shrink-0 shadow-sm">
                                 <GraduationCap size={22} className="text-primary" />
                             </div>
                             <div className="flex-1 space-y-4">
                                 {educations.length > 1 && (
                                     <div className="flex items-center justify-between">
-                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t('profile.edit.entry', { n: index + 1 })}</span>
+                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                            {t('profile.edit.entry', { n: index + 1 })}
+                                        </span>
                                         <button
                                             type="button"
                                             onClick={() => removeEducation(index)}
@@ -1453,7 +1840,9 @@ const CareerSection: React.FC<{ data: any, salaryRanges?: any[], optionSets?: an
                                             className="form-input bg-white"
                                             placeholder={t('profile.edit.degreePlaceholder')}
                                             defaultValue={edu.degree}
-                                            onBlur={(e) => updateEducation(index, 'degree', e.target.value)}
+                                            onBlur={(e) =>
+                                                updateEducation(index, 'degree', e.target.value)
+                                            }
                                         />
                                     </InputGroup>
                                     <InputGroup label={t('profile.edit.institutionUniversity')}>
@@ -1462,7 +1851,13 @@ const CareerSection: React.FC<{ data: any, salaryRanges?: any[], optionSets?: an
                                             className="form-input bg-white"
                                             placeholder={t('profile.edit.institutionPlaceholder')}
                                             defaultValue={edu.institution}
-                                            onBlur={(e) => updateEducation(index, 'institution', e.target.value)}
+                                            onBlur={(e) =>
+                                                updateEducation(
+                                                    index,
+                                                    'institution',
+                                                    e.target.value,
+                                                )
+                                            }
                                         />
                                     </InputGroup>
                                 </div>
@@ -1474,7 +1869,9 @@ const CareerSection: React.FC<{ data: any, salaryRanges?: any[], optionSets?: an
                                             className="form-input bg-white text-sm"
                                             placeholder="YYYY"
                                             defaultValue={edu.start}
-                                            onBlur={(e) => updateEducation(index, 'start', e.target.value)}
+                                            onBlur={(e) =>
+                                                updateEducation(index, 'start', e.target.value)
+                                            }
                                         />
                                     </InputGroup>
                                     <InputGroup label={t('profile.edit.endYear')}>
@@ -1483,7 +1880,9 @@ const CareerSection: React.FC<{ data: any, salaryRanges?: any[], optionSets?: an
                                             className="form-input bg-white text-sm"
                                             placeholder="YYYY"
                                             defaultValue={edu.end}
-                                            onBlur={(e) => updateEducation(index, 'end', e.target.value)}
+                                            onBlur={(e) =>
+                                                updateEducation(index, 'end', e.target.value)
+                                            }
                                         />
                                     </InputGroup>
                                     <div className="flex items-end pb-3">
@@ -1492,9 +1891,17 @@ const CareerSection: React.FC<{ data: any, salaryRanges?: any[], optionSets?: an
                                                 type="checkbox"
                                                 className="size-4 rounded border-slate-300 text-primary focus:ring-primary"
                                                 checked={!!edu.isHighestDegree}
-                                                onChange={(e) => updateEducation(index, 'isHighestDegree', e.target.checked)}
+                                                onChange={(e) =>
+                                                    updateEducation(
+                                                        index,
+                                                        'isHighestDegree',
+                                                        e.target.checked,
+                                                    )
+                                                }
                                             />
-                                            <span className="text-xs font-bold text-slate-600 group-hover:text-primary transition-colors">{t('profile.edit.highestDegree')}</span>
+                                            <span className="text-xs font-bold text-slate-600 group-hover:text-primary transition-colors">
+                                                {t('profile.edit.highestDegree')}
+                                            </span>
                                         </label>
                                     </div>
                                 </div>
@@ -1504,21 +1911,29 @@ const CareerSection: React.FC<{ data: any, salaryRanges?: any[], optionSets?: an
                 </div>
             </Card>
 
-            <Card title={t('profile.edit.currentEmployment')} action={
-                <button 
-                    type="button" 
-                    onClick={addCareer}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-primary bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-full transition-colors"
-                >
-                    <Plus size={14} /> {t('profile.edit.addEntry')}
-                </button>
-            }>
+            <Card
+                title={t('profile.edit.currentEmployment')}
+                action={
+                    <button
+                        type="button"
+                        onClick={addCareer}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-primary bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-full transition-colors"
+                    >
+                        <Plus size={14} /> {t('profile.edit.addEntry')}
+                    </button>
+                }
+            >
                 <div className="space-y-6">
                     {careers.map((career, index) => (
-                        <div key={career.id || `new-car-${index}`} className={`space-y-6 ${index > 0 ? 'pt-6 border-t border-slate-200' : ''}`}>
+                        <div
+                            key={career.id || `new-car-${index}`}
+                            className={`space-y-6 ${index > 0 ? 'pt-6 border-t border-slate-200' : ''}`}
+                        >
                             {careers.length > 1 && (
                                 <div className="flex items-center justify-between">
-                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t('profile.edit.position', { n: index + 1 })}</span>
+                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                        {t('profile.edit.position', { n: index + 1 })}
+                                    </span>
                                     <button
                                         type="button"
                                         onClick={() => removeCareer(index)}
@@ -1536,7 +1951,9 @@ const CareerSection: React.FC<{ data: any, salaryRanges?: any[], optionSets?: an
                                         value={String(career.jobTitleId ?? '')}
                                         onChange={(e) => {
                                             const val = e.target.value;
-                                            const selected = (optionSets?.jobTitles ?? []).find((jt: any) => String(jt.id) === val);
+                                            const selected = (optionSets?.jobTitles ?? []).find(
+                                                (jt: any) => String(jt.id) === val,
+                                            );
                                             // Update both fields in a single call to avoid stale-state race condition
                                             const updated = [...careers];
                                             updated[index] = {
@@ -1547,9 +1964,13 @@ const CareerSection: React.FC<{ data: any, salaryRanges?: any[], optionSets?: an
                                             syncCareers(updated);
                                         }}
                                     >
-                                        <option value="">{t('profile.edit.professionPlaceholder')}</option>
+                                        <option value="">
+                                            {t('profile.edit.professionPlaceholder')}
+                                        </option>
                                         {(optionSets?.jobTitles ?? []).map((jt: any) => (
-                                            <option key={jt.id} value={String(jt.id)}>{jt.name}</option>
+                                            <option key={jt.id} value={String(jt.id)}>
+                                                {jt.name}
+                                            </option>
                                         ))}
                                     </select>
                                 </InputGroup>
@@ -1559,12 +1980,23 @@ const CareerSection: React.FC<{ data: any, salaryRanges?: any[], optionSets?: an
                                         className="form-input"
                                         value={String(career.specialityId ?? '')}
                                         onChange={(e) => {
-                                            updateCareer(index, 'specialityId', e.target.value ? Number(e.target.value) : '');
+                                            updateCareer(
+                                                index,
+                                                'specialityId',
+                                                e.target.value ? Number(e.target.value) : '',
+                                            );
                                         }}
                                     >
-                                        <option value="">{t('profile.edit.selectSpeciality', 'Select Speciality')}</option>
+                                        <option value="">
+                                            {t(
+                                                'profile.edit.selectSpeciality',
+                                                'Select Speciality',
+                                            )}
+                                        </option>
                                         {(optionSets?.specialities ?? []).map((sp: any) => (
-                                            <option key={sp.id} value={String(sp.id)}>{sp.name}</option>
+                                            <option key={sp.id} value={String(sp.id)}>
+                                                {sp.name}
+                                            </option>
                                         ))}
                                     </select>
                                 </InputGroup>
@@ -1578,20 +2010,36 @@ const CareerSection: React.FC<{ data: any, salaryRanges?: any[], optionSets?: an
                                             className="form-input flex-1"
                                             placeholder={t('profile.edit.employerPlaceholder')}
                                             defaultValue={career.company}
-                                            onBlur={(e) => updateCareer(index, 'company', e.target.value)}
+                                            onBlur={(e) =>
+                                                updateCareer(index, 'company', e.target.value)
+                                            }
                                         />
                                         {index === 0 && (
                                             <button
                                                 type="button"
-                                                onClick={() => onToggleVisibility && onToggleVisibility('company', visibility?.company !== false)}
+                                                onClick={() =>
+                                                    onToggleVisibility &&
+                                                    onToggleVisibility(
+                                                        'company',
+                                                        visibility?.company !== false,
+                                                    )
+                                                }
                                                 className={`flex items-center justify-center px-3 border rounded-lg transition-colors ${
                                                     visibility?.company === false
                                                         ? 'border-red-200 bg-red-50 text-red-500 hover:bg-red-100'
                                                         : 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100'
                                                 }`}
-                                                title={visibility?.company === false ? 'Hidden from public view — click to show' : 'Visible — click to mask'}
+                                                title={
+                                                    visibility?.company === false
+                                                        ? 'Hidden from public view — click to show'
+                                                        : 'Visible — click to mask'
+                                                }
                                             >
-                                                {visibility?.company === false ? <EyeOff size={18} /> : <Eye size={18} />}
+                                                {visibility?.company === false ? (
+                                                    <EyeOff size={18} />
+                                                ) : (
+                                                    <Eye size={18} />
+                                                )}
                                             </button>
                                         )}
                                     </div>
@@ -1606,7 +2054,9 @@ const CareerSection: React.FC<{ data: any, salaryRanges?: any[], optionSets?: an
                                             className="form-input text-sm"
                                             placeholder="YYYY"
                                             defaultValue={career.start}
-                                            onBlur={(e) => updateCareer(index, 'start', e.target.value)}
+                                            onBlur={(e) =>
+                                                updateCareer(index, 'start', e.target.value)
+                                            }
                                         />
                                     </InputGroup>
                                     <InputGroup label={t('profile.edit.endYear')}>
@@ -1616,7 +2066,9 @@ const CareerSection: React.FC<{ data: any, salaryRanges?: any[], optionSets?: an
                                             placeholder="YYYY"
                                             disabled={!!career.present}
                                             defaultValue={career.end}
-                                            onBlur={(e) => updateCareer(index, 'end', e.target.value)}
+                                            onBlur={(e) =>
+                                                updateCareer(index, 'end', e.target.value)
+                                            }
                                         />
                                     </InputGroup>
                                 </div>
@@ -1626,9 +2078,13 @@ const CareerSection: React.FC<{ data: any, salaryRanges?: any[], optionSets?: an
                                             type="checkbox"
                                             className="size-4 rounded border-slate-300 text-primary focus:ring-primary"
                                             checked={!!career.present}
-                                            onChange={(e) => updateCareer(index, 'present', e.target.checked)}
+                                            onChange={(e) =>
+                                                updateCareer(index, 'present', e.target.checked)
+                                            }
                                         />
-                                        <span className="text-xs font-bold text-slate-600 group-hover:text-primary transition-colors">{t('profile.edit.iCurrentlyWorkHere')}</span>
+                                        <span className="text-xs font-bold text-slate-600 group-hover:text-primary transition-colors">
+                                            {t('profile.edit.iCurrentlyWorkHere')}
+                                        </span>
                                     </label>
                                 </div>
                             </div>
@@ -1640,38 +2096,69 @@ const CareerSection: React.FC<{ data: any, salaryRanges?: any[], optionSets?: an
                                         <div className="flex gap-2">
                                             <select
                                                 className="form-input flex-1"
-                                                value={salaryRanges.length ? String(data.incomeRangeId ?? '') : (data.income ?? '')}
+                                                value={
+                                                    salaryRanges.length
+                                                        ? String(data.incomeRangeId ?? '')
+                                                        : (data.income ?? '')
+                                                }
                                                 onChange={(e) => {
                                                     const value = e.target.value;
                                                     if (salaryRanges.length) {
-                                                        updateData('incomeRangeId', value ? Number(value) : null);
-                                                        const selected = salaryRanges.find((range: any) => String(range.id) === value);
+                                                        updateData(
+                                                            'incomeRangeId',
+                                                            value ? Number(value) : null,
+                                                        );
+                                                        const selected = salaryRanges.find(
+                                                            (range: any) =>
+                                                                String(range.id) === value,
+                                                        );
                                                         updateData('income', selected?.label ?? '');
                                                     } else {
                                                         updateData('income', value);
                                                     }
                                                 }}
                                             >
-                                                <option value="">{t('profile.edit.selectIncome')}</option>
+                                                <option value="">
+                                                    {t('profile.edit.selectIncome')}
+                                                </option>
                                                 {salaryRanges.length ? (
                                                     salaryRanges.map((range: any) => (
-                                                        <option key={range.id} value={range.id}>{range.label}</option>
+                                                        <option key={range.id} value={range.id}>
+                                                            {range.label}
+                                                        </option>
                                                     ))
                                                 ) : (
-                                                    <option value={data.income ?? ''}>{data.income ?? t('profile.edit.noOptionsAvailable')}</option>
+                                                    <option value={data.income ?? ''}>
+                                                        {data.income ??
+                                                            t('profile.edit.noOptionsAvailable')}
+                                                    </option>
                                                 )}
                                             </select>
                                             <button
                                                 type="button"
-                                                onClick={() => onToggleVisibility && onToggleVisibility('income', visibility?.income !== false)}
+                                                onClick={() =>
+                                                    onToggleVisibility &&
+                                                    onToggleVisibility(
+                                                        'income',
+                                                        visibility?.income !== false,
+                                                    )
+                                                }
                                                 className={`flex items-center justify-center px-3 border rounded-lg transition-colors ${
                                                     visibility?.income === false
                                                         ? 'border-green-200 bg-green-50 text-green-600 hover:bg-green-100'
                                                         : 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100'
                                                 }`}
-                                                title={visibility?.income === false ? 'Income hidden — click to show to mutual matches' : 'Visible to mutual matches — click to hide'}
+                                                title={
+                                                    visibility?.income === false
+                                                        ? 'Income hidden — click to show to mutual matches'
+                                                        : 'Visible to mutual matches — click to hide'
+                                                }
                                             >
-                                                {visibility?.income === false ? <Lock size={18} /> : <Lock size={18} className="text-green-600" />}
+                                                {visibility?.income === false ? (
+                                                    <Lock size={18} />
+                                                ) : (
+                                                    <Lock size={18} className="text-green-600" />
+                                                )}
                                             </button>
                                         </div>
                                     </InputGroup>
@@ -1679,15 +2166,22 @@ const CareerSection: React.FC<{ data: any, salaryRanges?: any[], optionSets?: an
                                     <InputGroup label={t('profile.edit.workLocation')}>
                                         <select
                                             className="form-input"
-                                            value={resolveOptionValue(career.workLocationType, workLocationOptions)}
+                                            value={resolveOptionValue(
+                                                career.workLocationType,
+                                                workLocationOptions,
+                                            )}
                                             onChange={(e) => {
                                                 updateCareer(0, 'workLocationType', e.target.value);
                                                 updateData('workLocationType', e.target.value);
                                             }}
                                         >
-                                            <option value="">{t('profile.edit.selectWorkLocation')}</option>
+                                            <option value="">
+                                                {t('profile.edit.selectWorkLocation')}
+                                            </option>
                                             {workLocationOptions.map((option: any) => (
-                                                <option key={option.value} value={option.value}>{option.label ?? option.value}</option>
+                                                <option key={option.value} value={option.value}>
+                                                    {option.label ?? option.value}
+                                                </option>
                                             ))}
                                         </select>
                                     </InputGroup>
@@ -1701,12 +2195,19 @@ const CareerSection: React.FC<{ data: any, salaryRanges?: any[], optionSets?: an
     );
 };
 
-const FamilySection: React.FC<{ data: any, optionSets?: any, updateData: (field: string, val: any) => void }> = ({ data, optionSets, updateData }) => {
+const FamilySection: React.FC<{
+    data: any;
+    optionSets?: any;
+    updateData: (field: string, val: any) => void;
+}> = ({ data, optionSets, updateData }) => {
     const { t } = useTranslation();
     const [liveCastes, setLiveCastes] = useState<any[]>([]);
     const [liveSects, setLiveSects] = useState<any[]>([]);
     const [loadingCastes, setLoadingCastes] = useState(false);
-    const familyTypeOptions = ensureOptionValue(data?.familyType, optionSets?.familyTypeOptions ?? []);
+    const familyTypeOptions = ensureOptionValue(
+        data?.familyType,
+        optionSets?.familyTypeOptions ?? [],
+    );
     const religionOptions = optionSets?.religions ?? [];
     const casteOptions = liveCastes.length ? liveCastes : (optionSets?.castes ?? []);
     const selectedReligionId = resolveIdByName(data?.religionId, data?.religion, religionOptions);
@@ -1718,7 +2219,11 @@ const FamilySection: React.FC<{ data: any, optionSets?: any, updateData: (field:
             try {
                 setLoadingCastes(true);
                 const res = await api.get('/member/casts');
-                const payload = Array.isArray(res.data?.data) ? res.data.data : (Array.isArray(res.data) ? res.data : []);
+                const payload = Array.isArray(res.data?.data)
+                    ? res.data.data
+                    : Array.isArray(res.data)
+                      ? res.data
+                      : [];
                 if (isMounted) {
                     setLiveCastes(payload);
                 }
@@ -1735,7 +2240,11 @@ const FamilySection: React.FC<{ data: any, optionSets?: any, updateData: (field:
         const fetchLiveSects = async () => {
             try {
                 const res = await api.get('/member/sects');
-                const payload = Array.isArray(res.data?.data) ? res.data.data : (Array.isArray(res.data) ? res.data : []);
+                const payload = Array.isArray(res.data?.data)
+                    ? res.data.data
+                    : Array.isArray(res.data)
+                      ? res.data
+                      : [];
                 if (isMounted) {
                     setLiveSects(payload);
                 }
@@ -1764,7 +2273,9 @@ const FamilySection: React.FC<{ data: any, optionSets?: any, updateData: (field:
                         >
                             <option value="">{t('profile.edit.selectFamilyType')}</option>
                             {familyTypeOptions.map((option: any) => (
-                                <option key={option.value} value={option.value}>{option.label ?? option.value}</option>
+                                <option key={option.value} value={option.value}>
+                                    {option.label ?? option.value}
+                                </option>
                             ))}
                         </select>
                     </InputGroup>
@@ -1837,9 +2348,13 @@ const FamilySection: React.FC<{ data: any, optionSets?: any, updateData: (field:
                                 className="form-input"
                                 value={selectedReligionId}
                                 onChange={(e) => {
-                                    const nextValue = e.target.value ? Number(e.target.value) : null;
+                                    const nextValue = e.target.value
+                                        ? Number(e.target.value)
+                                        : null;
                                     updateData('religionId', nextValue);
-                                    const selected = religionOptions.find((item: any) => String(item.id) === e.target.value);
+                                    const selected = religionOptions.find(
+                                        (item: any) => String(item.id) === e.target.value,
+                                    );
                                     updateData('religion', selected?.name ?? '');
                                     updateData('casteId', null);
                                     updateData('caste', '');
@@ -1847,7 +2362,9 @@ const FamilySection: React.FC<{ data: any, optionSets?: any, updateData: (field:
                             >
                                 <option value="">{t('profile.edit.selectReligion')}</option>
                                 {religionOptions.map((option: any) => (
-                                    <option key={option.id} value={option.id}>{option.name}</option>
+                                    <option key={option.id} value={option.id}>
+                                        {option.name}
+                                    </option>
                                 ))}
                             </select>
                         </InputGroup>
@@ -1856,16 +2373,24 @@ const FamilySection: React.FC<{ data: any, optionSets?: any, updateData: (field:
                                 className="form-input"
                                 value={data.sectId || ''}
                                 onChange={(e) => {
-                                    const nextValue = e.target.value ? Number(e.target.value) : null;
+                                    const nextValue = e.target.value
+                                        ? Number(e.target.value)
+                                        : null;
                                     updateData('sectId', nextValue);
-                                    const selected = liveSects.find((item: any) => String(item.id) === e.target.value);
+                                    const selected = liveSects.find(
+                                        (item: any) => String(item.id) === e.target.value,
+                                    );
                                     updateData('sect', selected?.name ?? '');
                                 }}
                                 disabled={!liveSects.length}
                             >
-                                <option value="">{t('profile.edit.selectSect', 'Select sect')}</option>
+                                <option value="">
+                                    {t('profile.edit.selectSect', 'Select sect')}
+                                </option>
                                 {liveSects.map((option: any) => (
-                                    <option key={option.id} value={option.id}>{option.name}</option>
+                                    <option key={option.id} value={option.id}>
+                                        {option.name}
+                                    </option>
                                 ))}
                             </select>
                         </InputGroup>
@@ -1874,16 +2399,22 @@ const FamilySection: React.FC<{ data: any, optionSets?: any, updateData: (field:
                                 className="form-input"
                                 value={selectedCasteId}
                                 onChange={(e) => {
-                                    const nextValue = e.target.value ? Number(e.target.value) : null;
+                                    const nextValue = e.target.value
+                                        ? Number(e.target.value)
+                                        : null;
                                     updateData('casteId', nextValue);
-                                    const selected = casteOptions.find((item: any) => String(item.id) === e.target.value);
+                                    const selected = casteOptions.find(
+                                        (item: any) => String(item.id) === e.target.value,
+                                    );
                                     updateData('caste', selected?.name ?? '');
                                 }}
                                 disabled={!casteOptions.length || loadingCastes}
                             >
                                 <option value="">{t('profile.edit.selectCaste')}</option>
                                 {casteOptions.map((option: any) => (
-                                    <option key={option.id} value={option.id}>{option.name}</option>
+                                    <option key={option.id} value={option.id}>
+                                        {option.name}
+                                    </option>
                                 ))}
                             </select>
                         </InputGroup>
@@ -1894,7 +2425,11 @@ const FamilySection: React.FC<{ data: any, optionSets?: any, updateData: (field:
     );
 };
 
-const PreferencesSection: React.FC<{ data: any, optionSets?: any, updateData: (field: string, val: any) => void }> = ({ data, optionSets, updateData }) => {
+const PreferencesSection: React.FC<{
+    data: any;
+    optionSets?: any;
+    updateData: (field: string, val: any) => void;
+}> = ({ data, optionSets, updateData }) => {
     const { t } = useTranslation();
     const maritalStatusOptions = optionSets?.maritalStatuses ?? [];
     const religionOptions = optionSets?.religions ?? [];
@@ -1912,27 +2447,63 @@ const PreferencesSection: React.FC<{ data: any, optionSets?: any, updateData: (f
     const scrollTo = (ref: React.RefObject<HTMLDivElement>) => {
         ref.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         ref.current?.classList.add('ring-4', 'ring-primary', 'ring-offset-2', 'bg-primary/5');
-        setTimeout(() => ref.current?.classList.remove('ring-4', 'ring-primary', 'ring-offset-2', 'bg-primary/5'), 2000);
+        setTimeout(
+            () =>
+                ref.current?.classList.remove(
+                    'ring-4',
+                    'ring-primary',
+                    'ring-offset-2',
+                    'bg-primary/5',
+                ),
+            2000,
+        );
     };
 
-    const selectedMaritalStatusId = resolveIdByName(data?.maritalStatusId, data?.marital_status, maritalStatusOptions);
+    const selectedMaritalStatusId = resolveIdByName(
+        data?.maritalStatusId,
+        data?.marital_status,
+        maritalStatusOptions,
+    );
     const selectedReligionId = resolveIdByName(data?.religionId, data?.religion, religionOptions);
     const selectedLanguageId = resolveIdByName(data?.languageId, data?.language, languageOptions);
-    const selectedResidenceId = resolveIdByName(data?.residenceCountryId, data?.residence, countryOptions);
-    const minHeightValue = Number.isFinite(Number(data?.min_height)) ? Number(data.min_height) : 150;
+    const selectedResidenceId = resolveIdByName(
+        data?.residenceCountryId,
+        data?.residence,
+        countryOptions,
+    );
+    const minHeightValue = Number.isFinite(Number(data?.min_height))
+        ? Number(data.min_height)
+        : 150;
 
-    const summaryMaritalStatus = data?.marital_status || maritalStatusOptions.find((item: any) => String(item.id) === selectedMaritalStatusId)?.name || t('profile.edit.any');
-    const summaryReligion = data?.religion || religionOptions.find((item: any) => String(item.id) === selectedReligionId)?.name || t('profile.edit.any');
-    const summaryLanguage = data?.language || languageOptions.find((item: any) => String(item.id) === selectedLanguageId)?.name || t('profile.edit.any');
-    const summaryResidence = data?.residence || countryOptions.find((item: any) => String(item.id) === selectedResidenceId)?.name || t('profile.edit.any');
-    const heightSummary = data?.min_height ? `${formatHeightLabel(data.min_height)} ${t('profile.edit.andAbove')}` : t('profile.edit.any');
+    const summaryMaritalStatus =
+        data?.marital_status ||
+        maritalStatusOptions.find((item: any) => String(item.id) === selectedMaritalStatusId)
+            ?.name ||
+        t('profile.edit.any');
+    const summaryReligion =
+        data?.religion ||
+        religionOptions.find((item: any) => String(item.id) === selectedReligionId)?.name ||
+        t('profile.edit.any');
+    const summaryLanguage =
+        data?.language ||
+        languageOptions.find((item: any) => String(item.id) === selectedLanguageId)?.name ||
+        t('profile.edit.any');
+    const summaryResidence =
+        data?.residence ||
+        countryOptions.find((item: any) => String(item.id) === selectedResidenceId)?.name ||
+        t('profile.edit.any');
+    const heightSummary = data?.min_height
+        ? `${formatHeightLabel(data.min_height)} ${t('profile.edit.andAbove')}`
+        : t('profile.edit.any');
 
     return (
         <div className="space-y-6">
             <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl flex gap-3">
                 <AlertCircle className="text-blue-500 shrink-0 mt-0.5" />
                 <div>
-                    <h4 className="font-bold text-blue-900 text-sm">{t('profile.edit.smartMatching')}</h4>
+                    <h4 className="font-bold text-blue-900 text-sm">
+                        {t('profile.edit.smartMatching')}
+                    </h4>
                     <p className="text-xs text-blue-700 mt-1">
                         {t('profile.edit.smartMatchingDesc')}
                     </p>
@@ -1975,9 +2546,13 @@ const PreferencesSection: React.FC<{ data: any, optionSets?: any, updateData: (f
                                     min="140"
                                     max="220"
                                     value={minHeightValue}
-                                    onChange={(e) => updateData('min_height', Number(e.target.value))}
+                                    onChange={(e) =>
+                                        updateData('min_height', Number(e.target.value))
+                                    }
                                 />
-                                <span className="text-sm font-bold text-slate-700 w-16">{formatHeightLabel(minHeightValue)}</span>
+                                <span className="text-sm font-bold text-slate-700 w-16">
+                                    {formatHeightLabel(minHeightValue)}
+                                </span>
                             </div>
                             <ImportanceSelector
                                 value={data.height_importance || 'Nice to have'}
@@ -1990,15 +2565,21 @@ const PreferencesSection: React.FC<{ data: any, optionSets?: any, updateData: (f
                                 className="form-input"
                                 value={selectedMaritalStatusId}
                                 onChange={(e) => {
-                                    const nextValue = e.target.value ? Number(e.target.value) : null;
+                                    const nextValue = e.target.value
+                                        ? Number(e.target.value)
+                                        : null;
                                     updateData('maritalStatusId', nextValue);
-                                    const selected = maritalStatusOptions.find((item: any) => String(item.id) === e.target.value);
+                                    const selected = maritalStatusOptions.find(
+                                        (item: any) => String(item.id) === e.target.value,
+                                    );
                                     updateData('marital_status', selected?.name ?? '');
                                 }}
                             >
                                 <option value="">{t('profile.edit.any')}</option>
                                 {maritalStatusOptions.map((option: any) => (
-                                    <option key={option.id} value={option.id}>{option.name}</option>
+                                    <option key={option.id} value={option.id}>
+                                        {option.name}
+                                    </option>
                                 ))}
                             </select>
                             <ImportanceSelector
@@ -2016,15 +2597,21 @@ const PreferencesSection: React.FC<{ data: any, optionSets?: any, updateData: (f
                                 className="form-input"
                                 value={selectedReligionId}
                                 onChange={(e) => {
-                                    const nextValue = e.target.value ? Number(e.target.value) : null;
+                                    const nextValue = e.target.value
+                                        ? Number(e.target.value)
+                                        : null;
                                     updateData('religionId', nextValue);
-                                    const selected = religionOptions.find((item: any) => String(item.id) === e.target.value);
+                                    const selected = religionOptions.find(
+                                        (item: any) => String(item.id) === e.target.value,
+                                    );
                                     updateData('religion', selected?.name ?? '');
                                 }}
                             >
                                 <option value="">{t('profile.edit.any')}</option>
                                 {religionOptions.map((option: any) => (
-                                    <option key={option.id} value={option.id}>{option.name}</option>
+                                    <option key={option.id} value={option.id}>
+                                        {option.name}
+                                    </option>
                                 ))}
                             </select>
                             <ImportanceSelector
@@ -2033,20 +2620,29 @@ const PreferencesSection: React.FC<{ data: any, optionSets?: any, updateData: (f
                             />
                         </InputGroup>
 
-                        <InputGroup label={t('profile.edit.preferredLanguage')} innerRef={languageRef}>
+                        <InputGroup
+                            label={t('profile.edit.preferredLanguage')}
+                            innerRef={languageRef}
+                        >
                             <select
                                 className="form-input"
                                 value={selectedLanguageId}
                                 onChange={(e) => {
-                                    const nextValue = e.target.value ? Number(e.target.value) : null;
+                                    const nextValue = e.target.value
+                                        ? Number(e.target.value)
+                                        : null;
                                     updateData('languageId', nextValue);
-                                    const selected = languageOptions.find((item: any) => String(item.id) === e.target.value);
+                                    const selected = languageOptions.find(
+                                        (item: any) => String(item.id) === e.target.value,
+                                    );
                                     updateData('language', selected?.name ?? '');
                                 }}
                             >
                                 <option value="">{t('profile.edit.any')}</option>
                                 {languageOptions.map((option: any) => (
-                                    <option key={option.id} value={option.id}>{option.name}</option>
+                                    <option key={option.id} value={option.id}>
+                                        {option.name}
+                                    </option>
                                 ))}
                             </select>
                             <ImportanceSelector
@@ -2055,20 +2651,29 @@ const PreferencesSection: React.FC<{ data: any, optionSets?: any, updateData: (f
                             />
                         </InputGroup>
 
-                        <InputGroup label={t('profile.edit.preferredResidence')} innerRef={residenceRef}>
+                        <InputGroup
+                            label={t('profile.edit.preferredResidence')}
+                            innerRef={residenceRef}
+                        >
                             <select
                                 className="form-input"
                                 value={selectedResidenceId}
                                 onChange={(e) => {
-                                    const nextValue = e.target.value ? Number(e.target.value) : null;
+                                    const nextValue = e.target.value
+                                        ? Number(e.target.value)
+                                        : null;
                                     updateData('residenceCountryId', nextValue);
-                                    const selected = countryOptions.find((item: any) => String(item.id) === e.target.value);
+                                    const selected = countryOptions.find(
+                                        (item: any) => String(item.id) === e.target.value,
+                                    );
                                     updateData('residence', selected?.name ?? '');
                                 }}
                             >
                                 <option value="">{t('profile.edit.any')}</option>
                                 {countryOptions.map((option: any) => (
-                                    <option key={option.id ?? option.code} value={option.id}>{option.name}</option>
+                                    <option key={option.id ?? option.code} value={option.id}>
+                                        {option.name}
+                                    </option>
                                 ))}
                             </select>
                             <ImportanceSelector
@@ -2081,11 +2686,18 @@ const PreferencesSection: React.FC<{ data: any, optionSets?: any, updateData: (f
                             <select
                                 className="form-input"
                                 value={data.familyValueId ?? ''}
-                                onChange={(e) => updateData('familyValueId', e.target.value ? Number(e.target.value) : null)}
+                                onChange={(e) =>
+                                    updateData(
+                                        'familyValueId',
+                                        e.target.value ? Number(e.target.value) : null,
+                                    )
+                                }
                             >
                                 <option value="">{t('profile.edit.any')}</option>
                                 {familyValueOptions.map((option: any) => (
-                                    <option key={option.id} value={option.id}>{option.name}</option>
+                                    <option key={option.id} value={option.id}>
+                                        {option.name}
+                                    </option>
                                 ))}
                             </select>
                         </InputGroup>
@@ -2094,7 +2706,9 @@ const PreferencesSection: React.FC<{ data: any, optionSets?: any, updateData: (f
             </div>
 
             <div className="space-y-3">
-                <h4 className="font-bold text-slate-900 text-sm mb-2">{t('profile.edit.summaryMatchRules')}</h4>
+                <h4 className="font-bold text-slate-900 text-sm mb-2">
+                    {t('profile.edit.summaryMatchRules')}
+                </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <PreferenceItem
                         label={t('profile.edit.ageRange')}
@@ -2135,17 +2749,17 @@ const PreferencesSection: React.FC<{ data: any, optionSets?: any, updateData: (f
                 </div>
 
                 <div className="pt-4">
-                    <button 
+                    <button
                         onClick={() => scrollTo(ageRef)}
                         className="w-full py-3 border-2 border-dashed border-slate-200 rounded-xl text-slate-400 font-bold text-sm hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-2 group"
                     >
-                        <Plus size={18} className="group-hover:scale-110 transition-transform" /> {t('profile.edit.addPreference')}
+                        <Plus size={18} className="group-hover:scale-110 transition-transform" />{' '}
+                        {t('profile.edit.addPreference')}
                     </button>
                 </div>
             </div>
 
-            <Card>
-                <h4 className="font-bold text-slate-900 text-sm mb-3">{t('profile.edit.idealPartner')}</h4>
+            <Card title={t('profile.edit.idealPartner')}>
                 <textarea
                     value={data.general || ''}
                     onChange={(e) => updateData('general', e.target.value)}
@@ -2185,21 +2799,29 @@ const MiniAudioPlayer: React.FC<{ src: string }> = ({ src }) => {
         } else {
             // Workaround: seek to large value to force browser to resolve real duration
             audioRef.current.currentTime = 1e10;
-            audioRef.current.addEventListener('timeupdate', function handler() {
-                if (audioRef.current) {
-                    const realD = audioRef.current.duration;
-                    if (isFinite(realD) && !isNaN(realD) && realD > 0) setDur(realD);
-                    audioRef.current.currentTime = 0;
-                    audioRef.current.removeEventListener('timeupdate', handler);
-                }
-                setLoading(false);
-            }, { once: true });
+            audioRef.current.addEventListener(
+                'timeupdate',
+                function handler() {
+                    if (audioRef.current) {
+                        const realD = audioRef.current.duration;
+                        if (isFinite(realD) && !isNaN(realD) && realD > 0) setDur(realD);
+                        audioRef.current.currentTime = 0;
+                        audioRef.current.removeEventListener('timeupdate', handler);
+                    }
+                    setLoading(false);
+                },
+                { once: true },
+            );
         }
     };
 
     const toggle = () => {
         if (!audioRef.current) return;
-        if (playing) { audioRef.current.pause(); } else { audioRef.current.play().catch(() => {}); }
+        if (playing) {
+            audioRef.current.pause();
+        } else {
+            audioRef.current.play().catch(() => {});
+        }
     };
 
     const pct = dur > 0 ? (cur / dur) * 100 : 0;
@@ -2211,10 +2833,15 @@ const MiniAudioPlayer: React.FC<{ src: string }> = ({ src }) => {
                 src={src}
                 preload="metadata"
                 onLoadedMetadata={handleMeta}
-                onTimeUpdate={() => { if (audioRef.current) setCur(audioRef.current.currentTime); }}
+                onTimeUpdate={() => {
+                    if (audioRef.current) setCur(audioRef.current.currentTime);
+                }}
                 onPlay={() => setPlaying(true)}
                 onPause={() => setPlaying(false)}
-                onEnded={() => { setPlaying(false); setCur(0); }}
+                onEnded={() => {
+                    setPlaying(false);
+                    setCur(0);
+                }}
                 onError={() => setLoading(false)}
             />
             <button
@@ -2238,7 +2865,10 @@ const MiniAudioPlayer: React.FC<{ src: string }> = ({ src }) => {
                     audioRef.current.currentTime = ((e.clientX - rect.left) / rect.width) * dur;
                 }}
             >
-                <div className="h-full bg-purple-500 rounded-full transition-all duration-100" style={{ width: `${pct}%` }} />
+                <div
+                    className="h-full bg-purple-500 rounded-full transition-all duration-100"
+                    style={{ width: `${pct}%` }}
+                />
             </div>
             <span className="text-[11px] text-purple-500 font-medium tabular-nums whitespace-nowrap">
                 {fmt(cur)} / {fmt(dur)}
@@ -2248,9 +2878,9 @@ const MiniAudioPlayer: React.FC<{ src: string }> = ({ src }) => {
 };
 
 const VoiceIntroRecorder: React.FC<{
-    existingUrl?: string,
-    onUpload: (file: File) => Promise<void>,
-    onDelete: () => Promise<void>
+    existingUrl?: string;
+    onUpload: (file: File) => Promise<void>;
+    onDelete: () => Promise<void>;
 }> = ({ existingUrl, onUpload, onDelete }) => {
     const { t } = useTranslation();
     const [isRecording, setIsRecording] = useState(false);
@@ -2270,22 +2900,35 @@ const VoiceIntroRecorder: React.FC<{
 
     const startRecording = async () => {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
-            
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio: { echoCancellation: true, noiseSuppression: true },
+            });
+
             // Pick best supported MIME type
-            const mimeTypes = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4', 'audio/wav'];
+            const mimeTypes = [
+                'audio/webm;codecs=opus',
+                'audio/webm',
+                'audio/ogg;codecs=opus',
+                'audio/mp4',
+                'audio/wav',
+            ];
             let selectedMime = '';
             for (const mime of mimeTypes) {
-                if (MediaRecorder.isTypeSupported(mime)) { selectedMime = mime; break; }
+                if (MediaRecorder.isTypeSupported(mime)) {
+                    selectedMime = mime;
+                    break;
+                }
             }
-            
+
             const options: MediaRecorderOptions = selectedMime ? { mimeType: selectedMime } : {};
             const recorder = new MediaRecorder(stream, options);
             const actualMime = recorder.mimeType || selectedMime || 'audio/webm';
             setRecordingMimeType(actualMime);
             const chunks: Blob[] = [];
 
-            recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+            recorder.ondataavailable = (e) => {
+                if (e.data.size > 0) chunks.push(e.data);
+            };
             recorder.onstop = () => {
                 const blob = new Blob(chunks, { type: actualMime });
                 setAudioBlob(blob);
@@ -2298,7 +2941,7 @@ const VoiceIntroRecorder: React.FC<{
             setIsRecording(true);
             setRecordingTime(0);
             timerRef.current = setInterval(() => {
-                setRecordingTime(prev => {
+                setRecordingTime((prev) => {
                     if (prev >= 30) {
                         stopRecording();
                         return 30;
@@ -2307,7 +2950,7 @@ const VoiceIntroRecorder: React.FC<{
                 });
             }, 1000);
         } catch (err) {
-            console.error("Error accessing microphone:", err);
+            console.error('Error accessing microphone:', err);
             alert(t('profile.edit.microphoneError'));
         }
     };
@@ -2315,7 +2958,7 @@ const VoiceIntroRecorder: React.FC<{
     const stopRecording = () => {
         if (mediaRecorder && isRecording) {
             mediaRecorder.stop();
-            mediaRecorder.stream.getTracks().forEach(track => track.stop());
+            mediaRecorder.stream.getTracks().forEach((track) => track.stop());
             setIsRecording(false);
             if (timerRef.current) clearInterval(timerRef.current);
         }
@@ -2326,13 +2969,19 @@ const VoiceIntroRecorder: React.FC<{
         setIsUploading(true);
         try {
             // Determine proper file extension from MIME type
-            const extMap: Record<string, string> = { 'audio/webm': 'webm', 'audio/ogg': 'ogg', 'audio/mp4': 'm4a', 'audio/wav': 'wav', 'audio/mpeg': 'mp3' };
+            const extMap: Record<string, string> = {
+                'audio/webm': 'webm',
+                'audio/ogg': 'ogg',
+                'audio/mp4': 'm4a',
+                'audio/wav': 'wav',
+                'audio/mpeg': 'mp3',
+            };
             const ext = extMap[recordingMimeType.split(';')[0]] || 'webm';
             const file = new File([audioBlob], `voice_intro.${ext}`, { type: recordingMimeType });
             await onUpload(file);
             setAudioBlob(null);
         } catch (err) {
-            console.error("Upload failed", err);
+            console.error('Upload failed', err);
         } finally {
             setIsUploading(false);
         }
@@ -2347,13 +2996,21 @@ const VoiceIntroRecorder: React.FC<{
         <div className="p-4 bg-purple-50 rounded-xl border border-purple-100">
             <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-3">
-                    <div className={`size-10 rounded-full flex items-center justify-center ${isRecording ? 'bg-red-100 text-red-600 animate-pulse' : 'bg-purple-100 text-purple-600'}`}>
+                    <div
+                        className={`size-10 rounded-full flex items-center justify-center ${isRecording ? 'bg-red-100 text-red-600 animate-pulse' : 'bg-purple-100 text-purple-600'}`}
+                    >
                         {isRecording ? <Square size={20} /> : <Mic size={20} />}
                     </div>
                     <div>
-                        <h4 className="font-bold text-slate-900 text-sm">{t('profile.edit.voiceIntro')}</h4>
+                        <h4 className="font-bold text-slate-900 text-sm">
+                            {t('profile.edit.voiceIntro')}
+                        </h4>
                         <p className="text-xs text-slate-500">
-                            {isRecording ? t('profile.edit.recording', { n: recordingTime }) : audioBlob ? t('profile.edit.recordingComplete') : t('profile.edit.recordGreeting')}
+                            {isRecording
+                                ? t('profile.edit.recording', { n: recordingTime })
+                                : audioBlob
+                                  ? t('profile.edit.recordingComplete')
+                                  : t('profile.edit.recordGreeting')}
                         </p>
                     </div>
                 </div>
@@ -2392,7 +3049,11 @@ const VoiceIntroRecorder: React.FC<{
                                     disabled={isUploading}
                                     className="px-3 py-1.5 bg-purple-600 text-white rounded-lg text-[10px] font-bold hover:bg-purple-700 disabled:opacity-50 flex items-center gap-1"
                                 >
-                                    {isUploading ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                                    {isUploading ? (
+                                        <Loader2 size={12} className="animate-spin" />
+                                    ) : (
+                                        <Check size={12} />
+                                    )}
                                     {t('profile.edit.upload')}
                                 </button>
                             </>
@@ -2411,7 +3072,12 @@ const VoiceIntroRecorder: React.FC<{
     );
 };
 
-const MediaSection: React.FC<{ data: any, visibility: any, avatarUrl: string, onRefresh: () => void }> = ({ data, visibility, avatarUrl, onRefresh }) => {
+const MediaSection: React.FC<{
+    data: any;
+    visibility: any;
+    avatarUrl: string;
+    onRefresh: () => void;
+}> = ({ data, visibility, avatarUrl, onRefresh }) => {
     const { t } = useTranslation();
     const [uploading, setUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -2428,9 +3094,9 @@ const MediaSection: React.FC<{ data: any, visibility: any, avatarUrl: string, on
             formData.append('gallery_image', compressedFile);
             formData.append('privacy_level', 'public');
             const response = await api.post('/member/gallery-image', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
+                headers: { 'Content-Type': 'multipart/form-data' },
             });
-            
+
             if (response.data?.result === false) {
                 alert(response.data?.message || t('profile.edit.uploadFailed'));
             } else {
@@ -2438,7 +3104,10 @@ const MediaSection: React.FC<{ data: any, visibility: any, avatarUrl: string, on
             }
         } catch (error: any) {
             console.error('Failed to upload image', error);
-            const message = error?.response?.data?.message || error?.message || t('profile.edit.failedUploadImage');
+            const message =
+                error?.response?.data?.message ||
+                error?.message ||
+                t('profile.edit.failedUploadImage');
             alert(message);
         } finally {
             setUploading(false);
@@ -2457,12 +3126,11 @@ const MediaSection: React.FC<{ data: any, visibility: any, avatarUrl: string, on
     };
 
     const handleTogglePrivacy = async (imgId: number, currentPrivacy: string) => {
-        const newPrivacy = currentPrivacy === 'vault' || currentPrivacy === 'private' ? 'public' : 'vault';
+        const newPrivacy =
+            currentPrivacy === 'vault' || currentPrivacy === 'private' ? 'public' : 'vault';
         try {
             await api.post('/member/profile/section/media', {
-                gallery: [
-                    { id: imgId, privacy_level: newPrivacy }
-                ]
+                gallery: [{ id: imgId, privacy_level: newPrivacy }],
             });
             onRefresh();
         } catch (error) {
@@ -2483,7 +3151,7 @@ const MediaSection: React.FC<{ data: any, visibility: any, avatarUrl: string, on
         try {
             await api.post('/member/profile/visibility', {
                 field_name: fieldName,
-                is_visible: !currentValue
+                is_visible: !currentValue,
             });
             onRefresh();
         } catch (error) {
@@ -2501,17 +3169,26 @@ const MediaSection: React.FC<{ data: any, visibility: any, avatarUrl: string, on
                 <div className="flex justify-between items-end mb-4">
                     <div>
                         <h3 className="font-bold text-slate-900 text-base">My Photos</h3>
-                        <p className="text-xs text-slate-500 mt-0.5">Upload photos and control visibility. Private photos appear blurred to others.</p>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                            Upload photos and control visibility. Private photos appear blurred to
+                            others.
+                        </p>
                     </div>
-                    <span className="text-[10px] text-slate-400 font-medium bg-slate-50 px-2 py-1 rounded-full">{allPhotos.length} photo{allPhotos.length !== 1 ? 's' : ''}</span>
+                    <span className="text-[10px] text-slate-400 font-medium bg-slate-50 px-2 py-1 rounded-full">
+                        {allPhotos.length} photo{allPhotos.length !== 1 ? 's' : ''}
+                    </span>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     {allPhotos.map((img: any) => {
-                        const isPrivate = img.privacy_level === 'vault' || img.privacy_level === 'private';
+                        const isPrivate =
+                            img.privacy_level === 'vault' || img.privacy_level === 'private';
                         const isMain = img.is_main;
 
                         return (
-                            <div key={img.id} className="aspect-[3/4] rounded-xl overflow-hidden relative group bg-slate-100">
+                            <div
+                                key={img.id}
+                                className="aspect-[3/4] rounded-xl overflow-hidden relative group bg-slate-100"
+                            >
                                 {/* Photo with optional watermark */}
                                 <div className="relative w-full h-full">
                                     <img
@@ -2522,7 +3199,10 @@ const MediaSection: React.FC<{ data: any, visibility: any, avatarUrl: string, on
 
                                     {/* Screenshot deterrence watermark overlay */}
                                     {isWatermarkActive && (
-                                        <div className="absolute inset-0 pointer-events-none overflow-hidden select-none" style={{ zIndex: 2 }}>
+                                        <div
+                                            className="absolute inset-0 pointer-events-none overflow-hidden select-none"
+                                            style={{ zIndex: 2 }}
+                                        >
                                             <div
                                                 className="absolute inset-[-50%] flex items-center justify-center"
                                                 style={{
@@ -2531,9 +3211,15 @@ const MediaSection: React.FC<{ data: any, visibility: any, avatarUrl: string, on
                                                     height: '200%',
                                                 }}
                                             >
-                                                <div className="w-full h-full flex flex-wrap items-start justify-start gap-8 p-4" style={{ opacity: 0.08 }}>
+                                                <div
+                                                    className="w-full h-full flex flex-wrap items-start justify-start gap-8 p-4"
+                                                    style={{ opacity: 0.08 }}
+                                                >
                                                     {Array.from({ length: 20 }).map((_, i) => (
-                                                        <span key={i} className="text-white text-[11px] font-bold whitespace-nowrap tracking-wider">
+                                                        <span
+                                                            key={i}
+                                                            className="text-white text-[11px] font-bold whitespace-nowrap tracking-wider"
+                                                        >
                                                             DMB PROTECTED
                                                         </span>
                                                     ))}
@@ -2544,10 +3230,15 @@ const MediaSection: React.FC<{ data: any, visibility: any, avatarUrl: string, on
 
                                     {/* Private overlay */}
                                     {isPrivate && (
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" style={{ zIndex: 3 }}>
+                                        <div
+                                            className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent pointer-events-none"
+                                            style={{ zIndex: 3 }}
+                                        >
                                             <div className="absolute bottom-0 left-0 right-0 p-2 flex items-center justify-center gap-1">
                                                 <Lock size={11} className="text-white/80" />
-                                                <span className="text-[10px] font-bold text-white/80 uppercase tracking-wider">Private</span>
+                                                <span className="text-[10px] font-bold text-white/80 uppercase tracking-wider">
+                                                    Private
+                                                </span>
                                             </div>
                                         </div>
                                     )}
@@ -2563,20 +3254,28 @@ const MediaSection: React.FC<{ data: any, visibility: any, avatarUrl: string, on
 
                                 {/* Privacy indicator pill (always visible, top-right) */}
                                 <button
-                                    onClick={(e) => { e.stopPropagation(); handleTogglePrivacy(img.id, img.privacy_level); }}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleTogglePrivacy(img.id, img.privacy_level);
+                                    }}
                                     className={`absolute top-2 right-2 z-10 flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold shadow-md transition-all cursor-pointer ${
                                         isPrivate
                                             ? 'bg-slate-800/80 text-white hover:bg-slate-700'
                                             : 'bg-white/90 text-slate-600 hover:bg-white'
                                     }`}
-                                    title={isPrivate ? 'Click to make public' : 'Click to make private'}
+                                    title={
+                                        isPrivate ? 'Click to make public' : 'Click to make private'
+                                    }
                                 >
                                     {isPrivate ? <Lock size={9} /> : <Globe size={9} />}
                                     {isPrivate ? 'Private' : 'Public'}
                                 </button>
 
                                 {/* Hover overlay with actions */}
-                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2" style={{ zIndex: 5 }}>
+                                <div
+                                    className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2"
+                                    style={{ zIndex: 5 }}
+                                >
                                     {!isMain && (
                                         <button
                                             onClick={() => handleSetMainAndAvatar(img.id)}
@@ -2610,8 +3309,12 @@ const MediaSection: React.FC<{ data: any, visibility: any, avatarUrl: string, on
                                 <div className="p-3 bg-slate-100 rounded-full mb-2">
                                     <ImageIcon size={20} />
                                 </div>
-                                <span className="text-xs font-bold">{t('profile.edit.addPhoto')}</span>
-                                <span className="text-[10px] text-slate-300 mt-0.5">Uploads as Public</span>
+                                <span className="text-xs font-bold">
+                                    {t('profile.edit.addPhoto')}
+                                </span>
+                                <span className="text-[10px] text-slate-300 mt-0.5">
+                                    Uploads as Public
+                                </span>
                             </>
                         )}
                         <input
@@ -2641,14 +3344,24 @@ const MediaSection: React.FC<{ data: any, visibility: any, avatarUrl: string, on
             <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl border border-slate-200">
                 <Umbrella size={20} className="text-slate-400" />
                 <div className="flex-1">
-                    <h4 className="text-sm font-bold text-slate-900">{t('profile.edit.screenshotDeterrence')}</h4>
-                    <p className="text-xs text-slate-500">{isWatermarkActive ? 'Watermark overlay is active on all your photos.' : 'Enable to add watermark protection to your photos.'}</p>
+                    <h4 className="text-sm font-bold text-slate-900">
+                        {t('profile.edit.screenshotDeterrence')}
+                    </h4>
+                    <p className="text-xs text-slate-500">
+                        {isWatermarkActive
+                            ? 'Watermark overlay is active on all your photos.'
+                            : 'Enable to add watermark protection to your photos.'}
+                    </p>
                 </div>
                 <div
-                    onClick={() => handleToggleVisibility('screenshot_deterrence', isWatermarkActive)}
+                    onClick={() =>
+                        handleToggleVisibility('screenshot_deterrence', isWatermarkActive)
+                    }
                     className={`w-10 h-5 ${isWatermarkActive ? 'bg-primary' : 'bg-slate-300'} rounded-full relative cursor-pointer transition-colors`}
                 >
-                    <div className={`absolute ${isWatermarkActive ? 'right-0.5' : 'left-0.5'} top-0.5 size-4 bg-white rounded-full transition-all shadow-sm`}></div>
+                    <div
+                        className={`absolute ${isWatermarkActive ? 'right-0.5' : 'left-0.5'} top-0.5 size-4 bg-white rounded-full transition-all shadow-sm`}
+                    ></div>
                 </div>
             </div>
 
@@ -2658,7 +3371,7 @@ const MediaSection: React.FC<{ data: any, visibility: any, avatarUrl: string, on
                     const formData = new FormData();
                     formData.append('voice_file', file);
                     await api.post('/member/profile/media/voice', formData, {
-                        headers: { 'Content-Type': 'multipart/form-data' }
+                        headers: { 'Content-Type': 'multipart/form-data' },
                     });
                     onRefresh();
                 }}
@@ -2674,7 +3387,11 @@ const MediaSection: React.FC<{ data: any, visibility: any, avatarUrl: string, on
 
 /* --- Helper Components --- */
 
-const Card: React.FC<{ title: string, children: React.ReactNode, action?: React.ReactNode }> = ({ title, children, action }) => (
+const Card: React.FC<{ title: string; children: React.ReactNode; action?: React.ReactNode }> = ({
+    title,
+    children,
+    action,
+}) => (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
         <div className="flex items-center justify-between mb-6 pb-2 border-b border-slate-100">
             <h3 className="font-bold text-slate-900">{title}</h3>
@@ -2684,17 +3401,30 @@ const Card: React.FC<{ title: string, children: React.ReactNode, action?: React.
     </div>
 );
 
-const InputGroup: React.FC<{ label: string, optional?: boolean, children: React.ReactNode, innerRef?: React.RefObject<HTMLDivElement> }> = ({ label, optional, children, innerRef }) => (
+const InputGroup: React.FC<{
+    label: string;
+    optional?: boolean;
+    children: React.ReactNode;
+    innerRef?: React.RefObject<HTMLDivElement>;
+}> = ({ label, optional, children, innerRef }) => (
     <div ref={innerRef} className="transition-all duration-500 rounded-lg">
         <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">
             {label}
-            {optional && <span className="ml-1.5 text-[10px] font-semibold text-pink-600 bg-pink-100 px-2 py-0.5 rounded-full normal-case tracking-normal">Optional</span>}
+            {optional && (
+                <span className="ml-1.5 text-[10px] font-semibold text-pink-600 bg-pink-100 px-2 py-0.5 rounded-full normal-case tracking-normal">
+                    Optional
+                </span>
+            )}
         </label>
         {children}
     </div>
 );
 
-const Badge: React.FC<{ label: string, color?: string, onRemove: () => void }> = ({ label, color = 'slate', onRemove }) => {
+const Badge: React.FC<{ label: string; color?: string; onRemove: () => void }> = ({
+    label,
+    color = 'slate',
+    onRemove,
+}) => {
     const colors: Record<string, string> = {
         slate: 'bg-slate-100 text-slate-700',
         pink: 'bg-pink-50 text-pink-700',
@@ -2703,9 +3433,16 @@ const Badge: React.FC<{ label: string, color?: string, onRemove: () => void }> =
         orange: 'bg-orange-50 text-orange-700',
     };
     return (
-        <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold ${colors[color]}`}>
+        <span
+            className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold ${colors[color]}`}
+        >
             {label}
-            <button onClick={onRemove} className="inline-flex items-center justify-center size-4 rounded-full bg-red-500 text-white text-[10px] font-bold leading-none hover:bg-red-600 transition-colors">x</button>
+            <button
+                onClick={onRemove}
+                className="inline-flex items-center justify-center size-4 rounded-full bg-red-500 text-white text-[10px] font-bold leading-none hover:bg-red-600 transition-colors"
+            >
+                x
+            </button>
         </span>
     );
 };
@@ -2737,7 +3474,13 @@ const VisibilityToggle: React.FC<{
                         : 'text-slate-500 bg-slate-50 border-slate-200 hover:bg-slate-100'
                 } disabled:opacity-50`}
             >
-                {toggling ? <Loader2 size={10} className="animate-spin" /> : isVisible ? <Eye size={10} /> : <EyeOff size={10} />}
+                {toggling ? (
+                    <Loader2 size={10} className="animate-spin" />
+                ) : isVisible ? (
+                    <Eye size={10} />
+                ) : (
+                    <EyeOff size={10} />
+                )}
                 {isVisible ? t('profile.edit.visible') : t('profile.edit.hidden')}
             </button>
         </div>
@@ -2745,15 +3488,15 @@ const VisibilityToggle: React.FC<{
 };
 
 const PreferenceItem: React.FC<{
-    label: string,
-    value: string,
-    type: string,
-    onEdit?: () => void
+    label: string;
+    value: string;
+    type: string;
+    onEdit?: () => void;
 }> = ({ label, value, type, onEdit }) => {
     const typeColors: Record<string, string> = {
         'Must have': 'bg-blue-100 text-blue-700',
         'Nice to have': 'bg-green-100 text-green-700',
-        'Dealbreaker': 'bg-red-100 text-red-700',
+        Dealbreaker: 'bg-red-100 text-red-700',
     };
 
     return (
@@ -2763,7 +3506,9 @@ const PreferenceItem: React.FC<{
                 <p className="font-bold text-slate-900">{value}</p>
             </div>
             <div className="flex items-center gap-3">
-                <span className={`text-[10px] font-black uppercase px-2 py-1 rounded ${typeColors[type] || 'bg-slate-100 text-slate-600'}`}>
+                <span
+                    className={`text-[10px] font-black uppercase px-2 py-1 rounded ${typeColors[type] || 'bg-slate-100 text-slate-600'}`}
+                >
                     {type}
                 </span>
                 <button
@@ -2776,27 +3521,31 @@ const PreferenceItem: React.FC<{
             </div>
         </div>
     );
-}
+};
 
-const ImportanceSelector: React.FC<{ value: string, onChange: (val: string) => void }> = ({ value, onChange }) => {
+const ImportanceSelector: React.FC<{ value: string; onChange: (val: string) => void }> = ({
+    value,
+    onChange,
+}) => {
     const levels = ['Dealbreaker', 'Must have', 'Nice to have'];
     const colors: Record<string, string> = {
-        'Dealbreaker': 'bg-red-500',
+        Dealbreaker: 'bg-red-500',
         'Must have': 'bg-blue-500',
         'Nice to have': 'bg-green-500',
     };
 
     return (
         <div className="flex gap-2 mt-2">
-            {levels.map(level => (
+            {levels.map((level) => (
                 <button
                     key={level}
                     type="button"
                     onClick={() => onChange(level)}
-                    className={`text-[10px] font-bold uppercase px-2 py-1 rounded transition-all ${value === level
-                        ? `${colors[level]} text-white shadow-sm ring-1 ring-offset-1 ring-${colors[level]?.split('-')[1]}-200`
-                        : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                        }`}
+                    className={`text-[10px] font-bold uppercase px-2 py-1 rounded transition-all ${
+                        value === level
+                            ? `${colors[level]} text-white shadow-sm ring-1 ring-offset-1 ring-${colors[level]?.split('-')[1]}-200`
+                            : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                    }`}
                 >
                     {level}
                 </button>
@@ -2805,22 +3554,46 @@ const ImportanceSelector: React.FC<{ value: string, onChange: (val: string) => v
     );
 };
 
-const NudgeItem: React.FC<{ label: string, points: string, onClick?: () => void }> = ({ label, points, onClick }) => (
+const NudgeItem: React.FC<{ label: string; points: string; onClick?: () => void }> = ({
+    label,
+    points,
+    onClick,
+}) => (
     <div
         onClick={onClick}
         className="flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer group"
     >
         <div className="flex items-center gap-2">
             <div className="size-1.5 rounded-full bg-orange-400"></div>
-            <span className="text-sm text-slate-600 group-hover:text-primary transition-colors">{label}</span>
+            <span className="text-sm text-slate-600 group-hover:text-primary transition-colors">
+                {label}
+            </span>
         </div>
         <span className="text-xs font-bold text-green-600">{points}</span>
     </div>
 );
 
 // Icon Wrappers for simple usage in maps
-const InfoIcon = ({ className }: { className?: string }) => <svg className={`w-5 h-5 ${className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
-const UserCogIcon = () => <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>;
+const InfoIcon = ({ className }: { className?: string }) => (
+    <svg className={`w-5 h-5 ${className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+    </svg>
+);
+const UserCogIcon = () => (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+        />
+    </svg>
+);
 
 /* Styles for Inputs */
 const styles = `

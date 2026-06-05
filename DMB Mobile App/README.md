@@ -23,28 +23,31 @@ A sophisticated, production-grade mobile application built with Expo SDK 54, lev
 ## Getting Started
 
 1. **Install dependencies:**
-   ```bash
-   npm install --legacy-peer-deps
-   ```
+
+    ```bash
+    npm install --legacy-peer-deps
+    ```
 
 2. **Configure API endpoint:**
    Edit `.env.local` and set your backend URL:
-   ```
-   API_BASE_URL=http://your-backend-url/api
-   ```
+
+    ```
+    API_BASE_URL=http://your-backend-url/api
+    ```
 
 3. **Start the development server:**
-   ```bash
-   npm start
-   # or
-   npx expo start
-   ```
+
+    ```bash
+    npm start
+    # or
+    npx expo start
+    ```
 
 4. **Run on device:**
-   - Scan the QR code with Expo Go (Android)
-   - Scan with Camera app (iOS)
-   - Press `a` for Android emulator
-   - Press `i` for iOS simulator
+    - Scan the QR code with Expo Go (Android)
+    - Scan with Camera app (iOS)
+    - Press `a` for Android emulator
+    - Press `i` for iOS simulator
 
 ## Project Structure
 
@@ -90,6 +93,7 @@ types/                # TypeScript definitions
 ## Backend Integration
 
 This app connects to the Laravel backend via REST API endpoints:
+
 - `/login`, `/register`, `/logout`
 - `/member/interest-requests`
 - `/discovery`, `/discovery/search`
@@ -100,14 +104,18 @@ This app connects to the Laravel backend via REST API endpoints:
 ## Troubleshooting
 
 ### Metro bundler issues on Windows with Node 24
+
 This project requires Node.js 18-20. If you're using Node 24, you'll encounter ESM URL scheme errors. Use nvm to switch:
+
 ```bash
 nvm install 20
 nvm use 20
 ```
 
 ### NativeWind className not working
+
 Ensure the following files exist:
+
 - `metro.config.js` with `withNativeWind`
 - `global.css` with Tailwind directives
 - `nativewind-env.d.ts` for TypeScript support

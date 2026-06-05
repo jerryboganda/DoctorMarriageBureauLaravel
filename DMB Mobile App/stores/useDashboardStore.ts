@@ -19,11 +19,12 @@ export const useDashboardStore = create<DashboardState>((set) => ({
         premium: false,
     },
     setActiveTab: (tab) => set({ activeTab: tab }),
-    toggleModal: (modal) => set((state) => ({
-        modals: {
-            ...state.modals,
-            [modal]: !state.modals[modal]
-        }
-    })),
+    toggleModal: (modal) =>
+        set((state) => ({
+            modals: {
+                ...state.modals,
+                [modal]: !state.modals[modal],
+            },
+        })),
     closeAllModals: () => set({ modals: { filter: false, premium: false } }),
 }));

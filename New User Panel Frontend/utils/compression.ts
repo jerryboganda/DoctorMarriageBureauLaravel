@@ -11,7 +11,7 @@ export const compressImage = async (file: File) => {
     const options = {
         maxSizeMB: targetMaxSizeMB, // 500KB
         maxWidthOrHeight: 1200,
-        useWebWorker: true
+        useWebWorker: true,
     };
 
     try {

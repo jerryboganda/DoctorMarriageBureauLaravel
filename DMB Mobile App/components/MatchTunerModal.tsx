@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, Modal, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { View, Text, Modal, TouchableOpacity, Alert } from 'react-native';
 import { MotiView } from 'moti';
-import { TuneIcon, ChevronRightIcon, XCircleIcon, CheckIcon, FilterIcon } from './Icons';
+import { ChevronRightIcon, XCircleIcon, FilterIcon } from './Icons';
 import { api } from '../utils/api';
-import Button from './Button';
 import { useTranslation } from 'react-i18next';
 
 interface MatchTunerModalProps {
@@ -12,21 +11,21 @@ interface MatchTunerModalProps {
 }
 
 const TUNING_OPTIONS = [
-    { 
-        id: 'dealbreaker', 
+    {
+        id: 'dealbreaker',
         question: "What's your biggest dealbreaker?",
-        options: ['Smoking', 'Drinking', 'Non-Vegetarian', 'Different Religion']
+        options: ['Smoking', 'Drinking', 'Non-Vegetarian', 'Different Religion'],
     },
-    { 
-        id: 'careerLevel', 
-        question: "Preferred partner career stage?",
-        options: ['Student/Resident', 'Practicing Specialist', 'Consultant/Senior', 'Any']
+    {
+        id: 'careerLevel',
+        question: 'Preferred partner career stage?',
+        options: ['Student/Resident', 'Practicing Specialist', 'Consultant/Senior', 'Any'],
     },
-    { 
-        id: 'familyLevel', 
-        question: "Family affluence preference?",
-        options: ['Middle Class', 'Upper Middle', 'High Net Worth', 'Doesn\'t Matter']
-    }
+    {
+        id: 'familyLevel',
+        question: 'Family affluence preference?',
+        options: ['Middle Class', 'Upper Middle', 'High Net Worth', "Doesn't Matter"],
+    },
 ];
 
 export default function MatchTunerModal({ visible, onClose }: MatchTunerModalProps) {
@@ -69,20 +68,27 @@ export default function MatchTunerModal({ visible, onClose }: MatchTunerModalPro
     return (
         <Modal animationType="fade" visible={visible} onRequestClose={onClose} transparent>
             <View className="flex-1 bg-black/60 justify-center px-6">
-                <MotiView 
+                <MotiView
                     from={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     className="bg-white rounded-3xl p-6 shadow-2xl"
                 >
                     <View className="flex-row justify-between items-center mb-6">
                         <View className="flex-row items-center gap-2">
-                             <View className="bg-blue-100 p-2 rounded-full">
+                            <View className="bg-blue-100 p-2 rounded-full">
                                 <FilterIcon size={20} color="#2563eb" />
-                             </View>
-                             <View>
-                                <Text className="text-lg font-bold text-slate-900">{t('matchTuner.title')}</Text>
-                                <Text className="text-xs text-slate-500">{t('matchTuner.stepOf', { current: step + 1, total: TUNING_OPTIONS.length })}</Text>
-                             </View>
+                            </View>
+                            <View>
+                                <Text className="text-lg font-bold text-slate-900">
+                                    {t('matchTuner.title')}
+                                </Text>
+                                <Text className="text-xs text-slate-500">
+                                    {t('matchTuner.stepOf', {
+                                        current: step + 1,
+                                        total: TUNING_OPTIONS.length,
+                                    })}
+                                </Text>
+                            </View>
                         </View>
                         <TouchableOpacity onPress={onClose}>
                             <XCircleIcon size={24} color="#94a3b8" />
@@ -109,7 +115,9 @@ export default function MatchTunerModal({ visible, onClose }: MatchTunerModalPro
 
                     {loading && (
                         <View className="absolute inset-0 bg-white/50 items-center justify-center rounded-3xl">
-                             <Text className="font-bold text-blue-600">{t('matchTuner.saving')}</Text>
+                            <Text className="font-bold text-blue-600">
+                                {t('matchTuner.saving')}
+                            </Text>
                         </View>
                     )}
                 </MotiView>

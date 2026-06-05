@@ -24,7 +24,9 @@ const LoadingTimeoutFallback: React.FC<LoadingTimeoutFallbackProps> = ({
 
     return (
         <div className="text-center">
-            <div className={`animate-spin rounded-full border-b-2 border-primary mx-auto ${compact ? 'h-8 w-8 mb-3' : 'h-12 w-12 mb-4'}`}></div>
+            <div
+                className={`animate-spin rounded-full border-b-2 border-primary mx-auto ${compact ? 'h-8 w-8 mb-3' : 'h-12 w-12 mb-4'}`}
+            ></div>
             <p className={`text-slate-700 ${compact ? 'text-sm font-semibold' : ''}`}>{message}</p>
             {showReload && (
                 <button

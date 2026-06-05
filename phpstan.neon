@@ -1,0 +1,10 @@
+includes:
+  - ./vendor/nunomaduro/larastan/extension.neon
+
+parameters:
+  paths:
+    - app
+    - routes
+    - tests
+  level: 1
+  tmpDir: storage/framework/cache/phpstan

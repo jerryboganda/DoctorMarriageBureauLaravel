@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, Text, Modal, TouchableOpacity, ScrollView, Alert, Dimensions } from 'react-native';
+import { View, Text, Modal, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { MotiView } from 'moti';
 import { LinearGradient } from 'expo-linear-gradient';
-import { XCircleIcon, CheckIcon, CrownIcon, StarIcon, ShieldIcon } from './Icons';
+import { XCircleIcon, CheckIcon, CrownIcon, ShieldIcon } from './Icons';
 import Button from './Button';
 import { useTranslation } from 'react-i18next';
 
@@ -20,25 +20,33 @@ const PLANS = [
         features: ['Send Unlimited Interest', 'View Contact Numbers', 'Verified Badge'],
         color: ['#f59e0b', '#d97706'],
         popular: false,
-        buttonVariant: 'secondary'
+        buttonVariant: 'secondary',
     },
     {
         id: 'platinum',
         name: 'Platinum',
         price: '₹5,999',
         period: '/ 6 months',
-        features: ['All Gold Features', 'Relationship Manager', 'Priority Support', 'Family Portal Access'],
+        features: [
+            'All Gold Features',
+            'Relationship Manager',
+            'Priority Support',
+            'Family Portal Access',
+        ],
         color: ['#4f46e5', '#3730a3'],
         popular: true,
-        buttonVariant: 'primary'
-    }
+        buttonVariant: 'primary',
+    },
 ];
 
 export default function SubscriptionModal({ visible, onClose }: SubscriptionModalProps) {
     const { t } = useTranslation();
 
     const handleSubscribe = (plan: string) => {
-        Alert.alert(t('subscription.paymentGateway'), t('subscription.paymentInitiating', { plan }));
+        Alert.alert(
+            t('subscription.paymentGateway'),
+            t('subscription.paymentInitiating', { plan }),
+        );
         // Integrate Razorpay/Paystack here
     };
 
@@ -51,7 +59,9 @@ export default function SubscriptionModal({ visible, onClose }: SubscriptionModa
         >
             <View className="flex-1 bg-slate-50">
                 <View className="p-4 pt-6 flex-row justify-between items-center bg-white border-b border-slate-100">
-                    <Text className="text-xl font-bold text-slate-900">{t('subscription.upgradeMembership')}</Text>
+                    <Text className="text-xl font-bold text-slate-900">
+                        {t('subscription.upgradeMembership')}
+                    </Text>
                     <TouchableOpacity onPress={onClose} className="p-2 bg-slate-100 rounded-full">
                         <XCircleIcon size={24} color="#64748b" />
                     </TouchableOpacity>
@@ -87,14 +97,22 @@ export default function SubscriptionModal({ visible, onClose }: SubscriptionModa
                                 >
                                     {plan.popular && (
                                         <View className="absolute top-4 right-4 bg-white/20 px-3 py-1 rounded-full border border-white/30">
-                                            <Text className="text-white text-xs font-bold">{t('subscription.mostPopular')}</Text>
+                                            <Text className="text-white text-xs font-bold">
+                                                {t('subscription.mostPopular')}
+                                            </Text>
                                         </View>
                                     )}
                                     <View className="flex-row items-baseline gap-1 mb-2">
-                                        <Text className="text-white text-3xl font-bold">{plan.price}</Text>
-                                        <Text className="text-white/80 font-medium">{plan.period}</Text>
+                                        <Text className="text-white text-3xl font-bold">
+                                            {plan.price}
+                                        </Text>
+                                        <Text className="text-white/80 font-medium">
+                                            {plan.period}
+                                        </Text>
                                     </View>
-                                    <Text className="text-white text-xl font-bold">{t('subscription.membership', { plan: plan.name })}</Text>
+                                    <Text className="text-white text-xl font-bold">
+                                        {t('subscription.membership', { plan: plan.name })}
+                                    </Text>
                                 </LinearGradient>
 
                                 <View className="p-6">
@@ -104,24 +122,32 @@ export default function SubscriptionModal({ visible, onClose }: SubscriptionModa
                                                 <View className="w-6 h-6 rounded-full bg-green-100 items-center justify-center">
                                                     <CheckIcon size={14} color="#16a34a" />
                                                 </View>
-                                                <Text className="text-slate-700 font-medium">{feature}</Text>
+                                                <Text className="text-slate-700 font-medium">
+                                                    {feature}
+                                                </Text>
                                             </View>
                                         ))}
                                     </View>
-                                    
-                                    <Button 
+
+                                    <Button
                                         onPress={() => handleSubscribe(plan.name)}
                                         title={t('subscription.getPlan', { plan: plan.name })}
-                                        variant={plan.buttonVariant === 'secondary' ? 'outline' : 'primary'}
+                                        variant={
+                                            plan.buttonVariant === 'secondary'
+                                                ? 'outline'
+                                                : 'primary'
+                                        }
                                     />
                                 </View>
                             </MotiView>
                         ))}
                     </View>
-                    
+
                     <View className="flex-row justify-center items-center gap-2 mb-8 pb-8">
                         <ShieldIcon size={16} color="#64748b" />
-                        <Text className="text-slate-500 text-xs">{t('subscription.securePayment')}</Text>
+                        <Text className="text-slate-500 text-xs">
+                            {t('subscription.securePayment')}
+                        </Text>
                     </View>
                 </ScrollView>
             </View>

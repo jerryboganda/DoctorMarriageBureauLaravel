@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const PHONE_NUMBER = '+923368899996';
 const EMAIL_ADDRESS = 'support@doctormarriagebureau.com.pk';
-const EMAIL_BODY = 'I would like to get customer support for an issue. Please contact me early as possible !';
+const EMAIL_BODY =
+    'I would like to get customer support for an issue. Please contact me early as possible !';
 const EMAIL_HREF = `mailto:${EMAIL_ADDRESS}?body=${encodeURIComponent(EMAIL_BODY)}`;
 const WHATSAPP_URL = `https://wa.me/923368899996`;
 
@@ -19,12 +20,8 @@ const FloatingContactButton: React.FC<FloatingContactButtonProps> = ({ placement
     const containerPositionClass = isChatPlacement
         ? 'fixed bottom-28 right-4 sm:bottom-28 md:bottom-32 md:right-6'
         : 'fixed bottom-6 right-6';
-    const actionButtonSizeClass = isChatPlacement
-        ? 'w-11 h-11 sm:w-12 sm:h-12'
-        : 'w-12 h-12';
-    const mainButtonSizeClass = isChatPlacement
-        ? 'w-12 h-12 sm:w-14 sm:h-14'
-        : 'w-14 h-14';
+    const actionButtonSizeClass = isChatPlacement ? 'w-11 h-11 sm:w-12 sm:h-12' : 'w-12 h-12';
+    const mainButtonSizeClass = isChatPlacement ? 'w-12 h-12 sm:w-14 sm:h-14' : 'w-14 h-14';
 
     // Close on outside click
     useEffect(() => {
@@ -69,7 +66,10 @@ const FloatingContactButton: React.FC<FloatingContactButtonProps> = ({ placement
     ];
 
     return (
-        <div ref={containerRef} className={`${containerPositionClass} z-[9999] flex flex-col items-end gap-3`}>
+        <div
+            ref={containerRef}
+            className={`${containerPositionClass} z-[9999] flex flex-col items-end gap-3`}
+        >
             {/* Action Buttons */}
             <AnimatePresence>
                 {isOpen && (
@@ -87,7 +87,11 @@ const FloatingContactButton: React.FC<FloatingContactButtonProps> = ({ placement
                                     key={action.label}
                                     href={action.href}
                                     target={action.target || '_self'}
-                                    rel={action.target === '_blank' ? 'noopener noreferrer' : undefined}
+                                    rel={
+                                        action.target === '_blank'
+                                            ? 'noopener noreferrer'
+                                            : undefined
+                                    }
                                     initial={{ opacity: 0, y: 20, scale: 0.8 }}
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                     exit={{ opacity: 0, y: 10, scale: 0.8 }}

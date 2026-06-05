@@ -1,15 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Alert, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, Dimensions } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MotiView, AnimatePresence } from 'moti';
+import { MotiView } from 'moti';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { api } from '../utils/api';
 import { useAuthStore } from '../stores/authStore';
-import { 
-    CheckIcon, ChevronRightIcon, UserIcon, BriefcaseIcon, HeartIcon, SparklesIcon, ChevronLeftIcon 
-} from '../components/Icons';
+import { CheckIcon, ChevronRightIcon, SparklesIcon, ChevronLeftIcon } from '../components/Icons';
 import Button from '../components/Button';
 import Input from '../components/Input';
 
@@ -24,13 +22,33 @@ export default function OnboardingScreen() {
     const [loading, setLoading] = useState(false);
 
     const STEPS = [
-        { id: 'welcome', title: t('onboarding.steps.welcome'), subtitle: t('onboarding.steps.welcomeSub') },
-        { id: 'identity', title: t('onboarding.steps.identity'), subtitle: t('onboarding.steps.identitySub') },
-        { id: 'career', title: t('onboarding.steps.career'), subtitle: t('onboarding.steps.careerSub') },
-        { id: 'partner', title: t('onboarding.steps.partner'), subtitle: t('onboarding.steps.partnerSub') },
-        { id: 'finish', title: t('onboarding.steps.finish'), subtitle: t('onboarding.steps.finishSub') },
+        {
+            id: 'welcome',
+            title: t('onboarding.steps.welcome'),
+            subtitle: t('onboarding.steps.welcomeSub'),
+        },
+        {
+            id: 'identity',
+            title: t('onboarding.steps.identity'),
+            subtitle: t('onboarding.steps.identitySub'),
+        },
+        {
+            id: 'career',
+            title: t('onboarding.steps.career'),
+            subtitle: t('onboarding.steps.careerSub'),
+        },
+        {
+            id: 'partner',
+            title: t('onboarding.steps.partner'),
+            subtitle: t('onboarding.steps.partnerSub'),
+        },
+        {
+            id: 'finish',
+            title: t('onboarding.steps.finish'),
+            subtitle: t('onboarding.steps.finishSub'),
+        },
     ];
-    
+
     const [formData, setFormData] = useState({
         // Identity
         gender: '',
@@ -81,7 +99,9 @@ export default function OnboardingScreen() {
                         <View className="w-24 h-24 bg-blue-100 rounded-full items-center justify-center mb-6 animate-bounce">
                             <SparklesIcon size={48} color="#2563eb" />
                         </View>
-                        <Text className="text-2xl font-bold text-slate-900 text-center mb-2">{t('onboarding.welcomeTitle')}</Text>
+                        <Text className="text-2xl font-bold text-slate-900 text-center mb-2">
+                            {t('onboarding.welcomeTitle')}
+                        </Text>
                         <Text className="text-slate-500 text-center leading-6">
                             {t('onboarding.welcomeDesc')}
                         </Text>
@@ -90,46 +110,46 @@ export default function OnboardingScreen() {
             case 1: // Identity
                 return (
                     <View className="space-y-4">
-                        <Input 
-                            label={t('onboarding.gender')} 
-                            placeholder="Male / Female" 
+                        <Input
+                            label={t('onboarding.gender')}
+                            placeholder="Male / Female"
                             value={formData.gender}
-                            onChangeText={(t) => setFormData({...formData, gender: t})}
+                            onChangeText={(t) => setFormData({ ...formData, gender: t })}
                         />
-                        <Input 
-                            label={t('onboarding.dateOfBirth')} 
-                            placeholder="YYYY-MM-DD" 
+                        <Input
+                            label={t('onboarding.dateOfBirth')}
+                            placeholder="YYYY-MM-DD"
                             value={formData.dateOfBirth}
-                            onChangeText={(t) => setFormData({...formData, dateOfBirth: t})}
+                            onChangeText={(t) => setFormData({ ...formData, dateOfBirth: t })}
                         />
-                         <Input 
-                            label={t('onboarding.religion')} 
-                            placeholder="e.g. Islam, Christianity" 
+                        <Input
+                            label={t('onboarding.religion')}
+                            placeholder="e.g. Islam, Christianity"
                             value={formData.religion}
-                            onChangeText={(t) => setFormData({...formData, religion: t})}
+                            onChangeText={(t) => setFormData({ ...formData, religion: t })}
                         />
                     </View>
                 );
             case 2: // Career
                 return (
                     <View className="space-y-4">
-                        <Input 
-                            label={t('onboarding.specialty')} 
-                            placeholder="e.g. Cardiology" 
+                        <Input
+                            label={t('onboarding.specialty')}
+                            placeholder="e.g. Cardiology"
                             value={formData.specialty}
-                            onChangeText={(t) => setFormData({...formData, specialty: t})}
+                            onChangeText={(t) => setFormData({ ...formData, specialty: t })}
                         />
-                        <Input 
-                            label={t('onboarding.degree')} 
-                            placeholder="e.g. MBBS, MD" 
+                        <Input
+                            label={t('onboarding.degree')}
+                            placeholder="e.g. MBBS, MD"
                             value={formData.degree}
-                            onChangeText={(t) => setFormData({...formData, degree: t})}
+                            onChangeText={(t) => setFormData({ ...formData, degree: t })}
                         />
-                        <Input 
-                            label={t('onboarding.hospital')} 
-                            placeholder="Current workplace" 
+                        <Input
+                            label={t('onboarding.hospital')}
+                            placeholder="Current workplace"
                             value={formData.hospital}
-                            onChangeText={(t) => setFormData({...formData, hospital: t})}
+                            onChangeText={(t) => setFormData({ ...formData, hospital: t })}
                         />
                     </View>
                 );
@@ -138,29 +158,33 @@ export default function OnboardingScreen() {
                     <View className="space-y-4">
                         <View className="flex-row gap-4">
                             <View className="flex-1">
-                                <Input 
-                                    label={t('onboarding.minAge')} 
-                                    placeholder="25" 
+                                <Input
+                                    label={t('onboarding.minAge')}
+                                    placeholder="25"
                                     keyboardType="numeric"
                                     value={formData.partnerMinAge}
-                                    onChangeText={(t) => setFormData({...formData, partnerMinAge: t})}
+                                    onChangeText={(t) =>
+                                        setFormData({ ...formData, partnerMinAge: t })
+                                    }
                                 />
                             </View>
                             <View className="flex-1">
-                                <Input 
-                                    label={t('onboarding.maxAge')} 
-                                    placeholder="35" 
+                                <Input
+                                    label={t('onboarding.maxAge')}
+                                    placeholder="35"
                                     keyboardType="numeric"
                                     value={formData.partnerMaxAge}
-                                    onChangeText={(t) => setFormData({...formData, partnerMaxAge: t})}
+                                    onChangeText={(t) =>
+                                        setFormData({ ...formData, partnerMaxAge: t })
+                                    }
                                 />
                             </View>
                         </View>
-                        <Input 
-                            label={t('onboarding.preferredReligion')} 
-                            placeholder="Any" 
+                        <Input
+                            label={t('onboarding.preferredReligion')}
+                            placeholder="Any"
                             value={formData.partnerReligion}
-                            onChangeText={(t) => setFormData({...formData, partnerReligion: t})}
+                            onChangeText={(t) => setFormData({ ...formData, partnerReligion: t })}
                         />
                     </View>
                 );
@@ -170,7 +194,9 @@ export default function OnboardingScreen() {
                         <View className="w-24 h-24 bg-green-100 rounded-full items-center justify-center mb-6">
                             <CheckIcon size={48} color="#16a34a" />
                         </View>
-                        <Text className="text-2xl font-bold text-slate-900 text-center mb-2">{t('onboarding.allSetTitle')}</Text>
+                        <Text className="text-2xl font-bold text-slate-900 text-center mb-2">
+                            {t('onboarding.allSetTitle')}
+                        </Text>
                         <Text className="text-slate-500 text-center leading-6">
                             {t('onboarding.allSetDesc')}
                         </Text>
@@ -192,15 +218,20 @@ export default function OnboardingScreen() {
             >
                 <View className="flex-row justify-between items-center mb-6">
                     {step > 0 && (
-                        <TouchableOpacity onPress={handleBack} className="p-2 bg-white/20 rounded-full">
+                        <TouchableOpacity
+                            onPress={handleBack}
+                            className="p-2 bg-white/20 rounded-full"
+                        >
                             <ChevronLeftIcon size={24} color="white" />
                         </TouchableOpacity>
                     )}
                     <View className="flex-1 items-end">
-                        <Text className="text-white/80 font-bold">{t('onboarding.stepOf', { current: step + 1, total: STEPS.length })}</Text>
+                        <Text className="text-white/80 font-bold">
+                            {t('onboarding.stepOf', { current: step + 1, total: STEPS.length })}
+                        </Text>
                     </View>
                 </View>
-                
+
                 <Text className="text-white text-3xl font-bold mb-2">{currentStep.title}</Text>
                 <Text className="text-blue-100 text-lg">{currentStep.subtitle}</Text>
             </LinearGradient>
@@ -217,9 +248,13 @@ export default function OnboardingScreen() {
             </View>
 
             <View className="p-6">
-                <Button 
-                    onPress={handleNext} 
-                    title={step === STEPS.length - 1 ? t('onboarding.startExploring') : t('onboarding.continue')} 
+                <Button
+                    onPress={handleNext}
+                    title={
+                        step === STEPS.length - 1
+                            ? t('onboarding.startExploring')
+                            : t('onboarding.continue')
+                    }
                     loading={loading}
                     icon={<ChevronRightIcon size={20} color="white" />}
                 />

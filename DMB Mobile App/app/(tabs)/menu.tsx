@@ -1,14 +1,21 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Image, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MotiView } from 'moti';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import Background from '../../components/Background';
-import { 
-    UsersIcon, BuildingIcon, ChartBarIcon, SettingsIcon, 
-    BellIcon, ShieldIcon, StarIcon, LogOutIcon, ChevronRightIcon, CrownIcon 
+import {
+    UsersIcon,
+    BuildingIcon,
+    ChartBarIcon,
+    SettingsIcon,
+    BellIcon,
+    ShieldIcon,
+    LogOutIcon,
+    ChevronRightIcon,
+    CrownIcon,
 } from '../../components/Icons';
 import SubscriptionModal from '../../components/SubscriptionModal';
 import { useAuthStore } from '../../stores/authStore';
@@ -24,41 +31,41 @@ export default function MenuTab() {
     const [showSubscription, setShowSubscription] = useState(false);
 
     const menuItems = [
-        { 
-            id: 'family', 
-            label: t('menu.familyPortal'), 
-            icon: UsersIcon, 
-            color: '#2563eb', 
-            bg: 'bg-blue-50', 
+        {
+            id: 'family',
+            label: t('menu.familyPortal'),
+            icon: UsersIcon,
+            color: '#2563eb',
+            bg: 'bg-blue-50',
             route: '/family-portal',
-            desc: t('menu.familyPortalDesc')
+            desc: t('menu.familyPortalDesc'),
         },
-        { 
-            id: 'community', 
-            label: t('menu.communities'), 
-            icon: BuildingIcon, 
-            color: '#059669', 
-            bg: 'bg-emerald-50', 
+        {
+            id: 'community',
+            label: t('menu.communities'),
+            icon: BuildingIcon,
+            color: '#059669',
+            bg: 'bg-emerald-50',
             route: '/communities',
-            desc: t('menu.communitiesDesc')
+            desc: t('menu.communitiesDesc'),
         },
-        { 
-            id: 'progression', 
-            label: t('menu.relationshipJourney'), 
-            icon: ChartBarIcon, 
-            color: '#9333ea', 
-            bg: 'bg-purple-50', 
+        {
+            id: 'progression',
+            label: t('menu.relationshipJourney'),
+            icon: ChartBarIcon,
+            color: '#9333ea',
+            bg: 'bg-purple-50',
             route: '/progression',
-            desc: t('menu.relationshipJourneyDesc')
+            desc: t('menu.relationshipJourneyDesc'),
         },
-        { 
-            id: 'notifications', 
-            label: t('menu.notifications'), 
-            icon: BellIcon, 
-            color: '#ea580c', 
-            bg: 'bg-orange-50', 
+        {
+            id: 'notifications',
+            label: t('menu.notifications'),
+            icon: BellIcon,
+            color: '#ea580c',
+            bg: 'bg-orange-50',
             route: '/notifications',
-            desc: t('menu.notificationsDesc')
+            desc: t('menu.notificationsDesc'),
         },
     ];
 
@@ -70,7 +77,7 @@ export default function MenuTab() {
     return (
         <View className="flex-1 bg-slate-50">
             <Background />
-            
+
             <LinearGradient
                 colors={['#1e3a8a', '#3b82f6']}
                 start={{ x: 0, y: 0 }}
@@ -84,10 +91,7 @@ export default function MenuTab() {
 
             <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
                 {/* Premium Banner */}
-                <TouchableOpacity 
-                    onPress={() => setShowSubscription(true)}
-                    className="mb-8"
-                >
+                <TouchableOpacity onPress={() => setShowSubscription(true)} className="mb-8">
                     <LinearGradient
                         colors={['#f59e0b', '#d97706']}
                         start={{ x: 0, y: 0 }}
@@ -99,8 +103,12 @@ export default function MenuTab() {
                                 <CrownIcon size={24} color="white" />
                             </View>
                             <View>
-                                <Text className="text-white font-bold text-lg">{t('menu.goPremium')}</Text>
-                                <Text className="text-white/80 text-sm">{t('menu.unlockFeatures')}</Text>
+                                <Text className="text-white font-bold text-lg">
+                                    {t('menu.goPremium')}
+                                </Text>
+                                <Text className="text-white/80 text-sm">
+                                    {t('menu.unlockFeatures')}
+                                </Text>
                             </View>
                         </View>
                         <View className="bg-white/20 p-2 rounded-full">
@@ -126,12 +134,18 @@ export default function MenuTab() {
                                     style={{ width: ITEM_WIDTH }}
                                     className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm min-h-[140px] justify-between"
                                 >
-                                    <View className={`w-10 h-10 rounded-full items-center justify-center ${item.bg} mb-3`}>
+                                    <View
+                                        className={`w-10 h-10 rounded-full items-center justify-center ${item.bg} mb-3`}
+                                    >
                                         <Icon size={20} color={item.color} />
                                     </View>
                                     <View>
-                                        <Text className="font-bold text-slate-900 text-base mb-1">{item.label}</Text>
-                                        <Text className="text-xs text-slate-500 leading-4">{item.desc}</Text>
+                                        <Text className="font-bold text-slate-900 text-base mb-1">
+                                            {item.label}
+                                        </Text>
+                                        <Text className="text-xs text-slate-500 leading-4">
+                                            {item.desc}
+                                        </Text>
                                     </View>
                                 </TouchableOpacity>
                             </MotiView>
@@ -139,7 +153,9 @@ export default function MenuTab() {
                     })}
                 </View>
 
-                <Text className="text-slate-900 font-bold text-lg mt-8 mb-4">{t('menu.general')}</Text>
+                <Text className="text-slate-900 font-bold text-lg mt-8 mb-4">
+                    {t('menu.general')}
+                </Text>
                 <View className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
                     {secondaryItems.map((item, index) => {
                         const Icon = item.icon;
@@ -152,14 +168,16 @@ export default function MenuTab() {
                                 <View className="w-8 h-8 rounded-full bg-slate-50 items-center justify-center mr-3">
                                     <Icon size={16} color="#475569" />
                                 </View>
-                                <Text className="flex-1 font-bold text-slate-700">{item.label}</Text>
+                                <Text className="flex-1 font-bold text-slate-700">
+                                    {item.label}
+                                </Text>
                                 <ChevronRightIcon size={16} color="#cbd5e1" />
                             </TouchableOpacity>
                         );
                     })}
                 </View>
 
-                <TouchableOpacity 
+                <TouchableOpacity
                     onPress={logout}
                     className="mt-6 flex-row items-center justify-center gap-2 p-4 rounded-xl bg-red-50 border border-red-100"
                 >
@@ -168,7 +186,10 @@ export default function MenuTab() {
                 </TouchableOpacity>
             </ScrollView>
 
-            <SubscriptionModal visible={showSubscription} onClose={() => setShowSubscription(false)} />
+            <SubscriptionModal
+                visible={showSubscription}
+                onClose={() => setShowSubscription(false)}
+            />
         </View>
     );
 }

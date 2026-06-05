@@ -1,21 +1,17 @@
 import React, { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-    Heart,
     ArrowRight,
     ShieldCheck,
     ChevronLeft,
     Globe,
     Lock,
-    Mail,
     AlertCircle,
     ChevronDown,
     HelpCircle,
     CheckCircle2,
     Loader2,
     User,
-    Stethoscope,
-    Check
 } from 'lucide-react';
 import { api } from '../utils/api';
 import { useAuthStore } from '../src/stores/authStore';
@@ -24,7 +20,15 @@ import PasswordField from './PasswordField';
 import { Country, getDefaultCountry, countries } from '../utils/countries';
 import { useGoogleLogin } from '@react-oauth/google';
 
-type WelcomeStep = 'landing' | 'input' | 'otp' | 'onboarding' | 'forgot-password' | 'reset-otp' | 'new-password' | 'two-factor';
+type WelcomeStep =
+    | 'landing'
+    | 'input'
+    | 'otp'
+    | 'onboarding'
+    | 'forgot-password'
+    | 'reset-otp'
+    | 'new-password'
+    | 'two-factor';
 
 interface WelcomeScreenProps {
     onComplete: () => void;
@@ -45,12 +49,16 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [twoFactorToken, setTwoFactorToken] = useState('');
     const [referralCode, setReferralCode] = useState('');
-    const [referralCodeStatus, setReferralCodeStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle');
+    const [referralCodeStatus, setReferralCodeStatus] = useState<
+        'idle' | 'checking' | 'valid' | 'invalid'
+    >('idle');
     const [referralCodeMessage, setReferralCodeMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-    const isGoogleConfigured = Boolean(googleClientId && googleClientId !== 'YOUR_GOOGLE_CLIENT_ID_PLACEHOLDER');
+    const isGoogleConfigured = Boolean(
+        googleClientId && googleClientId !== 'YOUR_GOOGLE_CLIENT_ID_PLACEHOLDER',
+    );
     const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
     const referralValidationRequestId = useRef(0);
 
@@ -61,7 +69,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
         gender: 'Male',
         on_behalf: '1',
         password: '',
-        password_confirmation: ''
+        password_confirmation: '',
     });
     // Password Reset State
     const [resetOtp, setResetOtp] = useState(['', '', '', '', '', '']);
@@ -86,9 +94,11 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
         setReferralCodeMessage('');
     };
 
-    const getStoredReferralCode = () => normalizeReferralCode(localStorage.getItem('pending_referral_code'));
+    const getStoredReferralCode = () =>
+        normalizeReferralCode(localStorage.getItem('pending_referral_code'));
 
-    const currentReferralCode = () => normalizeReferralCode(referralCode || getStoredReferralCode());
+    const currentReferralCode = () =>
+        normalizeReferralCode(referralCode || getStoredReferralCode());
 
     const validateReferralCode = async (value?: string): Promise<boolean> => {
         const code = normalizeReferralCode(value ?? currentReferralCode());
@@ -110,8 +120,10 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
                 setReferralCodeStatus('valid');
                 setReferralCodeMessage(
                     response.data?.data?.referrer_name
-                        ? t('auth.welcome.referralCodeValid', { name: response.data.data.referrer_name })
-                        : t('auth.welcome.referralCodeAccepted')
+                        ? t('auth.welcome.referralCodeValid', {
+                              name: response.data.data.referrer_name,
+                          })
+                        : t('auth.welcome.referralCodeAccepted'),
                 );
                 return true;
             }
@@ -122,7 +134,9 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
         } catch (err: any) {
             if (requestId !== referralValidationRequestId.current) return false;
             setReferralCodeStatus('invalid');
-            setReferralCodeMessage(err.response?.data?.message || t('auth.welcome.referralCodeInvalid'));
+            setReferralCodeMessage(
+                err.response?.data?.message || t('auth.welcome.referralCodeInvalid'),
+            );
             return false;
         }
     };
@@ -148,7 +162,9 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
         code = params.get('ref');
 
         if (!code && window.location.hash) {
-            const hashParams = new URLSearchParams(window.location.hash.replace(/^#\/?/, '').split('?')[1] || '');
+            const hashParams = new URLSearchParams(
+                window.location.hash.replace(/^#\/?/, '').split('?')[1] || '',
+            );
             code = hashParams.get('ref');
         }
 
@@ -177,7 +193,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
             const response = await api.post('/social-login', {
                 social_provider: provider,
                 access_token: token,
-                referral_code: effectiveReferralCode
+                referral_code: effectiveReferralCode,
             });
             if (response.data.result) {
                 const { user, access_token } = response.data;
@@ -199,7 +215,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
     };
 
     const googleLogin = useGoogleLogin({
-        onSuccess: tokenResponse => handleSocialLogin('google', tokenResponse.access_token),
+        onSuccess: (tokenResponse) => handleSocialLogin('google', tokenResponse.access_token),
         onError: () => setError(t('errors.googleLoginFailed')),
     });
 
@@ -223,12 +239,17 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
 
     // Handle country change to update phone prefix
     React.useEffect(() => {
-        if (authMethod === 'phone' && (step === 'landing' || step === 'input' || step === 'forgot-password')) {
+        if (
+            authMethod === 'phone' &&
+            (step === 'landing' || step === 'input' || step === 'forgot-password')
+        ) {
             if (!identifier || identifier === '+') {
                 setIdentifier(selectedCountry.dialCode);
             } else {
-                const oldCountry = countries.find(c => identifier.startsWith(c.dialCode));
-                const localPart = oldCountry ? identifier.slice(oldCountry.dialCode.length) : identifier.replace(/^\+?\d*/, '');
+                const oldCountry = countries.find((c) => identifier.startsWith(c.dialCode));
+                const localPart = oldCountry
+                    ? identifier.slice(oldCountry.dialCode.length)
+                    : identifier.replace(/^\+?\d*/, '');
                 setIdentifier(selectedCountry.dialCode + localPart);
             }
         } else if (authMethod === 'email' && (step === 'input' || step === 'forgot-password')) {
@@ -268,7 +289,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
         try {
             const response = await api.post('/send-email-verification', {
                 email: identifier,
-                intent: 'signup'
+                intent: 'signup',
             });
 
             if (response.data.success) {
@@ -304,7 +325,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
             const response = await api.post('/signin', {
                 email_or_phone: identifier,
                 password: formData.password,
-                identity_matrix: 'member'
+                identity_matrix: 'member',
             });
 
             if (response.data.result) {
@@ -341,7 +362,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
         try {
             const response = await api.post('/auth/2fa/challenge', {
                 two_factor_token: twoFactorToken,
-                code: code
+                code: code,
             });
 
             if (response.data.success) {
@@ -373,7 +394,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
         try {
             const response = await api.post('/verify-email-code', {
                 email: identifier,
-                code: code
+                code: code,
             });
 
             if (response.data.result && response.data.user) {
@@ -416,11 +437,16 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
         setIsLoading(true);
         setError('');
         try {
-            const fullPhone = authMethod === 'phone'
-                ? (identifier.startsWith('+') ? identifier : `${selectedCountry.dialCode}${identifier.replace(/^0+/, '')}`)
-                : contactPhone
-                    ? (contactPhone.startsWith('+') ? contactPhone : `${selectedCountry.dialCode}${contactPhone.replace(/^0+/, '')}`)
-                    : null;
+            const fullPhone =
+                authMethod === 'phone'
+                    ? identifier.startsWith('+')
+                        ? identifier
+                        : `${selectedCountry.dialCode}${identifier.replace(/^0+/, '')}`
+                    : contactPhone
+                      ? contactPhone.startsWith('+')
+                          ? contactPhone
+                          : `${selectedCountry.dialCode}${contactPhone.replace(/^0+/, '')}`
+                      : null;
             const email = authMethod === 'email' ? identifier : null;
 
             const effectiveReferralCode = currentReferralCode();
@@ -437,7 +463,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
                 phone: fullPhone,
                 email: email,
                 on_behalf: parseInt(formData.on_behalf),
-                referral_code: effectiveReferralCode
+                referral_code: effectiveReferralCode,
             };
 
             const response = await api.post('/signup', payload);
@@ -452,12 +478,14 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
                 setUser(user);
                 onComplete();
             } else {
-                const message = Array.isArray(response.data.message) ? response.data.message[0] : (response.data.message || t('errors.signupFailed'));
+                const message = Array.isArray(response.data.message)
+                    ? response.data.message[0]
+                    : response.data.message || t('errors.signupFailed');
                 applyError(message);
             }
         } catch (err: any) {
             const msg = err.response?.data?.message;
-            applyError(Array.isArray(msg) ? msg[0] : (msg || t('errors.signupFailed')));
+            applyError(Array.isArray(msg) ? msg[0] : msg || t('errors.signupFailed'));
         } finally {
             setIsLoading(false);
         }
@@ -471,7 +499,9 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
                     {t('auth.welcome.optional')}
                 </span>
             </label>
-            <div className={`flex items-stretch rounded-xl border transition-all focus-within:ring-2 focus-within:ring-primary/15 ${referralCodeStatus === 'invalid' ? 'border-red-500 bg-red-50/60' : referralCodeStatus === 'valid' ? 'border-emerald-500 bg-emerald-50/50' : 'border-slate-200 bg-slate-50'}`}>
+            <div
+                className={`flex items-stretch rounded-xl border transition-all focus-within:ring-2 focus-within:ring-primary/15 ${referralCodeStatus === 'invalid' ? 'border-red-500 bg-red-50/60' : referralCodeStatus === 'valid' ? 'border-emerald-500 bg-emerald-50/50' : 'border-slate-200 bg-slate-50'}`}
+            >
                 <input
                     type="text"
                     value={referralCode}
@@ -492,7 +522,9 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
                 )}
             </div>
             {referralCodeMessage && (
-                <p className={`text-[11px] font-medium ${referralCodeStatus === 'invalid' ? 'text-red-600' : referralCodeStatus === 'valid' ? 'text-emerald-600' : 'text-slate-500'}`}>
+                <p
+                    className={`text-[11px] font-medium ${referralCodeStatus === 'invalid' ? 'text-red-600' : referralCodeStatus === 'valid' ? 'text-emerald-600' : 'text-slate-500'}`}
+                >
                     {referralCodeMessage}
                 </p>
             )}
@@ -503,10 +535,13 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
         <div className="flex min-h-screen w-full bg-white font-sans overflow-hidden lg:overflow-hidden">
             {/* Left Panel - Dark Blue Branding (Hidden on Mobile) */}
             <div className="hidden lg:flex w-5/12 bg-[#0B0F19] relative flex-col justify-between p-12 text-white">
-
                 {/* Logo */}
                 <div className="flex items-center gap-3">
-                    <img src="/logo-v2.png" alt={t('auth.welcome.logoAlt')} className="h-12 w-auto" />
+                    <img
+                        src="/logo-v2.png"
+                        alt={t('auth.welcome.logoAlt')}
+                        className="h-12 w-auto"
+                    />
                 </div>
 
                 {/* Hero Text */}
@@ -527,15 +562,28 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
                             <ShieldCheck size={20} />
                         </div>
                         <div>
-                            <h3 className="font-bold text-white text-sm">{t('auth.welcome.verifiedProfiles')}</h3>
-                            <p className="text-xs text-slate-400 mt-1">{t('auth.welcome.verifiedProfilesDesc')}</p>
+                            <h3 className="font-bold text-white text-sm">
+                                {t('auth.welcome.verifiedProfiles')}
+                            </h3>
+                            <p className="text-xs text-slate-400 mt-1">
+                                {t('auth.welcome.verifiedProfilesDesc')}
+                            </p>
                         </div>
                     </div>
 
                     <div className="flex items-center gap-4">
                         <div className="flex -space-x-3">
-                            {["/doctors/doctor1.png", "/doctors/doctor2.png", "/doctors/doctor3.png", "/doctors/doctor4.png"].map((src, i) => (
-                                <div key={i} className="size-10 rounded-full border-2 border-[#0B0F19] bg-slate-700 bg-cover bg-center" style={{ backgroundImage: `url(${src})` }} />
+                            {[
+                                '/doctors/doctor1.png',
+                                '/doctors/doctor2.png',
+                                '/doctors/doctor3.png',
+                                '/doctors/doctor4.png',
+                            ].map((src, i) => (
+                                <div
+                                    key={i}
+                                    className="size-10 rounded-full border-2 border-[#0B0F19] bg-slate-700 bg-cover bg-center"
+                                    style={{ backgroundImage: `url(${src})` }}
+                                />
                             ))}
                         </div>
                         <div className="bg-white text-slate-900 px-4 py-1.5 rounded-full text-xs font-bold shadow-lg">
@@ -553,20 +601,32 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
             <div className="flex-1 flex flex-col relative bg-white overflow-y-auto">
                 <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-12 min-h-0">
                     <div className="w-full max-w-md space-y-8">
-
                         {step === 'landing' && (
                             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                 <div className="text-center space-y-2">
-                                    <h2 className="text-3xl font-bold text-slate-900">{t('auth.welcome.welcomeBack')}</h2>
-                                    <p className="text-slate-500">{t('auth.welcome.welcomeBackSubtitle')}</p>
+                                    <h2 className="text-3xl font-bold text-slate-900">
+                                        {t('auth.welcome.welcomeBack')}
+                                    </h2>
+                                    <p className="text-slate-500">
+                                        {t('auth.welcome.welcomeBackSubtitle')}
+                                    </p>
                                 </div>
 
                                 {/* Referral code badge on landing */}
-                                {(referralCode || localStorage.getItem('pending_referral_code')) && (
+                                {(referralCode ||
+                                    localStorage.getItem('pending_referral_code')) && (
                                     <div className="flex items-center justify-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2.5">
-                                        <CheckCircle2 className="text-emerald-600 flex-shrink-0" size={16} />
+                                        <CheckCircle2
+                                            className="text-emerald-600 flex-shrink-0"
+                                            size={16}
+                                        />
                                         <span className="text-sm font-medium text-emerald-700">
-                                            Referral code <span className="font-bold">{referralCode || localStorage.getItem('pending_referral_code')}</span> will be applied
+                                            Referral code{' '}
+                                            <span className="font-bold">
+                                                {referralCode ||
+                                                    localStorage.getItem('pending_referral_code')}
+                                            </span>{' '}
+                                            will be applied
                                         </span>
                                     </div>
                                 )}
@@ -574,8 +634,12 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
                                 <div className="space-y-6">
                                     <div className="space-y-4">
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold text-slate-700 uppercase mb-1 block">{t('auth.welcome.emailAddress')}</label>
-                                            <div className={`flex items-stretch bg-slate-50 border ${error ? 'border-red-500' : 'border-slate-200'} rounded-xl focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all`}>
+                                            <label className="text-xs font-bold text-slate-700 uppercase mb-1 block">
+                                                {t('auth.welcome.emailAddress')}
+                                            </label>
+                                            <div
+                                                className={`flex items-stretch bg-slate-50 border ${error ? 'border-red-500' : 'border-slate-200'} rounded-xl focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all`}
+                                            >
                                                 {authMethod === 'phone' && (
                                                     <CountryCodeSelector
                                                         selectedCountry={selectedCountry}
@@ -584,28 +648,57 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
                                                 )}
                                                 <input
                                                     type={authMethod === 'phone' ? 'tel' : 'email'}
-                                                    value={authMethod === 'phone' && identifier.startsWith(selectedCountry.dialCode) ? identifier.slice(selectedCountry.dialCode.length) : identifier}
-                                                    onChange={(e) => handleIdentifierChange(e.target.value)}
+                                                    value={
+                                                        authMethod === 'phone' &&
+                                                        identifier.startsWith(
+                                                            selectedCountry.dialCode,
+                                                        )
+                                                            ? identifier.slice(
+                                                                  selectedCountry.dialCode.length,
+                                                              )
+                                                            : identifier
+                                                    }
+                                                    onChange={(e) =>
+                                                        handleIdentifierChange(e.target.value)
+                                                    }
                                                     className={`flex-1 bg-transparent px-4 py-3 outline-none font-bold text-slate-900 placeholder-slate-300 min-w-0 ${authMethod === 'phone' ? 'rounded-r-xl' : 'rounded-xl'}`}
-                                                    placeholder={authMethod === 'phone' ? t('auth.welcome.phoneNumber') : t('auth.welcome.emailAddress')}
+                                                    placeholder={
+                                                        authMethod === 'phone'
+                                                            ? t('auth.welcome.phoneNumber')
+                                                            : t('auth.welcome.emailAddress')
+                                                    }
                                                 />
                                             </div>
-
                                         </div>
                                         <div>
-                                        <PasswordField
-                                            label={t('auth.welcome.password')}
-                                            value={formData.password}
-                                            onChange={(e) => { setFormData({ ...formData, password: e.target.value }); setError(''); }}
-                                            placeholder="••••••••"
-                                            inputClassName="w-full py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-primary focus:bg-white transition-all font-medium"
-                                            containerClassName="space-y-0"
-                                            labelClassName="text-xs font-bold text-slate-700 uppercase mb-1 block"
-                                        />
+                                            <PasswordField
+                                                label={t('auth.welcome.password')}
+                                                value={formData.password}
+                                                onChange={(e) => {
+                                                    setFormData({
+                                                        ...formData,
+                                                        password: e.target.value,
+                                                    });
+                                                    setError('');
+                                                }}
+                                                placeholder="••••••••"
+                                                inputClassName="w-full py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-primary focus:bg-white transition-all font-medium"
+                                                containerClassName="space-y-0"
+                                                labelClassName="text-xs font-bold text-slate-700 uppercase mb-1 block"
+                                            />
                                         </div>
                                         <div className="flex justify-end">
                                             <button
-                                                onClick={() => { window.history.replaceState(null, '', '/forgot-password'); setStep('forgot-password'); setIdentifier(''); setError(''); }}
+                                                onClick={() => {
+                                                    window.history.replaceState(
+                                                        null,
+                                                        '',
+                                                        '/forgot-password',
+                                                    );
+                                                    setStep('forgot-password');
+                                                    setIdentifier('');
+                                                    setError('');
+                                                }}
                                                 className="text-sm font-bold text-primary hover:underline"
                                             >
                                                 {t('auth.welcome.forgotPassword')}
@@ -625,17 +718,33 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
                                         disabled={isLoading}
                                         className="w-full py-4 bg-[#0F172A] text-white rounded-xl font-bold shadow-xl shadow-slate-200 hover:bg-slate-800 transition-all active:scale-[0.98] disabled:opacity-70 flex items-center justify-center gap-2"
                                     >
-                                        {isLoading ? <Loader2 className="animate-spin" size={18} /> : t('auth.welcome.signIn')}
+                                        {isLoading ? (
+                                            <Loader2 className="animate-spin" size={18} />
+                                        ) : (
+                                            t('auth.welcome.signIn')
+                                        )}
                                     </button>
 
                                     <div className="relative py-2">
-                                        <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200"></div></div>
-                                        <span className="relative bg-white px-4 text-slate-400 text-xs font-bold uppercase mx-auto flex w-fit">{t('auth.welcome.orContinueWith')}</span>
+                                        <div className="absolute inset-0 flex items-center">
+                                            <div className="w-full border-t border-slate-200"></div>
+                                        </div>
+                                        <span className="relative bg-white px-4 text-slate-400 text-xs font-bold uppercase mx-auto flex w-fit">
+                                            {t('auth.welcome.orContinueWith')}
+                                        </span>
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <button
-                                            onClick={() => isGoogleConfigured ? googleLogin() : setError(t('auth.welcome.socialUnavailable', { provider: t('auth.welcome.google') }))}
+                                            onClick={() =>
+                                                isGoogleConfigured
+                                                    ? googleLogin()
+                                                    : setError(
+                                                          t('auth.welcome.socialUnavailable', {
+                                                              provider: t('auth.welcome.google'),
+                                                          }),
+                                                      )
+                                            }
                                             className={`p-3 border border-slate-200 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors ${isGoogleConfigured ? 'text-slate-700 hover:bg-slate-50' : 'text-slate-400 bg-slate-50 cursor-not-allowed'}`}
                                             aria-disabled={!isGoogleConfigured}
                                         >
@@ -643,18 +752,35 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
                                         </button>
                                         <button
                                             onClick={() => {
-                                                setError(t('auth.welcome.socialUnavailable', { provider: t('auth.welcome.apple') }));
+                                                setError(
+                                                    t('auth.welcome.socialUnavailable', {
+                                                        provider: t('auth.welcome.apple'),
+                                                    }),
+                                                );
                                             }}
                                             className="p-3 border border-slate-200 rounded-xl font-bold text-slate-400 bg-slate-50 cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
                                         >
-                                            <svg viewBox="0 0 24 24" className="size-5" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" /></svg> {t('auth.welcome.apple')}
+                                            <svg
+                                                viewBox="0 0 24 24"
+                                                className="size-5"
+                                                fill="currentColor"
+                                            >
+                                                <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
+                                            </svg>{' '}
+                                            {t('auth.welcome.apple')}
                                         </button>
                                     </div>
 
                                     <div className="text-center">
-                                        <span className="text-slate-500 text-sm">{t('auth.welcome.noAccount')} </span>
+                                        <span className="text-slate-500 text-sm">
+                                            {t('auth.welcome.noAccount')}{' '}
+                                        </span>
                                         <button
-                                            onClick={() => { setStep('input'); setIdentifier(''); setError(''); }}
+                                            onClick={() => {
+                                                setStep('input');
+                                                setIdentifier('');
+                                                setError('');
+                                            }}
                                             className="text-primary font-bold hover:underline"
                                         >
                                             {t('auth.welcome.signUp')}
@@ -666,18 +792,30 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
 
                         {step === 'forgot-password' && (
                             <div className="space-y-6 animate-in slide-in-from-right duration-300">
-                                <button onClick={() => setStep('landing')} disabled={isLoading} className="flex items-center gap-2 text-slate-400 font-bold text-xs uppercase hover:text-slate-900 transition-colors disabled:opacity-50">
+                                <button
+                                    onClick={() => setStep('landing')}
+                                    disabled={isLoading}
+                                    className="flex items-center gap-2 text-slate-400 font-bold text-xs uppercase hover:text-slate-900 transition-colors disabled:opacity-50"
+                                >
                                     <ChevronLeft size={16} /> {t('auth.welcome.backToLogin')}
                                 </button>
                                 <div>
-                                    <h2 className="text-2xl font-bold text-slate-900">{t('auth.welcome.resetPassword')}</h2>
-                                    <p className="text-slate-500 mt-1 text-sm">{t('auth.welcome.resetPasswordDesc')}</p>
+                                    <h2 className="text-2xl font-bold text-slate-900">
+                                        {t('auth.welcome.resetPassword')}
+                                    </h2>
+                                    <p className="text-slate-500 mt-1 text-sm">
+                                        {t('auth.welcome.resetPasswordDesc')}
+                                    </p>
                                 </div>
 
                                 <div className="space-y-4">
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-700 uppercase mb-1 block">{t('auth.welcome.emailAddress')}</label>
-                                        <div className={`flex items-stretch bg-slate-50 border ${error ? 'border-red-500' : 'border-slate-200'} rounded-xl focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all`}>
+                                        <label className="text-xs font-bold text-slate-700 uppercase mb-1 block">
+                                            {t('auth.welcome.emailAddress')}
+                                        </label>
+                                        <div
+                                            className={`flex items-stretch bg-slate-50 border ${error ? 'border-red-500' : 'border-slate-200'} rounded-xl focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all`}
+                                        >
                                             {authMethod === 'phone' && (
                                                 <CountryCodeSelector
                                                     selectedCountry={selectedCountry}
@@ -686,17 +824,31 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
                                             )}
                                             <input
                                                 type={authMethod === 'phone' ? 'tel' : 'email'}
-                                                value={authMethod === 'phone' && identifier.startsWith(selectedCountry.dialCode) ? identifier.slice(selectedCountry.dialCode.length) : identifier}
-                                                onChange={(e) => handleIdentifierChange(e.target.value)}
+                                                value={
+                                                    authMethod === 'phone' &&
+                                                    identifier.startsWith(selectedCountry.dialCode)
+                                                        ? identifier.slice(
+                                                              selectedCountry.dialCode.length,
+                                                          )
+                                                        : identifier
+                                                }
+                                                onChange={(e) =>
+                                                    handleIdentifierChange(e.target.value)
+                                                }
                                                 className={`flex-1 bg-transparent px-4 py-3 outline-none font-bold text-slate-900 placeholder-slate-300 min-w-0 ${authMethod === 'phone' ? 'rounded-r-xl' : 'rounded-xl'}`}
-                                                placeholder={authMethod === 'phone' ? t('auth.welcome.phoneNumber') : t('auth.welcome.emailAddress')}
+                                                placeholder={
+                                                    authMethod === 'phone'
+                                                        ? t('auth.welcome.phoneNumber')
+                                                        : t('auth.welcome.emailAddress')
+                                                }
                                             />
                                         </div>
-
                                     </div>
 
                                     {error && (
-                                        <div className={`p-3 rounded-xl text-xs flex items-center gap-2 animate-in fade-in slide-in-from-top-1 ${error.includes('sent') ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+                                        <div
+                                            className={`p-3 rounded-xl text-xs flex items-center gap-2 animate-in fade-in slide-in-from-top-1 ${error.includes('sent') ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}
+                                        >
                                             <AlertCircle size={14} />
                                             <span>{error}</span>
                                         </div>
@@ -704,17 +856,23 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
 
                                     <button
                                         onClick={async () => {
-                                            if (!identifier) { setError(t('errors.enterCredentials')); return; }
+                                            if (!identifier) {
+                                                setError(t('errors.enterCredentials'));
+                                                return;
+                                            }
                                             setIsLoading(true);
                                             try {
                                                 await api.post('/forgot/password', {
                                                     email_or_phone: identifier,
-                                                    send_code_by: 'email'
+                                                    send_code_by: 'email',
                                                 });
                                                 setResetOtp(['', '', '', '', '', '']);
                                                 setStep('reset-otp');
                                             } catch (err: any) {
-                                                setError(err.response?.data?.message || t('errors.somethingWrong'));
+                                                setError(
+                                                    err.response?.data?.message ||
+                                                        t('errors.somethingWrong'),
+                                                );
                                             } finally {
                                                 setIsLoading(false);
                                             }
@@ -722,7 +880,11 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
                                         disabled={isLoading}
                                         className="w-full py-4 bg-primary text-white rounded-xl font-bold shadow-lg shadow-primary/25 hover:bg-primary-hover flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
                                     >
-                                        {isLoading ? <Loader2 className="animate-spin" size={18} /> : t('auth.welcome.sendResetCode')}
+                                        {isLoading ? (
+                                            <Loader2 className="animate-spin" size={18} />
+                                        ) : (
+                                            t('auth.welcome.sendResetCode')
+                                        )}
                                     </button>
                                 </div>
                             </div>
@@ -730,19 +892,27 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
 
                         {step === 'reset-otp' && (
                             <div className="space-y-6 animate-in slide-in-from-right duration-300">
-                                <button onClick={() => setStep('forgot-password')} disabled={isLoading} className="flex items-center gap-2 text-slate-400 font-bold text-xs uppercase hover:text-slate-900 transition-colors disabled:opacity-50">
+                                <button
+                                    onClick={() => setStep('forgot-password')}
+                                    disabled={isLoading}
+                                    className="flex items-center gap-2 text-slate-400 font-bold text-xs uppercase hover:text-slate-900 transition-colors disabled:opacity-50"
+                                >
                                     <ChevronLeft size={16} /> {t('auth.welcome.back')}
                                 </button>
                                 <div className="text-center space-y-2">
-                                    <h2 className="text-2xl font-bold text-slate-900">{t('auth.welcome.enterResetCode')}</h2>
-                                    <p className="text-slate-500 text-sm">{t('auth.welcome.enterResetCodeDesc')}</p>
+                                    <h2 className="text-2xl font-bold text-slate-900">
+                                        {t('auth.welcome.enterResetCode')}
+                                    </h2>
+                                    <p className="text-slate-500 text-sm">
+                                        {t('auth.welcome.enterResetCodeDesc')}
+                                    </p>
                                 </div>
                                 <div className="space-y-6">
                                     <div className="flex gap-2 justify-between px-2">
                                         {resetOtp.map((d, i) => (
                                             <input
                                                 key={i}
-                                                ref={el => resetOtpRefs.current[i] = el}
+                                                ref={(el) => (resetOtpRefs.current[i] = el)}
                                                 type="text"
                                                 maxLength={1}
                                                 value={d}
@@ -752,10 +922,16 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
                                                     const newOtp = [...resetOtp];
                                                     newOtp[i] = val.slice(-1);
                                                     setResetOtp(newOtp);
-                                                    if (val && i < 5) resetOtpRefs.current[i + 1]?.focus();
+                                                    if (val && i < 5)
+                                                        resetOtpRefs.current[i + 1]?.focus();
                                                 }}
-                                                onKeyDown={e => {
-                                                    if (e.key === 'Backspace' && !resetOtp[i] && i > 0) resetOtpRefs.current[i - 1]?.focus();
+                                                onKeyDown={(e) => {
+                                                    if (
+                                                        e.key === 'Backspace' &&
+                                                        !resetOtp[i] &&
+                                                        i > 0
+                                                    )
+                                                        resetOtpRefs.current[i - 1]?.focus();
                                                 }}
                                                 disabled={isLoading}
                                                 className="size-10 sm:size-12 border border-slate-200 bg-white rounded-xl text-center text-xl sm:text-2xl font-bold focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all"
@@ -791,19 +967,30 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
 
                         {step === 'new-password' && (
                             <div className="space-y-6 animate-in slide-in-from-right duration-300">
-                                <button onClick={() => setStep('reset-otp')} disabled={isLoading} className="flex items-center gap-2 text-slate-400 font-bold text-xs uppercase hover:text-slate-900 transition-colors disabled:opacity-50">
+                                <button
+                                    onClick={() => setStep('reset-otp')}
+                                    disabled={isLoading}
+                                    className="flex items-center gap-2 text-slate-400 font-bold text-xs uppercase hover:text-slate-900 transition-colors disabled:opacity-50"
+                                >
                                     <ChevronLeft size={16} /> {t('auth.welcome.back')}
                                 </button>
                                 <div className="text-center space-y-2">
-                                    <h2 className="text-2xl font-bold text-slate-900">{t('auth.welcome.setNewPassword')}</h2>
-                                    <p className="text-slate-500 text-sm">{t('auth.welcome.setNewPasswordDesc')}</p>
+                                    <h2 className="text-2xl font-bold text-slate-900">
+                                        {t('auth.welcome.setNewPassword')}
+                                    </h2>
+                                    <p className="text-slate-500 text-sm">
+                                        {t('auth.welcome.setNewPasswordDesc')}
+                                    </p>
                                 </div>
                                 <div className="space-y-4">
                                     <div>
                                         <PasswordField
                                             label={t('auth.welcome.newPassword')}
                                             value={newPassword}
-                                            onChange={(e) => { setNewPassword(e.target.value); setError(''); }}
+                                            onChange={(e) => {
+                                                setNewPassword(e.target.value);
+                                                setError('');
+                                            }}
                                             placeholder="••••••••"
                                             leftIcon={<Lock size={18} />}
                                             inputClassName="w-full py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-primary focus:bg-white transition-all font-medium"
@@ -815,7 +1002,10 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
                                         <PasswordField
                                             label={t('auth.welcome.confirmPassword')}
                                             value={confirmNewPassword}
-                                            onChange={(e) => { setConfirmNewPassword(e.target.value); setError(''); }}
+                                            onChange={(e) => {
+                                                setConfirmNewPassword(e.target.value);
+                                                setError('');
+                                            }}
                                             placeholder="••••••••"
                                             leftIcon={<Lock size={18} />}
                                             inputClassName="w-full py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-primary focus:bg-white transition-all font-medium"
@@ -849,13 +1039,16 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
                                                     send_code_by: 'email',
                                                     verification_code: resetOtp.join(''),
                                                     password: newPassword,
-                                                    password_confirmation: confirmNewPassword
+                                                    password_confirmation: confirmNewPassword,
                                                 });
                                                 setStep('landing');
                                                 setError('');
                                                 alert(t('auth.welcome.passwordResetSuccess'));
                                             } catch (err: any) {
-                                                setError(err.response?.data?.message || t('errors.somethingWrong'));
+                                                setError(
+                                                    err.response?.data?.message ||
+                                                        t('errors.somethingWrong'),
+                                                );
                                             } finally {
                                                 setIsLoading(false);
                                             }
@@ -863,7 +1056,11 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
                                         disabled={isLoading}
                                         className="w-full py-4 bg-primary text-white rounded-xl font-bold shadow-lg shadow-primary/25 hover:bg-primary-hover flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-70"
                                     >
-                                        {isLoading ? <Loader2 className="animate-spin" size={18} /> : t('auth.welcome.resetPassword')}
+                                        {isLoading ? (
+                                            <Loader2 className="animate-spin" size={18} />
+                                        ) : (
+                                            t('auth.welcome.resetPassword')
+                                        )}
                                     </button>
                                 </div>
                             </div>
@@ -871,19 +1068,27 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
 
                         {step === 'two-factor' && (
                             <div className="space-y-6 animate-in slide-in-from-right duration-300">
-                                <button onClick={() => setStep('landing')} disabled={isLoading} className="flex items-center gap-2 text-slate-400 font-bold text-xs uppercase hover:text-slate-900 transition-colors disabled:opacity-50">
+                                <button
+                                    onClick={() => setStep('landing')}
+                                    disabled={isLoading}
+                                    className="flex items-center gap-2 text-slate-400 font-bold text-xs uppercase hover:text-slate-900 transition-colors disabled:opacity-50"
+                                >
                                     <ChevronLeft size={16} /> {t('auth.welcome.backToLogin')}
                                 </button>
                                 <div className="text-center space-y-2">
-                                    <h2 className="text-2xl font-bold text-slate-900">{t('auth.welcome.twoFactorAuth')}</h2>
-                                    <p className="text-slate-500 text-sm">{t('auth.welcome.twoFactorAuthDesc')}</p>
+                                    <h2 className="text-2xl font-bold text-slate-900">
+                                        {t('auth.welcome.twoFactorAuth')}
+                                    </h2>
+                                    <p className="text-slate-500 text-sm">
+                                        {t('auth.welcome.twoFactorAuthDesc')}
+                                    </p>
                                 </div>
                                 <div className="space-y-6">
                                     <div className="flex gap-2 justify-between px-2">
                                         {otp.map((d, i) => (
                                             <input
                                                 key={i}
-                                                ref={el => otpRefs.current[i] = el}
+                                                ref={(el) => (otpRefs.current[i] = el)}
                                                 type="text"
                                                 maxLength={1}
                                                 value={d}
@@ -893,10 +1098,12 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
                                                     const newOtp = [...otp];
                                                     newOtp[i] = val.slice(-1);
                                                     setOtp(newOtp);
-                                                    if (val && i < 5) otpRefs.current[i + 1]?.focus();
+                                                    if (val && i < 5)
+                                                        otpRefs.current[i + 1]?.focus();
                                                 }}
-                                                onKeyDown={e => {
-                                                    if (e.key === 'Backspace' && !otp[i] && i > 0) otpRefs.current[i - 1]?.focus();
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Backspace' && !otp[i] && i > 0)
+                                                        otpRefs.current[i - 1]?.focus();
                                                 }}
                                                 disabled={isLoading}
                                                 className="size-10 sm:size-12 border border-slate-200 bg-white rounded-xl text-center text-xl sm:text-2xl font-bold focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all"
@@ -916,7 +1123,11 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
                                         disabled={isLoading || otp.join('').length < 6}
                                         className="w-full py-4 bg-primary text-white rounded-xl font-bold shadow-lg shadow-primary/25 hover:bg-primary-hover transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
                                     >
-                                        {isLoading ? <Loader2 className="animate-spin" size={18} /> : t('auth.welcome.verifyCode')}
+                                        {isLoading ? (
+                                            <Loader2 className="animate-spin" size={18} />
+                                        ) : (
+                                            t('auth.welcome.verifyCode')
+                                        )}
                                     </button>
                                 </div>
                             </div>
@@ -924,17 +1135,27 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
 
                         {step === 'input' && (
                             <div className="space-y-6 animate-in slide-in-from-right duration-300">
-                                <button onClick={() => setStep('landing')} disabled={isLoading} className="flex items-center gap-2 text-slate-400 font-bold text-xs uppercase hover:text-slate-900 transition-colors disabled:opacity-50">
+                                <button
+                                    onClick={() => setStep('landing')}
+                                    disabled={isLoading}
+                                    className="flex items-center gap-2 text-slate-400 font-bold text-xs uppercase hover:text-slate-900 transition-colors disabled:opacity-50"
+                                >
                                     <ChevronLeft size={16} /> {t('auth.welcome.backToLogin')}
                                 </button>
                                 <div>
-                                    <h2 className="text-2xl font-bold text-slate-900">{t('auth.welcome.createAccount')}</h2>
-                                    <p className="text-slate-500 mt-1 text-sm">{t('auth.welcome.createAccountDesc')}</p>
+                                    <h2 className="text-2xl font-bold text-slate-900">
+                                        {t('auth.welcome.createAccount')}
+                                    </h2>
+                                    <p className="text-slate-500 mt-1 text-sm">
+                                        {t('auth.welcome.createAccountDesc')}
+                                    </p>
                                 </div>
 
                                 <div className="space-y-4">
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">{t('auth.welcome.creatingProfileFor')}</label>
+                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                                            {t('auth.welcome.creatingProfileFor')}
+                                        </label>
                                         <div className="relative">
                                             <select
                                                 className="w-full p-4 bg-white border border-slate-200 rounded-xl text-slate-900 font-medium appearance-none focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none cursor-pointer hover:border-slate-300 transition-colors"
@@ -947,11 +1168,16 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
                                                 <option>{t('auth.welcome.myBrother')}</option>
                                                 <option>{t('auth.welcome.mySister')}</option>
                                             </select>
-                                            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={20} />
+                                            <ChevronDown
+                                                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                                                size={20}
+                                            />
                                         </div>
                                     </div>
 
-                                    <div className={`flex items-stretch bg-white border ${error ? 'border-red-500' : 'border-slate-200'} rounded-xl focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all`}>
+                                    <div
+                                        className={`flex items-stretch bg-white border ${error ? 'border-red-500' : 'border-slate-200'} rounded-xl focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all`}
+                                    >
                                         {authMethod === 'phone' && (
                                             <CountryCodeSelector
                                                 selectedCountry={selectedCountry}
@@ -960,16 +1186,25 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
                                         )}
                                         <input
                                             type={authMethod === 'phone' ? 'tel' : 'email'}
-                                            value={authMethod === 'phone' && identifier.startsWith(selectedCountry.dialCode) ? identifier.slice(selectedCountry.dialCode.length) : identifier}
+                                            value={
+                                                authMethod === 'phone' &&
+                                                identifier.startsWith(selectedCountry.dialCode)
+                                                    ? identifier.slice(
+                                                          selectedCountry.dialCode.length,
+                                                      )
+                                                    : identifier
+                                            }
                                             onChange={(e) => handleIdentifierChange(e.target.value)}
                                             className={`flex-1 bg-transparent px-4 py-3 outline-none font-bold text-lg text-slate-900 placeholder-slate-300 min-w-0 ${authMethod === 'phone' ? 'rounded-r-xl' : 'rounded-xl'}`}
-                                            placeholder={authMethod === 'phone' ? t('auth.welcome.phoneNumber') : t('auth.welcome.emailAddress')}
+                                            placeholder={
+                                                authMethod === 'phone'
+                                                    ? t('auth.welcome.phoneNumber')
+                                                    : t('auth.welcome.emailAddress')
+                                            }
                                             autoFocus
                                             disabled={isLoading}
                                         />
                                     </div>
-
-
 
                                     {error && (
                                         <div className="p-3 bg-red-50 text-red-600 rounded-xl text-xs flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
@@ -990,7 +1225,8 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
                                             </>
                                         ) : (
                                             <>
-                                                {t('auth.welcome.continue')} <ArrowRight size={18} />
+                                                {t('auth.welcome.continue')}{' '}
+                                                <ArrowRight size={18} />
                                             </>
                                         )}
                                     </button>
@@ -1005,13 +1241,24 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
 
                         {step === 'otp' && (
                             <div className="space-y-6 animate-in slide-in-from-right duration-300">
-                                <button onClick={() => setStep('input')} disabled={isLoading} className="flex items-center gap-2 text-slate-400 font-bold text-xs uppercase hover:text-slate-900 transition-colors disabled:opacity-50">
+                                <button
+                                    onClick={() => setStep('input')}
+                                    disabled={isLoading}
+                                    className="flex items-center gap-2 text-slate-400 font-bold text-xs uppercase hover:text-slate-900 transition-colors disabled:opacity-50"
+                                >
                                     <ChevronLeft size={16} /> {t('auth.welcome.back')}
                                 </button>
                                 <div className="text-center space-y-2">
-                                    <h2 className="text-2xl font-bold text-slate-900">{t('auth.welcome.enterVerificationCode')}</h2>
+                                    <h2 className="text-2xl font-bold text-slate-900">
+                                        {t('auth.welcome.enterVerificationCode')}
+                                    </h2>
                                     <p className="text-slate-500 text-sm">
-                                        {t('auth.welcome.enterCodeSentTo', { method: authMethod === 'phone' ? t('auth.welcome.phone') : t('auth.welcome.email') })}
+                                        {t('auth.welcome.enterCodeSentTo', {
+                                            method:
+                                                authMethod === 'phone'
+                                                    ? t('auth.welcome.phone')
+                                                    : t('auth.welcome.email'),
+                                        })}
                                     </p>
                                 </div>
                                 <div className="space-y-8">
@@ -1019,13 +1266,14 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
                                         {otp.map((d, i) => (
                                             <input
                                                 key={i}
-                                                ref={el => otpRefs.current[i] = el}
+                                                ref={(el) => (otpRefs.current[i] = el)}
                                                 type="text"
                                                 maxLength={1}
                                                 value={d}
                                                 onChange={(e) => handleOtpChange(e, i)}
-                                                onKeyDown={e => {
-                                                    if (e.key === 'Backspace' && !otp[i] && i > 0) otpRefs.current[i - 1]?.focus();
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Backspace' && !otp[i] && i > 0)
+                                                        otpRefs.current[i - 1]?.focus();
                                                 }}
                                                 disabled={isLoading}
                                                 className={`size-10 sm:size-12 border ${error ? 'border-red-500 bg-red-50' : 'border-slate-200 bg-white'} rounded-xl text-center text-xl sm:text-2xl font-bold focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all`}
@@ -1045,11 +1293,22 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
                                         disabled={isLoading || otp.join('').length < 6}
                                         className="w-full py-4 bg-primary text-white rounded-xl font-bold shadow-lg shadow-primary/25 hover:bg-primary-hover transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
                                     >
-                                        {isLoading ? <Loader2 className="animate-spin" size={18} /> : t('auth.welcome.verifyAndContinue')}
+                                        {isLoading ? (
+                                            <Loader2 className="animate-spin" size={18} />
+                                        ) : (
+                                            t('auth.welcome.verifyAndContinue')
+                                        )}
                                     </button>
 
                                     <p className="text-center text-xs text-slate-400">
-                                        {t('auth.welcome.didntReceiveCode')} <button className="text-primary font-bold hover:underline" disabled={isLoading} onClick={handleIdentifierSubmit}>{t('auth.welcome.resendOTP')}</button>
+                                        {t('auth.welcome.didntReceiveCode')}{' '}
+                                        <button
+                                            className="text-primary font-bold hover:underline"
+                                            disabled={isLoading}
+                                            onClick={handleIdentifierSubmit}
+                                        >
+                                            {t('auth.welcome.resendOTP')}
+                                        </button>
                                     </p>
                                 </div>
                             </div>
@@ -1058,61 +1317,115 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
                         {step === 'onboarding' && (
                             <div className="space-y-6 animate-in slide-in-from-right duration-300">
                                 <div className="text-center space-y-2">
-                                    <h2 className="text-2xl font-bold text-slate-900">{t('auth.welcome.completeProfile')}</h2>
-                                    <p className="text-slate-500 text-sm">{t('auth.welcome.completeProfileDesc')}</p>
+                                    <h2 className="text-2xl font-bold text-slate-900">
+                                        {t('auth.welcome.completeProfile')}
+                                    </h2>
+                                    <p className="text-slate-500 text-sm">
+                                        {t('auth.welcome.completeProfileDesc')}
+                                    </p>
                                 </div>
 
                                 {/* Referral code badge */}
-                                {(referralCode || localStorage.getItem('pending_referral_code')) && (
+                                {(referralCode ||
+                                    localStorage.getItem('pending_referral_code')) && (
                                     <div className="flex items-center justify-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2.5">
-                                        <CheckCircle2 className="text-emerald-600 flex-shrink-0" size={16} />
+                                        <CheckCircle2
+                                            className="text-emerald-600 flex-shrink-0"
+                                            size={16}
+                                        />
                                         <span className="text-sm font-medium text-emerald-700">
-                                            Referral code <span className="font-bold">{referralCode || localStorage.getItem('pending_referral_code')}</span> applied
+                                            Referral code{' '}
+                                            <span className="font-bold">
+                                                {referralCode ||
+                                                    localStorage.getItem('pending_referral_code')}
+                                            </span>{' '}
+                                            applied
                                         </span>
                                     </div>
                                 )}
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1 col-span-2">
-                                        <label className="text-xs font-bold text-slate-400 uppercase">{t('auth.welcome.creatingProfileFor')}</label>
+                                        <label className="text-xs font-bold text-slate-400 uppercase">
+                                            {t('auth.welcome.creatingProfileFor')}
+                                        </label>
                                         <div className="relative">
-                                            <Globe className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                            <Globe
+                                                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                                                size={18}
+                                            />
                                             <select
                                                 value={formData.on_behalf}
-                                                onChange={(e) => setFormData({ ...formData, on_behalf: e.target.value })}
+                                                onChange={(e) =>
+                                                    setFormData({
+                                                        ...formData,
+                                                        on_behalf: e.target.value,
+                                                    })
+                                                }
                                                 className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-4 py-3 outline-none focus:border-primary focus:bg-white transition-all text-sm font-medium appearance-none"
                                             >
                                                 <option value="1">{t('auth.welcome.self')}</option>
                                                 <option value="2">{t('auth.welcome.son')}</option>
-                                                <option value="3">{t('auth.welcome.daughter')}</option>
-                                                <option value="4">{t('auth.welcome.brother')}</option>
-                                                <option value="5">{t('auth.welcome.sister')}</option>
-                                                <option value="6">{t('auth.welcome.friend')}</option>
+                                                <option value="3">
+                                                    {t('auth.welcome.daughter')}
+                                                </option>
+                                                <option value="4">
+                                                    {t('auth.welcome.brother')}
+                                                </option>
+                                                <option value="5">
+                                                    {t('auth.welcome.sister')}
+                                                </option>
+                                                <option value="6">
+                                                    {t('auth.welcome.friend')}
+                                                </option>
                                             </select>
-                                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
+                                            <ChevronDown
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                                                size={18}
+                                            />
                                         </div>
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-xs font-bold text-slate-400 uppercase">{t('auth.welcome.firstName')}</label>
+                                        <label className="text-xs font-bold text-slate-400 uppercase">
+                                            {t('auth.welcome.firstName')}
+                                        </label>
                                         <div className="relative">
-                                            <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                            <User
+                                                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                                                size={18}
+                                            />
                                             <input
                                                 type="text"
                                                 value={formData.first_name}
-                                                onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                                                onChange={(e) =>
+                                                    setFormData({
+                                                        ...formData,
+                                                        first_name: e.target.value,
+                                                    })
+                                                }
                                                 className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-4 py-3 outline-none focus:border-primary focus:bg-white transition-all text-sm font-medium"
                                                 placeholder={t('auth.welcome.firstNamePlaceholder')}
                                             />
                                         </div>
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-xs font-bold text-slate-400 uppercase">{t('auth.welcome.lastName')}</label>
+                                        <label className="text-xs font-bold text-slate-400 uppercase">
+                                            {t('auth.welcome.lastName')}
+                                        </label>
                                         <div className="relative">
-                                            <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                            <User
+                                                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                                                size={18}
+                                            />
                                             <input
                                                 type="text"
                                                 value={formData.last_name}
-                                                onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                                                onChange={(e) =>
+                                                    setFormData({
+                                                        ...formData,
+                                                        last_name: e.target.value,
+                                                    })
+                                                }
                                                 className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-4 py-3 outline-none focus:border-primary focus:bg-white transition-all text-sm font-medium"
                                                 placeholder={t('auth.welcome.lastNamePlaceholder')}
                                             />
@@ -1121,10 +1434,14 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-xs font-bold text-slate-400 uppercase">{t('auth.welcome.gender')}</label>
+                                    <label className="text-xs font-bold text-slate-400 uppercase">
+                                        {t('auth.welcome.gender')}
+                                    </label>
                                     <select
                                         value={formData.gender}
-                                        onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, gender: e.target.value })
+                                        }
                                         className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 outline-none focus:border-primary focus:bg-white transition-all text-sm font-medium appearance-none"
                                     >
                                         <option value="Male">{t('auth.welcome.male')}</option>
@@ -1136,7 +1453,9 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
                                     <PasswordField
                                         label={t('auth.welcome.setPasswordLabel')}
                                         value={formData.password}
-                                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, password: e.target.value })
+                                        }
                                         placeholder="••••••••"
                                         leftIcon={<Lock size={18} />}
                                         inputClassName="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 outline-none focus:border-primary focus:bg-white transition-all text-sm font-medium"
@@ -1149,7 +1468,12 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
                                     <PasswordField
                                         label={t('auth.welcome.confirmPassword')}
                                         value={formData.password_confirmation}
-                                        onChange={(e) => setFormData({ ...formData, password_confirmation: e.target.value })}
+                                        onChange={(e) =>
+                                            setFormData({
+                                                ...formData,
+                                                password_confirmation: e.target.value,
+                                            })
+                                        }
                                         placeholder="••••••••"
                                         leftIcon={<Lock size={18} />}
                                         inputClassName="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 outline-none focus:border-primary focus:bg-white transition-all text-sm font-medium"
@@ -1160,16 +1484,30 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
 
                                 {(authMethod === 'email' || requiresPhone) && (
                                     <div className="space-y-1">
-                                        <label className="text-xs font-bold text-slate-400 uppercase">{t('auth.welcome.phoneNumber')}</label>
-                                        <div className={`flex items-stretch bg-white border ${error ? 'border-red-500' : 'border-slate-200'} rounded-xl focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all`}>
+                                        <label className="text-xs font-bold text-slate-400 uppercase">
+                                            {t('auth.welcome.phoneNumber')}
+                                        </label>
+                                        <div
+                                            className={`flex items-stretch bg-white border ${error ? 'border-red-500' : 'border-slate-200'} rounded-xl focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all`}
+                                        >
                                             <CountryCodeSelector
                                                 selectedCountry={selectedCountry}
                                                 onSelect={setSelectedCountry}
                                             />
                                             <input
                                                 type="tel"
-                                                value={contactPhone.startsWith(selectedCountry.dialCode) ? contactPhone.slice(selectedCountry.dialCode.length) : contactPhone}
-                                                onChange={(e) => handleContactPhoneChange(e.target.value)}
+                                                value={
+                                                    contactPhone.startsWith(
+                                                        selectedCountry.dialCode,
+                                                    )
+                                                        ? contactPhone.slice(
+                                                              selectedCountry.dialCode.length,
+                                                          )
+                                                        : contactPhone
+                                                }
+                                                onChange={(e) =>
+                                                    handleContactPhoneChange(e.target.value)
+                                                }
                                                 className="flex-1 bg-transparent px-4 py-3 outline-none font-bold text-lg text-slate-900 placeholder-slate-300 rounded-r-xl min-w-0"
                                                 placeholder="321 7654321"
                                                 disabled={isLoading}
@@ -1190,22 +1528,34 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onComplete, initialStep =
                                     disabled={isLoading}
                                     className="w-full py-4 bg-primary text-white rounded-xl font-bold shadow-lg shadow-primary/25 hover:bg-primary-hover flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-70"
                                 >
-                                    {isLoading ? <Loader2 className="animate-spin" size={18} /> : t('auth.welcome.completeRegistration')}
+                                    {isLoading ? (
+                                        <Loader2 className="animate-spin" size={18} />
+                                    ) : (
+                                        t('auth.welcome.completeRegistration')
+                                    )}
                                 </button>
                             </div>
                         )}
-
                     </div>
                 </div>
 
                 {/* Footer */}
                 <div className="p-6 border-t border-slate-50 flex flex-col md:flex-row justify-between items-center text-xs text-slate-400 gap-4 bg-white">
                     <div className="flex gap-4 sm:gap-6 flex-wrap justify-center">
-                        <a href="/terms" className="hover:text-slate-600 transition-colors">{t('auth.welcome.termsOfService')}</a>
-                        <a href="/privacy" className="hover:text-slate-600 transition-colors">{t('auth.welcome.privacyPolicy')}</a>
-                        <a href="/cookies" className="hover:text-slate-600 transition-colors">{t('auth.welcome.cookiePolicy')}</a>
+                        <a href="/terms" className="hover:text-slate-600 transition-colors">
+                            {t('auth.welcome.termsOfService')}
+                        </a>
+                        <a href="/privacy" className="hover:text-slate-600 transition-colors">
+                            {t('auth.welcome.privacyPolicy')}
+                        </a>
+                        <a href="/cookies" className="hover:text-slate-600 transition-colors">
+                            {t('auth.welcome.cookiePolicy')}
+                        </a>
                     </div>
-                    <a href="mailto:support@doctormarriagebureau.com.pk" className="flex items-center gap-1 hover:text-slate-600 transition-colors">
+                    <a
+                        href="mailto:support@doctormarriagebureau.com.pk"
+                        className="flex items-center gap-1 hover:text-slate-600 transition-colors"
+                    >
                         <HelpCircle size={14} /> {t('auth.welcome.helpSupport')}
                     </a>
                 </div>

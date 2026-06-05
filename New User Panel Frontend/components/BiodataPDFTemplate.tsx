@@ -9,9 +9,8 @@ import {
     MapPin,
     Ruler,
     Star,
-    Utensils,
     Users,
-    UserCheck
+    UserCheck,
 } from 'lucide-react';
 import { calculateAgeFromDob } from '../utils/age';
 
@@ -37,7 +36,12 @@ const API_BASE = resolveAssetBase();
 const DEFAULT_AVATAR = `${API_BASE}/assets/img/avatar-place.png`;
 const DEFAULT_FEMALE_AVATAR = `${API_BASE}/assets/img/female-avatar-place.png`;
 
-const humanize = (value: any) => (value ? String(value).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : null);
+const humanize = (value: any) =>
+    value
+        ? String(value)
+              .replace(/_/g, ' ')
+              .replace(/\b\w/g, (c) => c.toUpperCase())
+        : null;
 const nonEmpty = (value: any) => !(value == null || value === '' || value === 'N/A');
 const isFemaleProfile = (gender?: number | string | null): boolean => {
     const normalized = `${gender ?? ''}`.trim().toLowerCase();
@@ -66,13 +70,19 @@ const BiodataPDFTemplate: React.FC<BiodataPDFTemplateProps> = ({ userData }) => 
     const rawPhoto = userData?.photo_url || userData?.photo;
     const photoUrl =
         typeof rawPhoto === 'string' &&
-        (rawPhoto.startsWith('http://') || rawPhoto.startsWith('https://') || rawPhoto.startsWith('/'))
-            ? (rawPhoto.startsWith('/') ? `${API_BASE}${rawPhoto}` : rawPhoto)
+        (rawPhoto.startsWith('http://') ||
+            rawPhoto.startsWith('https://') ||
+            rawPhoto.startsWith('/'))
+            ? rawPhoto.startsWith('/')
+                ? `${API_BASE}${rawPhoto}`
+                : rawPhoto
             : defaultAvatar;
     const shouldBlurPhoto = Boolean(userData?.profile_photo_blur && photoUrl !== defaultAvatar);
 
     const presentAddress = addresses?.find((a: any) => a.type === 'present') || addresses?.[0];
-    const location = [presentAddress?.city?.name, presentAddress?.country?.name].filter(Boolean).join(', ');
+    const location = [presentAddress?.city?.name, presentAddress?.country?.name]
+        .filter(Boolean)
+        .join(', ');
 
     const primaryEducation = Array.isArray(education)
         ? [...education].sort((a: any, b: any) => (b.end ?? 0) - (a.end ?? 0))[0]
@@ -80,13 +90,18 @@ const BiodataPDFTemplate: React.FC<BiodataPDFTemplateProps> = ({ userData }) => 
     const degree = primaryEducation?.degree || member?.education;
 
     const primaryCareer = Array.isArray(career)
-        ? [...career].sort((a: any, b: any) => Number(Boolean(b.present)) - Number(Boolean(a.present)) || (b.end ?? 0) - (a.end ?? 0))[0]
+        ? [...career].sort(
+              (a: any, b: any) =>
+                  Number(Boolean(b.present)) - Number(Boolean(a.present)) ||
+                  (b.end ?? 0) - (a.end ?? 0),
+          )[0]
         : career;
     const profession = primaryCareer?.designation || member?.designation;
 
     let heightStr = physical_attributes?.height;
     if (typeof heightStr === 'number') {
-        heightStr = heightStr > 20 ? `${(heightStr / 30.48).toFixed(1)} cm` : `${heightStr.toFixed(1)}'0"`;
+        heightStr =
+            heightStr > 20 ? `${(heightStr / 30.48).toFixed(1)} cm` : `${heightStr.toFixed(1)}'0"`;
     }
 
     const familySiblings = (() => {
@@ -110,7 +125,10 @@ const BiodataPDFTemplate: React.FC<BiodataPDFTemplateProps> = ({ userData }) => 
         : null;
 
     return (
-        <div id="biodata-pdf-content" className="w-[800px] bg-white font-sans text-slate-900 box-border">
+        <div
+            id="biodata-pdf-content"
+            className="w-[800px] bg-white font-sans text-slate-900 box-border"
+        >
             <div className="px-5 py-5">
                 <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-4">
                     <div className="min-w-0">
@@ -164,12 +182,30 @@ const BiodataPDFTemplate: React.FC<BiodataPDFTemplateProps> = ({ userData }) => 
                             </div>
 
                             <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                <StatPill icon={<Calendar size={11} />} label={age ? `${age} yrs` : 'Age N/A'} />
-                                <StatPill icon={<Globe size={11} />} label={religion || 'Religion N/A'} />
-                                <StatPill icon={<Heart size={11} />} label={member?.marital_status?.name || 'Marital Status N/A'} />
-                                <StatPill icon={<MapPin size={11} />} label={location || 'Location N/A'} />
-                                <StatPill icon={<Briefcase size={11} />} label={profession || 'Profession N/A'} />
-                                <StatPill icon={<GraduationCap size={11} />} label={degree || 'Education N/A'} />
+                                <StatPill
+                                    icon={<Calendar size={11} />}
+                                    label={age ? `${age} yrs` : 'Age N/A'}
+                                />
+                                <StatPill
+                                    icon={<Globe size={11} />}
+                                    label={religion || 'Religion N/A'}
+                                />
+                                <StatPill
+                                    icon={<Heart size={11} />}
+                                    label={member?.marital_status?.name || 'Marital Status N/A'}
+                                />
+                                <StatPill
+                                    icon={<MapPin size={11} />}
+                                    label={location || 'Location N/A'}
+                                />
+                                <StatPill
+                                    icon={<Briefcase size={11} />}
+                                    label={profession || 'Profession N/A'}
+                                />
+                                <StatPill
+                                    icon={<GraduationCap size={11} />}
+                                    label={degree || 'Education N/A'}
+                                />
                             </div>
                         </div>
                     </div>
@@ -189,41 +225,54 @@ const BiodataPDFTemplate: React.FC<BiodataPDFTemplateProps> = ({ userData }) => 
                             <FieldGrid>
                                 <CompactField label="Gender" value={gender} />
                                 <CompactField label="Age" value={age ? `${age} yrs` : null} />
-                                <CompactField label="Marital Status" value={member?.marital_status?.name} />
+                                <CompactField
+                                    label="Marital Status"
+                                    value={member?.marital_status?.name}
+                                />
                                 <CompactField label="Religion" value={religion} />
                                 <CompactField label="Caste" value={caste} />
-                                <CompactField label="Mother Tongue" value={member?.mothereTongue?.name} />
+                                <CompactField
+                                    label="Mother Tongue"
+                                    value={member?.mothereTongue?.name}
+                                />
                             </FieldGrid>
                         </Section>
 
                         <Section icon={<GraduationCap size={13} />} title="Education & Career">
                             <div className="space-y-2">
-                                <ListSectionLabel icon={<GraduationCap size={11} />} label="Education" />
+                                <ListSectionLabel
+                                    icon={<GraduationCap size={11} />}
+                                    label="Education"
+                                />
                                 {Array.isArray(education) && education.length > 0 ? (
-                                    education.slice(0, 2).map((edu: any, i: number) => (
-                                        <ProfileLineItem
-                                            key={`edu-${i}`}
-                                            accent="sky"
-                                            icon={<GraduationCap size={11} />}
-                                            title={edu.degree}
-                                            subtitle={edu.institution}
-                                        />
-                                    ))
+                                    education
+                                        .slice(0, 2)
+                                        .map((edu: any, i: number) => (
+                                            <ProfileLineItem
+                                                key={`edu-${i}`}
+                                                accent="sky"
+                                                icon={<GraduationCap size={11} />}
+                                                title={edu.degree}
+                                                subtitle={edu.institution}
+                                            />
+                                        ))
                                 ) : (
                                     <EmptyBlock />
                                 )}
 
                                 <ListSectionLabel icon={<Briefcase size={11} />} label="Career" />
                                 {Array.isArray(career) && career.length > 0 ? (
-                                    career.slice(0, 2).map((job: any, i: number) => (
-                                        <ProfileLineItem
-                                            key={`career-${i}`}
-                                            accent="emerald"
-                                            icon={<Briefcase size={11} />}
-                                            title={job.designation || job.profession}
-                                            subtitle={job.company}
-                                        />
-                                    ))
+                                    career
+                                        .slice(0, 2)
+                                        .map((job: any, i: number) => (
+                                            <ProfileLineItem
+                                                key={`career-${i}`}
+                                                accent="emerald"
+                                                icon={<Briefcase size={11} />}
+                                                title={job.designation || job.profession}
+                                                subtitle={job.company}
+                                            />
+                                        ))
                                 ) : (
                                     <EmptyBlock />
                                 )}
@@ -233,12 +282,25 @@ const BiodataPDFTemplate: React.FC<BiodataPDFTemplateProps> = ({ userData }) => 
                         <Section icon={<Users size={13} />} title="Family Information">
                             <FieldGrid columns="grid-cols-2">
                                 <CompactField label="Father's Name" value={families?.father_name} />
-                                <CompactField label="Father's Occupation" value={families?.father_occupation} />
+                                <CompactField
+                                    label="Father's Occupation"
+                                    value={families?.father_occupation}
+                                />
                                 <CompactField label="Mother's Name" value={families?.mother_name} />
-                                <CompactField label="Mother's Occupation" value={families?.mother_occupation} />
+                                <CompactField
+                                    label="Mother's Occupation"
+                                    value={families?.mother_occupation}
+                                />
                                 <CompactField label="Siblings" value={familySiblings} />
-                                <CompactField label="Family Type" value={humanize(families?.family_type)} />
-                                <CompactField className="col-span-2" label="Family Values" value={familyValue} />
+                                <CompactField
+                                    label="Family Type"
+                                    value={humanize(families?.family_type)}
+                                />
+                                <CompactField
+                                    className="col-span-2"
+                                    label="Family Values"
+                                    value={familyValue}
+                                />
                             </FieldGrid>
                         </Section>
                     </div>
@@ -249,12 +311,23 @@ const BiodataPDFTemplate: React.FC<BiodataPDFTemplateProps> = ({ userData }) => 
                                 <FieldGrid columns="grid-cols-2">
                                     <CompactField label="Religion" value={religion} />
                                     <CompactField label="Caste" value={caste} />
-                                    <CompactField className="col-span-2" label="Sect / Ethnicity" value={sect} />
+                                    <CompactField
+                                        className="col-span-2"
+                                        label="Sect / Ethnicity"
+                                        value={sect}
+                                    />
                                 </FieldGrid>
                                 <FieldGrid columns="grid-cols-2">
-                                    <CompactField label="Country" value={presentAddress?.country?.name} />
+                                    <CompactField
+                                        label="Country"
+                                        value={presentAddress?.country?.name}
+                                    />
                                     <CompactField label="City" value={presentAddress?.city?.name} />
-                                    <CompactField className="col-span-2" label="Nationality" value={member?.nationality} />
+                                    <CompactField
+                                        className="col-span-2"
+                                        label="Nationality"
+                                        value={member?.nationality}
+                                    />
                                 </FieldGrid>
                             </div>
                         </Section>
@@ -263,19 +336,53 @@ const BiodataPDFTemplate: React.FC<BiodataPDFTemplateProps> = ({ userData }) => 
                             <div className="space-y-3">
                                 <FieldGrid columns="grid-cols-3">
                                     <CompactField label="Height" value={heightStr} />
-                                    <CompactField label="Weight" value={physical_attributes?.weight ? `${physical_attributes.weight} kg` : null} />
-                                    <CompactField label="Complexion" value={humanize(physical_attributes?.complexion)} />
-                                    <CompactField label="Body Type" value={humanize(physical_attributes?.body_type)} />
-                                    <CompactField label="Eye Color" value={humanize(physical_attributes?.eye_color)} />
-                                    <CompactField label="Hair Color" value={humanize(physical_attributes?.hair_color)} />
+                                    <CompactField
+                                        label="Weight"
+                                        value={
+                                            physical_attributes?.weight
+                                                ? `${physical_attributes.weight} kg`
+                                                : null
+                                        }
+                                    />
+                                    <CompactField
+                                        label="Complexion"
+                                        value={humanize(physical_attributes?.complexion)}
+                                    />
+                                    <CompactField
+                                        label="Body Type"
+                                        value={humanize(physical_attributes?.body_type)}
+                                    />
+                                    <CompactField
+                                        label="Eye Color"
+                                        value={humanize(physical_attributes?.eye_color)}
+                                    />
+                                    <CompactField
+                                        label="Hair Color"
+                                        value={humanize(physical_attributes?.hair_color)}
+                                    />
                                 </FieldGrid>
                                 <FieldGrid columns="grid-cols-2">
                                     <CompactField label="Diet" value={humanize(lifestyles?.diet)} />
-                                    <CompactField label="Living With" value={humanize(lifestyles?.living_with)} />
-                                    <CompactField label="Smoke" value={humanize(lifestyles?.smoke)} />
-                                    <CompactField label="Drink" value={humanize(lifestyles?.drink)} />
-                                    <CompactField label="Sleep Schedule" value={humanize(lifestyles?.sleep_schedule)} />
-                                    <CompactField label="Property / House" value={humanize(lifestyles?.property)} />
+                                    <CompactField
+                                        label="Living With"
+                                        value={humanize(lifestyles?.living_with)}
+                                    />
+                                    <CompactField
+                                        label="Smoke"
+                                        value={humanize(lifestyles?.smoke)}
+                                    />
+                                    <CompactField
+                                        label="Drink"
+                                        value={humanize(lifestyles?.drink)}
+                                    />
+                                    <CompactField
+                                        label="Sleep Schedule"
+                                        value={humanize(lifestyles?.sleep_schedule)}
+                                    />
+                                    <CompactField
+                                        label="Property / House"
+                                        value={humanize(lifestyles?.property)}
+                                    />
                                 </FieldGrid>
                             </div>
                         </Section>
@@ -285,14 +392,44 @@ const BiodataPDFTemplate: React.FC<BiodataPDFTemplateProps> = ({ userData }) => 
                                 <div className="space-y-3">
                                     <FieldGrid columns="grid-cols-3" accent>
                                         <AccentField label="Age Range" value={partnerAgeRange} />
-                                        <AccentField label="Height" value={partner_expectations.height || null} />
-                                        <AccentField label="Religion" value={partner_expectations.religion?.name || null} />
-                                        <AccentField label="Marital Status" value={partner_expectations.marital_status?.name || null} />
-                                        <AccentField label="Caste" value={partner_expectations.caste?.name || null} />
-                                        <AccentField label="Residence" value={partner_expectations.residence_country?.name || null} />
-                                        <AccentField label="Education" value={partner_expectations.education || null} />
-                                        <AccentField label="Language" value={partner_expectations.member_language?.name || null} />
-                                        <AccentField label="Family Values" value={partner_expectations.family_value?.name || null} />
+                                        <AccentField
+                                            label="Height"
+                                            value={partner_expectations.height || null}
+                                        />
+                                        <AccentField
+                                            label="Religion"
+                                            value={partner_expectations.religion?.name || null}
+                                        />
+                                        <AccentField
+                                            label="Marital Status"
+                                            value={
+                                                partner_expectations.marital_status?.name || null
+                                            }
+                                        />
+                                        <AccentField
+                                            label="Caste"
+                                            value={partner_expectations.caste?.name || null}
+                                        />
+                                        <AccentField
+                                            label="Residence"
+                                            value={
+                                                partner_expectations.residence_country?.name || null
+                                            }
+                                        />
+                                        <AccentField
+                                            label="Education"
+                                            value={partner_expectations.education || null}
+                                        />
+                                        <AccentField
+                                            label="Language"
+                                            value={
+                                                partner_expectations.member_language?.name || null
+                                            }
+                                        />
+                                        <AccentField
+                                            label="Family Values"
+                                            value={partner_expectations.family_value?.name || null}
+                                        />
                                     </FieldGrid>
                                     {partner_expectations.general && (
                                         <div className="rounded-2xl border border-rose-200/70 bg-white/80 p-3">
@@ -315,7 +452,8 @@ const BiodataPDFTemplate: React.FC<BiodataPDFTemplateProps> = ({ userData }) => 
                         Doctor Marriage Bureau
                     </div>
                     <p className="mt-1 text-[7px] text-slate-400">
-                        This document is confidential. Please respect privacy and do not distribute without permission.
+                        This document is confidential. Please respect privacy and do not distribute
+                        without permission.
                     </p>
                 </div>
             </div>
@@ -337,9 +475,7 @@ function Section({
     return (
         <section
             className={`break-inside-avoid-page rounded-[22px] border p-3 shadow-sm ${
-                accent
-                    ? 'border-rose-200/80 bg-rose-50/50'
-                    : 'border-slate-200/80 bg-white'
+                accent ? 'border-rose-200/80 bg-rose-50/50' : 'border-slate-200/80 bg-white'
             }`}
         >
             <div className="mb-2 flex items-center gap-2">
@@ -382,7 +518,9 @@ function CompactField({
     if (!text) return null;
 
     return (
-        <div className={`rounded-2xl border border-slate-200/70 bg-slate-50/70 px-2.5 py-2 ${className}`}>
+        <div
+            className={`rounded-2xl border border-slate-200/70 bg-slate-50/70 px-2.5 py-2 ${className}`}
+        >
             <div className="text-[7px] font-black uppercase tracking-[0.8px] text-slate-400">
                 {label}
             </div>
@@ -406,7 +544,9 @@ function AccentField({
     if (!text) return null;
 
     return (
-        <div className={`rounded-2xl border border-rose-200/70 bg-white/75 px-2.5 py-2 ${className}`}>
+        <div
+            className={`rounded-2xl border border-rose-200/70 bg-white/75 px-2.5 py-2 ${className}`}
+        >
             <div className="text-[7px] font-black uppercase tracking-[0.8px] text-rose-400">
                 {label}
             </div>
@@ -428,17 +568,14 @@ function ListSectionLabel({ icon, label }: { icon: React.ReactNode; label: strin
     );
 }
 
-function ProfileLineItem({
-    icon,
-    title,
-    subtitle,
-    accent,
-}: {
+type ProfileLineItemProps = {
     icon: React.ReactNode;
     title: any;
     subtitle?: any;
     accent: 'sky' | 'emerald';
-}) {
+};
+
+const ProfileLineItem: React.FC<ProfileLineItemProps> = ({ icon, title, subtitle, accent }) => {
     const text = renderValue(title);
     if (!text) return null;
 
@@ -449,13 +586,13 @@ function ProfileLineItem({
 
     return (
         <div className="flex items-start gap-2 rounded-2xl border border-slate-200/70 bg-slate-50/60 px-2.5 py-2.5">
-            <div className={`mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-xl border ${accentClasses}`}>
+            <div
+                className={`mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-xl border ${accentClasses}`}
+            >
                 {icon}
             </div>
             <div className="min-w-0 flex-1">
-                <div className="text-[11px] font-bold leading-tight text-slate-900">
-                    {text}
-                </div>
+                <div className="text-[11px] font-bold leading-tight text-slate-900">{text}</div>
                 {renderValue(subtitle) && (
                     <div className="mt-0.5 text-[8px] uppercase tracking-[0.35em] text-slate-500">
                         {renderValue(subtitle)}
@@ -464,7 +601,7 @@ function ProfileLineItem({
             </div>
         </div>
     );
-}
+};
 
 function EmptyBlock() {
     return (

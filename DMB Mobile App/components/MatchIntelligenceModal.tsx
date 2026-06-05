@@ -1,9 +1,8 @@
 import React from 'react';
 import { View, Text, Modal, TouchableOpacity, ScrollView } from 'react-native';
-import { BlurView } from 'expo-blur';
-import { MotiView, MotiText } from 'moti';
+import { MotiView } from 'moti';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SparklesIcon, XCircleIcon, CheckCircleIcon, StarIcon, BrainIcon } from './Icons';
+import { SparklesIcon, XCircleIcon, CheckCircleIcon } from './Icons';
 import { useTranslation } from 'react-i18next';
 
 interface MatchIntelligenceModalProps {
@@ -26,19 +25,18 @@ const TRAITS = [
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-export default function MatchIntelligenceModal({ visible, onClose, match }: MatchIntelligenceModalProps) {
+export default function MatchIntelligenceModal({
+    visible,
+    onClose,
+    match,
+}: MatchIntelligenceModalProps) {
     const insets = useSafeAreaInsets();
     const { t } = useTranslation();
 
     if (!match) return null;
 
     return (
-        <Modal
-            animationType="slide"
-            transparent={true}
-            visible={visible}
-            onRequestClose={onClose}
-        >
+        <Modal animationType="slide" transparent={true} visible={visible} onRequestClose={onClose}>
             <View className="flex-1 justify-end">
                 <TouchableOpacity
                     className="absolute inset-0 bg-black/50"
@@ -68,27 +66,43 @@ export default function MatchIntelligenceModal({ visible, onClose, match }: Matc
                             <SparklesIcon size={32} color="#fbbf24" />
                         </View>
 
-                        <Text className="text-white text-3xl font-bold mb-1">{t('matchIntelligence.match', { percentage: match.percentage || 94 })}</Text>
-                        <Text className="text-blue-200 font-medium">{t('matchIntelligence.excellentCompatibility')}</Text>
+                        <Text className="text-white text-3xl font-bold mb-1">
+                            {t('matchIntelligence.match', { percentage: match.percentage || 94 })}
+                        </Text>
+                        <Text className="text-blue-200 font-medium">
+                            {t('matchIntelligence.excellentCompatibility')}
+                        </Text>
                     </LinearGradient>
 
                     <ScrollView className="flex-1 px-6 pt-6 -mt-6 bg-white rounded-t-[32px]">
                         <View className="mb-8">
-                            <Text className="text-lg font-bold text-slate-800 mb-4">{t('matchIntelligence.whyYouMatch', { name: match.name })}</Text>
+                            <Text className="text-lg font-bold text-slate-800 mb-4">
+                                {t('matchIntelligence.whyYouMatch', { name: match.name })}
+                            </Text>
                             <Text className="text-slate-600 leading-6 bg-blue-50 p-4 rounded-2xl border border-blue-100">
-                                <Text className="font-bold text-blue-800">{t('matchIntelligence.aiInsight')}</Text>
-                                {t('matchIntelligence.aiInsightDesc', { specialty: match.specialty || 'medicine' })}
+                                <Text className="font-bold text-blue-800">
+                                    {t('matchIntelligence.aiInsight')}
+                                </Text>
+                                {t('matchIntelligence.aiInsightDesc', {
+                                    specialty: match.specialty || 'medicine',
+                                })}
                             </Text>
                         </View>
 
                         <View className="mb-8">
-                            <Text className="text-lg font-bold text-slate-800 mb-4">{t('matchIntelligence.compatibilityBreakdown')}</Text>
+                            <Text className="text-lg font-bold text-slate-800 mb-4">
+                                {t('matchIntelligence.compatibilityBreakdown')}
+                            </Text>
                             <View className="space-y-4">
                                 {TRAITS.map((trait, index) => (
                                     <View key={index}>
                                         <View className="flex-row justify-between mb-2">
-                                            <Text className="text-slate-600 font-medium">{trait.label}</Text>
-                                            <Text className="text-slate-900 font-bold">{trait.score}%</Text>
+                                            <Text className="text-slate-600 font-medium">
+                                                {trait.label}
+                                            </Text>
+                                            <Text className="text-slate-900 font-bold">
+                                                {trait.score}%
+                                            </Text>
                                         </View>
                                         <View className="h-2 bg-slate-100 rounded-full overflow-hidden">
                                             <MotiView
@@ -97,7 +111,7 @@ export default function MatchIntelligenceModal({ visible, onClose, match }: Matc
                                                 transition={{
                                                     type: 'timing',
                                                     duration: 1000,
-                                                    delay: 300 + (index * 100)
+                                                    delay: 300 + index * 100,
                                                 }}
                                                 className={`h-full rounded-full ${trait.color}`}
                                             />
@@ -112,8 +126,14 @@ export default function MatchIntelligenceModal({ visible, onClose, match }: Matc
                                 <CheckCircleIcon size={20} color="#16a34a" />
                             </View>
                             <View className="flex-1">
-                                <Text className="font-bold text-green-900">{t('matchIntelligence.recommendedTopic')}</Text>
-                                <Text className="text-green-700 text-sm">{t('matchIntelligence.recommendedTopicDesc', { specialty: match.specialty || 'their field' })}</Text>
+                                <Text className="font-bold text-green-900">
+                                    {t('matchIntelligence.recommendedTopic')}
+                                </Text>
+                                <Text className="text-green-700 text-sm">
+                                    {t('matchIntelligence.recommendedTopicDesc', {
+                                        specialty: match.specialty || 'their field',
+                                    })}
+                                </Text>
                             </View>
                         </View>
                     </ScrollView>

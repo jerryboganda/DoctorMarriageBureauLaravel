@@ -1,8 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-    Users, ShieldCheck, FileText, Share2, Download, Plus, CheckCircle2,
-    Clock, XCircle, ChevronRight, QrCode, Mail, Lock, Heart, Eye, Loader2, Save, X,
-    Edit2, Trash2, Phone, AlertCircle, UserPlus
+    Users,
+    ShieldCheck,
+    FileText,
+    Download,
+    Plus,
+    CheckCircle2,
+    XCircle,
+    QrCode,
+    Mail,
+    Heart,
+    Loader2,
+    Save,
+    X,
+    Edit2,
+    Trash2,
+    Phone,
+    AlertCircle,
+    UserPlus,
 } from 'lucide-react';
 import { useAuthStore } from '../src/stores/authStore';
 import { api } from '../utils/api';
@@ -47,22 +62,15 @@ const FamilyPortalView: React.FC<FamilyPortalViewProps> = ({ biodataOnly = false
     const { t } = useTranslation();
     const { user } = useAuthStore();
     const [showQr, setShowQr] = useState(false);
-    const [activeTab, setActiveTab] = useState<'profile' | 'guardians' | 'approvals' | 'biodata'>('profile');
+    const [activeTab, setActiveTab] = useState<'profile' | 'guardians' | 'approvals' | 'biodata'>(
+        'profile',
+    );
     const [loading, setLoading] = useState(!biodataOnly);
     const [familyData, setFamilyData] = useState<{
         profile: FamilyProfile;
         guardians: Guardian[];
         approvals: Approval[];
     } | null>(null);
-
-    useEffect(() => {
-        if (biodataOnly) {
-            setLoading(false);
-            return;
-        }
-
-        fetchFamilyData();
-    }, [biodataOnly]);
 
     const fetchFamilyData = async () => {
         try {
@@ -76,6 +84,15 @@ const FamilyPortalView: React.FC<FamilyPortalViewProps> = ({ biodataOnly = false
         }
     };
 
+    useEffect(() => {
+        if (biodataOnly) {
+            setLoading(false);
+            return;
+        }
+
+        fetchFamilyData();
+    }, [biodataOnly]);
+
     if (biodataOnly) {
         return (
             <div className="flex-1 flex flex-col h-full min-h-0 bg-slate-50 relative">
@@ -88,14 +105,25 @@ const FamilyPortalView: React.FC<FamilyPortalViewProps> = ({ biodataOnly = false
                 {showQr && (
                     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                         <div className="bg-white rounded-2xl p-8 text-center max-w-sm w-full animate-in zoom-in-95">
-                            <h3 className="text-xl font-bold text-slate-900 mb-2">{t('family.shareBiodata')}</h3>
-                            <p className="text-sm text-slate-500 mb-6">{t('family.scanToView', { name: user?.name ?? 'member' })}</p>
+                            <h3 className="text-xl font-bold text-slate-900 mb-2">
+                                {t('family.shareBiodata')}
+                            </h3>
+                            <p className="text-sm text-slate-500 mb-6">
+                                {t('family.scanToView', { name: user?.name ?? 'member' })}
+                            </p>
                             <div className="bg-white p-4 rounded-xl border-2 border-slate-900 inline-block mb-6">
                                 <QrCode size={160} className="text-slate-900" />
                             </div>
                             <div className="flex gap-3">
-                                <button onClick={() => setShowQr(false)} className="flex-1 py-2 text-slate-500 font-bold hover:bg-slate-50 rounded-lg">{t('family.close')}</button>
-                                <button className="flex-1 py-2 bg-primary text-white font-bold rounded-lg hover:bg-primary-hover">{t('family.copyLink')}</button>
+                                <button
+                                    onClick={() => setShowQr(false)}
+                                    className="flex-1 py-2 text-slate-500 font-bold hover:bg-slate-50 rounded-lg"
+                                >
+                                    {t('family.close')}
+                                </button>
+                                <button className="flex-1 py-2 bg-primary text-white font-bold rounded-lg hover:bg-primary-hover">
+                                    {t('family.copyLink')}
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -124,36 +152,77 @@ const FamilyPortalView: React.FC<FamilyPortalViewProps> = ({ biodataOnly = false
                     <p className="text-sm text-slate-500">{t('family.subtitle')}</p>
                 </div>
                 <div className="flex bg-slate-100 p-1 rounded-lg w-full md:w-auto overflow-x-auto scrollbar-hide">
-                    <TabButton label={t('family.tabs.familyProfile')} active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} />
-                    <TabButton label={t('family.tabs.guardians')} active={activeTab === 'guardians'} onClick={() => setActiveTab('guardians')} />
-                    <TabButton label={t('family.tabs.approvals')} active={activeTab === 'approvals'} onClick={() => setActiveTab('approvals')} badge={familyData?.approvals.filter(a => !a.approved).length.toString()} />
-                    <TabButton label={t('family.tabs.biodata')} active={activeTab === 'biodata'} onClick={() => setActiveTab('biodata')} />
+                    <TabButton
+                        label={t('family.tabs.familyProfile')}
+                        active={activeTab === 'profile'}
+                        onClick={() => setActiveTab('profile')}
+                    />
+                    <TabButton
+                        label={t('family.tabs.guardians')}
+                        active={activeTab === 'guardians'}
+                        onClick={() => setActiveTab('guardians')}
+                    />
+                    <TabButton
+                        label={t('family.tabs.approvals')}
+                        active={activeTab === 'approvals'}
+                        onClick={() => setActiveTab('approvals')}
+                        badge={familyData?.approvals.filter((a) => !a.approved).length.toString()}
+                    />
+                    <TabButton
+                        label={t('family.tabs.biodata')}
+                        active={activeTab === 'biodata'}
+                        onClick={() => setActiveTab('biodata')}
+                    />
                 </div>
             </header>
 
             {/* Main Content */}
             <div className="flex-1 overflow-y-auto p-4 md:p-8 scrollbar-hide">
                 <div className="max-w-6xl mx-auto">
-
-                    {activeTab === 'profile' && familyData && <FamilyProfileSection profile={familyData.profile} onUpdate={fetchFamilyData} />}
-                    {activeTab === 'guardians' && familyData && <GuardiansSection guardians={familyData.guardians} onRefresh={fetchFamilyData} />}
-                    {activeTab === 'approvals' && familyData && <ApprovalsSection approvals={familyData.approvals} onRefresh={fetchFamilyData} />}
+                    {activeTab === 'profile' && familyData && (
+                        <FamilyProfileSection
+                            profile={familyData.profile}
+                            onUpdate={fetchFamilyData}
+                        />
+                    )}
+                    {activeTab === 'guardians' && familyData && (
+                        <GuardiansSection
+                            guardians={familyData.guardians}
+                            onRefresh={fetchFamilyData}
+                        />
+                    )}
+                    {activeTab === 'approvals' && familyData && (
+                        <ApprovalsSection
+                            approvals={familyData.approvals}
+                            onRefresh={fetchFamilyData}
+                        />
+                    )}
                     {activeTab === 'biodata' && <BiodataSection onShowQr={() => setShowQr(true)} />}
-
                 </div>
             </div>
 
             {showQr && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl p-8 text-center max-w-sm w-full animate-in zoom-in-95">
-                        <h3 className="text-xl font-bold text-slate-900 mb-2">{t('family.shareBiodata')}</h3>
-                        <p className="text-sm text-slate-500 mb-6">{t('family.scanToView', { name: user?.name ?? 'member' })}</p>
+                        <h3 className="text-xl font-bold text-slate-900 mb-2">
+                            {t('family.shareBiodata')}
+                        </h3>
+                        <p className="text-sm text-slate-500 mb-6">
+                            {t('family.scanToView', { name: user?.name ?? 'member' })}
+                        </p>
                         <div className="bg-white p-4 rounded-xl border-2 border-slate-900 inline-block mb-6">
                             <QrCode size={160} className="text-slate-900" />
                         </div>
                         <div className="flex gap-3">
-                            <button onClick={() => setShowQr(false)} className="flex-1 py-2 text-slate-500 font-bold hover:bg-slate-50 rounded-lg">{t('family.close')}</button>
-                            <button className="flex-1 py-2 bg-primary text-white font-bold rounded-lg hover:bg-primary-hover">{t('family.copyLink')}</button>
+                            <button
+                                onClick={() => setShowQr(false)}
+                                className="flex-1 py-2 text-slate-500 font-bold hover:bg-slate-50 rounded-lg"
+                            >
+                                {t('family.close')}
+                            </button>
+                            <button className="flex-1 py-2 bg-primary text-white font-bold rounded-lg hover:bg-primary-hover">
+                                {t('family.copyLink')}
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -164,7 +233,10 @@ const FamilyPortalView: React.FC<FamilyPortalViewProps> = ({ biodataOnly = false
 
 /* --- Sections --- */
 
-const FamilyProfileSection: React.FC<{ profile: FamilyProfile, onUpdate: () => void }> = ({ profile, onUpdate }) => {
+const FamilyProfileSection: React.FC<{ profile: FamilyProfile; onUpdate: () => void }> = ({
+    profile,
+    onUpdate,
+}) => {
     const { t } = useTranslation();
     const [description, setDescription] = useState(profile.description);
     const [tradition, setTradition] = useState(profile.traditionLevel);
@@ -184,13 +256,13 @@ const FamilyProfileSection: React.FC<{ profile: FamilyProfile, onUpdate: () => v
     const addInterest = () => {
         const val = interestInput.trim();
         if (!val) return;
-        if (interests.some(i => i.toLowerCase() === val.toLowerCase())) return;
-        setInterests(prev => [...prev, val]);
+        if (interests.some((i) => i.toLowerCase() === val.toLowerCase())) return;
+        setInterests((prev) => [...prev, val]);
         setInterestInput('');
     };
 
     const removeInterest = (tag: string) => {
-        setInterests(prev => prev.filter(i => i !== tag));
+        setInterests((prev) => prev.filter((i) => i !== tag));
     };
 
     const handleSave = async () => {
@@ -200,7 +272,7 @@ const FamilyProfileSection: React.FC<{ profile: FamilyProfile, onUpdate: () => v
                 description,
                 traditionLevel: tradition,
                 affluenceLevel: affluence,
-                interests
+                interests,
             });
             onUpdate();
         } catch (error) {
@@ -225,7 +297,7 @@ const FamilyProfileSection: React.FC<{ profile: FamilyProfile, onUpdate: () => v
             const formData = new FormData();
             formData.append('photo', compressedFile);
             await api.post('/family/photo/upload', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
+                headers: { 'Content-Type': 'multipart/form-data' },
             });
             onUpdate();
         } catch (error) {
@@ -255,13 +327,19 @@ const FamilyProfileSection: React.FC<{ profile: FamilyProfile, onUpdate: () => v
             <div className="lg:col-span-2 space-y-6">
                 <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                     <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-bold text-slate-900">{t('family.aboutFamily')}</h3>
+                        <h3 className="text-lg font-bold text-slate-900">
+                            {t('family.aboutFamily')}
+                        </h3>
                         <button
                             onClick={handleSave}
                             disabled={saving}
                             className="flex items-center gap-2 px-4 py-1.5 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary-hover disabled:opacity-50"
                         >
-                            {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                            {saving ? (
+                                <Loader2 size={14} className="animate-spin" />
+                            ) : (
+                                <Save size={14} />
+                            )}
                             {t('family.saveChanges')}
                         </button>
                     </div>
@@ -271,15 +349,21 @@ const FamilyProfileSection: React.FC<{ profile: FamilyProfile, onUpdate: () => v
                         onChange={(e) => setDescription(e.target.value)}
                     ></textarea>
                     <div className="flex justify-end mt-2">
-                        <span className="text-xs text-slate-400">{t('family.visibleToAccepted')}</span>
+                        <span className="text-xs text-slate-400">
+                            {t('family.visibleToAccepted')}
+                        </span>
                     </div>
                 </div>
 
                 <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <h3 className="text-lg font-bold text-slate-900 mb-4">{t('family.familyValues')}</h3>
+                    <h3 className="text-lg font-bold text-slate-900 mb-4">
+                        {t('family.familyValues')}
+                    </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-700 uppercase">{t('family.traditionLevel')}</label>
+                            <label className="text-xs font-bold text-slate-700 uppercase">
+                                {t('family.traditionLevel')}
+                            </label>
                             <select
                                 className="w-full p-2.5 border border-slate-200 rounded-lg text-sm bg-white"
                                 value={tradition}
@@ -291,7 +375,9 @@ const FamilyProfileSection: React.FC<{ profile: FamilyProfile, onUpdate: () => v
                             </select>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-700 uppercase">{t('family.affluenceStatus')}</label>
+                            <label className="text-xs font-bold text-slate-700 uppercase">
+                                {t('family.affluenceStatus')}
+                            </label>
                             <select
                                 className="w-full p-2.5 border border-slate-200 rounded-lg text-sm bg-white"
                                 value={affluence}
@@ -304,10 +390,15 @@ const FamilyProfileSection: React.FC<{ profile: FamilyProfile, onUpdate: () => v
                         </div>
                     </div>
                     <div className="mt-4">
-                        <label className="text-xs font-bold text-slate-700 uppercase mb-2 block">{t('family.commonInterests')}</label>
+                        <label className="text-xs font-bold text-slate-700 uppercase mb-2 block">
+                            {t('family.commonInterests')}
+                        </label>
                         <div className="flex flex-wrap gap-2 mb-3">
-                            {interests.map(t => (
-                                <span key={t} className="inline-flex items-center gap-1 px-3 py-1 bg-slate-100 rounded-full text-xs font-medium text-slate-600 border border-slate-200 group">
+                            {interests.map((t) => (
+                                <span
+                                    key={t}
+                                    className="inline-flex items-center gap-1 px-3 py-1 bg-slate-100 rounded-full text-xs font-medium text-slate-600 border border-slate-200 group"
+                                >
                                     {t}
                                     <button
                                         type="button"
@@ -348,7 +439,9 @@ const FamilyProfileSection: React.FC<{ profile: FamilyProfile, onUpdate: () => v
 
             <div className="space-y-6">
                 <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <h3 className="text-lg font-bold text-slate-900 mb-4">{t('family.familyPhotos')}</h3>
+                    <h3 className="text-lg font-bold text-slate-900 mb-4">
+                        {t('family.familyPhotos')}
+                    </h3>
                     <input
                         ref={fileInputRef}
                         type="file"
@@ -363,10 +456,17 @@ const FamilyProfileSection: React.FC<{ profile: FamilyProfile, onUpdate: () => v
                             disabled={uploading}
                             className="aspect-square bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 cursor-pointer hover:bg-slate-200 transition-colors disabled:opacity-60"
                         >
-                            {uploading ? <Loader2 size={22} className="animate-spin" /> : <Plus size={24} />}
+                            {uploading ? (
+                                <Loader2 size={22} className="animate-spin" />
+                            ) : (
+                                <Plus size={24} />
+                            )}
                         </button>
-                        {profile.photos.map(photo => (
-                            <div key={photo.id} className="aspect-square bg-slate-200 rounded-lg overflow-hidden relative group">
+                        {profile.photos.map((photo) => (
+                            <div
+                                key={photo.id}
+                                className="aspect-square bg-slate-200 rounded-lg overflow-hidden relative group"
+                            >
                                 <img src={photo.url} className="w-full h-full object-cover" />
                                 <button
                                     type="button"
@@ -374,7 +474,11 @@ const FamilyProfileSection: React.FC<{ profile: FamilyProfile, onUpdate: () => v
                                     disabled={deletingPhotoId === photo.id}
                                     className="absolute top-1 right-1 p-1 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-70"
                                 >
-                                    {deletingPhotoId === photo.id ? <Loader2 size={14} className="animate-spin" /> : <XCircle size={14} />}
+                                    {deletingPhotoId === photo.id ? (
+                                        <Loader2 size={14} className="animate-spin" />
+                                    ) : (
+                                        <XCircle size={14} />
+                                    )}
                                 </button>
                             </div>
                         ))}
@@ -386,7 +490,10 @@ const FamilyProfileSection: React.FC<{ profile: FamilyProfile, onUpdate: () => v
     );
 };
 
-const GuardiansSection: React.FC<{ guardians: Guardian[]; onRefresh: () => void }> = ({ guardians, onRefresh }) => {
+const GuardiansSection: React.FC<{ guardians: Guardian[]; onRefresh: () => void }> = ({
+    guardians,
+    onRefresh,
+}) => {
     const { t } = useTranslation();
     const [showInvite, setShowInvite] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -424,15 +531,27 @@ const GuardiansSection: React.FC<{ guardians: Guardian[]; onRefresh: () => void 
                 phone: form.phone.trim() || null,
                 is_primary_contact: form.is_primary_contact,
             });
-            setForm({ name: '', relationship: '', email: '', phone: '', is_primary_contact: false });
+            setForm({
+                name: '',
+                relationship: '',
+                email: '',
+                phone: '',
+                is_primary_contact: false,
+            });
             setShowInvite(false);
-            showToast('success', form.email.trim()
-                ? `Guardian added! Invitation email sent to ${form.email.trim()}`
-                : 'Guardian added successfully!');
+            showToast(
+                'success',
+                form.email.trim()
+                    ? `Guardian added! Invitation email sent to ${form.email.trim()}`
+                    : 'Guardian added successfully!',
+            );
             onRefresh();
         } catch (error: any) {
             console.error('Failed to invite guardian', error);
-            showToast('error', error?.response?.data?.message || 'Failed to add guardian. Please try again.');
+            showToast(
+                'error',
+                error?.response?.data?.message || 'Failed to add guardian. Please try again.',
+            );
         } finally {
             setSaving(false);
         }
@@ -471,7 +590,12 @@ const GuardiansSection: React.FC<{ guardians: Guardian[]; onRefresh: () => void 
     };
 
     const handleRemove = async (guardian: Guardian) => {
-        if (!window.confirm(`Are you sure you want to remove ${guardian.name} from the family portal?`)) return;
+        if (
+            !window.confirm(
+                `Are you sure you want to remove ${guardian.name} from the family portal?`,
+            )
+        )
+            return;
         try {
             setActiveGuardianId(guardian.id);
             await api.delete(`/family/guardian/delete/${guardian.id}`);
@@ -489,21 +613,40 @@ const GuardiansSection: React.FC<{ guardians: Guardian[]; onRefresh: () => void 
         <div className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4">
             {/* Toast notification */}
             {toast && (
-                <div className={`fixed top-6 right-6 z-50 flex items-center gap-2 px-5 py-3 rounded-xl shadow-lg text-sm font-medium animate-in slide-in-from-right-5 ${toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
-                    }`}>
-                    {toast.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+                <div
+                    className={`fixed top-6 right-6 z-50 flex items-center gap-2 px-5 py-3 rounded-xl shadow-lg text-sm font-medium animate-in slide-in-from-right-5 ${
+                        toast.type === 'success'
+                            ? 'bg-green-600 text-white'
+                            : 'bg-red-600 text-white'
+                    }`}
+                >
+                    {toast.type === 'success' ? (
+                        <CheckCircle2 size={16} />
+                    ) : (
+                        <AlertCircle size={16} />
+                    )}
                     {toast.message}
-                    <button onClick={() => setToast(null)} className="ml-2 opacity-70 hover:opacity-100"><X size={14} /></button>
+                    <button
+                        onClick={() => setToast(null)}
+                        className="ml-2 opacity-70 hover:opacity-100"
+                    >
+                        <X size={14} />
+                    </button>
                 </div>
             )}
 
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h3 className="text-lg font-bold text-slate-900">{t('family.guardiansPermissions')}</h3>
+                    <h3 className="text-lg font-bold text-slate-900">
+                        {t('family.guardiansPermissions')}
+                    </h3>
                     <p className="text-sm text-slate-500">{t('family.guardianControlDesc')}</p>
                 </div>
                 <button
-                    onClick={() => { setShowInvite(!showInvite); setEditingGuardian(null); }}
+                    onClick={() => {
+                        setShowInvite(!showInvite);
+                        setEditingGuardian(null);
+                    }}
                     className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-bold hover:bg-slate-800 transition-colors"
                 >
                     {showInvite ? <X size={16} /> : <UserPlus size={16} />}
@@ -514,11 +657,14 @@ const GuardiansSection: React.FC<{ guardians: Guardian[]; onRefresh: () => void 
             {showInvite && (
                 <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-6 animate-in fade-in slide-in-from-top-2">
                     <h4 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                        <UserPlus size={16} className="text-primary" /> {t('family.addFamilyGuardian')}
+                        <UserPlus size={16} className="text-primary" />{' '}
+                        {t('family.addFamilyGuardian')}
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label className="text-xs font-bold text-slate-600 uppercase mb-1 block">{t('family.fullName')}</label>
+                            <label className="text-xs font-bold text-slate-600 uppercase mb-1 block">
+                                {t('family.fullName')}
+                            </label>
                             <input
                                 className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:border-primary focus:ring-1 focus:ring-primary/20 focus:outline-none"
                                 placeholder="e.g. Ahmed Khan"
@@ -527,7 +673,9 @@ const GuardiansSection: React.FC<{ guardians: Guardian[]; onRefresh: () => void 
                             />
                         </div>
                         <div>
-                            <label className="text-xs font-bold text-slate-600 uppercase mb-1 block">{t('family.relationship')}</label>
+                            <label className="text-xs font-bold text-slate-600 uppercase mb-1 block">
+                                {t('family.relationship')}
+                            </label>
                             <select
                                 className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white focus:border-primary focus:ring-1 focus:ring-primary/20 focus:outline-none"
                                 value={form.relationship}
@@ -547,7 +695,9 @@ const GuardiansSection: React.FC<{ guardians: Guardian[]; onRefresh: () => void 
                             </select>
                         </div>
                         <div>
-                            <label className="text-xs font-bold text-slate-600 uppercase mb-1 block">{t('family.emailLabel')}</label>
+                            <label className="text-xs font-bold text-slate-600 uppercase mb-1 block">
+                                {t('family.emailLabel')}
+                            </label>
                             <input
                                 className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:border-primary focus:ring-1 focus:ring-primary/20 focus:outline-none"
                                 placeholder={t('family.optionalPlaceholder')}
@@ -557,7 +707,9 @@ const GuardiansSection: React.FC<{ guardians: Guardian[]; onRefresh: () => void 
                             />
                         </div>
                         <div>
-                            <label className="text-xs font-bold text-slate-600 uppercase mb-1 block">{t('family.phoneLabel')}</label>
+                            <label className="text-xs font-bold text-slate-600 uppercase mb-1 block">
+                                {t('family.phoneLabel')}
+                            </label>
                             <input
                                 className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:border-primary focus:ring-1 focus:ring-primary/20 focus:outline-none"
                                 placeholder={t('family.optionalPlaceholder')}
@@ -572,7 +724,9 @@ const GuardiansSection: React.FC<{ guardians: Guardian[]; onRefresh: () => void 
                             type="checkbox"
                             className="accent-primary w-4 h-4"
                             checked={form.is_primary_contact}
-                            onChange={(e) => setForm({ ...form, is_primary_contact: e.target.checked })}
+                            onChange={(e) =>
+                                setForm({ ...form, is_primary_contact: e.target.checked })
+                            }
                         />
                         {t('family.setPrimaryContact')}
                     </label>
@@ -582,11 +736,24 @@ const GuardiansSection: React.FC<{ guardians: Guardian[]; onRefresh: () => void 
                             disabled={saving || !form.name.trim() || !form.relationship.trim()}
                             className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary-hover disabled:opacity-50 transition-colors"
                         >
-                            {saving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+                            {saving ? (
+                                <Loader2 size={14} className="animate-spin" />
+                            ) : (
+                                <Plus size={14} />
+                            )}
                             {saving ? t('family.adding') : t('family.addGuardian')}
                         </button>
                         <button
-                            onClick={() => { setShowInvite(false); setForm({ name: '', relationship: '', email: '', phone: '', is_primary_contact: false }); }}
+                            onClick={() => {
+                                setShowInvite(false);
+                                setForm({
+                                    name: '',
+                                    relationship: '',
+                                    email: '',
+                                    phone: '',
+                                    is_primary_contact: false,
+                                });
+                            }}
                             className="px-5 py-2.5 text-slate-500 rounded-lg text-sm font-bold hover:text-slate-700 hover:bg-slate-50 transition-colors"
                         >
                             Cancel
@@ -598,7 +765,9 @@ const GuardiansSection: React.FC<{ guardians: Guardian[]; onRefresh: () => void 
             {guardians.length === 0 && !showInvite && (
                 <div className="bg-white p-12 rounded-xl border border-slate-200 shadow-sm text-center">
                     <Users size={40} className="text-slate-300 mx-auto mb-4" />
-                    <h4 className="text-lg font-bold text-slate-700 mb-2">{t('family.noGuardians')}</h4>
+                    <h4 className="text-lg font-bold text-slate-700 mb-2">
+                        {t('family.noGuardians')}
+                    </h4>
                     <p className="text-sm text-slate-500 mb-4">{t('family.noGuardiansDesc')}</p>
                     <button
                         onClick={() => setShowInvite(true)}
@@ -610,31 +779,45 @@ const GuardiansSection: React.FC<{ guardians: Guardian[]; onRefresh: () => void 
             )}
 
             <div className="space-y-4">
-                {guardians.map(g => (
+                {guardians.map((g) => (
                     <div key={g.id}>
                         {editingGuardian?.id === g.id ? (
                             /* Inline Edit Form */
                             <div className="bg-white p-5 rounded-xl border-2 border-primary/30 shadow-sm animate-in fade-in">
                                 <h4 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                                    <Edit2 size={14} className="text-primary" /> {t('family.editing', { name: g.name })}
+                                    <Edit2 size={14} className="text-primary" />{' '}
+                                    {t('family.editing', { name: g.name })}
                                 </h4>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <label className="text-xs font-bold text-slate-600 uppercase mb-1 block">{t('family.name')}</label>
+                                        <label className="text-xs font-bold text-slate-600 uppercase mb-1 block">
+                                            {t('family.name')}
+                                        </label>
                                         <input
                                             className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:border-primary focus:ring-1 focus:ring-primary/20 focus:outline-none"
                                             value={editForm.name}
-                                            onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                                            onChange={(e) =>
+                                                setEditForm({ ...editForm, name: e.target.value })
+                                            }
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-xs font-bold text-slate-600 uppercase mb-1 block">{t('family.relationship')}</label>
+                                        <label className="text-xs font-bold text-slate-600 uppercase mb-1 block">
+                                            {t('family.relationship')}
+                                        </label>
                                         <select
                                             className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white focus:border-primary focus:ring-1 focus:ring-primary/20 focus:outline-none"
                                             value={editForm.relationship}
-                                            onChange={(e) => setEditForm({ ...editForm, relationship: e.target.value })}
+                                            onChange={(e) =>
+                                                setEditForm({
+                                                    ...editForm,
+                                                    relationship: e.target.value,
+                                                })
+                                            }
                                         >
-                                            <option value="">{t('family.selectRelationship')}</option>
+                                            <option value="">
+                                                {t('family.selectRelationship')}
+                                            </option>
                                             <option>{t('family.father')}</option>
                                             <option>{t('family.mother')}</option>
                                             <option>{t('family.brother')}</option>
@@ -648,32 +831,50 @@ const GuardiansSection: React.FC<{ guardians: Guardian[]; onRefresh: () => void 
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="text-xs font-bold text-slate-600 uppercase mb-1 block">{t('family.emailLabel')}</label>
+                                        <label className="text-xs font-bold text-slate-600 uppercase mb-1 block">
+                                            {t('family.emailLabel')}
+                                        </label>
                                         <input
                                             className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:border-primary focus:ring-1 focus:ring-primary/20 focus:outline-none"
                                             type="email"
                                             value={editForm.email}
-                                            onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                                            onChange={(e) =>
+                                                setEditForm({ ...editForm, email: e.target.value })
+                                            }
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-xs font-bold text-slate-600 uppercase mb-1 block">{t('family.phoneLabel')}</label>
+                                        <label className="text-xs font-bold text-slate-600 uppercase mb-1 block">
+                                            {t('family.phoneLabel')}
+                                        </label>
                                         <input
                                             className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:border-primary focus:ring-1 focus:ring-primary/20 focus:outline-none"
                                             type="tel"
                                             value={editForm.phone}
-                                            onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                                            onChange={(e) =>
+                                                setEditForm({ ...editForm, phone: e.target.value })
+                                            }
                                         />
                                     </div>
                                 </div>
                                 <div className="flex gap-3 mt-4">
                                     <button
                                         onClick={handleSaveEdit}
-                                        disabled={activeGuardianId === g.id || !editForm.name.trim() || !editForm.relationship.trim()}
+                                        disabled={
+                                            activeGuardianId === g.id ||
+                                            !editForm.name.trim() ||
+                                            !editForm.relationship.trim()
+                                        }
                                         className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary-hover disabled:opacity-50 transition-colors"
                                     >
-                                        {activeGuardianId === g.id ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-                                        {activeGuardianId === g.id ? t('family.saving') : t('family.saveChanges')}
+                                        {activeGuardianId === g.id ? (
+                                            <Loader2 size={14} className="animate-spin" />
+                                        ) : (
+                                            <Save size={14} />
+                                        )}
+                                        {activeGuardianId === g.id
+                                            ? t('family.saving')
+                                            : t('family.saveChanges')}
                                     </button>
                                     <button
                                         onClick={() => setEditingGuardian(null)}
@@ -693,8 +894,16 @@ const GuardiansSection: React.FC<{ guardians: Guardian[]; onRefresh: () => void 
                                     <div className="min-w-0">
                                         <h4 className="font-bold text-slate-900 flex items-center gap-2 flex-wrap">
                                             {g.name}
-                                            {g.isOwner && <span className="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full uppercase font-bold">{t('family.you')}</span>}
-                                            {g.isPrimaryContact && <span className="bg-amber-100 text-amber-700 text-[10px] px-2 py-0.5 rounded-full uppercase font-bold">{t('family.primary')}</span>}
+                                            {g.isOwner && (
+                                                <span className="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full uppercase font-bold">
+                                                    {t('family.you')}
+                                                </span>
+                                            )}
+                                            {g.isPrimaryContact && (
+                                                <span className="bg-amber-100 text-amber-700 text-[10px] px-2 py-0.5 rounded-full uppercase font-bold">
+                                                    {t('family.primary')}
+                                                </span>
+                                            )}
                                         </h4>
                                         <p className="text-sm text-slate-600 mt-0.5">{g.role}</p>
                                         {g.email && (
@@ -711,12 +920,20 @@ const GuardiansSection: React.FC<{ guardians: Guardian[]; onRefresh: () => void 
                                 </div>
 
                                 <div className="flex items-center gap-3 shrink-0 border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6">
-                                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${g.status === 'Verified' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                                        }`}>
-                                        {g.status === 'Verified' ? '✓ ' : '◷ '}{g.status}
+                                    <span
+                                        className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                                            g.status === 'Verified'
+                                                ? 'bg-green-100 text-green-700'
+                                                : 'bg-yellow-100 text-yellow-700'
+                                        }`}
+                                    >
+                                        {g.status === 'Verified' ? '✓ ' : '◷ '}
+                                        {g.status}
                                     </span>
                                     {g.isOwner ? (
-                                        <span className="px-2.5 py-1 bg-slate-100 rounded-full text-xs text-slate-600 font-medium">{t('family.fullAccess')}</span>
+                                        <span className="px-2.5 py-1 bg-slate-100 rounded-full text-xs text-slate-600 font-medium">
+                                            {t('family.fullAccess')}
+                                        </span>
                                     ) : (
                                         <div className="flex gap-2">
                                             <button
@@ -731,7 +948,11 @@ const GuardiansSection: React.FC<{ guardians: Guardian[]; onRefresh: () => void 
                                                 disabled={activeGuardianId === g.id}
                                                 className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors disabled:opacity-50"
                                             >
-                                                {activeGuardianId === g.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                                                {activeGuardianId === g.id ? (
+                                                    <Loader2 size={12} className="animate-spin" />
+                                                ) : (
+                                                    <Trash2 size={12} />
+                                                )}
                                                 {t('family.remove')}
                                             </button>
                                         </div>
@@ -748,14 +969,18 @@ const GuardiansSection: React.FC<{ guardians: Guardian[]; onRefresh: () => void 
                     <ShieldCheck size={18} /> Verification Status
                 </h4>
                 <p className="text-sm text-blue-800 mb-4">
-                    Verified guardians increase profile trust score by 40%. We verify via LinkedIn or Government ID (CNIC).
+                    Verified guardians increase profile trust score by 40%. We verify via LinkedIn
+                    or Government ID (CNIC).
                 </p>
             </div>
         </div>
     );
 };
 
-const ApprovalsSection: React.FC<{ approvals: Approval[]; onRefresh: () => void }> = ({ approvals, onRefresh }) => {
+const ApprovalsSection: React.FC<{ approvals: Approval[]; onRefresh: () => void }> = ({
+    approvals,
+    onRefresh,
+}) => {
     const { t } = useTranslation();
     const [processingId, setProcessingId] = useState<number | null>(null);
 
@@ -787,7 +1012,9 @@ const ApprovalsSection: React.FC<{ approvals: Approval[]; onRefresh: () => void 
         <div className="animate-in fade-in slide-in-from-bottom-4">
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h3 className="text-lg font-bold text-slate-900">{t('family.matchApprovalWorkflow')}</h3>
+                    <h3 className="text-lg font-bold text-slate-900">
+                        {t('family.matchApprovalWorkflow')}
+                    </h3>
                     <p className="text-sm text-slate-500">{t('family.matchApprovalDesc')}</p>
                 </div>
             </div>
@@ -796,23 +1023,27 @@ const ApprovalsSection: React.FC<{ approvals: Approval[]; onRefresh: () => void 
                 {approvals.length === 0 ? (
                     <div className="bg-white p-12 rounded-xl border border-slate-200 text-center">
                         <Heart className="mx-auto mb-4 text-slate-200" size={48} />
-                        <p className="text-slate-500 font-medium">{t('family.noPendingApprovals')}</p>
+                        <p className="text-slate-500 font-medium">
+                            {t('family.noPendingApprovals')}
+                        </p>
                     </div>
-                ) : approvals.map(a => (
-                    <ApprovalCard
-                        key={a.id}
-                        name={a.name}
-                        desc={a.desc}
-                        status={a.status}
-                        img={a.img}
-                        time={a.time}
-                        approved={a.approved}
-                        busy={processingId === a.id}
-                        onApprove={() => handleApprove(a.id)}
-                        onReject={() => handleReject(a.id)}
-                        t={t}
-                    />
-                ))}
+                ) : (
+                    approvals.map((a) => (
+                        <ApprovalCard
+                            key={a.id}
+                            name={a.name}
+                            desc={a.desc}
+                            status={a.status}
+                            img={a.img}
+                            time={a.time}
+                            approved={a.approved}
+                            busy={processingId === a.id}
+                            onApprove={() => handleApprove(a.id)}
+                            onReject={() => handleReject(a.id)}
+                            t={t}
+                        />
+                    ))
+                )}
             </div>
         </div>
     );
@@ -837,7 +1068,9 @@ const ApprovalCard: React.FC<{
                 <h4 className="font-bold text-slate-900">{name}</h4>
                 <p className="text-xs text-slate-500">{desc}</p>
                 <div className="flex items-center gap-2 mt-1">
-                    <span className={`size-2 rounded-full ${approved ? 'bg-green-500' : 'bg-orange-500'}`}></span>
+                    <span
+                        className={`size-2 rounded-full ${approved ? 'bg-green-500' : 'bg-orange-500'}`}
+                    ></span>
                     <span className="text-xs font-medium text-slate-600">{status}</span>
                 </div>
             </div>
@@ -856,7 +1089,13 @@ const ApprovalCard: React.FC<{
                 disabled={busy || approved}
                 className="px-4 py-2 rounded-lg bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-colors disabled:opacity-60"
             >
-                {busy ? <Loader2 size={16} className="animate-spin" /> : approved ? t('family.proceedToChat') : t('family.approve')}
+                {busy ? (
+                    <Loader2 size={16} className="animate-spin" />
+                ) : approved ? (
+                    t('family.proceedToChat')
+                ) : (
+                    t('family.approve')
+                )}
             </button>
         </div>
     </div>
@@ -888,9 +1127,11 @@ const BiodataSection: React.FC<{ onShowQr: () => void }> = ({ onShowQr }) => {
             URL.revokeObjectURL(blobUrl);
         } catch (error) {
             console.error('Failed to download biodata', error);
-            alert(t('family.biodataDownloadFailed') || 'Failed to download biodata. Please try again.');
-        }
-        finally {
+            alert(
+                t('family.biodataDownloadFailed') ||
+                    'Failed to download biodata. Please try again.',
+            );
+        } finally {
             setDownloading(false);
         }
     };
@@ -901,8 +1142,12 @@ const BiodataSection: React.FC<{ onShowQr: () => void }> = ({ onShowQr }) => {
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-2xl mb-4">
                     <FileText size={28} className="text-primary" />
                 </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2">{t('family.biodataBuilder')}</h3>
-                <p className="text-sm text-slate-500 max-w-md mx-auto">{t('family.biodataBuilderDesc')}</p>
+                <h3 className="text-xl font-bold text-slate-900 mb-2">
+                    {t('family.biodataBuilder')}
+                </h3>
+                <p className="text-sm text-slate-500 max-w-md mx-auto">
+                    {t('family.biodataBuilderDesc')}
+                </p>
             </div>
 
             {/* Preview Card */}
@@ -940,7 +1185,10 @@ const BiodataSection: React.FC<{ onShowQr: () => void }> = ({ onShowQr }) => {
                         </div>
                     </div>
                 </div>
-                <p className="text-xs text-slate-400 text-center mt-3">{t('family.biodataPreviewHint') || 'Professional biodata with your profile details'}</p>
+                <p className="text-xs text-slate-400 text-center mt-3">
+                    {t('family.biodataPreviewHint') ||
+                        'Professional biodata with your profile details'}
+                </p>
             </div>
 
             {/* Action Buttons */}
@@ -950,7 +1198,12 @@ const BiodataSection: React.FC<{ onShowQr: () => void }> = ({ onShowQr }) => {
                     disabled={downloading}
                     className="flex-1 py-3.5 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 flex items-center justify-center gap-2 disabled:opacity-60 transition-all"
                 >
-                    {downloading ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />} {t('family.downloadPDF')}
+                    {downloading ? (
+                        <Loader2 size={18} className="animate-spin" />
+                    ) : (
+                        <Download size={18} />
+                    )}{' '}
+                    {t('family.downloadPDF')}
                 </button>
                 <button
                     onClick={onShowQr}
@@ -963,13 +1216,22 @@ const BiodataSection: React.FC<{ onShowQr: () => void }> = ({ onShowQr }) => {
     );
 };
 
-const TabButton: React.FC<{ label: string, active: boolean, onClick: () => void, badge?: string }> = ({ label, active, onClick, badge }) => (
+const TabButton: React.FC<{
+    label: string;
+    active: boolean;
+    onClick: () => void;
+    badge?: string;
+}> = ({ label, active, onClick, badge }) => (
     <button
         onClick={onClick}
         className={`px-4 py-1.5 rounded-md text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap ${active ? 'bg-white shadow text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
     >
         {label}
-        {badge && <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">{badge}</span>}
+        {badge && (
+            <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">
+                {badge}
+            </span>
+        )}
     </button>
 );
 

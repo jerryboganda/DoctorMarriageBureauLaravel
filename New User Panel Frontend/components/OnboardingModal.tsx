@@ -1,6 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { User, ArrowRight, ArrowLeft, Check, Loader2, AlertCircle, MapPin, Briefcase, Ruler, Heart, Camera, Upload, Sparkles } from 'lucide-react';
+import {
+    User,
+    ArrowRight,
+    ArrowLeft,
+    Check,
+    Loader2,
+    AlertCircle,
+    MapPin,
+    Briefcase,
+    Ruler,
+    Heart,
+    Camera,
+    Upload,
+    Sparkles,
+} from 'lucide-react';
 import { api } from '../utils/api';
 import LoadingTimeoutFallback from './LoadingTimeoutFallback';
 import { compressImage } from '../utils/compression';
@@ -11,14 +25,20 @@ interface OnboardingModalProps {
 
 const STEPS_ICONS = [User, MapPin, Briefcase, Ruler, Heart, Camera];
 
-const FieldGroup: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
+const FieldGroup: React.FC<{ label: string; children: React.ReactNode }> = ({
+    label,
+    children,
+}) => (
     <div>
-        <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">{label}</label>
+        <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">
+            {label}
+        </label>
         {children}
     </div>
 );
 
-const inputClass = "w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary/20 focus:outline-none transition-colors bg-white placeholder:text-slate-300";
+const inputClass =
+    'w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary/20 focus:outline-none transition-colors bg-white placeholder:text-slate-300';
 
 const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
     const { t } = useTranslation();
@@ -34,17 +54,32 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
     const [step, setStep] = useState(1);
     const [initialStepSet, setInitialStepSet] = useState(false);
     const totalSteps = STEPS.length;
-    const onboardingTitleText = "Complete Profile";
-    const finishSetupText = t("modals.twoFactor.completeSetup") || "Complete Setup";
+    const onboardingTitleText = 'Complete Profile';
+    const finishSetupText = t('modals.twoFactor.completeSetup') || 'Complete Setup';
 
     // All form data
     const [data, setData] = useState<any>({
-        firstName: '', lastName: '', gender: '', dateOfBirth: '', maritalStatusId: '',
-        currentResidencyCountryId: '', currentResidencyStateId: '', currentResidencyCityId: '',
-        religionId: '', sectId: '', casteId: '',
-        designation: '', company: '', education: '', institution: '', incomeRangeId: '',
-        jobTitleId: '', specialityId: '',
-        height: '', weight: '', complexion: '',
+        firstName: '',
+        lastName: '',
+        gender: '',
+        dateOfBirth: '',
+        maritalStatusId: '',
+        currentResidencyCountryId: '',
+        currentResidencyStateId: '',
+        currentResidencyCityId: '',
+        religionId: '',
+        sectId: '',
+        casteId: '',
+        designation: '',
+        company: '',
+        education: '',
+        institution: '',
+        incomeRangeId: '',
+        jobTitleId: '',
+        specialityId: '',
+        height: '',
+        weight: '',
+        complexion: '',
         introduction: '',
         avatarUrl: '',
         hasProfilePhoto: false,
@@ -82,25 +117,19 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
             data.institution?.trim(),
             data.incomeRangeId,
         ];
-        const step4 = [
-            data.height,
-            data.weight,
-            data.complexion?.trim(),
-        ];
-        const step5 = [
-            (data.introduction || '').trim(),
-        ];
-        const step6 = [
-            photoFile || data.hasProfilePhoto ? 'yes' : '',
-        ];
+        const step4 = [data.height, data.weight, data.complexion?.trim()];
+        const step5 = [(data.introduction || '').trim()];
+        const step6 = [photoFile || data.hasProfilePhoto ? 'yes' : ''];
 
         const allSteps = [step1, step2, step3, step4, step5, step6];
         let totalFields = 0;
         let filledFields = 0;
         const stepComplete: boolean[] = [];
 
-        allSteps.forEach(fields => {
-            const filled = fields.filter(v => v !== '' && v !== null && v !== undefined && v !== false && v !== 0).length;
+        allSteps.forEach((fields) => {
+            const filled = fields.filter(
+                (v) => v !== '' && v !== null && v !== undefined && v !== false && v !== 0,
+            ).length;
             totalFields += fields.length;
             filledFields += filled;
             stepComplete.push(filled === fields.length);
@@ -132,15 +161,13 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
             .filter((item) => item.id !== '' && item.name !== '');
     };
 
-    const fetchMaritalStatusesFallback = async (): Promise<Array<{ id: string | number; name: string }>> => {
+    const fetchMaritalStatusesFallback = async (): Promise<
+        Array<{ id: string | number; name: string }>
+    > => {
         try {
             const res = await api.get('/member/maritial-status');
             const payload = res?.data;
-            const candidates = [
-                payload?.data,
-                payload?.marital_statuses,
-                payload,
-            ];
+            const candidates = [payload?.data, payload?.marital_statuses, payload];
             for (const candidate of candidates) {
                 const normalized = normalizeMaritalStatuses(candidate);
                 if (normalized.length) {
@@ -151,6 +178,52 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
             console.error('Failed to fetch marital statuses fallback', fallbackErr);
         }
         return [];
+    };
+
+    const fetchStates = async (countryId: string | number) => {
+        try {
+            const res = await api.get(`/member/states/${countryId}`);
+            setStates(res.data?.data || res.data || []);
+        } catch {
+            setStates([]);
+        }
+    };
+
+    const fetchCities = async (stateId: string | number) => {
+        try {
+            const res = await api.get(`/member/cities/${stateId}`);
+            setCities(res.data?.data || res.data || []);
+        } catch {
+            setCities([]);
+        }
+    };
+
+    const fetchCastes = async () => {
+        try {
+            const res = await api.get('/member/casts');
+            const payload = Array.isArray(res.data?.data)
+                ? res.data.data
+                : Array.isArray(res.data)
+                  ? res.data
+                  : [];
+            setLiveCastes(payload);
+        } catch {
+            setLiveCastes([]);
+        }
+    };
+
+    const fetchSects = async () => {
+        try {
+            const res = await api.get('/member/sects');
+            const payload = Array.isArray(res.data?.data)
+                ? res.data.data
+                : Array.isArray(res.data)
+                  ? res.data
+                  : [];
+            setLiveSects(payload);
+        } catch {
+            setLiveSects([]);
+        }
     };
 
     // Fetch existing profile data on mount
@@ -195,7 +268,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                     }
                     const incomingOptionSets = d.optionSets || {};
                     let maritalStatuses = normalizeMaritalStatuses(
-                        incomingOptionSets?.maritalStatuses || incomingOptionSets?.marital_statuses
+                        incomingOptionSets?.maritalStatuses || incomingOptionSets?.marital_statuses,
                     );
                     if (!maritalStatuses.length) {
                         maritalStatuses = await fetchMaritalStatusesFallback();
@@ -244,40 +317,6 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
         fetchSects();
     }, []);
 
-    const fetchStates = async (countryId: string | number) => {
-        try {
-            const res = await api.get(`/member/states/${countryId}`);
-            setStates(res.data?.data || res.data || []);
-        } catch { setStates([]); }
-    };
-
-    const fetchCities = async (stateId: string | number) => {
-        try {
-            const res = await api.get(`/member/cities/${stateId}`);
-            setCities(res.data?.data || res.data || []);
-        } catch { setCities([]); }
-    };
-
-    const fetchCastes = async () => {
-        try {
-            const res = await api.get('/member/casts');
-            const payload = Array.isArray(res.data?.data) ? res.data.data : (Array.isArray(res.data) ? res.data : []);
-            setLiveCastes(payload);
-        } catch {
-            setLiveCastes([]);
-        }
-    };
-
-    const fetchSects = async () => {
-        try {
-            const res = await api.get('/member/sects');
-            const payload = Array.isArray(res.data?.data) ? res.data.data : (Array.isArray(res.data) ? res.data : []);
-            setLiveSects(payload);
-        } catch {
-            setLiveSects([]);
-        }
-    };
-
     const updateField = (field: string, value: any) => {
         setData((prev: any) => ({ ...prev, [field]: value }));
     };
@@ -303,10 +342,15 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
         if (file) {
             const extension = file.name.split('.').pop()?.toLowerCase() || '';
             const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif'];
-            const isAllowedType = file.type.startsWith('image/') || file.type === '' || file.type === 'application/octet-stream';
+            const isAllowedType =
+                file.type.startsWith('image/') ||
+                file.type === '' ||
+                file.type === 'application/octet-stream';
 
             if (!allowedExtensions.includes(extension) || !isAllowedType) {
-                setError('Unsupported file type. Please upload JPG, PNG, GIF, WEBP, HEIC, or HEIF.');
+                setError(
+                    'Unsupported file type. Please upload JPG, PNG, GIF, WEBP, HEIC, or HEIF.',
+                );
                 setPhotoFile(null);
                 setPhotoPreview(null);
                 return;
@@ -388,7 +432,8 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                     const uploadFile = await compressImage(photoFile);
                     formData.append('photo', uploadFile);
                     const uploadResponse = await api.post('/upload-profile-picture', formData);
-                    const uploadedPhotoUrl = uploadResponse?.data?.data?.photo_url || uploadResponse?.data?.photo_url;
+                    const uploadedPhotoUrl =
+                        uploadResponse?.data?.data?.photo_url || uploadResponse?.data?.photo_url;
                     setData((current: any) => ({
                         ...current,
                         avatarUrl: uploadedPhotoUrl || current.avatarUrl,
@@ -400,7 +445,8 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                     const uploadErrorMessage =
                         status === 413
                             ? 'Photo is too large for upload. Please upload an image up to 10MB.'
-                            : (serverMessage || 'Photo upload failed. Please upload JPG, PNG, GIF, WEBP, HEIC, or HEIF and try again.');
+                            : serverMessage ||
+                              'Photo upload failed. Please upload JPG, PNG, GIF, WEBP, HEIC, or HEIF and try again.';
                     setError(uploadErrorMessage);
                     setSaving(false);
                     return false;
@@ -465,7 +511,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
         const success = await saveStepData();
         if (success) {
             if (step < totalSteps) {
-                setStep(s => s + 1);
+                setStep((s) => s + 1);
                 setError(null);
             } else {
                 onClose();
@@ -475,14 +521,20 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
 
     const handleBack = () => {
         if (step > 1) {
-            setStep(s => s - 1);
+            setStep((s) => s - 1);
             setError(null);
         }
     };
 
     const canProceed = () => {
         if (step === 1) {
-            return !!(data.firstName && data.lastName && data.gender && data.dateOfBirth && data.maritalStatusId);
+            return !!(
+                data.firstName &&
+                data.lastName &&
+                data.gender &&
+                data.dateOfBirth &&
+                data.maritalStatusId
+            );
         }
         if (step === 2) {
             return !!(
@@ -495,13 +547,19 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
             );
         }
         if (step === 3) {
-            return !!(data.designation && data.company && data.education && data.institution && data.incomeRangeId);
+            return !!(
+                data.designation &&
+                data.company &&
+                data.education &&
+                data.institution &&
+                data.incomeRangeId
+            );
         }
         if (step === 4) {
             return !!(data.height && data.weight && data.complexion);
         }
         if (step === 5) {
-            return !!(String(data.introduction || '').trim());
+            return !!String(data.introduction || '').trim();
         }
         if (step === 6) {
             return !!(photoFile || data.hasProfilePhoto);
@@ -509,7 +567,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
         return false;
     };
 
-    const filteredCastes = liveCastes.length ? liveCastes : (optionSets?.castes || []);
+    const filteredCastes = liveCastes.length ? liveCastes : optionSets?.castes || [];
 
     if (loading) {
         return (
@@ -537,28 +595,53 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                                 {onboardingTitleText}
                             </h3>
                             <p className="text-xs text-slate-500 mt-0.5">
-                                {t('auth.onboarding.stepLabel', { n: step, total: totalSteps, label: STEPS[step - 1].label })}
+                                {t('auth.onboarding.stepLabel', {
+                                    n: step,
+                                    total: totalSteps,
+                                    label: STEPS[step - 1].label,
+                                })}
                             </p>
                         </div>
                         <div className="text-right">
-                            <span className={`text-2xl font-black ${livePercentage === 100 ? 'text-emerald-600' : 'text-primary'}`}>{livePercentage}%</span>
-                            <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">{t('auth.onboarding.complete')}</p>
+                            <span
+                                className={`text-2xl font-black ${livePercentage === 100 ? 'text-emerald-600' : 'text-primary'}`}
+                            >
+                                {livePercentage}%
+                            </span>
+                            <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">
+                                {t('auth.onboarding.complete')}
+                            </p>
                         </div>
                     </div>
 
                     {/* Step progress bars — clickable to navigate */}
                     <div className="flex gap-1.5">
                         {STEPS.map((s, i) => (
-                            <button key={i} className="flex-1 flex flex-col items-center gap-1 cursor-pointer group" onClick={() => !saving && setStep(i + 1)}>
-                                <div className={`h-1.5 w-full rounded-full transition-all duration-300 ${
-                                    liveStepComplete[i] ? 'bg-emerald-500' :
-                                    i + 1 === step ? 'bg-primary' :
-                                    'bg-slate-200 group-hover:bg-slate-300'
-                                }`} />
-                                <span className={`text-[9px] font-semibold hidden sm:block ${
-                                    liveStepComplete[i] ? 'text-emerald-600' :
-                                    i + 1 === step ? 'text-slate-600' : 'text-slate-400'
-                                }`}>{s.label}</span>
+                            <button
+                                key={i}
+                                className="flex-1 flex flex-col items-center gap-1 cursor-pointer group"
+                                onClick={() => !saving && setStep(i + 1)}
+                            >
+                                <div
+                                    className={`h-1.5 w-full rounded-full transition-all duration-300 ${
+                                        liveStepComplete[i]
+                                            ? 'bg-emerald-500'
+                                            : i + 1 === step
+                                              ? 'bg-primary'
+                                              : 'bg-slate-200 group-hover:bg-slate-300'
+                                    }`}
+                                />
+                                <span
+                                    className={`text-[9px] font-semibold hidden sm:block ${
+                                        liveStepComplete[i]
+                                            ? 'text-emerald-600'
+                                            : i + 1 === step
+                                              ? 'text-slate-600'
+                                              : 'text-slate-400'
+                                    }`}
+                                >
+                                    {s.label}
+                                </span>
                             </button>
                         ))}
                     </div>
@@ -577,39 +660,78 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                     {step === 1 && (
                         <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
                             <div className="text-center mb-6">
-                                <h2 className="text-xl font-bold text-slate-900">{t('auth.onboarding.personalTitle')}</h2>
-                                <p className="text-sm text-slate-500">{t('auth.onboarding.personalSubtitle')}</p>
+                                <h2 className="text-xl font-bold text-slate-900">
+                                    {t('auth.onboarding.personalTitle')}
+                                </h2>
+                                <p className="text-sm text-slate-500">
+                                    {t('auth.onboarding.personalSubtitle')}
+                                </p>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <FieldGroup label={t('auth.onboarding.firstName')}>
-                                    <input type="text" className={inputClass} value={data.firstName} onChange={e => updateField('firstName', e.target.value)} placeholder={t('auth.onboarding.firstNamePlaceholder')} />
+                                    <input
+                                        type="text"
+                                        className={inputClass}
+                                        value={data.firstName}
+                                        onChange={(e) => updateField('firstName', e.target.value)}
+                                        placeholder={t('auth.onboarding.firstNamePlaceholder')}
+                                    />
                                 </FieldGroup>
                                 <FieldGroup label={t('auth.onboarding.lastName')}>
-                                    <input type="text" className={inputClass} value={data.lastName} onChange={e => updateField('lastName', e.target.value)} placeholder={t('auth.onboarding.lastNamePlaceholder')} />
+                                    <input
+                                        type="text"
+                                        className={inputClass}
+                                        value={data.lastName}
+                                        onChange={(e) => updateField('lastName', e.target.value)}
+                                        placeholder={t('auth.onboarding.lastNamePlaceholder')}
+                                    />
                                 </FieldGroup>
                             </div>
                             <FieldGroup label={t('auth.onboarding.gender')}>
                                 <div className="flex gap-3">
-                                    {[{ value: 'Male', label: t('auth.onboarding.male') }, { value: 'Female', label: t('auth.onboarding.female') }].map(g => (
-                                        <button key={g.value} onClick={() => updateField('gender', g.value)}
+                                    {[
+                                        { value: 'Male', label: t('auth.onboarding.male') },
+                                        { value: 'Female', label: t('auth.onboarding.female') },
+                                    ].map((g) => (
+                                        <button
+                                            key={g.value}
+                                            onClick={() => updateField('gender', g.value)}
                                             className={`flex-1 py-3 rounded-xl text-sm font-bold border-2 transition-all ${
                                                 data.gender === g.value
                                                     ? 'border-primary bg-primary/5 text-primary shadow-sm'
                                                     : 'border-slate-200 text-slate-500 hover:border-slate-300'
                                             }`}
-                                        >{g.label}</button>
+                                        >
+                                            {g.label}
+                                        </button>
                                     ))}
                                 </div>
                             </FieldGroup>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <FieldGroup label={t('auth.onboarding.dateOfBirth')}>
-                                    <input type="date" required className={inputClass} value={data.dateOfBirth} onChange={e => updateField('dateOfBirth', e.target.value)} />
+                                    <input
+                                        type="date"
+                                        required
+                                        className={inputClass}
+                                        value={data.dateOfBirth}
+                                        onChange={(e) => updateField('dateOfBirth', e.target.value)}
+                                    />
                                 </FieldGroup>
                                 <FieldGroup label={t('auth.onboarding.maritalStatus')}>
-                                    <select className={inputClass} value={data.maritalStatusId || ''} onChange={e => updateField('maritalStatusId', e.target.value)}>
-                                        <option value="">{t('auth.onboarding.selectStatus')}</option>
+                                    <select
+                                        className={inputClass}
+                                        value={data.maritalStatusId || ''}
+                                        onChange={(e) =>
+                                            updateField('maritalStatusId', e.target.value)
+                                        }
+                                    >
+                                        <option value="">
+                                            {t('auth.onboarding.selectStatus')}
+                                        </option>
                                         {(optionSets?.maritalStatuses || []).map((o: any) => (
-                                            <option key={o.id} value={o.id}>{o.name}</option>
+                                            <option key={o.id} value={o.id}>
+                                                {o.name}
+                                            </option>
                                         ))}
                                     </select>
                                 </FieldGroup>
@@ -621,57 +743,108 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                     {step === 2 && (
                         <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
                             <div className="text-center mb-6">
-                                <h2 className="text-xl font-bold text-slate-900">{t('auth.onboarding.locationTitle')}</h2>
-                                <p className="text-sm text-slate-500">{t('auth.onboarding.locationSubtitle')}</p>
+                                <h2 className="text-xl font-bold text-slate-900">
+                                    {t('auth.onboarding.locationTitle')}
+                                </h2>
+                                <p className="text-sm text-slate-500">
+                                    {t('auth.onboarding.locationSubtitle')}
+                                </p>
                             </div>
                             <FieldGroup label={t('auth.onboarding.country')}>
-                                <select className={inputClass} value={data.currentResidencyCountryId || ''} onChange={e => handleCountryChange(e.target.value)}>
+                                <select
+                                    className={inputClass}
+                                    value={data.currentResidencyCountryId || ''}
+                                    onChange={(e) => handleCountryChange(e.target.value)}
+                                >
                                     <option value="">{t('auth.onboarding.selectCountry')}</option>
                                     {(optionSets?.countries || []).map((c: any) => (
-                                        <option key={c.id} value={c.id}>{c.name}</option>
+                                        <option key={c.id} value={c.id}>
+                                            {c.name}
+                                        </option>
                                     ))}
                                 </select>
                             </FieldGroup>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <FieldGroup label={t('auth.onboarding.state')}>
-                                    <select className={inputClass} value={data.currentResidencyStateId || ''} onChange={e => handleStateChange(e.target.value)} disabled={!states.length}>
+                                    <select
+                                        className={inputClass}
+                                        value={data.currentResidencyStateId || ''}
+                                        onChange={(e) => handleStateChange(e.target.value)}
+                                        disabled={!states.length}
+                                    >
                                         <option value="">{t('auth.onboarding.selectState')}</option>
                                         {states.map((s: any) => (
-                                            <option key={s.id} value={s.id}>{s.name}</option>
+                                            <option key={s.id} value={s.id}>
+                                                {s.name}
+                                            </option>
                                         ))}
                                     </select>
                                 </FieldGroup>
                                 <FieldGroup label={t('auth.onboarding.city')}>
-                                    <select className={inputClass} value={data.currentResidencyCityId || ''} onChange={e => updateField('currentResidencyCityId', e.target.value)} disabled={!cities.length}>
+                                    <select
+                                        className={inputClass}
+                                        value={data.currentResidencyCityId || ''}
+                                        onChange={(e) =>
+                                            updateField('currentResidencyCityId', e.target.value)
+                                        }
+                                        disabled={!cities.length}
+                                    >
                                         <option value="">{t('auth.onboarding.selectCity')}</option>
                                         {cities.map((c: any) => (
-                                            <option key={c.id} value={c.id}>{c.name}</option>
+                                            <option key={c.id} value={c.id}>
+                                                {c.name}
+                                            </option>
                                         ))}
                                     </select>
                                 </FieldGroup>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <FieldGroup label={t('auth.onboarding.religion')}>
-                                    <select className={inputClass} value={data.religionId || ''} onChange={e => { updateField('religionId', e.target.value); updateField('casteId', ''); }}>
-                                        <option value="">{t('auth.onboarding.selectReligion')}</option>
+                                    <select
+                                        className={inputClass}
+                                        value={data.religionId || ''}
+                                        onChange={(e) => {
+                                            updateField('religionId', e.target.value);
+                                            updateField('casteId', '');
+                                        }}
+                                    >
+                                        <option value="">
+                                            {t('auth.onboarding.selectReligion')}
+                                        </option>
                                         {(optionSets?.religions || []).map((r: any) => (
-                                            <option key={r.id} value={r.id}>{r.name}</option>
+                                            <option key={r.id} value={r.id}>
+                                                {r.name}
+                                            </option>
                                         ))}
                                     </select>
                                 </FieldGroup>
                                 <FieldGroup label={t('auth.onboarding.sect')}>
-                                    <select className={inputClass} value={data.sectId || ''} onChange={e => updateField('sectId', e.target.value)} disabled={!liveSects.length}>
+                                    <select
+                                        className={inputClass}
+                                        value={data.sectId || ''}
+                                        onChange={(e) => updateField('sectId', e.target.value)}
+                                        disabled={!liveSects.length}
+                                    >
                                         <option value="">{t('auth.onboarding.selectSect')}</option>
                                         {liveSects.map((s: any) => (
-                                            <option key={s.id} value={s.id}>{s.name}</option>
+                                            <option key={s.id} value={s.id}>
+                                                {s.name}
+                                            </option>
                                         ))}
                                     </select>
                                 </FieldGroup>
                                 <FieldGroup label={t('auth.onboarding.casteClan')}>
-                                    <select className={inputClass} value={data.casteId || ''} onChange={e => updateField('casteId', e.target.value)} disabled={!filteredCastes.length}>
+                                    <select
+                                        className={inputClass}
+                                        value={data.casteId || ''}
+                                        onChange={(e) => updateField('casteId', e.target.value)}
+                                        disabled={!filteredCastes.length}
+                                    >
                                         <option value="">{t('auth.onboarding.selectCaste')}</option>
                                         {filteredCastes.map((c: any) => (
-                                            <option key={c.id} value={c.id}>{c.name}</option>
+                                            <option key={c.id} value={c.id}>
+                                                {c.name}
+                                            </option>
                                         ))}
                                     </select>
                                 </FieldGroup>
@@ -683,49 +856,102 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                     {step === 3 && (
                         <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
                             <div className="text-center mb-6">
-                                <h2 className="text-xl font-bold text-slate-900">{t('auth.onboarding.careerTitle')}</h2>
-                                <p className="text-sm text-slate-500">{t('auth.onboarding.careerSubtitle')}</p>
+                                <h2 className="text-xl font-bold text-slate-900">
+                                    {t('auth.onboarding.careerTitle')}
+                                </h2>
+                                <p className="text-sm text-slate-500">
+                                    {t('auth.onboarding.careerSubtitle')}
+                                </p>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <FieldGroup label={t('auth.onboarding.designation')}>
-                                    <select className={inputClass} value={String(data.jobTitleId ?? '')} onChange={e => {
-                                        const id = e.target.value;
-                                        const label = (optionSets?.jobTitles || []).find((o: any) => String(o.id) === id)?.name || '';
-                                        setData((prev: any) => ({ ...prev, jobTitleId: id, designation: label }));
-                                    }}>
-                                        <option value="">{t('auth.onboarding.designationPlaceholder')}</option>
+                                    <select
+                                        className={inputClass}
+                                        value={String(data.jobTitleId ?? '')}
+                                        onChange={(e) => {
+                                            const id = e.target.value;
+                                            const label =
+                                                (optionSets?.jobTitles || []).find(
+                                                    (o: any) => String(o.id) === id,
+                                                )?.name || '';
+                                            setData((prev: any) => ({
+                                                ...prev,
+                                                jobTitleId: id,
+                                                designation: label,
+                                            }));
+                                        }}
+                                    >
+                                        <option value="">
+                                            {t('auth.onboarding.designationPlaceholder')}
+                                        </option>
                                         {(optionSets?.jobTitles || []).map((o: any) => (
-                                            <option key={o.id} value={String(o.id)}>{o.name}</option>
+                                            <option key={o.id} value={String(o.id)}>
+                                                {o.name}
+                                            </option>
                                         ))}
                                     </select>
                                 </FieldGroup>
                                 <FieldGroup label="Speciality">
-                                    <select className={inputClass} value={String(data.specialityId ?? '')} onChange={e => updateField('specialityId', e.target.value)}>
+                                    <select
+                                        className={inputClass}
+                                        value={String(data.specialityId ?? '')}
+                                        onChange={(e) =>
+                                            updateField('specialityId', e.target.value)
+                                        }
+                                    >
                                         <option value="">Select Speciality</option>
                                         {(optionSets?.specialities || []).map((o: any) => (
-                                            <option key={o.id} value={String(o.id)}>{o.name}</option>
+                                            <option key={o.id} value={String(o.id)}>
+                                                {o.name}
+                                            </option>
                                         ))}
                                     </select>
                                 </FieldGroup>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <FieldGroup label={t('auth.onboarding.hospital')}>
-                                    <input type="text" className={inputClass} value={data.company} onChange={e => updateField('company', e.target.value)} placeholder={t('auth.onboarding.hospitalPlaceholder')} />
+                                    <input
+                                        type="text"
+                                        className={inputClass}
+                                        value={data.company}
+                                        onChange={(e) => updateField('company', e.target.value)}
+                                        placeholder={t('auth.onboarding.hospitalPlaceholder')}
+                                    />
                                 </FieldGroup>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <FieldGroup label={t('auth.onboarding.highestDegree')}>
-                                    <input type="text" className={inputClass} value={data.education} onChange={e => updateField('education', e.target.value)} placeholder={t('auth.onboarding.degreePlaceholder')} />
+                                    <input
+                                        type="text"
+                                        className={inputClass}
+                                        value={data.education}
+                                        onChange={(e) => updateField('education', e.target.value)}
+                                        placeholder={t('auth.onboarding.degreePlaceholder')}
+                                    />
                                 </FieldGroup>
                                 <FieldGroup label={t('auth.onboarding.institution')}>
-                                    <input type="text" className={inputClass} value={data.institution} onChange={e => updateField('institution', e.target.value)} placeholder={t('auth.onboarding.institutionPlaceholder')} />
+                                    <input
+                                        type="text"
+                                        className={inputClass}
+                                        value={data.institution}
+                                        onChange={(e) => updateField('institution', e.target.value)}
+                                        placeholder={t('auth.onboarding.institutionPlaceholder')}
+                                    />
                                 </FieldGroup>
                             </div>
                             <FieldGroup label={t('auth.onboarding.incomeRange')}>
-                                <select className={inputClass} value={data.incomeRangeId || ''} onChange={e => updateField('incomeRangeId', e.target.value)}>
-                                    <option value="">{t('auth.onboarding.selectIncomeRange')}</option>
+                                <select
+                                    className={inputClass}
+                                    value={data.incomeRangeId || ''}
+                                    onChange={(e) => updateField('incomeRangeId', e.target.value)}
+                                >
+                                    <option value="">
+                                        {t('auth.onboarding.selectIncomeRange')}
+                                    </option>
                                     {salaryRanges.map((r: any) => (
-                                        <option key={r.id} value={r.id}>{r.label}</option>
+                                        <option key={r.id} value={r.id}>
+                                            {r.label}
+                                        </option>
                                     ))}
                                 </select>
                             </FieldGroup>
@@ -736,22 +962,48 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                     {step === 4 && (
                         <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
                             <div className="text-center mb-6">
-                                <h2 className="text-xl font-bold text-slate-900">{t('auth.onboarding.appearanceTitle')}</h2>
-                                <p className="text-sm text-slate-500">{t('auth.onboarding.appearanceSubtitle')}</p>
+                                <h2 className="text-xl font-bold text-slate-900">
+                                    {t('auth.onboarding.appearanceTitle')}
+                                </h2>
+                                <p className="text-sm text-slate-500">
+                                    {t('auth.onboarding.appearanceSubtitle')}
+                                </p>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <FieldGroup label={t('auth.onboarding.height')}>
-                                    <input type="text" className={inputClass} value={data.height} onChange={e => updateField('height', e.target.value)} placeholder={t('auth.onboarding.heightPlaceholder')} />
+                                    <input
+                                        type="text"
+                                        className={inputClass}
+                                        value={data.height}
+                                        onChange={(e) => updateField('height', e.target.value)}
+                                        placeholder={t('auth.onboarding.heightPlaceholder')}
+                                    />
                                 </FieldGroup>
                                 <FieldGroup label={t('auth.onboarding.weight')}>
-                                    <input type="number" className={inputClass} value={data.weight} onChange={e => updateField('weight', e.target.value)} placeholder={t('auth.onboarding.weightPlaceholder')} />
+                                    <input
+                                        type="number"
+                                        className={inputClass}
+                                        value={data.weight}
+                                        onChange={(e) => updateField('weight', e.target.value)}
+                                        placeholder={t('auth.onboarding.weightPlaceholder')}
+                                    />
                                 </FieldGroup>
                                 <FieldGroup label={t('auth.onboarding.complexion')}>
-                                    <select className={inputClass} value={data.complexion || ''} onChange={e => updateField('complexion', e.target.value)}>
-                                        <option value="">{t('auth.onboarding.selectComplexion')}</option>
-                                        <option value="Very Fair">{t('auth.onboarding.veryFair')}</option>
+                                    <select
+                                        className={inputClass}
+                                        value={data.complexion || ''}
+                                        onChange={(e) => updateField('complexion', e.target.value)}
+                                    >
+                                        <option value="">
+                                            {t('auth.onboarding.selectComplexion')}
+                                        </option>
+                                        <option value="Very Fair">
+                                            {t('auth.onboarding.veryFair')}
+                                        </option>
                                         <option value="Fair">{t('auth.onboarding.fair')}</option>
-                                        <option value="Wheatish">{t('auth.onboarding.wheatish')}</option>
+                                        <option value="Wheatish">
+                                            {t('auth.onboarding.wheatish')}
+                                        </option>
                                         <option value="Dark">{t('auth.onboarding.dark')}</option>
                                     </select>
                                 </FieldGroup>
@@ -763,18 +1015,24 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                     {step === 5 && (
                         <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
                             <div className="text-center mb-6">
-                                <h2 className="text-xl font-bold text-slate-900">{t('auth.onboarding.aboutMeTitle')}</h2>
-                                <p className="text-sm text-slate-500">{t('auth.onboarding.aboutMeSubtitle')}</p>
+                                <h2 className="text-xl font-bold text-slate-900">
+                                    {t('auth.onboarding.aboutMeTitle')}
+                                </h2>
+                                <p className="text-sm text-slate-500">
+                                    {t('auth.onboarding.aboutMeSubtitle')}
+                                </p>
                             </div>
                             <FieldGroup label={t('auth.onboarding.introLabel')}>
                                 <textarea
                                     className={`${inputClass} min-h-[160px] resize-none`}
                                     value={data.introduction}
-                                    onChange={e => updateField('introduction', e.target.value)}
+                                    onChange={(e) => updateField('introduction', e.target.value)}
                                     placeholder={t('auth.onboarding.introPlaceholder')}
                                     maxLength={1000}
                                 />
-                                <p className="text-xs text-slate-400 mt-1 text-right">{(data.introduction || '').length} / 1000</p>
+                                <p className="text-xs text-slate-400 mt-1 text-right">
+                                    {(data.introduction || '').length} / 1000
+                                </p>
                             </FieldGroup>
                         </div>
                     )}
@@ -783,17 +1041,22 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                     {step === 6 && (
                         <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
                             <div className="text-center mb-6">
-                                <h2 className="text-xl font-bold text-slate-900">{t('auth.onboarding.photoTitle')}</h2>
-                                <p className="text-sm text-slate-500">{t('auth.onboarding.photoSubtitle')}</p>
+                                <h2 className="text-xl font-bold text-slate-900">
+                                    {t('auth.onboarding.photoTitle')}
+                                </h2>
+                                <p className="text-sm text-slate-500">
+                                    {t('auth.onboarding.photoSubtitle')}
+                                </p>
                             </div>
                             <div className="flex flex-col items-center gap-6">
                                 <div className="relative">
                                     <div
                                         className="size-40 rounded-full bg-cover bg-center border-4 border-white shadow-lg bg-slate-100"
                                         style={{
-                                            backgroundImage: (photoPreview || data.hasProfilePhoto)
-                                                ? `url('${photoPreview || data.avatarUrl}')`
-                                                : undefined,
+                                            backgroundImage:
+                                                photoPreview || data.hasProfilePhoto
+                                                    ? `url('${photoPreview || data.avatarUrl}')`
+                                                    : undefined,
                                         }}
                                     >
                                         {!photoPreview && !data.hasProfilePhoto && (
@@ -820,7 +1083,9 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                                     className="flex items-center gap-2 px-6 py-3 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm font-bold text-slate-700 transition-colors"
                                 >
                                     <Upload size={16} />
-                                    {photoPreview || data.hasProfilePhoto ? t('auth.onboarding.changePhoto') : t('auth.onboarding.uploadPhoto')}
+                                    {photoPreview || data.hasProfilePhoto
+                                        ? t('auth.onboarding.changePhoto')
+                                        : t('auth.onboarding.uploadPhoto')}
                                 </button>
                                 <p className="text-xs text-slate-400 text-center max-w-xs">
                                     {t('auth.onboarding.photoHint')}
@@ -836,7 +1101,9 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                         onClick={handleBack}
                         disabled={step === 1 || saving}
                         className={`flex items-center gap-1.5 text-sm font-bold px-4 py-2.5 rounded-full transition-colors ${
-                            step === 1 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-200'
+                            step === 1
+                                ? 'text-slate-300 cursor-not-allowed'
+                                : 'text-slate-600 hover:bg-slate-200'
                         }`}
                     >
                         <ArrowLeft size={16} />
@@ -848,11 +1115,18 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                         className="bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-full font-bold text-sm flex items-center gap-2 shadow-lg shadow-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {saving ? (
-                            <><Loader2 size={16} className="animate-spin" /> {t('auth.onboarding.saving')}</>
+                            <>
+                                <Loader2 size={16} className="animate-spin" />{' '}
+                                {t('auth.onboarding.saving')}
+                            </>
                         ) : step === totalSteps ? (
-                            <><Check size={16} /> {finishSetupText}</>
+                            <>
+                                <Check size={16} /> {finishSetupText}
+                            </>
                         ) : (
-                            <>{t('auth.onboarding.continue')} <ArrowRight size={16} /></>
+                            <>
+                                {t('auth.onboarding.continue')} <ArrowRight size={16} />
+                            </>
                         )}
                     </button>
                 </div>

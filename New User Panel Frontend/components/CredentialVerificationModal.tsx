@@ -12,7 +12,11 @@ interface CredentialVerificationModalProps {
 }
 
 const CredentialVerificationModal: React.FC<CredentialVerificationModalProps> = ({
-    isOpen, onClose, type, value, onVerified
+    isOpen,
+    onClose,
+    type,
+    value,
+    onVerified,
 }) => {
     const { t } = useTranslation();
     const [step, setStep] = useState<'send' | 'verify' | 'success'>('send');
@@ -98,7 +102,6 @@ const CredentialVerificationModal: React.FC<CredentialVerificationModalProps> = 
             onClick={handleBackdropClick}
         >
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden relative animate-in zoom-in-95 duration-200">
-
                 {/* Header */}
                 <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                     <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">
@@ -139,7 +142,9 @@ const CredentialVerificationModal: React.FC<CredentialVerificationModalProps> = 
                                         value={contactValue}
                                         onChange={(e) => setContactValue(e.target.value)}
                                         className="w-full bg-transparent font-bold text-slate-900 outline-none text-lg"
-                                        placeholder={t('modals.credentialVerification.emailPlaceholder')}
+                                        placeholder={t(
+                                            'modals.credentialVerification.emailPlaceholder',
+                                        )}
                                     />
                                 </div>
                             </div>
@@ -157,7 +162,9 @@ const CredentialVerificationModal: React.FC<CredentialVerificationModalProps> = 
                                 className="w-full bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-slate-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
                             >
                                 {loading ? <Loader2 className="animate-spin" size={18} /> : null}
-                                {loading ? t('modals.credentialVerification.sendingCode') : t('modals.credentialVerification.sendVerificationCode')}
+                                {loading
+                                    ? t('modals.credentialVerification.sendingCode')
+                                    : t('modals.credentialVerification.sendVerificationCode')}
                             </button>
                         </div>
                     )}
@@ -165,9 +172,13 @@ const CredentialVerificationModal: React.FC<CredentialVerificationModalProps> = 
                     {step === 'verify' && (
                         <div className="space-y-6">
                             <div className="text-center space-y-2">
-                                <h4 className="font-bold text-slate-900 text-lg">{t('modals.credentialVerification.enterOTP')}</h4>
+                                <h4 className="font-bold text-slate-900 text-lg">
+                                    {t('modals.credentialVerification.enterOTP')}
+                                </h4>
                                 <p className="text-sm text-slate-500">
-                                    {t('modals.credentialVerification.enterCodeSentTo', { contact: contactValue })}
+                                    {t('modals.credentialVerification.enterCodeSentTo', {
+                                        contact: contactValue,
+                                    })}
                                 </p>
                             </div>
 
@@ -175,14 +186,18 @@ const CredentialVerificationModal: React.FC<CredentialVerificationModalProps> = 
                                 <input
                                     type="text"
                                     value={code}
-                                    onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                                    onChange={(e) =>
+                                        setCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))
+                                    }
                                     className="w-full text-center text-3xl font-bold tracking-[1em] border border-slate-300 rounded-xl py-4 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all placeholder:tracking-normal"
                                     placeholder="••••••"
                                     maxLength={6}
                                     autoFocus
                                 />
                                 <div className="flex justify-between text-xs px-1">
-                                    <span className="text-slate-400">{t('modals.credentialVerification.usuallyArrives')}</span>
+                                    <span className="text-slate-400">
+                                        {t('modals.credentialVerification.usuallyArrives')}
+                                    </span>
                                     <button
                                         onClick={handleSendCode}
                                         disabled={loading}
@@ -205,8 +220,14 @@ const CredentialVerificationModal: React.FC<CredentialVerificationModalProps> = 
                                 disabled={loading || code.length !== 6}
                                 className="w-full bg-primary text-white font-bold py-3 rounded-xl hover:bg-primary-hover transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed shadow-lg shadow-primary/20"
                             >
-                                {loading ? <Loader2 className="animate-spin" size={18} /> : <ArrowRight size={18} />}
-                                {loading ? t('modals.credentialVerification.verifying') : t('modals.credentialVerification.verifyAndContinue')}
+                                {loading ? (
+                                    <Loader2 className="animate-spin" size={18} />
+                                ) : (
+                                    <ArrowRight size={18} />
+                                )}
+                                {loading
+                                    ? t('modals.credentialVerification.verifying')
+                                    : t('modals.credentialVerification.verifyAndContinue')}
                             </button>
                         </div>
                     )}
@@ -217,8 +238,12 @@ const CredentialVerificationModal: React.FC<CredentialVerificationModalProps> = 
                                 <CheckCircle2 size={40} />
                             </div>
                             <div>
-                                <h4 className="font-bold text-slate-900 text-xl">{t('modals.credentialVerification.verified')}</h4>
-                                <p className="text-slate-500 mt-1">{t('modals.credentialVerification.successEmail')}</p>
+                                <h4 className="font-bold text-slate-900 text-xl">
+                                    {t('modals.credentialVerification.verified')}
+                                </h4>
+                                <p className="text-slate-500 mt-1">
+                                    {t('modals.credentialVerification.successEmail')}
+                                </p>
                             </div>
                         </div>
                     )}

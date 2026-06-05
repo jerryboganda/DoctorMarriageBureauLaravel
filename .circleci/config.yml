@@ -1,0 +1,213 @@
+version: 2.1
+
+executors:
+  php_cli:
+    docker:
+      - image: php:8.3-cli-bullseye
+    resource_class: small
+  node_lts:
+    docker:
+      - image: cimg/node:22.14
+    resource_class: small
+
+commands:
+  install_php_system_deps:
+    steps:
+      - run:
+          name: Install PHP system dependencies
+          command: |
+            apt-get update
+            apt-get install -y --no-install-recommends \
+              git unzip zip curl \
+              libicu-dev libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
+              libonig-dev libxml2-dev libzip-dev sqlite3
+            docker-php-ext-configure gd --with-freetype --with-jpeg
+            docker-php-ext-install -j"$(nproc)" bcmath exif gd intl mbstring pdo_mysql xml zip
+            rm -rf /var/lib/apt/lists/*
+      - run:
+          name: Install Composer
+          command: |
+            curl -sS https://getcomposer.org/installer -o /tmp/composer-setup.php
+            php /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=composer
+            composer --version
+  npm_ci:
+    parameters:
+      path:
+        type: string
+    steps:
+      - restore_cache:
+          keys:
+            - npm-v1-{{ checksum "<< parameters.path >>/package-lock.json" }}
+      - run:
+          name: Install npm dependencies
+          working_directory: << parameters.path >>
+          command: npm ci
+      - save_cache:
+          key: npm-v1-{{ checksum "<< parameters.path >>/package-lock.json" }}
+          paths:
+            - << parameters.path >>/node_modules
+  frontend_quality_steps:
+    parameters:
+      path:
+        type: string
+      build_command:
+        type: string
+        default: npm run build
+    steps:
+      - checkout
+      - npm_ci:
+          path: << parameters.path >>
+      - run:
+          name: Lint
+          working_directory: << parameters.path >>
+          command: npm run lint
+      - run:
+          name: Prettier check
+          working_directory: << parameters.path >>
+          command: npm run format:check
+      - run:
+          name: TypeScript check
+          working_directory: << parameters.path >>
+          command: npm run typecheck
+      - run:
+          name: Build
+          working_directory: << parameters.path >>
+          command: << parameters.build_command >>
+
+jobs:
+  backend_quality:
+    executor: php_cli
+    steps:
+      - checkout
+      - install_php_system_deps
+      - restore_cache:
+          keys:
+            - composer-v1-{{ checksum "composer.lock" }}
+      - run:
+          name: Install Composer dependencies
+          command: composer install --no-interaction --prefer-dist --no-progress
+      - run:
+          name: Install CI quality tools
+          command: composer require --dev laravel/pint phpstan/phpstan nunomaduro/larastan --with-dependencies --no-interaction --no-progress
+      - save_cache:
+          key: composer-v1-{{ checksum "composer.lock" }}
+          paths:
+            - vendor
+      - run:
+          name: Validate Composer metadata
+          command: composer validate --strict
+      - run:
+          name: PHP syntax lint
+          command: |
+            git ls-files '*.php' \
+              ':!:vendor/*' \
+              ':!:storage/*' \
+              ':!:bootstrap/cache/*' \
+              | xargs -r -n 1 php -l
+      - run:
+          name: Laravel Pint check
+          command: vendor/bin/pint --test
+      - run:
+          name: PHPStan analysis
+          command: vendor/bin/phpstan analyse --memory-limit=1G
+      - run:
+          name: PHPUnit
+          command: php artisan test
+
+  admin_frontend_quality:
+    executor: node_lts
+    steps:
+      - frontend_quality_steps:
+          path: Admin Panel Frontend
+
+  user_frontend_quality:
+    executor: node_lts
+    steps:
+      - frontend_quality_steps:
+          path: New User Panel Frontend
+
+  mobile_web_quality:
+    executor: node_lts
+    steps:
+      - frontend_quality_steps:
+          path: DMB Mobile App
+          build_command: npm run build:web
+
+  compose_validate:
+    machine:
+      image: ubuntu-2404:current
+    resource_class: medium
+    steps:
+      - checkout
+      - run:
+          name: Validate Docker Compose
+          command: docker compose config --quiet
+
+  deploy_production:
+    machine:
+      image: ubuntu-2404:current
+    resource_class: medium
+    steps:
+      - checkout
+      - add_ssh_keys
+      - run:
+          name: Add VPS host key
+          command: |
+            : "${VPS_HOST:?VPS_HOST is required}"
+            mkdir -p ~/.ssh
+            ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts
+      - run:
+          name: Deploy to production VPS
+          command: |
+            : "${VPS_HOST:?VPS_HOST is required}"
+            : "${VPS_USER:?VPS_USER is required}"
+            : "${DEPLOY_PATH:?DEPLOY_PATH is required}"
+            git bundle create /tmp/dmb-main.bundle HEAD
+            scp /tmp/dmb-main.bundle "$VPS_USER@$VPS_HOST:/tmp/dmb-main.bundle"
+            ssh "$VPS_USER@$VPS_HOST" "DEPLOY_PATH='$DEPLOY_PATH' bash -s" <<'REMOTE'
+            set -euo pipefail
+            cd "$DEPLOY_PATH"
+            git fetch /tmp/dmb-main.bundle HEAD
+            git reset --hard FETCH_HEAD
+            git update-ref refs/remotes/origin/main HEAD
+            rm -f /tmp/dmb-main.bundle
+            if [ -L dmb_app ]; then rm dmb_app; fi
+            git status --short --branch
+            docker compose config --quiet
+            docker compose up -d --build app web frontend soketi db
+            docker compose restart web
+            for i in $(seq 1 30); do
+              if docker ps --filter name=marriagebureau-db --format '{{.Status}}' | grep -q healthy; then
+                break
+              fi
+              sleep 5
+            done
+            docker ps --filter 'name=marriagebureau' --format '{{.Names}}|{{.Status}}'
+            REMOTE
+      - run:
+          name: Verify production routes
+          command: |
+            set -e
+            curl -fsS -o /dev/null https://api.doctormarriagebureau.com.pk/
+            curl -fsS -o /dev/null https://panel.doctormarriagebureau.com.pk/
+            curl -fsS -o /dev/null https://soketi.polytronx.com/
+
+workflows:
+  quality_and_deploy:
+    jobs:
+      - backend_quality
+      - admin_frontend_quality
+      - user_frontend_quality
+      - mobile_web_quality
+      - compose_validate
+      - deploy_production:
+          requires:
+            - backend_quality
+            - admin_frontend_quality
+            - user_frontend_quality
+            - mobile_web_quality
+            - compose_validate
+          filters:
+            branches:
+              only:
+                - main

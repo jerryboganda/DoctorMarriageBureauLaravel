@@ -1,17 +1,28 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, RefreshControl, ActivityIndicator, Alert, Dimensions } from 'react-native';
+import {
+    View,
+    Text,
+    ScrollView,
+    TouchableOpacity,
+    Image,
+    RefreshControl,
+    ActivityIndicator,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MotiView, AnimatePresence } from 'moti';
+import { MotiView } from 'moti';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { api } from '../utils/api';
-import { 
-    CalendarIcon, UsersIcon, HandshakeIcon, PartyPopperIcon, DollarIcon, 
-    StoreIcon, ChevronLeftIcon, CheckCircleIcon, ClockIcon, MapPinIcon 
+import {
+    CalendarIcon,
+    UsersIcon,
+    HandshakeIcon,
+    PartyPopperIcon,
+    StoreIcon,
+    ChevronLeftIcon,
 } from '../components/Icons';
-import Background from '../components/Background';
 
 interface Track {
     id: string;
@@ -81,27 +92,36 @@ export default function ProgressionScreen() {
     };
 
     const renderDashboard = () => (
-        <ScrollView className="flex-1 p-4" refreshControl={<RefreshControl refreshing={loading} onRefresh={fetchTracks} />}>
+        <ScrollView
+            className="flex-1 p-4"
+            refreshControl={<RefreshControl refreshing={loading} onRefresh={fetchTracks} />}
+        >
             {/* Stats */}
             <View className="flex-row gap-4 mb-6">
                 <View className="flex-1 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
                     <View className="w-10 h-10 bg-blue-50 rounded-full items-center justify-center mb-2">
                         <CalendarIcon size={20} color="#2563eb" />
                     </View>
-                    <Text className="text-2xl font-bold text-slate-900">{tracks.filter(t => t.stage === 'meeting').length}</Text>
+                    <Text className="text-2xl font-bold text-slate-900">
+                        {tracks.filter((t) => t.stage === 'meeting').length}
+                    </Text>
                     <Text className="text-xs text-slate-500">{t('progression.meetings')}</Text>
                 </View>
                 <View className="flex-1 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
                     <View className="w-10 h-10 bg-purple-50 rounded-full items-center justify-center mb-2">
                         <PartyPopperIcon size={20} color="#9333ea" />
                     </View>
-                    <Text className="text-2xl font-bold text-slate-900">{tracks.filter(t => t.stage === 'wedding' || t.stage === 'roka').length}</Text>
+                    <Text className="text-2xl font-bold text-slate-900">
+                        {tracks.filter((t) => t.stage === 'wedding' || t.stage === 'roka').length}
+                    </Text>
                     <Text className="text-xs text-slate-500">{t('progression.success')}</Text>
                 </View>
             </View>
 
-            <Text className="text-lg font-bold text-slate-900 mb-4">{t('progression.activeJourneys')}</Text>
-            
+            <Text className="text-lg font-bold text-slate-900 mb-4">
+                {t('progression.activeJourneys')}
+            </Text>
+
             {tracks.length === 0 ? (
                 <View className="items-center py-10">
                     <Text className="text-slate-400">{t('progression.empty')}</Text>
@@ -120,28 +140,44 @@ export default function ProgressionScreen() {
                         >
                             <View className="flex-row items-center mb-3">
                                 {track.profile.avatarUrl ? (
-                                    <Image source={{ uri: track.profile.avatarUrl }} className="w-12 h-12 rounded-full mr-3" />
+                                    <Image
+                                        source={{ uri: track.profile.avatarUrl }}
+                                        className="w-12 h-12 rounded-full mr-3"
+                                    />
                                 ) : (
                                     <View className="w-12 h-12 bg-slate-100 rounded-full mr-3 items-center justify-center">
                                         <UsersIcon size={20} color="#94a3b8" />
                                     </View>
                                 )}
                                 <View className="flex-1">
-                                    <Text className="font-bold text-slate-900 text-base">{track.profile.name}</Text>
-                                    <Text className="text-xs text-slate-500">{track.profile.specialty}</Text>
+                                    <Text className="font-bold text-slate-900 text-base">
+                                        {track.profile.name}
+                                    </Text>
+                                    <Text className="text-xs text-slate-500">
+                                        {track.profile.specialty}
+                                    </Text>
                                 </View>
                                 <View className="bg-blue-50 px-2 py-1 rounded-lg">
-                                    <Text className="text-xs font-bold text-blue-700">{track.stageLabel}</Text>
+                                    <Text className="text-xs font-bold text-blue-700">
+                                        {track.stageLabel}
+                                    </Text>
                                 </View>
                             </View>
 
                             {/* Progress Bar */}
                             <View className="h-2 bg-slate-100 rounded-full overflow-hidden mb-2">
-                                <View className="h-full bg-blue-500 rounded-full" style={{ width: `${track.progress}%` }} />
+                                <View
+                                    className="h-full bg-blue-500 rounded-full"
+                                    style={{ width: `${track.progress}%` }}
+                                />
                             </View>
                             <View className="flex-row justify-between">
-                                <Text className="text-xs text-slate-400">Last: {track.lastInteraction}</Text>
-                                <Text className="text-xs text-blue-600 font-medium">Next: {track.nextAction}</Text>
+                                <Text className="text-xs text-slate-400">
+                                    Last: {track.lastInteraction}
+                                </Text>
+                                <Text className="text-xs text-blue-600 font-medium">
+                                    Next: {track.nextAction}
+                                </Text>
                             </View>
                         </TouchableOpacity>
                     </MotiView>
@@ -151,14 +187,16 @@ export default function ProgressionScreen() {
     );
 
     const renderDetail = () => {
-        if (detailLoading) return <ActivityIndicator size="large" color="#3b82f6" className="mt-20" />;
-        
+        if (detailLoading)
+            return <ActivityIndicator size="large" color="#3b82f6" className="mt-20" />;
+
         return (
             <ScrollView className="flex-1">
                 {/* Timeline */}
                 <View className="p-6">
                     {STAGES.map((stage, i) => {
-                        const isCompleted = STAGES.findIndex(s => s.id === selectedTrack?.stage) >= i;
+                        const isCompleted =
+                            STAGES.findIndex((s) => s.id === selectedTrack?.stage) >= i;
                         const isCurrent = selectedTrack?.stage === stage.id;
                         const Icon = stage.icon;
 
@@ -166,23 +204,42 @@ export default function ProgressionScreen() {
                             <View key={stage.id} className="flex-row mb-6 relative">
                                 {/* Line */}
                                 {i !== STAGES.length - 1 && (
-                                    <View className={`absolute left-5 top-10 w-0.5 h-12 ${isCompleted ? 'bg-blue-500' : 'bg-slate-200'}`} />
+                                    <View
+                                        className={`absolute left-5 top-10 w-0.5 h-12 ${isCompleted ? 'bg-blue-500' : 'bg-slate-200'}`}
+                                    />
                                 )}
-                                
+
                                 {/* Icon Bubble */}
-                                <View className={`w-10 h-10 rounded-full items-center justify-center z-10 mr-4 ${isCurrent ? 'bg-blue-600 shadow-blue-500/30 shadow-lg' : isCompleted ? 'bg-blue-100' : 'bg-slate-100'}`}>
-                                    <Icon size={18} color={isCurrent ? 'white' : isCompleted ? '#2563eb' : '#94a3b8'} />
+                                <View
+                                    className={`w-10 h-10 rounded-full items-center justify-center z-10 mr-4 ${isCurrent ? 'bg-blue-600 shadow-blue-500/30 shadow-lg' : isCompleted ? 'bg-blue-100' : 'bg-slate-100'}`}
+                                >
+                                    <Icon
+                                        size={18}
+                                        color={
+                                            isCurrent
+                                                ? 'white'
+                                                : isCompleted
+                                                  ? '#2563eb'
+                                                  : '#94a3b8'
+                                        }
+                                    />
                                 </View>
-                                
+
                                 <View className="flex-1 pt-2">
-                                    <Text className={`font-bold text-base ${isCurrent ? 'text-blue-700' : isCompleted ? 'text-slate-900' : 'text-slate-400'}`}>
+                                    <Text
+                                        className={`font-bold text-base ${isCurrent ? 'text-blue-700' : isCompleted ? 'text-slate-900' : 'text-slate-400'}`}
+                                    >
                                         {stage.label}
                                     </Text>
                                     {isCurrent && (
                                         <View className="bg-white p-3 rounded-xl border border-blue-100 mt-2 shadow-sm">
-                                            <Text className="text-xs text-slate-500 mb-2">{t('progression.currentPhaseActions')}</Text>
+                                            <Text className="text-xs text-slate-500 mb-2">
+                                                {t('progression.currentPhaseActions')}
+                                            </Text>
                                             <TouchableOpacity className="bg-blue-600 py-2 rounded-lg items-center">
-                                                <Text className="text-white text-xs font-bold">{t('progression.logActivity')}</Text>
+                                                <Text className="text-white text-xs font-bold">
+                                                    {t('progression.logActivity')}
+                                                </Text>
                                             </TouchableOpacity>
                                         </View>
                                     )}
@@ -205,8 +262,8 @@ export default function ProgressionScreen() {
                 className="px-4 shadow-lg z-10"
             >
                 <View className="flex-row items-center py-4">
-                    <TouchableOpacity 
-                        onPress={() => selectedTrack ? setSelectedTrack(null) : router.back()}
+                    <TouchableOpacity
+                        onPress={() => (selectedTrack ? setSelectedTrack(null) : router.back())}
                         className="w-10 h-10 bg-white/20 rounded-full items-center justify-center mr-3"
                     >
                         <ChevronLeftIcon size={24} color="white" />
@@ -216,7 +273,9 @@ export default function ProgressionScreen() {
                             {selectedTrack ? selectedTrack.profile.name : t('progression.title')}
                         </Text>
                         <Text className="text-blue-100 text-xs">
-                            {selectedTrack ? t('progression.manageStages') : t('progression.emptyDesc')}
+                            {selectedTrack
+                                ? t('progression.manageStages')
+                                : t('progression.emptyDesc')}
                         </Text>
                     </View>
                 </View>
@@ -226,8 +285,10 @@ export default function ProgressionScreen() {
                 <View className="flex-1 items-center justify-center">
                     <ActivityIndicator size="large" color="#3b82f6" />
                 </View>
+            ) : selectedTrack ? (
+                renderDetail()
             ) : (
-                selectedTrack ? renderDetail() : renderDashboard()
+                renderDashboard()
             )}
         </View>
     );

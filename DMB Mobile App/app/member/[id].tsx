@@ -1,5 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, Alert, ActivityIndicator, Dimensions } from 'react-native';
+import {
+    View,
+    Text,
+    ScrollView,
+    TouchableOpacity,
+    Image,
+    Alert,
+    ActivityIndicator,
+    Dimensions,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MotiView, AnimatePresence } from 'moti';
@@ -7,9 +16,18 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Background from '../../components/Background';
 import { api, getProfileImageUrl } from '../../utils/api';
 import {
-    ChevronLeftIcon, HeartIcon, BookmarkIcon, MapPinIcon, BriefcaseIcon,
-    UserIcon, StarIcon, CheckIcon, MessageCircleIcon, CoffeeIcon, HomeIcon,
-    GlobeIcon, SparklesIcon, CalendarIcon
+    ChevronLeftIcon,
+    HeartIcon,
+    BookmarkIcon,
+    MapPinIcon,
+    BriefcaseIcon,
+    UserIcon,
+    StarIcon,
+    CheckIcon,
+    CoffeeIcon,
+    HomeIcon,
+    GlobeIcon,
+    CalendarIcon,
 } from '../../components/Icons';
 import * as Haptics from 'expo-haptics';
 import { useTranslation } from 'react-i18next';
@@ -57,7 +75,10 @@ const ProfileDetailScreen = () => {
                 Alert.alert(t('common.notice'), resp.data.message || t('member.alreadyInterested'));
             }
         } catch (error: any) {
-            Alert.alert(t('common.error'), error.response?.data?.message || t('member.interestFailed'));
+            Alert.alert(
+                t('common.error'),
+                error.response?.data?.message || t('member.interestFailed'),
+            );
         } finally {
             setSendingInterest(false);
         }
@@ -72,7 +93,10 @@ const ProfileDetailScreen = () => {
                 Alert.alert(t('member.shortlistedTitle'), t('member.shortlistedMsg'));
             }
         } catch (error: any) {
-            Alert.alert(t('common.error'), error.response?.data?.message || t('member.shortlistFailed'));
+            Alert.alert(
+                t('common.error'),
+                error.response?.data?.message || t('member.shortlistFailed'),
+            );
         } finally {
             setShortlisting(false);
         }
@@ -151,7 +175,9 @@ const ProfileDetailScreen = () => {
                             </View>
                             <View className="flex-row items-center gap-1">
                                 <MapPinIcon size={14} color="white" />
-                                <Text className="text-white/90">{basics.city || basics.country || 'N/A'}</Text>
+                                <Text className="text-white/90">
+                                    {basics.city || basics.country || 'N/A'}
+                                </Text>
                             </View>
                         </View>
                     </MotiView>
@@ -168,10 +194,13 @@ const ProfileDetailScreen = () => {
                                 Haptics.selectionAsync();
                                 setActiveTab(tab.id);
                             }}
-                            className={`flex-1 items-center pb-3 border-b-2 ${activeTab === tab.id ? 'border-blue-600' : 'border-transparent'
-                                }`}
+                            className={`flex-1 items-center pb-3 border-b-2 ${
+                                activeTab === tab.id ? 'border-blue-600' : 'border-transparent'
+                            }`}
                         >
-                            <Text className={`font-bold ${activeTab === tab.id ? 'text-blue-600' : 'text-slate-400'}`}>
+                            <Text
+                                className={`font-bold ${activeTab === tab.id ? 'text-blue-600' : 'text-slate-400'}`}
+                            >
                                 {tab.label}
                             </Text>
                         </TouchableOpacity>
@@ -187,16 +216,34 @@ const ProfileDetailScreen = () => {
                                 animate={{ opacity: 1, translateX: 0 }}
                                 exit={{ opacity: 0, translateX: 10 }}
                             >
-                                <Text className="text-slate-900 font-bold text-lg mb-2">{t('member.introduction')}</Text>
+                                <Text className="text-slate-900 font-bold text-lg mb-2">
+                                    {t('member.introduction')}
+                                </Text>
                                 <Text className="text-slate-600 leading-6 mb-6">
                                     {profile.intoduction?.about || t('member.noIntro')}
                                 </Text>
 
                                 <View className="flex-row flex-wrap gap-4">
-                                    <InfoItem label="Religion" value={basics.religion} icon={StarIcon} />
-                                    <InfoItem label="Mother Tongue" value={basics.mothere_tongue} icon={GlobeIcon} />
-                                    <InfoItem label="Height" value={`${physical.height} cm`} icon={UserIcon} />
-                                    <InfoItem label="Weight" value={`${physical.weight} kg`} icon={UserIcon} />
+                                    <InfoItem
+                                        label="Religion"
+                                        value={basics.religion}
+                                        icon={StarIcon}
+                                    />
+                                    <InfoItem
+                                        label="Mother Tongue"
+                                        value={basics.mothere_tongue}
+                                        icon={GlobeIcon}
+                                    />
+                                    <InfoItem
+                                        label="Height"
+                                        value={`${physical.height} cm`}
+                                        icon={UserIcon}
+                                    />
+                                    <InfoItem
+                                        label="Weight"
+                                        value={`${physical.weight} kg`}
+                                        icon={UserIcon}
+                                    />
                                 </View>
                             </MotiView>
                         )}
@@ -208,13 +255,29 @@ const ProfileDetailScreen = () => {
                                 animate={{ opacity: 1, translateX: 0 }}
                             >
                                 <Section title="Education">
-                                    <DetailItem icon={CalendarIcon} label="Level" value={education.degree} />
-                                    <DetailItem icon={HomeIcon} label="Institute" value={education.institution} />
+                                    <DetailItem
+                                        icon={CalendarIcon}
+                                        label="Level"
+                                        value={education.degree}
+                                    />
+                                    <DetailItem
+                                        icon={HomeIcon}
+                                        label="Institute"
+                                        value={education.institution}
+                                    />
                                 </Section>
 
                                 <Section title="Career" className="mt-6">
-                                    <DetailItem icon={BriefcaseIcon} label="Designation" value={career.designation} />
-                                    <DetailItem icon={HomeIcon} label="Company" value={career.company} />
+                                    <DetailItem
+                                        icon={BriefcaseIcon}
+                                        label="Designation"
+                                        value={career.designation}
+                                    />
+                                    <DetailItem
+                                        icon={HomeIcon}
+                                        label="Company"
+                                        value={career.company}
+                                    />
                                 </Section>
                             </MotiView>
                         )}
@@ -226,10 +289,26 @@ const ProfileDetailScreen = () => {
                                 animate={{ opacity: 1, translateX: 0 }}
                             >
                                 <View className="flex-row flex-wrap gap-4">
-                                    <InfoItem label="Diet" value={lifestyle.diet} icon={CoffeeIcon} />
-                                    <InfoItem label="Drink" value={lifestyle.drink} icon={CoffeeIcon} />
-                                    <InfoItem label="Smoke" value={lifestyle.smoke} icon={CoffeeIcon} />
-                                    <InfoItem label="Marital Status" value={basics.marital_status} icon={HeartIcon} />
+                                    <InfoItem
+                                        label="Diet"
+                                        value={lifestyle.diet}
+                                        icon={CoffeeIcon}
+                                    />
+                                    <InfoItem
+                                        label="Drink"
+                                        value={lifestyle.drink}
+                                        icon={CoffeeIcon}
+                                    />
+                                    <InfoItem
+                                        label="Smoke"
+                                        value={lifestyle.smoke}
+                                        icon={CoffeeIcon}
+                                    />
+                                    <InfoItem
+                                        label="Marital Status"
+                                        value={basics.marital_status}
+                                        icon={HeartIcon}
+                                    />
                                 </View>
                             </MotiView>
                         )}
@@ -243,8 +322,14 @@ const ProfileDetailScreen = () => {
                                 <DetailItem label="Family Type" value={family.family_type} />
                                 <DetailItem label="Values" value={family.family_values} />
                                 <DetailItem label="Affluence" value={family.family_affluence} />
-                                <DetailItem label="Father's Occupation" value={family.father_occupation} />
-                                <DetailItem label="Mother's Occupation" value={family.mother_occupation} />
+                                <DetailItem
+                                    label="Father's Occupation"
+                                    value={family.father_occupation}
+                                />
+                                <DetailItem
+                                    label="Mother's Occupation"
+                                    value={family.mother_occupation}
+                                />
                             </MotiView>
                         )}
                     </AnimatePresence>
@@ -259,7 +344,11 @@ const ProfileDetailScreen = () => {
                     disabled={shortlisting}
                     className="w-14 h-14 rounded-2xl bg-slate-100 items-center justify-center"
                 >
-                    {shortlisting ? <ActivityIndicator size="small" color="#1e3a8a" /> : <BookmarkIcon size={24} color="#1e3a8a" />}
+                    {shortlisting ? (
+                        <ActivityIndicator size="small" color="#1e3a8a" />
+                    ) : (
+                        <BookmarkIcon size={24} color="#1e3a8a" />
+                    )}
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -272,7 +361,9 @@ const ProfileDetailScreen = () => {
                     ) : (
                         <>
                             <HeartIcon size={20} color="white" />
-                            <Text className="text-white font-bold text-lg">{t('member.expressInterest')}</Text>
+                            <Text className="text-white font-bold text-lg">
+                                {t('member.expressInterest')}
+                            </Text>
                         </>
                     )}
                 </TouchableOpacity>
@@ -299,10 +390,17 @@ const DetailItem = ({ icon: Icon, label, value }: any) => (
 );
 
 const InfoItem = ({ label, value, icon: Icon }: any) => (
-    <View style={{ width: (width - 64) / 2 }} className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+    <View
+        style={{ width: (width - 64) / 2 }}
+        className="bg-slate-50 p-4 rounded-2xl border border-slate-100"
+    >
         <Icon size={20} color="#3b82f6" className="mb-2" />
-        <Text className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">{label}</Text>
-        <Text className="text-slate-900 font-bold mt-1" numberOfLines={1}>{value || 'N/A'}</Text>
+        <Text className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">
+            {label}
+        </Text>
+        <Text className="text-slate-900 font-bold mt-1" numberOfLines={1}>
+            {value || 'N/A'}
+        </Text>
     </View>
 );
 
