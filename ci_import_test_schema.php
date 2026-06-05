@@ -90,6 +90,35 @@ try {
     }
     echo "[✓] Baseline import complete. Executed $count statements.\n";
 
+    echo "Pre-registering initial migrations to prevent creation conflicts...\n";
+    $connection->exec("CREATE TABLE IF NOT EXISTS migrations (
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        migration VARCHAR(255) NOT NULL,
+        batch INT NOT NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    $initialMigrations = [
+        '2014_10_12_000000_create_users_table',
+        '2014_10_12_100000_create_password_resets_table',
+        '2019_08_19_000000_create_failed_jobs_table',
+        '2019_10_13_000000_create_social_credentials_table',
+        '2019_12_14_000001_create_personal_access_tokens_table',
+        '2021_03_03_064750_create_notifications_table',
+        '2023_10_09_094817_create_manual_payment_methods_table'
+    ];
+
+    $stmt = $connection->prepare("INSERT INTO migrations (migration, batch) VALUES (:migration, 1)");
+    foreach ($initialMigrations as $m) {
+        // Check if already registered first
+        $check = $connection->prepare("SELECT COUNT(*) FROM migrations WHERE migration = :m");
+        $check->execute([':m' => $m]);
+        if ($check->fetchColumn() == 0) {
+            $stmt->execute([':migration' => $m]);
+            echo "  Registered: $m\n";
+        }
+    }
+    echo "[✓] Migration pre-registration complete\n";
+
 } catch (Exception $e) {
     echo "[✗] Error: ".$e->getMessage()."\n";
     exit(1);
