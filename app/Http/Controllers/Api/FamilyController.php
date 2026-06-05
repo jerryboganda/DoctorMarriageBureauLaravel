@@ -7,6 +7,7 @@ use App\Models\Family;
 use App\Models\FamilyApproval;
 use App\Models\FamilyGuardian;
 use App\Models\FamilyPhoto;
+use App\Utility\EmailUtility;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -92,7 +93,12 @@ class FamilyController extends Controller
             $target = $approval->targetUser;
             $member = $target?->member;
             $specialty = $member?->specialization ?? $member?->designation ?? '';
-            $city = $target?->city->name ?? 'Unknown City';
+            $city = $target?->addresses()
+                ->where('type', 'present')
+                ->with('city')
+                ->first()
+                ?->city
+                ?->name ?? 'Unknown City';
             $status = $approval->status ?: 'pending';
             $targetName = trim(($target?->first_name ?? '').' '.($target?->last_name ?? ''));
             if ($targetName === '') {
@@ -104,7 +110,7 @@ class FamilyController extends Controller
                 $photoUrl = uploaded_asset($target->photo);
             }
             if (! $photoUrl) {
-                $photoUrl = gender_avatar($targetUser?->member ?? null);
+                $photoUrl = gender_avatar($member);
             }
 
             return [
@@ -182,6 +188,7 @@ class FamilyController extends Controller
                     'portalUrl' => 'https://panel.doctormarriagebureau.com.pk',
                 ], function ($message) use ($guardian, $memberName) {
                     $message->to($guardian->email, $guardian->name)
+                        ->from(EmailUtility::fromAddress(), EmailUtility::fromName())
                         ->subject("Family Guardian Invitation — {$memberName} added you on Doctor Marriage Bureau");
                 });
 

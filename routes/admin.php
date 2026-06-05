@@ -340,6 +340,7 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin']], function 
 
         Route::get('/general-settings', 'general_settings')->name('general_settings');
         Route::get('/smtp-settings', 'smtp_settings')->name('smtp_settings');
+        Route::post('/smtp-settings', 'smtp_settings_update')->name('smtp_settings.update');
 
         Route::get('/payment-methods-settings', 'payment_method_settings')->name('payment_method_settings');
         Route::post('/payment_method_update', 'payment_method_update')->name('payment_method.update');

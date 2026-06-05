@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Utility\EmailUtility;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -111,9 +112,7 @@ class TrustedContact extends Model
                     'userName' => $userName,
                     'verifyUrl' => $verifyUrl,
                 ], function ($message) use ($subject) {
-                    $fromEmail = env('MAIL_FROM_ADDRESS', 'noreply@example.com');
-                    $fromName = env('MAIL_FROM_NAME', 'Matrimonial Site');
-                    $message->from($fromEmail, $fromName)
+                    $message->from(EmailUtility::fromAddress(), EmailUtility::fromName())
                         ->to($this->email)
                         ->subject($subject);
                 });

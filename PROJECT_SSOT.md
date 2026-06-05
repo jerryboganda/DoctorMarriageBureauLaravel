@@ -36,7 +36,7 @@ Three synchronized components. **Any change to Backend API responses requires im
 | **Admin Panel** | `https://api.doctormarriagebureau.com.pk/admin` |
 | **Auth** | Laravel Sanctum (Token-based) |
 | **Real-time** | Laravel Echo + Soketi (Pusher Protocol) |
-| **Email** | Brevo SMTP (`smtp-relay.brevo.com:587`, user: `8a2be7001@smtp-brevo.com`) |
+| **Email** | Brevo SMTP (`smtp-relay.brevo.com:587`, credentials configured in Laravel admin SMTP settings or production `.env`) |
 | **From Address** | `noreply@doctormarriagebureau.com.pk` |
 | **Payments** | PayPal, Stripe, Paystack, Razorpay, SSLCommerz, PhonePe, Instamojo |
 

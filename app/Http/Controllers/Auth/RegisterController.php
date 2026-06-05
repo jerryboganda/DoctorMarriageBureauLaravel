@@ -217,7 +217,7 @@ class RegisterController extends Controller
         $member->save();
 
         // Account opening Email to member
-        if ($data['email'] != null && env('MAIL_USERNAME') != null) {
+        if ($data['email'] != null && EmailUtility::isConfigured()) {
             $account_oppening_email = EmailTemplate::where('identifier', 'account_oppening_email')->first();
             if ($account_oppening_email && $account_oppening_email->status == 1) {
                 EmailUtility::account_oppening_email($user->id, $data['password']);
@@ -298,7 +298,7 @@ class RegisterController extends Controller
         } catch (\Throwable $e) {
             \Log::error('Registration notification error: '.$e->getMessage());
         }
-        if (env('MAIL_USERNAME') != null && (get_email_template('account_opening_email_to_admin', 'status') == 1)) {
+        if (EmailUtility::isConfigured() && (get_email_template('account_opening_email_to_admin', 'status') == 1)) {
             $admin = User::where('user_type', 'admin')->first();
             EmailUtility::account_opening_email_to_admin($user, $admin);
         }

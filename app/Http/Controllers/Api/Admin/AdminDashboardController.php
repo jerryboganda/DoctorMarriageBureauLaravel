@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\HappyStory;
 use App\Models\PackagePayment;
 use App\Models\User;
+use App\Utility\EmailUtility;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -66,7 +67,7 @@ class AdminDashboardController extends Controller
             });
 
         // SMTP warning check
-        $smtpConfigured = ! empty(env('MAIL_USERNAME')) && ! empty(env('MAIL_PASSWORD'));
+        $smtpConfigured = EmailUtility::isConfigured();
 
         return response()->json([
             'result' => true,

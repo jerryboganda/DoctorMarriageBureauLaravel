@@ -37,8 +37,8 @@
 ### Global SMTP (Brevo/Sendinblue)
 
 - **Host:** `smtp-relay.brevo.com`
-- **User:** `8a2be7001@smtp-brevo.com`
-- **API Key:** `xsmtpsib-829e4356e79618db21805414d5780cc36c453a8639549604edda6f3172e1d912-RpeL42Mq7IJ2Ai8Q`
+- **User:** configured through the Laravel admin SMTP settings or production `.env`
+- **API Key:** configured through the Laravel admin SMTP settings or production `.env` (do not store in repo)
 - **Port:** `587` (TLS)
 - **From Address:** `noreply@doctormarriagebureau.com.pk`
 - **Note:** Migrated to Brevo on Feb 4, 2026 for reliable email delivery.

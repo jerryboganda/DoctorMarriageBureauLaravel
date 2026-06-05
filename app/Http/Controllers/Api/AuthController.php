@@ -68,7 +68,7 @@ class AuthController extends Controller
         // SMS delivery is intentionally disabled. Email verification is enforced
         // server-side before signup.
         // Email to member
-        if ($request->email != null && env('MAIL_USERNAME') != null) {
+        if ($request->email != null && EmailUtility::isConfigured()) {
             $account_oppening_email = EmailTemplate::where('identifier', 'account_oppening_email')->first();
             if ($account_oppening_email?->status == 1) {
                 try {
@@ -91,7 +91,7 @@ class AuthController extends Controller
             // dd($e);
         }
 
-        if (env('MAIL_USERNAME') != null && get_email_template('account_opening_email_to_admin', 'status') == 1) {
+        if (EmailUtility::isConfigured() && get_email_template('account_opening_email_to_admin', 'status') == 1) {
             $admin = User::where('user_type', 'admin')->first();
             EmailUtility::account_opening_email_to_admin($user, $admin);
         }

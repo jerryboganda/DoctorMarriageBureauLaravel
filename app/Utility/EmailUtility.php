@@ -6,13 +6,14 @@ use App\Models\Package;
 use App\Models\User;
 use App\Notifications\EmailNotification;
 use Auth;
+use Illuminate\Support\Facades\Log;
 use Notification;
 
 class EmailUtility
 {
     public static function fromAddress(): string
     {
-        $address = trim((string) (config('mail.from.address') ?? env('MAIL_FROM_ADDRESS')));
+        $address = trim((string) config('mail.from.address'));
 
         if ($address !== '' && strtolower($address) !== 'null') {
             return $address;
@@ -23,13 +24,46 @@ class EmailUtility
 
     public static function fromName(): string
     {
-        $name = trim((string) (config('mail.from.name') ?? env('MAIL_FROM_NAME') ?? env('APP_NAME')));
+        $name = trim((string) (config('mail.from.name') ?? config('app.name')));
 
         if ($name !== '' && strtolower($name) !== 'null') {
             return $name;
         }
 
         return 'Doctor Marriage Bureau';
+    }
+
+    public static function isConfigured(): bool
+    {
+        $mailer = (string) config('mail.default', 'smtp');
+
+        if ($mailer === 'array') {
+            return true;
+        }
+
+        if ($mailer === 'log') {
+            return app()->environment('local', 'testing');
+        }
+
+        if ($mailer !== 'smtp') {
+            return config("mail.mailers.{$mailer}") !== null;
+        }
+
+        return self::hasSmtpCredentials();
+    }
+
+    public static function hasSmtpCredentials(): bool
+    {
+        $smtp = (array) config('mail.mailers.smtp', []);
+
+        foreach (['host', 'username', 'password'] as $key) {
+            $value = strtolower(trim((string) ($smtp[$key] ?? '')));
+            if ($value === '' || $value === 'null') {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public static function account_oppening_email($user_id = '', $pass = '')
@@ -49,7 +83,7 @@ class EmailUtility
         try {
             Notification::send($user, new EmailNotification($subject, $email_body));
         } catch (\Throwable $e) {
-            // \Log::error('Email notification failed: ' . $e->getMessage());
+            Log::error('Account opening email failed: '.$e->getMessage(), ['user_id' => $user->id ?? null]);
         }
     }
 
@@ -59,13 +93,13 @@ class EmailUtility
         $email_body = get_email_template('account_opening_email_to_admin', 'body');
         $email_body = str_replace('[[member_name]]', $user->first_name.' '.$user->last_name, $email_body);
         $email_body = str_replace('[[email]]', $user->email, $email_body);
-        $email_body = str_replace('[[profile_link]]', env('APP_URL').'/admin/members/'.$user->id, $email_body);
+        $email_body = str_replace('[[profile_link]]', config('app.url').'/admin/members/'.$user->id, $email_body);
         $email_body = str_replace('[[from]]', self::fromName(), $email_body);
 
         try {
             Notification::send($admin, new EmailNotification($subject, $email_body));
         } catch (\Throwable $e) {
-            // \Log::error('Admin email notification failed: ' . $e->getMessage());
+            Log::error('Admin account opening email failed: '.$e->getMessage(), ['user_id' => $user->id ?? null]);
         }
     }
 
@@ -80,7 +114,7 @@ class EmailUtility
         try {
             Notification::send($user, new EmailNotification($subject, $email_body));
         } catch (\Throwable $e) {
-            // \Log::error('Member verification email failed: ' . $e->getMessage());
+            Log::error('Member verification email failed: '.$e->getMessage(), ['user_id' => $user->id ?? null]);
         }
     }
 
@@ -99,7 +133,7 @@ class EmailUtility
         try {
             Notification::send($user, new EmailNotification($subject, $email_body));
         } catch (\Throwable $e) {
-            // \Log::error('Staff email notification failed: ' . $e->getMessage());
+            Log::error('Staff account opening email failed: '.$e->getMessage(), ['user_id' => $user->id ?? null]);
         }
     }
 
@@ -120,7 +154,7 @@ class EmailUtility
         try {
             Notification::send($user, new EmailNotification($subject, $email_body));
         } catch (\Throwable $e) {
-            // \Log::error('Package purchase email failed: ' . $e->getMessage());
+            Log::error('Package purchase email failed: '.$e->getMessage(), ['user_id' => $user->id ?? null]);
         }
     }
 
@@ -140,7 +174,7 @@ class EmailUtility
         try {
             Notification::send($user, new EmailNotification($subject, $email_body));
         } catch (\Throwable $e) {
-            // \Log::error('Manual payment approval email failed: ' . $e->getMessage());
+            Log::error('Manual payment approval email failed: '.$e->getMessage(), ['user_id' => $user->id ?? null]);
         }
     }
 
@@ -155,7 +189,7 @@ class EmailUtility
         try {
             Notification::send($user, new EmailNotification($subject, $email_body));
         } catch (\Throwable $e) {
-            // \Log::error('Accepting interest email failed: ' . $e->getMessage());
+            Log::error('Interest acceptance email failed: '.$e->getMessage(), ['user_id' => $user->id ?? null]);
         }
     }
 
@@ -163,22 +197,11 @@ class EmailUtility
     {
         // Guard: ensure we have a valid user with an email address
         if (! $user || empty($user->email)) {
-            \Log::warning('Password reset email skipped: user is null or has no email address.', [
+            Log::warning('Password reset email skipped: user is null or has no email address.', [
                 'user_id' => $user ? ($user->id ?? 'unknown') : 'null',
             ]);
 
             return false;
-        }
-
-        // Bypass Notification system check forced to TRUE for debugging
-        // MOVED TO TOP to avoid any DB/ENV hangs before this point
-        if (config('mail.default') === 'log' || env('MAIL_MAILER') === 'log') {
-            \Log::info('=== MOCKED EMAIL SENT (LOG DRIVER) ===');
-            \Log::info('To: '.($user->email ?? 'Unknown'));
-            \Log::info('Code: '.$code);
-            \Log::info('=== END MOCKED EMAIL ===');
-
-            return true;
         }
 
         $subject = get_email_template('password_reset_email', 'subject');
@@ -188,16 +211,6 @@ class EmailUtility
         $email_body = str_replace('[[from]]', self::fromName(), $email_body);
 
         try {
-            // Add explicit timeout for Brevo SMTP
-            config(['mail.mailers.smtp.timeout' => 30]);
-
-            \Log::info('=== PASSWORD RESET EMAIL ATTEMPT ===');
-            \Log::info('To: '.$user->email);
-            \Log::info('SMTP Host: '.env('MAIL_HOST'));
-            \Log::info('SMTP Port: '.env('MAIL_PORT'));
-
-            // Notification::send($user, new EmailNotification($subject, $email_body));
-            // Switched to Mail facade to align with working Mobile App logic (Port 465/SSL Google)
             \Mail::send('emails.index', ['email_body' => $email_body], function ($message) use ($user, $subject) {
                 $fromEmail = self::fromAddress();
                 $fromName = self::fromName();
@@ -206,12 +219,11 @@ class EmailUtility
                     ->from($fromEmail, $fromName);
             });
 
-            \Log::info('=== PASSWORD RESET EMAIL SENT SUCCESSFULLY ===');
+            Log::info('Password reset email sent successfully.', ['user_id' => $user->id ?? null]);
 
             return true;
         } catch (\Throwable $e) {
-            \Log::error('Password reset email failed: '.$e->getMessage());
-            \Log::error('Full trace: '.$e->getTraceAsString());
+            Log::error('Password reset email failed: '.$e->getMessage(), ['user_id' => $user->id ?? null]);
 
             return false;
         }
@@ -228,7 +240,7 @@ class EmailUtility
         try {
             Notification::send($user, new EmailNotification($subject, $email_body));
         } catch (\Throwable $e) {
-            // \Log::error('Email on request failed: ' . $e->getMessage());
+            Log::error('Request email failed: '.$e->getMessage(), ['user_id' => $user->id ?? null]);
         }
     }
 
@@ -243,7 +255,7 @@ class EmailUtility
         try {
             Notification::send($notify_user, new EmailNotification($subject, $email_body));
         } catch (\Throwable $e) {
-            // \Log::error('Email on accept request failed: ' . $e->getMessage());
+            Log::error('Request acceptance email failed: '.$e->getMessage(), ['user_id' => $notify_user->id ?? null]);
         }
     }
 }

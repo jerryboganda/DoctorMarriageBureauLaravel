@@ -8,6 +8,7 @@ use App\Models\StepUpAuthToken;
 use App\Models\TrustedContact;
 use App\Models\User;
 use App\Models\UserTwoFactorSetting;
+use App\Utility\EmailUtility;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
@@ -609,6 +610,7 @@ class AccountSecurityController extends Controller
             try {
                 Mail::raw('Your Doctor Marriage Bureau verification code is '.$otp, function ($message) use ($user) {
                     $message->to($user->email)
+                        ->from(EmailUtility::fromAddress(), EmailUtility::fromName())
                         ->subject('Security verification code');
                 });
             } catch (\Throwable $e) {

@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Mail\EmailManager;
 use App\Models\Setting;
+use App\Utility\EmailUtility;
 use Artisan;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Mail;
 use MehediIitdu\CoreComponentRepository\CoreComponentRepository;
 
 class SettingController extends Controller
@@ -19,7 +21,7 @@ class SettingController extends Controller
         $this->middleware(['permission:appearances'])->only('website_appearances');
         $this->middleware(['permission:general_settings'])->only('general_settings');
         $this->middleware(['permission:payment_method_settings'])->only('payment_method_settings');
-        $this->middleware(['permission:smtp_settings'])->only('smtp_settings');
+        $this->middleware(['permission:smtp_settings'])->only('smtp_settings', 'smtp_settings_update', 'testSmtp');
         $this->middleware(['permission:third_party_settings'])->only('third_party_settings');
         $this->middleware(['permission:social_media_login_settings'])->only('social_media_login_settings');
         $this->middleware(['permission:system_update'])->only('system_update');
@@ -39,6 +41,59 @@ class SettingController extends Controller
     public function smtp_settings()
     {
         return view('admin.settings.smtp_settings');
+    }
+
+    public function smtp_settings_update(Request $request)
+    {
+        $validated = $request->validate([
+            'MAIL_DRIVER' => 'required|in:smtp',
+            'MAIL_HOST' => 'required|string|max:255',
+            'MAIL_PORT' => 'required|integer|min:1|max:65535',
+            'MAIL_USERNAME' => 'required|string|max:255',
+            'MAIL_PASSWORD' => 'nullable|string|max:1000',
+            'MAIL_ENCRYPTION' => 'required|in:tls,ssl',
+            'MAIL_FROM_ADDRESS' => 'required|email|max:255',
+            'MAIL_FROM_NAME' => 'required|string|max:255',
+        ]);
+
+        $settings = [
+            'MAIL_MAILER' => 'smtp',
+            'MAIL_DRIVER' => 'smtp',
+            'MAIL_HOST' => $validated['MAIL_HOST'],
+            'MAIL_PORT' => (string) $validated['MAIL_PORT'],
+            'MAIL_USERNAME' => $validated['MAIL_USERNAME'],
+            'MAIL_ENCRYPTION' => $validated['MAIL_ENCRYPTION'],
+            'MAIL_FROM_ADDRESS' => $validated['MAIL_FROM_ADDRESS'],
+            'MAIL_FROM_NAME' => $validated['MAIL_FROM_NAME'],
+        ];
+
+        if (! empty($validated['MAIL_PASSWORD'])) {
+            $settings['MAIL_PASSWORD'] = $validated['MAIL_PASSWORD'];
+        }
+
+        foreach ($settings as $type => $value) {
+            $this->overWriteEnvFile($type, $value);
+        }
+
+        config([
+            'mail.default' => 'smtp',
+            'mail.mailers.smtp.host' => $settings['MAIL_HOST'],
+            'mail.mailers.smtp.port' => (int) $settings['MAIL_PORT'],
+            'mail.mailers.smtp.username' => $settings['MAIL_USERNAME'],
+            'mail.mailers.smtp.encryption' => $settings['MAIL_ENCRYPTION'],
+            'mail.from.address' => $settings['MAIL_FROM_ADDRESS'],
+            'mail.from.name' => $settings['MAIL_FROM_NAME'],
+        ]);
+
+        if (isset($settings['MAIL_PASSWORD'])) {
+            config(['mail.mailers.smtp.password' => $settings['MAIL_PASSWORD']]);
+        }
+
+        $this->clearMailConfigurationCache();
+
+        flash(translate('SMTP settings updated successfully'))->success();
+
+        return back();
     }
 
     public function payment_method_settings()
@@ -114,14 +169,19 @@ class SettingController extends Controller
      */
     public function testSmtp(Request $request)
     {
-        $array['view'] = 'emails.verification';
-        $array['subject'] = 'SMTP Test';
-        $array['from'] = env('MAIL_USERNAME');
-        $array['content'] = 'This is a test email.';
+        $request->validate([
+            'email' => 'required|email|max:255',
+        ]);
 
         try {
-            \Mail::to($request->email)->queue(new EmailManager($array));
-        } catch (\Exception $e) {
+            Mail::to($request->email)->send(new EmailManager([
+                'view' => 'emails.index',
+                'subject' => translate('SMTP Test - Doctor Marriage Bureau'),
+                'from' => EmailUtility::fromAddress(),
+                'from_name' => EmailUtility::fromName(),
+                'email_body' => translate('This is a test email from Doctor Marriage Bureau SMTP settings.'),
+            ]));
+        } catch (\Throwable $e) {
             flash(translate('Failed to send: '.$e->getMessage()))->error();
 
             return back();
@@ -309,14 +369,13 @@ class SettingController extends Controller
         if (env('DEMO_MODE') != 'On') {
             $path = base_path('.env');
             if (file_exists($path)) {
-                $val = '"'.trim($val).'"';
-                $old_val = env($type);
+                $val = $this->formatEnvValue($val);
 
                 $content = file_get_contents($path);
 
                 // If the key exists, replace it
-                if (preg_match("/^{$type}=(.*)$/m", $content)) {
-                    $content = preg_replace("/^{$type}=(.*)$/m", "{$type}={$val}", $content);
+                if (preg_match('/^'.preg_quote($type, '/').'=(.*)$/m', $content)) {
+                    $content = preg_replace('/^'.preg_quote($type, '/').'=(.*)$/m', "{$type}={$val}", $content);
                 } else {
                     // Append if it doesn't exist
                     $content .= "\n".$type.'='.$val;
@@ -325,6 +384,20 @@ class SettingController extends Controller
                 file_put_contents($path, $content);
             }
         }
+    }
+
+    protected function formatEnvValue($val): string
+    {
+        $value = trim((string) $val);
+        $value = str_replace(['\\', '"'], ['\\\\', '\\"'], $value);
+
+        return '"'.$value.'"';
+    }
+
+    protected function clearMailConfigurationCache(): void
+    {
+        Artisan::call('config:clear');
+        Artisan::call('cache:clear');
     }
 
     public function updateActivationSettings(Request $request)

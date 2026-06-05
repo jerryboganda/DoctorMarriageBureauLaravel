@@ -45,7 +45,11 @@ class ForgotPasswordController extends Controller
             $user->verification_code = rand(100000, 999999);
             $user->save();
 
-            EmailUtility::password_reset_email($user, $user->verification_code);
+            if (! EmailUtility::password_reset_email($user, $user->verification_code)) {
+                return view('auth.passwords.email')
+                    ->with('password_error', translate('Unable to send password reset email. Please contact support or try again later.'))
+                    ->with('oldEmail', $email);
+            }
 
             return view('auth.passwords.reset', ['email' => $email]);
         }

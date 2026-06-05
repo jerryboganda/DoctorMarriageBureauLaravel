@@ -1,7 +1,7 @@
 @extends('admin.layouts.app')
 @section('content')
     @can('admin_dashboard')
-        @if(env('MAIL_USERNAME') == null && env('MAIL_PASSWORD') == null)
+        @if(! \App\Utility\EmailUtility::isConfigured())
             <div class="">
                 <div class="alert alert-danger d-flex align-items-center">
                     {{translate('Please Configure SMTP Setting to work all email sending functionality')}},

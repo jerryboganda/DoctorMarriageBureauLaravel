@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Utility\EmailUtility;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
@@ -30,7 +31,8 @@ class EmailManager extends Mailable
     public function build()
     {
         return $this->view($this->array['view'])
-            ->from($this->array['from'])
+            ->with($this->array)
+            ->from($this->array['from'] ?? EmailUtility::fromAddress(), $this->array['from_name'] ?? EmailUtility::fromName())
             ->subject($this->array['subject']);
     }
 }

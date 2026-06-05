@@ -1,6 +1,15 @@
 @extends('admin.layouts.app')
 
 @section('content')
+    @php
+        $mailDriver = config('mail.default', 'smtp');
+        $mailHost = config('mail.mailers.smtp.host') ?: 'smtp-relay.brevo.com';
+        $mailPort = config('mail.mailers.smtp.port') ?: '587';
+        $mailUsername = config('mail.mailers.smtp.username');
+        $mailEncryption = config('mail.mailers.smtp.encryption') ?: 'tls';
+        $mailFromAddress = config('mail.from.address') ?: 'noreply@doctormarriagebureau.com.pk';
+        $mailFromName = config('mail.from.name') ?: config('app.name', 'Doctor Marriage Bureau');
+    @endphp
     <div class="row">
         <div class="col-md-6">
             <div class="card">
@@ -8,16 +17,14 @@
                     <h5 class="mb-0 h6">{{translate('SMTP Settings')}}</h5>
                 </div>
                 <div class="card-body">
-                    <form action="{{ route('env_key_update.update') }}" method="POST">
+                    <form action="{{ route('smtp_settings.update') }}" method="POST">
                         @csrf
                         <div class="form-group row">
                             <input type="hidden" name="types[]" value="MAIL_DRIVER">
                             <label class="col-md-3 col-form-label">{{translate('Type')}}</label>
                             <div class="col-md-9">
                                 <select class="form-control aiz-selectpicker mb-2 mb-md-0" name="MAIL_DRIVER" onchange="checkMailDriver()">
-                                    <option value="sendmail" @if (env('MAIL_DRIVER') == "sendmail") selected @endif>{{ translate('Sendmail') }}</option>
-                                    <option value="smtp" @if (env('MAIL_DRIVER') == "smtp") selected @endif>{{ translate('SMTP') }}</option>
-                                    <option value="mailgun" @if (env('MAIL_DRIVER') == "mailgun") selected @endif>{{ translate('Mailgun') }}</option>
+                                    <option value="smtp" @if ($mailDriver == "smtp") selected @endif>{{ translate('SMTP') }}</option>
                                 </select>
                             </div>
                         </div>
@@ -28,7 +35,7 @@
                                     <label class="col-from-label">{{translate('MAIL HOST')}}</label>
                                 </div>
                                 <div class="col-md-9">
-                                    <input type="text" class="form-control" name="MAIL_HOST" value="{{  env('MAIL_HOST') }}" placeholder="{{ translate('MAIL HOST') }}">
+                                    <input type="text" class="form-control" name="MAIL_HOST" value="{{ $mailHost }}" placeholder="smtp-relay.brevo.com">
                                 </div>
                             </div>
                             <div class="form-group row">
@@ -37,7 +44,7 @@
                                     <label class="col-from-label">{{translate('MAIL PORT')}}</label>
                                 </div>
                                 <div class="col-md-9">
-                                    <input type="text" class="form-control" name="MAIL_PORT" value="{{  env('MAIL_PORT') }}" placeholder="{{ translate('MAIL PORT') }}">
+                                    <input type="number" min="1" max="65535" class="form-control" name="MAIL_PORT" value="{{ $mailPort }}" placeholder="587">
                                 </div>
                             </div>
                             <div class="form-group row">
@@ -46,7 +53,7 @@
                                         <label class="col-from-label">{{translate('MAIL USERNAME')}}</label>
                                 </div>
                                 <div class="col-md-9">
-                                    <input type="text" class="form-control" name="MAIL_USERNAME" value="{{  env('MAIL_USERNAME') }}" placeholder="{{ translate('MAIL USERNAME') }}">
+                                    <input type="text" class="form-control" name="MAIL_USERNAME" value="{{ $mailUsername }}" placeholder="{{ translate('MAIL USERNAME') }}">
                                 </div>
                             </div>
                             <div class="form-group row">
@@ -55,7 +62,8 @@
                                     <label class="col-from-label">{{translate('MAIL PASSWORD')}}</label>
                                 </div>
                                 <div class="col-md-9">
-                                    <input type="text" class="form-control" name="MAIL_PASSWORD" value="{{  env('MAIL_PASSWORD') }}" placeholder="{{ translate('MAIL PASSWORD') }}">
+                                    <input type="password" class="form-control" name="MAIL_PASSWORD" value="" placeholder="{{ translate('Enter new SMTP API key') }}" autocomplete="new-password">
+                                    <small class="form-text text-muted">{{ translate('Leave blank to keep the current SMTP API key.') }}</small>
                                 </div>
                             </div>
                             <div class="form-group row">
@@ -64,7 +72,10 @@
                                     <label class="col-from-label">{{translate('MAIL ENCRYPTION')}}</label>
                                 </div>
                                 <div class="col-md-9">
-                                    <input type="text" class="form-control" name="MAIL_ENCRYPTION" value="{{  env('MAIL_ENCRYPTION') }}" placeholder="{{ translate('MAIL ENCRYPTION') }}">
+                                    <select class="form-control aiz-selectpicker mb-2 mb-md-0" name="MAIL_ENCRYPTION">
+                                        <option value="tls" @if ($mailEncryption == "tls") selected @endif>tls</option>
+                                        <option value="ssl" @if ($mailEncryption == "ssl") selected @endif>ssl</option>
+                                    </select>
                                 </div>
                             </div>
                             <div class="form-group row">
@@ -73,7 +84,7 @@
                                     <label class="col-from-label">{{translate('MAIL FROM ADDRESS')}}</label>
                                 </div>
                                 <div class="col-md-9">
-                                    <input type="text" class="form-control" name="MAIL_FROM_ADDRESS" value="{{  env('MAIL_FROM_ADDRESS') }}" placeholder="{{ translate('MAIL FROM ADDRESS') }}">
+                                    <input type="email" class="form-control" name="MAIL_FROM_ADDRESS" value="{{ $mailFromAddress }}" placeholder="noreply@doctormarriagebureau.com.pk">
                                 </div>
                             </div>
                             <div class="form-group row">
@@ -82,27 +93,7 @@
                                     <label class="col-from-label">{{translate('MAIL FROM NAME')}}</label>
                                 </div>
                                 <div class="col-md-9">
-                                    <input type="text" class="form-control" name="MAIL_FROM_NAME" value="{{  env('MAIL_FROM_NAME') }}" placeholder="{{ translate('MAIL FROM NAME') }}">
-                                </div>
-                            </div>
-                        </div>
-                        <div id="mailgun">
-                            <div class="form-group row">
-                                <input type="hidden" name="types[]" value="MAILGUN_DOMAIN">
-                                <div class="col-md-3">
-                                    <label class="col-from-label">{{translate('MAILGUN DOMAIN')}}</label>
-                                </div>
-                                <div class="col-md-9">
-                                    <input type="text" class="form-control" name="MAILGUN_DOMAIN" value="{{  env('MAILGUN_DOMAIN') }}" placeholder="{{ translate('MAILGUN DOMAIN') }}">
-                                </div>
-                            </div>
-                            <div class="form-group row">
-                                <input type="hidden" name="types[]" value="MAILGUN_SECRET">
-                                <div class="col-md-3">
-                                    <label class="col-from-label">{{translate('MAILGUN SECRET')}}</label>
-                                </div>
-                                <div class="col-md-9">
-                                    <input type="text" class="form-control" name="MAILGUN_SECRET" value="{{  env('MAILGUN_SECRET') }}" placeholder="{{ translate('MAILGUN SECRET') }}">
+                                    <input type="text" class="form-control" name="MAIL_FROM_NAME" value="{{ $mailFromName }}" placeholder="Doctor Marriage Bureau">
                                 </div>
                             </div>
                         </div>
@@ -138,21 +129,14 @@
                     <h5 class="mb-0 h6">{{translate('Instruction')}}</h5>
                 </div>
                 <div class="card-body">
-                    <p class="text-danger">{{ translate('Please be carefull when you are configuring SMTP. For incorrect configuration you will get error at the time of order place, new registration, sending newsletter.') }}</p>
-                    <h6 class="text-muted">{{ translate('For Non-SSL') }}</h6>
+                    <p class="text-danger">{{ translate('Incorrect SMTP configuration can stop registration verification, password reset, security OTP, notification, and newsletter emails.') }}</p>
+                    <h6 class="text-muted">{{ translate('Brevo SMTP') }}</h6>
                     <ul class="list-group">
-                        <li class="list-group-item text-dark">{{ translate('Select sendmail for Mail Driver if you face any issue after configuring smtp as Mail Driver ') }}</li>
-                        <li class="list-group-item text-dark">{{ translate('Set Mail Host according to your server Mail Client Manual Settings') }}</li>
-                        <li class="list-group-item text-dark">{{ translate('Set Mail port as 587') }}</li>
-                        <li class="list-group-item text-dark">{{ translate('Set Mail Encryption as ssl if you face issue with tls') }}</li>
-                    </ul>
-                    <br>
-                    <h6 class="text-muted">{{ translate('For SSL') }}</h6>
-                    <ul class="list-group mar-no">
-                        <li class="list-group-item text-dark">{{ translate('Select sendmail for Mail Driver if you face any issue after configuring smtp as Mail Driver') }}</li>
-                        <li class="list-group-item text-dark">{{ translate('Set Mail Host according to your server Mail Client Manual Settings') }}</li>
-                        <li class="list-group-item text-dark">{{ translate('Set Mail port as 465') }}</li>
-                        <li class="list-group-item text-dark">{{ translate('Set Mail Encryption as ssl') }}</li>
+                        <li class="list-group-item text-dark">{{ translate('Use SMTP as the mail driver.') }}</li>
+                        <li class="list-group-item text-dark">{{ translate('Set Mail Host to smtp-relay.brevo.com.') }}</li>
+                        <li class="list-group-item text-dark">{{ translate('Set Mail Port to 587.') }}</li>
+                        <li class="list-group-item text-dark">{{ translate('Set Mail Encryption to tls.') }}</li>
+                        <li class="list-group-item text-dark">{{ translate('Use your Brevo SMTP login as the username and your Brevo SMTP API key as the password.') }}</li>
                     </ul>
                 </div>
             </div>
@@ -167,14 +151,7 @@
             checkMailDriver();
         });
         function checkMailDriver(){
-            if($('select[name=MAIL_DRIVER]').val() == 'mailgun'){
-                $('#mailgun').show();
-                $('#smtp').hide();
-            }
-            else{
-                $('#mailgun').hide();
-                $('#smtp').show();
-            }
+            $('#smtp').show();
         }
     </script>
 
