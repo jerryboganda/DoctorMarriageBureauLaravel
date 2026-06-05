@@ -90,7 +90,9 @@ class SupportTicketController extends Controller
     public function show($id)
     {
         if (addon_activation('support_tickets')) {
-            $support_ticket = SupportTicket::findOrFail($id);
+            $support_ticket = SupportTicket::where('id', $id)
+                ->where('sender_user_id', auth()->id())
+                ->firstOrFail();
             $support_ticket->seen = '1';
             $support_ticket->save();
             $support_replies = SupportTicketReply::where('support_ticket_id', $support_ticket->id)->get();
@@ -132,7 +134,9 @@ class SupportTicketController extends Controller
             //     }
             // }
             $attachments = implode(',', $attachments);
-            $support_ticket = SupportTicket::findOrFail($request->support_ticket_id);
+            $support_ticket = SupportTicket::where('id', $request->support_ticket_id)
+                ->where('sender_user_id', auth()->id())
+                ->firstOrFail();
 
             $ticket_reply = new SupportTicketReply;
             $ticket_reply->support_ticket_id = $request->support_ticket_id;

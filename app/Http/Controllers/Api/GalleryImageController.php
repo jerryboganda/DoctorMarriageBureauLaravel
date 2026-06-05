@@ -148,7 +148,15 @@ class GalleryImageController extends Controller
      */
     public function destroy($id)
     {
-        if (GalleryImage::destroy($id)) {
+        $image = GalleryImage::where('id', $id)
+            ->where('user_id', auth()->id())
+            ->first();
+
+        if (! $image) {
+            return $this->failure_message('Image not found.');
+        }
+
+        if ($image->delete()) {
             return $this->success_message('Image deleted successfully.');
         }
 

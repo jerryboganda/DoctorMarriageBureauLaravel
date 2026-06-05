@@ -54,7 +54,6 @@ return [
         'name' => env('MAIL_FROM_NAME') ?? env('APP_NAME', 'Doctor Marriage Bureau'),
     ],
 
-
     /*
     |--------------------------------------------------------------------------
     | Markdown Mail Settings

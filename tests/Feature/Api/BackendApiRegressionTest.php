@@ -6,8 +6,13 @@ use App\Http\Resources\NotificationResource;
 use App\Models\Chat;
 use App\Models\ChatThread;
 use App\Models\ExpressInterest;
+use App\Models\Family;
+use App\Models\FamilyApproval;
+use App\Models\FamilyGuardian;
+use App\Models\GalleryImage;
 use App\Models\Member;
 use App\Models\Notification;
+use App\Models\SupportTicket;
 use App\Models\User;
 use App\Utility\MemberUtility;
 use Illuminate\Database\Schema\Blueprint;
@@ -190,6 +195,123 @@ class BackendApiRegressionTest extends TestCase
 
         $response->assertOk();
         $response->assertJsonPath('data', []);
+    }
+
+    public function test_family_endpoint_renders_approvals_without_profile_photo(): void
+    {
+        $owner = $this->createMember('family-owner@example.com', 1);
+        $target = $this->createMember('family-target@example.com', 1, [
+            'first_name' => 'Approval',
+            'last_name' => 'Target',
+        ]);
+
+        $family = Family::create([
+            'user_id' => $owner->id,
+            'about_description' => 'Family profile',
+            'tradition_level' => 'Balanced',
+            'affluence_level' => 'Middle Class',
+            'interests' => ['Education'],
+        ]);
+
+        $guardian = FamilyGuardian::create([
+            'family_id' => $family->id,
+            'user_id' => $owner->id,
+            'name' => 'Owner Guardian',
+            'relationship' => 'Self',
+            'is_primary_contact' => true,
+        ]);
+
+        FamilyApproval::create([
+            'family_id' => $family->id,
+            'guardian_id' => $guardian->id,
+            'target_user_id' => $target->id,
+            'status' => 'pending',
+        ]);
+
+        Sanctum::actingAs($owner);
+
+        $response = $this->getJson('/api/family');
+
+        $response->assertOk();
+        $response->assertJsonPath('approvals.0.name', 'Approval Target');
+        $response->assertJsonPath('approvals.0.status', 'Pending');
+    }
+
+    public function test_auth_and_sensitive_api_routes_have_targeted_rate_limits(): void
+    {
+        $routes = collect(app('router')->getRoutes());
+
+        $this->assertContains(
+            'throttle:api-auth',
+            $routes->match(request()->create('/api/signin', 'POST'))->gatherMiddleware()
+        );
+        $this->assertContains(
+            'throttle:api-auth',
+            $routes->match(request()->create('/api/admin/login', 'POST'))->gatherMiddleware()
+        );
+        $this->assertContains(
+            'throttle:api-sensitive',
+            $routes->match(request()->create('/api/forgot/password', 'POST'))->gatherMiddleware()
+        );
+        $this->assertContains(
+            'throttle:api-sensitive',
+            $routes->match(request()->create('/api/send-email-verification', 'POST'))->gatherMiddleware()
+        );
+    }
+
+    public function test_cors_origins_are_not_wildcard_by_default(): void
+    {
+        $this->assertNotContains('*', config('cors.allowed_origins'));
+        $this->assertFalse(config('cors.supports_credentials'));
+    }
+
+    public function test_member_cannot_delete_another_members_gallery_image(): void
+    {
+        $owner = $this->createMember('gallery-owner@example.com', 1);
+        $attacker = $this->createMember('gallery-attacker@example.com', 1);
+
+        $image = GalleryImage::create([
+            'user_id' => $owner->id,
+            'image' => 'uploads/gallery/owner.jpg',
+        ]);
+
+        Sanctum::actingAs($attacker);
+
+        $response = $this->deleteJson('/api/member/gallery-image/'.$image->id);
+
+        $response->assertOk();
+        $response->assertJsonPath('result', false);
+        $this->assertDatabaseHas('gallery_images', [
+            'id' => $image->id,
+            'user_id' => $owner->id,
+        ]);
+    }
+
+    public function test_member_cannot_view_another_members_support_ticket(): void
+    {
+        $owner = $this->createMember('ticket-owner@example.com', 1);
+        $attacker = $this->createMember('ticket-attacker@example.com', 1);
+
+        DB::table('addons')->insert([
+            'unique_identifier' => 'support_tickets',
+            'activated' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $ticket = SupportTicket::create([
+            'ticket_id' => 'T-100',
+            'subject' => 'Private ticket',
+            'sender_user_id' => $owner->id,
+            'status' => 0,
+            'description' => 'Private ticket body',
+        ]);
+
+        Sanctum::actingAs($attacker);
+
+        $response = $this->getJson('/api/member/support-ticket/'.$ticket->id);
+
+        $response->assertNotFound();
     }
 
     private function createTestSchema(): void
@@ -419,6 +541,87 @@ class BackendApiRegressionTest extends TestCase
             $table->string('image')->nullable();
             $table->timestamps();
             $table->softDeletes();
+        });
+
+        Schema::create('families', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('user_id');
+            $table->text('about_description')->nullable();
+            $table->string('tradition_level')->nullable();
+            $table->string('affluence_level')->nullable();
+            $table->json('interests')->nullable();
+            $table->timestamps();
+            $table->softDeletes();
+        });
+
+        Schema::create('family_guardians', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('family_id');
+            $table->unsignedBigInteger('user_id')->nullable();
+            $table->string('name');
+            $table->string('relationship')->nullable();
+            $table->string('email')->nullable();
+            $table->string('phone')->nullable();
+            $table->boolean('is_primary_contact')->default(false);
+            $table->timestamps();
+        });
+
+        Schema::create('family_photos', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('family_id');
+            $table->string('photo_path')->nullable();
+            $table->string('caption')->nullable();
+            $table->integer('sort_order')->default(0);
+            $table->timestamps();
+        });
+
+        Schema::create('family_approvals', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('family_id');
+            $table->unsignedBigInteger('guardian_id');
+            $table->unsignedBigInteger('target_user_id')->nullable();
+            $table->string('status')->default('pending');
+            $table->timestamp('responded_at')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('addons', function (Blueprint $table) {
+            $table->id();
+            $table->string('unique_identifier')->nullable();
+            $table->unsignedTinyInteger('activated')->default(0);
+            $table->timestamps();
+        });
+
+        Schema::create('support_categories', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->timestamps();
+        });
+
+        Schema::create('support_tickets', function (Blueprint $table) {
+            $table->id();
+            $table->string('ticket_id')->nullable();
+            $table->string('subject')->nullable();
+            $table->unsignedBigInteger('support_category_id')->nullable();
+            $table->unsignedBigInteger('sender_user_id');
+            $table->unsignedBigInteger('assigned_user_id')->nullable();
+            $table->unsignedTinyInteger('status')->default(0);
+            $table->unsignedTinyInteger('seen')->default(0);
+            $table->text('description')->nullable();
+            $table->string('attachments')->nullable();
+            $table->string('priority')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('support_ticket_replies', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('support_ticket_id');
+            $table->unsignedBigInteger('replied_user_id');
+            $table->text('reply')->nullable();
+            $table->string('attachments')->nullable();
+            $table->boolean('is_read')->default(false);
+            $table->unsignedTinyInteger('seen')->default(0);
+            $table->timestamps();
         });
 
         DB::table('settings')->insert([

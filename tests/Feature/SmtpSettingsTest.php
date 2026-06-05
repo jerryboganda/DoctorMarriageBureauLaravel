@@ -4,13 +4,51 @@ namespace Tests\Feature;
 
 use App\Http\Controllers\SettingController;
 use App\Mail\EmailManager;
+use App\Models\User;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class SmtpSettingsTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Schema::dropAllTables();
+        $this->createTestSchema();
+        Cache::flush();
+    }
+
+    protected function createTestSchema(): void
+    {
+        Schema::create('users', function (Blueprint $table) {
+            $table->id();
+            $table->string('email')->nullable();
+            $table->string('user_type')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('settings', function (Blueprint $table) {
+            $table->id();
+            $table->string('type')->unique();
+            $table->text('value')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('translations', function (Blueprint $table) {
+            $table->id();
+            $table->string('lang')->default('en');
+            $table->string('lang_key');
+            $table->text('lang_value')->nullable();
+            $table->timestamps();
+        });
+    }
+
     public function test_smtp_settings_form_does_not_render_stored_password(): void
     {
         $view = file_get_contents(resource_path('views/admin/settings/smtp_settings.blade.php'));
@@ -76,7 +114,13 @@ class SmtpSettingsTest extends TestCase
             'mail.from.name' => 'Doctor Marriage Bureau',
         ]);
 
+        $user = User::create([
+            'email' => 'admin@example.com',
+            'user_type' => 'admin',
+        ]);
+
         $response = $this
+            ->actingAs($user)
             ->withoutMiddleware()
             ->from('/admin/smtp-settings')
             ->post('/admin/test/smtp', ['email' => 'admin@example.com']);

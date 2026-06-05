@@ -34,18 +34,18 @@ use Illuminate\Support\Facades\Route;
 
 Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function () {
     // Authentication
-    Route::post('/signup', 'AuthController@signup');
-    Route::post('/signin', 'AuthController@signin');
+    Route::post('/signup', 'AuthController@signup')->middleware('throttle:api-auth');
+    Route::post('/signin', 'AuthController@signin')->middleware('throttle:api-auth');
 
-    Route::post('/forgot/password', 'AuthController@forgotPassword');
-    Route::post('/verify/password/reset', 'AuthController@verifyPasswordResetCode');
-    Route::post('/verify/code', 'AuthController@verifyCode')->middleware('auth:sanctum');
-    Route::get('/resend-verify/code', 'AuthController@resendVerifyCode')->middleware('auth:sanctum');
-    Route::post('/reset/password', 'AuthController@resetPassword');
-    Route::post('/password/reset/complete', 'AuthController@resetPassword');
+    Route::post('/forgot/password', 'AuthController@forgotPassword')->middleware('throttle:api-sensitive');
+    Route::post('/verify/password/reset', 'AuthController@verifyPasswordResetCode')->middleware('throttle:api-sensitive');
+    Route::post('/verify/code', 'AuthController@verifyCode')->middleware(['auth:sanctum', 'throttle:api-sensitive']);
+    Route::get('/resend-verify/code', 'AuthController@resendVerifyCode')->middleware(['auth:sanctum', 'throttle:api-sensitive']);
+    Route::post('/reset/password', 'AuthController@resetPassword')->middleware('throttle:api-sensitive');
+    Route::post('/password/reset/complete', 'AuthController@resetPassword')->middleware('throttle:api-sensitive');
 
     // 2FA Challenge (during login, before auth)
-    Route::post('/auth/2fa/challenge', 'AccountSecurityController@challenge2FA');
+    Route::post('/auth/2fa/challenge', 'AccountSecurityController@challenge2FA')->middleware('throttle:api-sensitive');
 
     // Ownership Transfer (public routes for recipient)
     Route::get('/ownership/transfer/{token}', 'ProfileOwnershipController@getTransferByToken');
@@ -63,8 +63,8 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
     });
 
     // Registration Verification Routes
-    Route::post('/send-email-verification', 'AuthController@sendEmailVerification');
-    Route::post('/verify-email-code', 'AuthController@verifyEmailCode');
+    Route::post('/send-email-verification', 'AuthController@sendEmailVerification')->middleware('throttle:api-sensitive');
+    Route::post('/verify-email-code', 'AuthController@verifyEmailCode')->middleware('throttle:api-sensitive');
     Route::post('social-login', 'AuthController@socialLogin');
     Route::get('user-by-token', 'AuthController@getUserByToken');
 

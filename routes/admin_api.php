@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 
 Route::group(['prefix' => 'admin', 'as' => 'admin-api.', 'namespace' => 'Api\Admin'], function () {
-    Route::post('/login', 'AuthController@login');
+    Route::post('/login', 'AuthController@login')->middleware('throttle:api-auth');
 
     Route::group(['middleware' => ['auth:sanctum', 'api_admin']], function () {
         Route::post('/logout', 'AuthController@logout');

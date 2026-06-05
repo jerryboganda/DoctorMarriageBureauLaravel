@@ -456,31 +456,6 @@ parameters:
 			path: app/Http/Controllers/Api/ReferralController.php
 
 		-
-			message: "#^Call to static method findOrFail\\(\\) on an unknown class App\\\\Models\\\\SupportTicket\\.$#"
-			count: 2
-			path: app/Http/Controllers/Api/SupportTicketController.php
-
-		-
-			message: "#^Call to static method where\\(\\) on an unknown class App\\\\Models\\\\SupportTicket\\.$#"
-			count: 1
-			path: app/Http/Controllers/Api/SupportTicketController.php
-
-		-
-			message: "#^Call to static method where\\(\\) on an unknown class App\\\\Models\\\\SupportTicketReply\\.$#"
-			count: 1
-			path: app/Http/Controllers/Api/SupportTicketController.php
-
-		-
-			message: "#^Instantiated class App\\\\Models\\\\SupportTicket not found\\.$#"
-			count: 1
-			path: app/Http/Controllers/Api/SupportTicketController.php
-
-		-
-			message: "#^Instantiated class App\\\\Models\\\\SupportTicketReply not found\\.$#"
-			count: 1
-			path: app/Http/Controllers/Api/SupportTicketController.php
-
-		-
 			message: "#^Method App\\\\Http\\\\Controllers\\\\Api\\\\SupportTicketController\\:\\:destroy\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
 			count: 1
 			path: app/Http/Controllers/Api/SupportTicketController.php

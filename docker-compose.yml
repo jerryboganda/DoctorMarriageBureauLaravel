@@ -46,10 +46,10 @@ services:
     container_name: marriagebureau-db
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: marriagebureau
-      MYSQL_USER: marriagebureau
-      MYSQL_PASSWORD: MarriageBureauPass123!
-      MYSQL_ROOT_PASSWORD: MarriageBureauRootPass123!
+      MYSQL_DATABASE: ${DB_DATABASE:-marriagebureau}
+      MYSQL_USER: ${DB_USERNAME:-marriagebureau}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in your environment}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Set DB_ROOT_PASSWORD in your environment}
     healthcheck:
       test: ['CMD-SHELL', 'mysqladmin ping -h 127.0.0.1 -u root -p"$${MYSQL_ROOT_PASSWORD}" --silent']
       interval: 10s
@@ -90,12 +90,12 @@ services:
       context: ./New User Panel Frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_BASE_URL: https://api.doctormarriagebureau.com.pk/api
-        VITE_PUSHER_APP_KEY: 3f7e1c4b5a6d7e8f9a0b1c2d3e4f5a6b
-        VITE_PUSHER_HOST: soketi.polytronx.com
-        VITE_PUSHER_PORT: 443
-        VITE_PUSHER_SCHEME: https
-        VITE_PUSHER_APP_CLUSTER: mt1
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-https://api.doctormarriagebureau.com.pk/api}
+        VITE_PUSHER_APP_KEY: ${VITE_PUSHER_APP_KEY:-local-doctors-mb-key}
+        VITE_PUSHER_HOST: ${VITE_PUSHER_HOST:-soketi.polytronx.com}
+        VITE_PUSHER_PORT: ${VITE_PUSHER_PORT:-443}
+        VITE_PUSHER_SCHEME: ${VITE_PUSHER_SCHEME:-https}
+        VITE_PUSHER_APP_CLUSTER: ${VITE_PUSHER_APP_CLUSTER:-mt1}
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
         VITE_FACEBOOK_APP_ID: ${VITE_FACEBOOK_APP_ID}
     image: marriagebureau-frontend
