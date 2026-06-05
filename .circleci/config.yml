@@ -107,7 +107,7 @@ jobs:
             - composer-v1-{{ checksum "composer.lock" }}
       - run:
           name: Install Composer dependencies
-          command: composer install --no-interaction --prefer-dist --no-progress
+          command: composer install --no-interaction --prefer-dist --no-progress --no-scripts
       - save_cache:
           key: composer-v1-{{ checksum "composer.lock" }}
           paths:
@@ -115,6 +115,9 @@ jobs:
       - run:
           name: Generate application key
           command: php artisan key:generate --no-interaction
+      - run:
+          name: Discover packages
+          command: php artisan package:discover --ansi
       - run:
           name: Backend CI
           command: composer ci:backend
@@ -132,10 +135,13 @@ jobs:
             - composer-v1-{{ checksum "composer.lock" }}
       - run:
           name: Install Composer dependencies
-          command: composer install --no-interaction --prefer-dist --no-progress
+          command: composer install --no-interaction --prefer-dist --no-progress --no-scripts
       - run:
           name: Generate application key
           command: php artisan key:generate --no-interaction
+      - run:
+          name: Discover packages
+          command: php artisan package:discover --ansi
       - run:
           name: Wait for MySQL
           command: |
