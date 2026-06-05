@@ -177,7 +177,10 @@ jobs:
       - checkout
       - run:
           name: Validate Docker Compose
-          command: docker compose config --quiet
+          command: |
+            export DB_PASSWORD=ci-dummy
+            export DB_ROOT_PASSWORD=ci-dummy
+            docker compose config --quiet
 
   deploy_production:
     machine:
