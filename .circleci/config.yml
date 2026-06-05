@@ -99,16 +99,25 @@ jobs:
     steps:
       - checkout
       - install_php_system_deps
+      - run:
+          name: Prepare environment file
+          command: cp .env.example .env
       - restore_cache:
           keys:
             - composer-v1-{{ checksum "composer.lock" }}
       - run:
           name: Install Composer dependencies
-          command: composer install --no-interaction --prefer-dist --no-progress
+          command: composer install --no-interaction --prefer-dist --no-progress --no-scripts
       - save_cache:
           key: composer-v1-{{ checksum "composer.lock" }}
           paths:
             - vendor
+      - run:
+          name: Discover packages (verbose for diagnosis)
+          command: php artisan package:discover -vvv
+      - run:
+          name: Generate application key
+          command: php artisan key:generate --no-interaction
       - run:
           name: Backend CI
           command: composer ci:backend
