@@ -25,6 +25,7 @@ class BiodataFormatter
                 $feet = (float) $matches[1];
                 $inches = isset($matches[2]) ? (float) $matches[2] : 0.0;
                 $totalInches = (int) round(($feet * 12) + $inches);
+
                 return self::formatInches($totalInches);
             }
 
@@ -36,7 +37,7 @@ class BiodataFormatter
                 $sourceUnit = 'm';
             } else {
                 $clean = preg_replace('/[^0-9\.]/', '', $text);
-                if ($clean === '' || !is_numeric($clean)) {
+                if ($clean === '' || ! is_numeric($clean)) {
                     return null;
                 }
                 $numericValue = (float) $clean;
@@ -79,7 +80,7 @@ class BiodataFormatter
 
         $dietText = self::cleanValue($diet);
         $dietNormalized = self::normalizeValue($dietText);
-        if ($dietText !== null && !in_array($dietNormalized, ['no preference', 'optional', 'not specified'], true)) {
+        if ($dietText !== null && ! in_array($dietNormalized, ['no preference', 'optional', 'not specified'], true)) {
             $tags[] = $dietText;
         }
 
@@ -127,6 +128,7 @@ class BiodataFormatter
         }
 
         $clean = trim((string) $value);
+
         return $clean === '' ? null : $clean;
     }
 
@@ -137,6 +139,7 @@ class BiodataFormatter
         }
 
         $clean = preg_replace('/\s+/', ' ', trim((string) $value));
+
         return strtolower($clean);
     }
 

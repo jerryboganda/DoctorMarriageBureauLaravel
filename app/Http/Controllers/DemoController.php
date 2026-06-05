@@ -2,11 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use DB;
+use File;
 use Schema;
 use ZipArchive;
-use File;
 
 class DemoController extends Controller
 {
@@ -34,7 +33,6 @@ class DemoController extends Controller
         $this->remove_folder();
         $this->extract_uploads();
     }
-
 
     public function drop_all_tables()
     {

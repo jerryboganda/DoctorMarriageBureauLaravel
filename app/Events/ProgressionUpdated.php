@@ -2,21 +2,22 @@
 
 namespace App\Events;
 
+use App\Models\MemberProgression;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use App\Models\MemberProgression;
 
 class ProgressionUpdated implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public $progression;
+
     public $updatedBy;
+
     public $section;
 
     /**
@@ -42,14 +43,14 @@ class ProgressionUpdated implements ShouldBroadcast
     /**
      * Get the channels the event should broadcast on.
      *
-     * @return array<int, \Illuminate\Broadcasting\Channel>
+     * @return array<int, Channel>
      */
     public function broadcastOn(): array
     {
         // Broadcast to both users in the progression
         return [
-            new PrivateChannel('progression.' . $this->progression->user_id),
-            new PrivateChannel('progression.' . $this->progression->partner_id),
+            new PrivateChannel('progression.'.$this->progression->user_id),
+            new PrivateChannel('progression.'.$this->progression->partner_id),
         ];
     }
 
@@ -63,13 +64,11 @@ class ProgressionUpdated implements ShouldBroadcast
 
     /**
      * Get the data to broadcast.
-     *
-     * @return array
      */
     public function broadcastWith(): array
     {
-        $partner = $this->progression->user_id == $this->updatedBy 
-            ? $this->progression->partner 
+        $partner = $this->progression->user_id == $this->updatedBy
+            ? $this->progression->partner
             : $this->progression->user;
 
         return [
@@ -96,7 +95,7 @@ class ProgressionUpdated implements ShouldBroadcast
             ],
             'partner' => [
                 'id' => $partner->id,
-                'name' => $partner->first_name . ' ' . $partner->last_name,
+                'name' => $partner->first_name.' '.$partner->last_name,
             ],
             'updated_at' => $this->progression->updated_at->toIso8601String(),
         ];

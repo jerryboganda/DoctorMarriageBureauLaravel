@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\OnBehalf;
 use Illuminate\Database\Seeder;
 
 class OnBehalfSeeder extends Seeder
@@ -16,11 +17,11 @@ class OnBehalfSeeder extends Seeder
             'My Brother',
             'My Sister',
             'My Friend',
-            'My Client'
+            'My Client',
         ];
 
         foreach ($on_behalves as $name) {
-            \App\Models\OnBehalf::updateOrCreate(['name' => $name]);
+            OnBehalf::updateOrCreate(['name' => $name]);
         }
     }
 }

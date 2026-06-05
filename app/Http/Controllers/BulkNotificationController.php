@@ -2,19 +2,21 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
-use App\Models\Member;
-use App\Models\Package;
-use App\Models\Country;
-use App\Models\State;
+use App\Events\NotificationReceived;
 use App\Models\City;
-use App\Models\Religion;
+use App\Models\Country;
 use App\Models\MaritalStatus;
-use App\Models\Address;
+use App\Models\Package;
+use App\Models\Religion;
+use App\Models\State;
+use App\Models\User;
+use App\Notifications\DbStoreNotification;
+use App\Utility\EmailUtility;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Notification;
 
 class BulkNotificationController extends Controller
 {
@@ -53,6 +55,7 @@ class BulkNotificationController extends Controller
             ->whereNull('deleted_at')
             ->orderBy('name')
             ->get(['id', 'name']);
+
         return response()->json($states);
     }
 
@@ -65,6 +68,7 @@ class BulkNotificationController extends Controller
             ->whereNull('deleted_at')
             ->orderBy('name')
             ->get(['id', 'name']);
+
         return response()->json($cities);
     }
 
@@ -75,6 +79,7 @@ class BulkNotificationController extends Controller
     {
         $query = $this->buildFilteredQuery($request);
         $count = $query->count();
+
         return response()->json(['count' => $count]);
     }
 
@@ -84,9 +89,9 @@ class BulkNotificationController extends Controller
     public function send(Request $request)
     {
         $request->validate([
-            'title'     => 'required|string|max:255',
-            'body'      => 'required|string|max:10000',
-            'channels'  => 'required|array|min:1',
+            'title' => 'required|string|max:255',
+            'body' => 'required|string|max:10000',
+            'channels' => 'required|array|min:1',
             'channels.*' => 'in:email,whatsapp,push',
         ]);
         $channels = $request->channels;
@@ -107,24 +112,25 @@ class BulkNotificationController extends Controller
 
         if ($users->isEmpty()) {
             flash(translate('No matching members found for the selected filters.'))->warning();
+
             return redirect()->route('admin.bulk_notifications.index');
         }
 
         foreach ($users as $user) {
-            $name = trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')) ?: 'Member';
+            $name = trim(($user->first_name ?? '').' '.($user->last_name ?? '')) ?: 'Member';
 
             // --- EMAIL ---
             if (in_array('email', $channels)) {
-                if (!empty($user->email)) {
+                if (! empty($user->email)) {
                     try {
                         Mail::send('emails.index', ['email_body' => $body], function ($message) use ($user, $title, $name) {
                             $message->to($user->email, $name)
                                 ->subject($title)
-                                ->from(\App\Utility\EmailUtility::fromAddress(), \App\Utility\EmailUtility::fromName());
+                                ->from(EmailUtility::fromAddress(), EmailUtility::fromName());
                         });
                         $stats['email_sent']++;
                     } catch (\Throwable $e) {
-                        Log::error("Bulk notification email failed for user #{$user->id}: " . $e->getMessage());
+                        Log::error("Bulk notification email failed for user #{$user->id}: ".$e->getMessage());
                         $stats['email_failed']++;
                     }
                 }
@@ -134,7 +140,7 @@ class BulkNotificationController extends Controller
             if (in_array('push', $channels)) {
                 try {
                     $notifyId = null;
-                    \Illuminate\Support\Facades\Notification::send($user, new \App\Notifications\DbStoreNotification(
+                    Notification::send($user, new DbStoreNotification(
                         'admin_notification',
                         $notifyId,
                         $user->id,
@@ -144,17 +150,17 @@ class BulkNotificationController extends Controller
                         $title
                     ));
 
-                    broadcast(new \App\Events\NotificationReceived($user->id, [
-                        'type'    => 'admin_notification',
-                        'title'   => $title,
-                        'body'    => strip_tags($body),
+                    broadcast(new NotificationReceived($user->id, [
+                        'type' => 'admin_notification',
+                        'title' => $title,
+                        'body' => strip_tags($body),
                         'message' => strip_tags($body),
-                        'sent_by' => auth()->user()->first_name . ' ' . auth()->user()->last_name,
+                        'sent_by' => auth()->user()->first_name.' '.auth()->user()->last_name,
                     ]));
 
                     $stats['push_sent']++;
                 } catch (\Throwable $e) {
-                    Log::error("Bulk notification push failed for user #{$user->id}: " . $e->getMessage());
+                    Log::error("Bulk notification push failed for user #{$user->id}: ".$e->getMessage());
                     $stats['push_failed']++;
                 }
             }
@@ -163,11 +169,11 @@ class BulkNotificationController extends Controller
             if (in_array('whatsapp', $channels)) {
                 $waDigits = $this->normalizeWhatsappPhone($user->phone);
                 if ($waDigits) {
-                    $waMessage = "*{$title}*\n\n" . strip_tags($body);
+                    $waMessage = "*{$title}*\n\n".strip_tags($body);
                     $stats['whatsapp_links'][] = [
                         'name' => $name,
                         'phone' => $user->phone,
-                        'link' => 'https://web.whatsapp.com/send?phone=' . $waDigits . '&text=' . urlencode($waMessage),
+                        'link' => 'https://web.whatsapp.com/send?phone='.$waDigits.'&text='.urlencode($waMessage),
                     ];
                 }
             }
@@ -197,17 +203,18 @@ class BulkNotificationController extends Controller
             $messages[] = "Push {$stats['push_sent']}/{$stats['push_failed']}";
         }
         if (in_array('whatsapp', $channels)) {
-            $messages[] = 'WhatsApp ' . count($stats['whatsapp_links']);
+            $messages[] = 'WhatsApp '.count($stats['whatsapp_links']);
         }
 
-        $resultMsg = "Sent to {$stats['total_targeted']} members | " . implode(' | ', $messages);
+        $resultMsg = "Sent to {$stats['total_targeted']} members | ".implode(' | ', $messages);
 
         // If there are WhatsApp links, store in session for display
-        if (!empty($stats['whatsapp_links'])) {
+        if (! empty($stats['whatsapp_links'])) {
             session()->flash('whatsapp_links', $stats['whatsapp_links']);
         }
 
         flash($resultMsg)->success();
+
         return redirect()->route('admin.bulk_notifications.index');
     }
 
@@ -224,11 +231,12 @@ class BulkNotificationController extends Controller
 
         if ($targetMode === 'individual') {
             $userIds = $request->input('user_ids', []);
-            if (!empty($userIds)) {
+            if (! empty($userIds)) {
                 $query->whereIn('users.id', $userIds);
             } else {
                 $query->whereRaw('1 = 0'); // no results
             }
+
             return $query;
         }
 
@@ -364,7 +372,7 @@ class BulkNotificationController extends Controller
             $query->where('users.created_at', '>=', $request->registered_from);
         }
         if ($request->filled('registered_to')) {
-            $query->where('users.created_at', '<=', $request->registered_to . ' 23:59:59');
+            $query->where('users.created_at', '<=', $request->registered_to.' 23:59:59');
         }
 
         // Marriage Timeline filter
@@ -397,55 +405,55 @@ class BulkNotificationController extends Controller
             $parts[] = "Individual ({$count} users)";
         } else {
             if ($request->filled('membership')) {
-                $parts[] = 'Membership: ' . ($request->membership == 1 ? 'Free' : 'Premium');
+                $parts[] = 'Membership: '.($request->membership == 1 ? 'Free' : 'Premium');
             }
             if ($request->filled('gender')) {
-                $parts[] = 'Gender: ' . ucfirst($request->gender);
+                $parts[] = 'Gender: '.ucfirst($request->gender);
             }
             if ($request->filled('package_id')) {
                 $pkg = Package::find($request->package_id);
-                $parts[] = 'Package: ' . ($pkg->name ?? $request->package_id);
+                $parts[] = 'Package: '.($pkg->name ?? $request->package_id);
             }
             if ($request->filled('country_id')) {
                 $c = Country::find($request->country_id);
-                $parts[] = 'Country: ' . ($c->name ?? $request->country_id);
+                $parts[] = 'Country: '.($c->name ?? $request->country_id);
             }
             if ($request->filled('state_id')) {
                 $s = State::find($request->state_id);
-                $parts[] = 'State: ' . ($s->name ?? $request->state_id);
+                $parts[] = 'State: '.($s->name ?? $request->state_id);
             }
             if ($request->filled('city_id')) {
                 $ci = City::find($request->city_id);
-                $parts[] = 'City: ' . ($ci->name ?? $request->city_id);
+                $parts[] = 'City: '.($ci->name ?? $request->city_id);
             }
             if ($request->filled('religion_id')) {
                 $r = Religion::find($request->religion_id);
-                $parts[] = 'Religion: ' . ($r->name ?? $request->religion_id);
+                $parts[] = 'Religion: '.($r->name ?? $request->religion_id);
             }
             if ($request->filled('marital_status_id')) {
                 $ms = MaritalStatus::find($request->marital_status_id);
-                $parts[] = 'Marital: ' . ($ms->name ?? $request->marital_status_id);
+                $parts[] = 'Marital: '.($ms->name ?? $request->marital_status_id);
             }
             if ($request->filled('age_from') || $request->filled('age_to')) {
-                $parts[] = 'Age: ' . ($request->age_from ?? '?') . '-' . ($request->age_to ?? '?');
+                $parts[] = 'Age: '.($request->age_from ?? '?').'-'.($request->age_to ?? '?');
             }
             if ($request->filled('approved')) {
-                $parts[] = 'Approved: ' . ($request->approved ? 'Yes' : 'No');
+                $parts[] = 'Approved: '.($request->approved ? 'Yes' : 'No');
             }
             if ($request->filled('deactivated')) {
-                $parts[] = 'Deactivated: ' . ($request->deactivated ? 'Yes' : 'No');
+                $parts[] = 'Deactivated: '.($request->deactivated ? 'Yes' : 'No');
             }
             if ($request->filled('has_photo')) {
-                $parts[] = 'Photo: ' . ($request->has_photo ? 'Yes' : 'No');
+                $parts[] = 'Photo: '.($request->has_photo ? 'Yes' : 'No');
             }
             if ($request->filled('onboarding_completed')) {
-                $parts[] = 'Onboarded: ' . ($request->onboarding_completed ? 'Yes' : 'No');
+                $parts[] = 'Onboarded: '.($request->onboarding_completed ? 'Yes' : 'No');
             }
             if ($request->filled('marriage_timeline')) {
-                $parts[] = 'Timeline: ' . $request->marriage_timeline;
+                $parts[] = 'Timeline: '.$request->marriage_timeline;
             }
             if ($request->filled('seriousness_level')) {
-                $parts[] = 'Seriousness: ' . $request->seriousness_level;
+                $parts[] = 'Seriousness: '.$request->seriousness_level;
             }
         }
 
@@ -464,25 +472,25 @@ class BulkNotificationController extends Controller
 
         $phone = str_replace([' ', '-', '(', ')', '.'], '', $phone);
         if (strpos($phone, '00') === 0) {
-            $phone = '+' . substr($phone, 2);
+            $phone = '+'.substr($phone, 2);
         }
 
         $normalized = null;
         if (strpos($phone, '+') === 0) {
             $digits = preg_replace('/\D+/', '', substr($phone, 1));
-            $normalized = $digits !== '' ? ('+' . $digits) : null;
+            $normalized = $digits !== '' ? ('+'.$digits) : null;
         } else {
             $digits = preg_replace('/\D+/', '', $phone);
             if (strlen($digits) === 11 && strpos($digits, '03') === 0) {
-                $normalized = '+92' . substr($digits, 1);
+                $normalized = '+92'.substr($digits, 1);
             } elseif (strlen($digits) === 10 && strpos($digits, '3') === 0) {
-                $normalized = '+92' . $digits;
+                $normalized = '+92'.$digits;
             } elseif (strlen($digits) === 11 && strpos($digits, '0') === 0) {
-                $normalized = '+92' . substr($digits, 1);
+                $normalized = '+92'.substr($digits, 1);
             } elseif (strlen($digits) === 10) {
-                $normalized = '+92' . $digits;
+                $normalized = '+92'.$digits;
             } elseif (strlen($digits) > 10 && strlen($digits) <= 15) {
-                $normalized = '+' . $digits;
+                $normalized = '+'.$digits;
             }
         }
 
@@ -491,7 +499,7 @@ class BulkNotificationController extends Controller
         }
 
         $waDigits = ltrim($normalized, '+');
-        if (!ctype_digit($waDigits) || strlen($waDigits) < 10 || strlen($waDigits) > 15) {
+        if (! ctype_digit($waDigits) || strlen($waDigits) < 10 || strlen($waDigits) > 15) {
             return null;
         }
 

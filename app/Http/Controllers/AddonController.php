@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Addon;
 use Cache;
-use ZipArchive;
 use DB;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Str;
 use Storage;
+use ZipArchive;
 
 class AddonController extends Controller
 {
@@ -17,10 +18,11 @@ class AddonController extends Controller
         $this->middleware(['permission:addon_manager'])->only('index');
         $this->middleware(['permission:addon_manager'])->only('create');
     }
+
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index()
     {
@@ -30,7 +32,7 @@ class AddonController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create()
     {
@@ -40,14 +42,14 @@ class AddonController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(Request $request)
     {
 
         if (env('DEMO_MODE') == 'On') {
             flash(translate('This action is disabled in demo mode'))->error();
+
             return back();
         }
 
@@ -55,32 +57,33 @@ class AddonController extends Controller
             if ($request->hasFile('addon_zip')) {
                 // Create update directory.
                 $dir = 'addons';
-                if (!is_dir($dir))
+                if (! is_dir($dir)) {
                     mkdir($dir, 0777, true);
+                }
 
                 $path = Storage::disk('local')->put('addons', $request->addon_zip);
 
                 $zipped_file_name = $request->addon_zip->getClientOriginalName();
 
-                //Unzip uploaded update file and remove zip file.
+                // Unzip uploaded update file and remove zip file.
                 $zip = new ZipArchive;
-                $res = $zip->open(base_path('public/' . $path));
+                $res = $zip->open(base_path('public/'.$path));
 
                 $random_dir = Str::random(10);
 
                 $dir = trim($zip->getNameIndex(0), '/');
 
                 if ($res === true) {
-                    $res = $zip->extractTo(base_path('temp/' . $random_dir . '/addons'));
+                    $res = $zip->extractTo(base_path('temp/'.$random_dir.'/addons'));
                     $zip->close();
                 } else {
                     dd('could not open');
                 }
 
-                $str = file_get_contents(base_path('temp/' . $random_dir . '/addons/' . $dir . '/config.json'));
+                $str = file_get_contents(base_path('temp/'.$random_dir.'/addons/'.$dir.'/config.json'));
                 $json = json_decode($str, true);
 
-                //dd($random_dir, $json);
+                // dd($random_dir, $json);
 
                 if (get_setting('current_version') >= $json['minimum_item_version']) {
                     if (count(Addon::where('unique_identifier', $json['unique_identifier'])->get()) == 0) {
@@ -94,54 +97,55 @@ class AddonController extends Controller
                         $addon->save();
 
                         // Create new directories.
-                        if (!empty($json['directory'])) {
-                            //dd($json['directory'][0]['name']);
+                        if (! empty($json['directory'])) {
+                            // dd($json['directory'][0]['name']);
                             foreach ($json['directory'][0]['name'] as $directory) {
                                 if (is_dir(base_path($directory)) == false) {
                                     mkdir(base_path($directory), 0777, true);
 
                                 } else {
-                                    echo "error on creating directory";
+                                    echo 'error on creating directory';
                                 }
 
                             }
                         }
 
                         // Create/Replace new files.
-                        if (!empty($json['files'])) {
+                        if (! empty($json['files'])) {
                             foreach ($json['files'] as $file) {
-                                copy(base_path('temp/' . $random_dir . '/' . $file['root_directory']), base_path($file['update_directory']));
+                                copy(base_path('temp/'.$random_dir.'/'.$file['root_directory']), base_path($file['update_directory']));
                             }
 
                         }
 
                         // Run sql modifications
-                        $sql_path = base_path('temp/' . $random_dir . '/addons/' . $dir . '/sql/install.sql');
+                        $sql_path = base_path('temp/'.$random_dir.'/addons/'.$dir.'/sql/install.sql');
                         if (file_exists($sql_path)) {
                             DB::unprepared(file_get_contents($sql_path));
                         }
 
                         flash(translate('Addon nstalled successfully'))->success();
+
                         return redirect()->route('addons.index');
                     } else {
                         // Create new directories.
-                        if (!empty($json['directory'])) {
-                            //dd($json['directory'][0]['name']);
+                        if (! empty($json['directory'])) {
+                            // dd($json['directory'][0]['name']);
                             foreach ($json['directory'][0]['name'] as $directory) {
                                 if (is_dir(base_path($directory)) == false) {
                                     mkdir(base_path($directory), 0777, true);
 
                                 } else {
-                                    echo "error on creating directory";
+                                    echo 'error on creating directory';
                                 }
 
                             }
                         }
 
                         // Create/Replace new files.
-                        if (!empty($json['files'])) {
+                        if (! empty($json['files'])) {
                             foreach ($json['files'] as $file) {
-                                copy(base_path('temp/' . $random_dir . '/' . $file['root_directory']), base_path($file['update_directory']));
+                                copy(base_path('temp/'.$random_dir.'/'.$file['root_directory']), base_path($file['update_directory']));
                             }
 
                         }
@@ -150,8 +154,8 @@ class AddonController extends Controller
 
                         for ($i = $addon->version + 0.05; $i <= $json['version']; $i = $i + 0.1) {
                             // Run sql modifications
-                            $sql_version = $i+0.05;
-                            $sql_path = base_path('temp/' . $random_dir . '/addons/' . $dir . '/sql/' . $sql_version . '.sql');
+                            $sql_version = $i + 0.05;
+                            $sql_path = base_path('temp/'.$random_dir.'/addons/'.$dir.'/sql/'.$sql_version.'.sql');
                             if (file_exists($sql_path)) {
                                 DB::unprepared(file_get_contents($sql_path));
                             }
@@ -162,15 +166,16 @@ class AddonController extends Controller
                         $addon->save();
 
                         flash(translate('This addon is updated successfully'))->success();
+
                         return redirect()->route('addons.index');
                     }
                 } else {
                     flash(translate('This version is not capable of installing Addons, Please update.'))->error();
+
                     return redirect()->route('addons.index');
                 }
             }
-        }
-        else {
+        } else {
             flash(translate('Please enable ZipArchive extension.'))->error();
         }
     }
@@ -178,8 +183,8 @@ class AddonController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param \App\Addon $addon
-     * @return \Illuminate\Http\Response
+     * @param  \App\Addon  $addon
+     * @return Response
      */
     public function show(Addon $addon)
     {
@@ -188,14 +193,14 @@ class AddonController extends Controller
 
     public function list()
     {
-        //return view('backend.'.Auth::user()->role.'.addon.list')->render();
+        // return view('backend.'.Auth::user()->role.'.addon.list')->render();
     }
 
     /**
      * Show the form for editing the specified resource.
      *
-     * @param \App\Addon $addon
-     * @return \Illuminate\Http\Response
+     * @param  \App\Addon  $addon
+     * @return Response
      */
     public function edit(Addon $addon)
     {
@@ -205,25 +210,22 @@ class AddonController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param \Illuminate\Http\Request $request
-     * @param \App\Addon $addon
-     * @return \Illuminate\Http\Response
+     * @param  \App\Addon  $addon
+     * @return Response
      */
-    public function update(Request $request, $id)
-    {
-
-    }
+    public function update(Request $request, $id) {}
 
     /**
      * Remove the specified resource from storage.
      *
-     * @param \App\Addon $addon
-     * @return \Illuminate\Http\Response
+     * @param  \App\Addon  $addon
+     * @return Response
      */
     public function activation(Request $request)
     {
         if (env('DEMO_MODE') == 'On') {
             flash(translate('This action is disabled in demo mode'))->error();
+
             return 0;
         }
 

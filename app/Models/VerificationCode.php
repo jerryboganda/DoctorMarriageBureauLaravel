@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Carbon\Carbon;
 
 class VerificationCode extends Model
 {
@@ -15,12 +15,12 @@ class VerificationCode extends Model
         'code',
         'type',
         'expires_at',
-        'verified'
+        'verified',
     ];
 
     protected $casts = [
         'expires_at' => 'datetime',
-        'verified' => 'boolean'
+        'verified' => 'boolean',
     ];
 
     /**
@@ -36,7 +36,7 @@ class VerificationCode extends Model
      */
     public function isValid()
     {
-        return !$this->isExpired() && !$this->verified;
+        return ! $this->isExpired() && ! $this->verified;
     }
 
     /**
@@ -45,7 +45,7 @@ class VerificationCode extends Model
     public function markAsVerified()
     {
         $this->update([
-            'verified' => true
+            'verified' => true,
         ]);
     }
 
@@ -78,7 +78,7 @@ class VerificationCode extends Model
             'code' => $code,
             'type' => $type,
             'expires_at' => Carbon::now()->addMinutes($expiresInMinutes),
-            'verified' => false
+            'verified' => false,
         ]);
     }
 
@@ -89,7 +89,7 @@ class VerificationCode extends Model
     {
         $verificationCode = self::getActiveCode($identifier, $type);
 
-        if (!$verificationCode) {
+        if (! $verificationCode) {
             return false;
         }
 
@@ -98,6 +98,7 @@ class VerificationCode extends Model
         }
 
         $verificationCode->markAsVerified();
+
         return true;
     }
 

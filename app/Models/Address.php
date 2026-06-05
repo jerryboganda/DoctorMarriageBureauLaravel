@@ -1,7 +1,6 @@
 <?php
 
 namespace App\Models;
-use App\Models\User;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -18,7 +17,6 @@ class Address extends Model
         'city_id',
         'postal_code',
     ];
-
 
     public function user()
     {

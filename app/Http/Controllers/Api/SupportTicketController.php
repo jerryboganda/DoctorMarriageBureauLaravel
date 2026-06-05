@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Api\Controller;
 use App\Http\Resources\SupportTicket\SupportTicketCategoryResource;
 use App\Http\Resources\SupportTicketResource;
+use App\Models\SupportCategory;
 use App\Models\SupportTicket;
 use App\Models\SupportTicketReply;
-use App\Models\SupportCategory;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Schema;
 
 class SupportTicketController extends Controller
@@ -16,15 +16,15 @@ class SupportTicketController extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index()
     {
         //
     }
+
     /**
-     *
-     * Active tickets 
+     * Active tickets
      */
     public function my_ticket()
     {
@@ -34,18 +34,18 @@ class SupportTicketController extends Controller
                 return $this->failure_message('No support ticket found!');
             } else {
                 return SupportTicketResource::collection($my_tickets)->additional([
-                    'result' => true
+                    'result' => true,
                 ]);
             }
         }
+
         return response()->json(['result' => false, 'message' => translate('You are not authorized to access!!')], 403);
     }
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(Request $request)
     {
@@ -74,8 +74,10 @@ class SupportTicketController extends Controller
             $support_ticket->attachments = $attachment;
             $support_ticket->save();
             $submit_id = $support_ticket->ticket_id;
+
             return $this->response_data($submit_id);
         }
+
         return response()->json(['result' => false, 'message' => translate('You are not authorized to access!!')], 403);
     }
 
@@ -83,7 +85,7 @@ class SupportTicketController extends Controller
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function show($id)
     {
@@ -91,29 +93,31 @@ class SupportTicketController extends Controller
             $support_ticket = SupportTicket::findOrFail($id);
             $support_ticket->seen = '1';
             $support_ticket->save();
-            $support_replies    = SupportTicketReply::where('support_ticket_id', $support_ticket->id)->get();
+            $support_replies = SupportTicketReply::where('support_ticket_id', $support_ticket->id)->get();
             foreach ($support_replies as $support_replie) {
                 if ($support_replie->replied_user_id != auth()->user()->id) {
                     $support_replie->seen = 1;
                     $support_replie->save();
                 }
             }
+
             return new SupportTicketResource($support_ticket);
         }
+
         return response()->json(['result' => false, 'message' => translate('You are not authorized to access!!')], 403);
     }
 
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function update(Request $request, $id)
     {
         //
     }
+
     public function ticket_reply(Request $request)
     {
         if (addon_activation('support_tickets')) {
@@ -130,25 +134,28 @@ class SupportTicketController extends Controller
             $attachments = implode(',', $attachments);
             $support_ticket = SupportTicket::findOrFail($request->support_ticket_id);
 
-            $ticket_reply                     = new SupportTicketReply;
-            $ticket_reply->support_ticket_id  = $request->support_ticket_id;
-            $ticket_reply->replied_user_id    = auth()->user()->id;
-            $ticket_reply->reply              = $request->reply;
-            $ticket_reply->attachments        = $attachments;
+            $ticket_reply = new SupportTicketReply;
+            $ticket_reply->support_ticket_id = $request->support_ticket_id;
+            $ticket_reply->replied_user_id = auth()->user()->id;
+            $ticket_reply->reply = $request->reply;
+            $ticket_reply->attachments = $attachments;
             if ($ticket_reply->save()) {
                 if (auth()->user()->user_type == 'admin' || auth()->user()->user_type == 'staff') {
-                    $support_ticket->status   = $request->status;
+                    $support_ticket->status = $request->status;
                     $support_ticket->save();
+
                     return $this->success_message('Reply has been sent successfully');
                 } else {
-                    $support_ticket->status = "0";
+                    $support_ticket->status = '0';
                     $support_ticket->save();
+
                     return $this->success_message('Reply has been sent successfully');
                 }
             } else {
                 return $this->failure_message('Sorry! Something went wrong.');
             }
         }
+
         return response()->json(['result' => false, 'message' => translate('You are not authorized to access!!')], 403);
     }
 
@@ -156,7 +163,7 @@ class SupportTicketController extends Controller
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function destroy($id)
     {

@@ -19,7 +19,7 @@ return new class extends Migration
         });
 
         // Set sensible default body text
-        \DB::table('referral_settings')->update([
+        DB::table('referral_settings')->update([
             'popup_body' => "We have an exciting offer for you! Refer 3 friends to Doctor Marriage Bureau and when they successfully register using your referral code, you'll receive a FREE premium plan upgrade.\n\nTrack your progress in real-time from your Referral System dashboard.",
         ]);
     }

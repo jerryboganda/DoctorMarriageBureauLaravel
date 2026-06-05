@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\ProfileOptionValue;
+use Illuminate\Http\Request;
 use Redirect;
 use Validator;
 
@@ -13,22 +13,22 @@ class ProfileOptionValueController extends Controller
      * Human-readable labels for each option group.
      */
     public static array $groupLabels = [
-        'gender'                 => 'Gender',
-        'marriage_timeline'      => 'Marriage Timeline',
+        'gender' => 'Gender',
+        'marriage_timeline' => 'Marriage Timeline',
         'relocation_willingness' => 'Relocation Willingness',
-        'seriousness_level'      => 'Seriousness Level',
-        'diet'                   => 'Dietary Preferences',
-        'drink'                  => 'Drinking',
-        'smoke'                  => 'Smoking',
-        'property'               => 'House / Property',
-        'living_with'            => 'Living With',
-        'sleep_schedule'         => 'Sleep Schedule',
-        'work_location_type'     => 'Work Location',
-        'family_type'            => 'Family Type',
-        'immigration_status'     => 'Immigration Status',
-        'personality_tags'       => 'Personality Tags',
-        'personal_values'        => 'Personal Values',
-        'community_values'       => 'Community Values',
+        'seriousness_level' => 'Seriousness Level',
+        'diet' => 'Dietary Preferences',
+        'drink' => 'Drinking',
+        'smoke' => 'Smoking',
+        'property' => 'House / Property',
+        'living_with' => 'Living With',
+        'sleep_schedule' => 'Sleep Schedule',
+        'work_location_type' => 'Work Location',
+        'family_type' => 'Family Type',
+        'immigration_status' => 'Immigration Status',
+        'personality_tags' => 'Personality Tags',
+        'personal_values' => 'Personal Values',
+        'community_values' => 'Community Values',
     ];
 
     public function __construct()
@@ -55,7 +55,7 @@ class ProfileOptionValueController extends Controller
      */
     public function index(Request $request)
     {
-        $sort_search  = null;
+        $sort_search = null;
         $active_group = $request->group;
 
         $query = ProfileOptionValue::query();
@@ -67,14 +67,14 @@ class ProfileOptionValueController extends Controller
         if ($request->has('search') && $request->search != null) {
             $sort_search = $request->search;
             $query->where(function ($q) use ($sort_search) {
-                $q->where('label', 'like', '%' . $sort_search . '%')
-                  ->orWhere('value', 'like', '%' . $sort_search . '%');
+                $q->where('label', 'like', '%'.$sort_search.'%')
+                    ->orWhere('value', 'like', '%'.$sort_search.'%');
             });
         }
 
         $query->orderBy('group')->orderBy('sort_order');
 
-        $options     = $query->paginate(25);
+        $options = $query->paginate(25);
         $groupLabels = self::$groupLabels;
 
         // All distinct groups currently in the database (in case new ones were added)
@@ -90,7 +90,7 @@ class ProfileOptionValueController extends Controller
             $allGroups[$key] = $label;
         }
         foreach ($dbGroups as $g) {
-            if (!isset($allGroups[$g])) {
+            if (! isset($allGroups[$g])) {
                 $allGroups[$g] = ucwords(str_replace('_', ' ', $g));
             }
         }
@@ -109,12 +109,13 @@ class ProfileOptionValueController extends Controller
      */
     public function store(Request $request)
     {
-        $rules    = $this->rules;
+        $rules = $this->rules;
         $messages = $this->messages;
         $validator = Validator::make($request->all(), $rules, $messages);
 
         if ($validator->fails()) {
             flash(translate('Sorry! Something went wrong'))->error();
+
             return Redirect::back()->withErrors($validator);
         }
 
@@ -125,21 +126,24 @@ class ProfileOptionValueController extends Controller
 
         if ($exists) {
             flash(translate('This value already exists in the selected group'))->error();
+
             return back();
         }
 
         $option = new ProfileOptionValue;
-        $option->group      = $request->group;
-        $option->value      = $request->value;
-        $option->label      = $request->label;
+        $option->group = $request->group;
+        $option->value = $request->value;
+        $option->label = $request->label;
         $option->sort_order = $request->sort_order ?? ProfileOptionValue::where('group', $request->group)->max('sort_order') + 1;
-        $option->is_active  = $request->has('is_active') ? 1 : 0;
+        $option->is_active = $request->has('is_active') ? 1 : 0;
 
         if ($option->save()) {
             flash(translate('New option has been added successfully'))->success();
+
             return redirect()->route('profile-option-values.index', ['group' => $request->group]);
         } else {
             flash(translate('Sorry! Something went wrong.'))->error();
+
             return back();
         }
     }
@@ -149,14 +153,14 @@ class ProfileOptionValueController extends Controller
      */
     public function edit($id)
     {
-        $option      = ProfileOptionValue::findOrFail(decrypt($id));
+        $option = ProfileOptionValue::findOrFail(decrypt($id));
         $groupLabels = self::$groupLabels;
-        $allGroups   = $groupLabels;
+        $allGroups = $groupLabels;
 
         // Add any unknown groups from DB
         $dbGroups = ProfileOptionValue::select('group')->distinct()->pluck('group')->toArray();
         foreach ($dbGroups as $g) {
-            if (!isset($allGroups[$g])) {
+            if (! isset($allGroups[$g])) {
                 $allGroups[$g] = ucwords(str_replace('_', ' ', $g));
             }
         }
@@ -169,12 +173,13 @@ class ProfileOptionValueController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $rules    = $this->rules;
+        $rules = $this->rules;
         $messages = $this->messages;
         $validator = Validator::make($request->all(), $rules, $messages);
 
         if ($validator->fails()) {
             flash(translate('Sorry! Something went wrong'))->error();
+
             return Redirect::back()->withErrors($validator);
         }
 
@@ -188,20 +193,23 @@ class ProfileOptionValueController extends Controller
 
         if ($exists) {
             flash(translate('This value already exists in the selected group'))->error();
+
             return back();
         }
 
-        $option->group      = $request->group;
-        $option->value      = $request->value;
-        $option->label      = $request->label;
+        $option->group = $request->group;
+        $option->value = $request->value;
+        $option->label = $request->label;
         $option->sort_order = $request->sort_order ?? 0;
-        $option->is_active  = $request->has('is_active') ? 1 : 0;
+        $option->is_active = $request->has('is_active') ? 1 : 0;
 
         if ($option->save()) {
             flash(translate('Option has been updated successfully'))->success();
+
             return redirect()->route('profile-option-values.index', ['group' => $option->group]);
         } else {
             flash(translate('Sorry! Something went wrong.'))->error();
+
             return back();
         }
     }
@@ -212,7 +220,7 @@ class ProfileOptionValueController extends Controller
     public function toggle_active($id)
     {
         $option = ProfileOptionValue::findOrFail($id);
-        $option->is_active = !$option->is_active;
+        $option->is_active = ! $option->is_active;
         $option->save();
 
         return response()->json(['success' => true, 'is_active' => $option->is_active]);
@@ -227,6 +235,7 @@ class ProfileOptionValueController extends Controller
             foreach ($request->id as $id) {
                 $this->destroy($id);
             }
+
             return 1;
         } else {
             return 0;
@@ -239,13 +248,15 @@ class ProfileOptionValueController extends Controller
     public function destroy($id)
     {
         $option = ProfileOptionValue::findOrFail($id);
-        $group  = $option->group;
+        $group = $option->group;
 
         if (ProfileOptionValue::destroy($id)) {
             flash(translate('Option has been deleted successfully'))->success();
+
             return redirect()->route('profile-option-values.index', ['group' => $group]);
         } else {
             flash(translate('Sorry! Something went wrong.'))->error();
+
             return back();
         }
     }

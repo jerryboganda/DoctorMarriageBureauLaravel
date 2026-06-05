@@ -2,7 +2,7 @@
 
 use Illuminate\Database\Seeder;
 
-require_once __DIR__ . '/ProgressionSeeder.php';
+require_once __DIR__.'/ProgressionSeeder.php';
 
 class DatabaseSeeder extends Seeder
 {

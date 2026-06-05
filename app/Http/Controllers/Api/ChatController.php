@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Api\Controller;
 use App\Http\Requests\ChatRequest;
 use App\Http\Resources\Chat\ChatViewResource;
 use App\Http\Resources\ChatResource;
@@ -19,7 +18,7 @@ class ChatController extends Controller
 {
     private function communicationLimits(): MemberCommunicationLimitService
     {
-        return new MemberCommunicationLimitService();
+        return new MemberCommunicationLimitService;
     }
 
     private function ensureMessagingEntitlement()
@@ -64,7 +63,7 @@ class ChatController extends Controller
                 // unseen messages sent by the OTHER user
                 'chats as unseen_message_count' => function ($q) use ($userId) {
                     $q->where('sender_user_id', '!=', $userId)
-                      ->where('seen', 0);
+                        ->where('seen', 0);
                 },
                 // did I ever reply?
                 'chats as my_message_count' => function ($q) use ($userId) {
@@ -108,7 +107,7 @@ class ChatController extends Controller
             'receiver:id,first_name,last_name,photo',
             'chats' => function ($query) {
                 $query->orderBy('created_at')->orderBy('id');
-            }
+            },
         ])->findOrFail($id);
 
         if (auth()->id() !== $chatThread->sender_user_id && auth()->id() !== $chatThread->receiver_user_id) {
@@ -151,7 +150,7 @@ class ChatController extends Controller
             })
             ->first();
 
-        if (!$thread) {
+        if (! $thread) {
             return response()->json([
                 'result' => false,
                 'message' => 'Chat thread not found.',
@@ -212,7 +211,7 @@ class ChatController extends Controller
             }
         }
 
-        $chatService = new ChatService();
+        $chatService = new ChatService;
         $newChat = $chatService->store($request->except(['_token']), $attachments);
         $this->communicationLimits()->recordMessageSent(auth()->user());
 
@@ -245,36 +244,36 @@ class ChatController extends Controller
         }
 
         $user = auth()->user();
-        if (!$user) {
+        if (! $user) {
             abort(401);
         }
 
         $pdf = PDF::loadView('pdf.biodata_modern', compact('user'), [], [
-            'margin_left'   => 5,
-            'margin_right'  => 5,
-            'margin_top'    => 5,
+            'margin_left' => 5,
+            'margin_right' => 5,
+            'margin_top' => 5,
             'margin_bottom' => 5,
         ]);
         $pdfContent = $pdf->output();
 
-        $filename = 'biodata_' . $user->id . '_' . time() . '_' . uniqid() . '.pdf';
+        $filename = 'biodata_'.$user->id.'_'.time().'_'.uniqid().'.pdf';
         $destinationPath = public_path('uploads/all');
-        if (!file_exists($destinationPath)) {
+        if (! file_exists($destinationPath)) {
             mkdir($destinationPath, 0777, true);
         }
-        $filePath = $destinationPath . '/' . $filename;
+        $filePath = $destinationPath.'/'.$filename;
         file_put_contents($filePath, $pdfContent);
 
         $upload = Upload::create([
-            'file_original_name' => 'Biodata-' . ($user->first_name ?? 'User'),
-            'file_name' => 'uploads/all/' . $filename,
+            'file_original_name' => 'Biodata-'.($user->first_name ?? 'User'),
+            'file_name' => 'uploads/all/'.$filename,
             'user_id' => $user->id,
             'extension' => 'pdf',
             'type' => 'document',
             'file_size' => strlen($pdfContent),
         ]);
 
-        $chatService = new ChatService();
+        $chatService = new ChatService;
         $newChat = $chatService->store([
             'chat_thread_id' => $request->chat_thread_id,
             'message' => "📄 I've shared my biodata/profile details with you. You can view my full profile for more information.",

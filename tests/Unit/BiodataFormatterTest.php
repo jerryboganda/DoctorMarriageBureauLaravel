@@ -50,4 +50,3 @@ class BiodataFormatterTest extends TestCase
         $this->assertSame(['Drinks Occasionally'], $tags);
     }
 }
-

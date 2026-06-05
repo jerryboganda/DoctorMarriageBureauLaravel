@@ -3,13 +3,13 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 class AppEmailVerificationNotification extends Notification
 {
     use Queueable;
+
     public $user;
 
     /**
@@ -37,7 +37,7 @@ class AppEmailVerificationNotification extends Notification
      * Get the mail representation of the notification.
      *
      * @param  mixed  $notifiable
-     * @return \Illuminate\Notifications\Messages\MailMessage
+     * @return MailMessage
      */
     public function toMail($notifiable)
     {
@@ -51,7 +51,7 @@ class AppEmailVerificationNotification extends Notification
 
         return (new MailMessage)
             ->view('emails.app_verification', ['array' => $array])
-            ->subject(translate('Email Verification - ') . env('APP_NAME'));
+            ->subject(translate('Email Verification - ').env('APP_NAME'));
     }
 
     /**

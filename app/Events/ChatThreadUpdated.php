@@ -17,9 +17,13 @@ class ChatThreadUpdated implements ShouldBroadcastNow
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public int $threadId;
+
     public int $senderUserId;
+
     public int $receiverUserId;
+
     public string $lastMessage;
+
     public string $lastMessageTime;
 
     public function __construct(int $threadId, int $senderUserId, int $receiverUserId, string $lastMessage)
@@ -38,8 +42,8 @@ class ChatThreadUpdated implements ShouldBroadcastNow
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('user.chat.' . $this->senderUserId),
-            new PrivateChannel('user.chat.' . $this->receiverUserId),
+            new PrivateChannel('user.chat.'.$this->senderUserId),
+            new PrivateChannel('user.chat.'.$this->receiverUserId),
         ];
     }
 

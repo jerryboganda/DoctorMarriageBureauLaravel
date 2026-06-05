@@ -1,41 +1,39 @@
 <?php
 
-use App\Models\Upload;
-use App\Models\Setting;
-use App\Models\Addon;
-use App\Models\Translation;
-use App\Models\Currency;
-use App\Models\Member;
-use App\Models\ChatThread;
-use App\Models\EmailTemplate;
-use App\Models\Notification;
-use App\Models\User;
-use App\Utility\MimoUtility;
-use Carbon\Carbon;
 use AizPackages\ColorCodeConverter\Services\ColorCodeConverter;
-use App\Models\AdditionalMemberInfo;
+use App\Models\Addon;
+use App\Models\ChatThread;
+use App\Models\Currency;
+use App\Models\EmailTemplate;
+use App\Models\Member;
+use App\Models\Setting;
+use App\Models\Translation;
+use App\Models\Upload;
+use App\Models\User;
+use App\Utility\MemberUtility;
+use Carbon\Carbon;
 
-if (!function_exists('site_url')) {
+if (! function_exists('site_url')) {
     function site_url()
     {
-        return !empty(env('APP_URL')) ? env('APP_URL') : url('');
+        return ! empty(env('APP_URL')) ? env('APP_URL') : url('');
     }
 }
 
-//highlights the selected navigation on admin panel
-if (!function_exists('areActiveRoutes')) {
-    function areActiveRoutes(array $routes, $output = "active")
+// highlights the selected navigation on admin panel
+if (! function_exists('areActiveRoutes')) {
+    function areActiveRoutes(array $routes, $output = 'active')
     {
         foreach ($routes as $route) {
-            if (Route::currentRouteName() == $route)
+            if (Route::currentRouteName() == $route) {
                 return $output;
+            }
         }
     }
 }
 
-
-//return file uploaded via uploader
-if (!function_exists('uploaded_asset')) {
+// return file uploaded via uploader
+if (! function_exists('uploaded_asset')) {
     function uploaded_asset($id)
     {
         if ($id === null || $id === '' || $id === 0 || $id === '0') {
@@ -46,8 +44,10 @@ if (!function_exists('uploaded_asset')) {
             if ($asset && $asset->file_name && $asset->file_name != '0') {
                 return static_asset($asset->file_name);
             }
+
             return null;
         }
+
         // Non-numeric: treat as direct path
         return static_asset($id);
     }
@@ -60,7 +60,7 @@ if (!function_exists('uploaded_asset')) {
  * @param  bool|null  $secure
  * @return string
  */
-if (!function_exists('static_asset')) {
+if (! function_exists('static_asset')) {
     function static_asset($path, $secure = null)
     {
         if (env('FILESYSTEM_DRIVER') == 's3') {
@@ -71,29 +71,28 @@ if (!function_exists('static_asset')) {
     }
 }
 
-if (!function_exists('isHttps')) {
+if (! function_exists('isHttps')) {
     function isHttps()
     {
-        return !empty($_SERVER['HTTPS']) && ('on' == $_SERVER['HTTPS']);
+        return ! empty($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] == 'on');
     }
 }
 
-
-if (!function_exists('getBaseURL')) {
+if (! function_exists('getBaseURL')) {
     function getBaseURL()
     {
-        $root = '//' . $_SERVER['HTTP_HOST'];
+        $root = '//'.$_SERVER['HTTP_HOST'];
         $root .= str_replace(basename($_SERVER['SCRIPT_NAME']), '', $_SERVER['SCRIPT_NAME']);
 
         return $root;
     }
 }
 
-if (!function_exists('getFileBaseURL')) {
+if (! function_exists('getFileBaseURL')) {
     function getFileBaseURL()
     {
         if (env('FILESYSTEM_DRIVER') == 's3') {
-            return env('AWS_URL') . '/';
+            return env('AWS_URL').'/';
         } else {
             return getBaseURL();
         }
@@ -112,35 +111,35 @@ function translate($key, $lang = null, $replace = [])
         $lang = App::getLocale();
     }
 
-    if (!is_string($key)) {
+    if (! is_string($key)) {
         if (is_scalar($key)) {
             $key = (string) $key;
         } else {
-            \Log::warning('translate called with non-string key', ['type' => gettype($key)]);
+            Log::warning('translate called with non-string key', ['type' => gettype($key)]);
             $key = json_encode($key, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '';
         }
     }
 
     $lang_key = preg_replace('/[^A-Za-z0-9\_]/', '', str_replace(' ', '_', strtolower($key)));
 
-    $translations_default = Cache::rememberForever('translations-' . env('DEFAULT_LANGUAGE', 'en'), function () {
+    $translations_default = Cache::rememberForever('translations-'.env('DEFAULT_LANGUAGE', 'en'), function () {
         return Translation::where('lang', env('DEFAULT_LANGUAGE', 'en'))->pluck('lang_value', 'lang_key')->toArray();
     });
 
-    if (!isset($translations_default[$lang_key])) {
+    if (! isset($translations_default[$lang_key])) {
         $translation_def = new Translation;
         $translation_def->lang = env('DEFAULT_LANGUAGE', 'en');
         $translation_def->lang_key = $lang_key;
         $translation_def->lang_value = $key;
         $translation_def->save();
-        Cache::forget('translations-' . env('DEFAULT_LANGUAGE', 'en'));
+        Cache::forget('translations-'.env('DEFAULT_LANGUAGE', 'en'));
     }
 
-    $translation_locale = Cache::rememberForever('translations-' . $lang, function () use ($lang) {
+    $translation_locale = Cache::rememberForever('translations-'.$lang, function () use ($lang) {
         return Translation::where('lang', $lang)->pluck('lang_value', 'lang_key')->toArray();
     });
 
-    //Check for session lang
+    // Check for session lang
     if (isset($translation_locale[$lang_key])) {
         $result = $translation_locale[$lang_key];
     } elseif (isset($translations_default[$lang_key])) {
@@ -150,19 +149,19 @@ function translate($key, $lang = null, $replace = [])
     }
 
     // Apply placeholder replacements (:key → value)
-    if (!empty($replace)) {
+    if (! empty($replace)) {
         foreach ($replace as $k => $v) {
-            $result = str_replace(':' . $k, (string) $v, $result);
+            $result = str_replace(':'.$k, (string) $v, $result);
         }
     }
 
     return $result;
 }
 
-if (!function_exists('formatBytes')) {
+if (! function_exists('formatBytes')) {
     function formatBytes($bytes, $precision = 2)
     {
-        $units = array('B', 'KB', 'MB', 'GB', 'TB');
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
 
         $bytes = max($bytes, 0);
         $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
@@ -172,12 +171,12 @@ if (!function_exists('formatBytes')) {
         $bytes /= pow(1024, $pow);
         // $bytes /= (1 << (10 * $pow));
 
-        return round($bytes, $precision) . ' ' . $units[$pow];
+        return round($bytes, $precision).' '.$units[$pow];
     }
 }
 
 // Get settings value
-if (!function_exists('get_setting')) {
+if (! function_exists('get_setting')) {
     function get_setting($key, $default = null)
     {
         $settings = Cache::remember('settings', 86400, function () {
@@ -191,45 +190,43 @@ if (!function_exists('get_setting')) {
 }
 
 // email template data
-if (!function_exists('get_email_template')) {
+if (! function_exists('get_email_template')) {
     function get_email_template($identifier, $colmn_name = null)
     {
         $emailTemplate = EmailTemplate::where('identifier', $identifier)->first();
         if ($emailTemplate && $colmn_name) {
             return $emailTemplate->$colmn_name;
         }
+
         return $emailTemplate;
     }
 }
 
-
-
-
-//Shows Bad Results in Seller Hompapage Retruns
-if (!function_exists('check_homepage_urls')) {
+// Shows Bad Results in Seller Hompapage Retruns
+if (! function_exists('check_homepage_urls')) {
     function check_homepage_urls($slug)
     {
-        if ($slug == "bad" && env('DEMO_MODE') != 'On') {
+        if ($slug == 'bad' && env('DEMO_MODE') != 'On') {
             return false;
         }
+
         return true;
     }
 }
 
-
-
-//Generates Fromatted DateTime
-if (!function_exists('TimeDateFormatter')) {
+// Generates Fromatted DateTime
+if (! function_exists('TimeDateFormatter')) {
     function TimeDateFormatter()
     {
         date_default_timezone_set('UTC');
         $timestamp = time();
+
         return pow(substr($timestamp, -10, 9), 2);
     }
 }
 
 // Addon Activation Check
-if (!function_exists('addon_activation')) {
+if (! function_exists('addon_activation')) {
     // return true;
     function addon_activation($identifier, $default = null)
     {
@@ -238,23 +235,24 @@ if (!function_exists('addon_activation')) {
         });
 
         $activation = $addons->where('unique_identifier', $identifier)->where('activated', 1)->first();
-        // return  true; we test it by this 
+
+        // return  true; we test it by this
         return $activation == null ? false : true;
     }
 }
 
-
 // system configurations value
-if (!function_exists('get_remaining_package_value')) {
+if (! function_exists('get_remaining_package_value')) {
     function get_remaining_package_value($id, $colmn_name)
     {
         $value = Member::where('user_id', $id)->first()->$colmn_name;
+
         return $value;
     }
 }
 
 //
-if (!function_exists('package_validity')) {
+if (! function_exists('package_validity')) {
     function package_validity($id)
     {
         $package_validity = Member::where('user_id', $id)->first()->package_validity;
@@ -266,8 +264,8 @@ if (!function_exists('package_validity')) {
     }
 }
 
-//formats price to home default price with convertion
-if (!function_exists('single_price')) {
+// formats price to home default price with convertion
+if (! function_exists('single_price')) {
     function single_price($price)
     {
         return format_price(convert_price($price));
@@ -275,25 +273,25 @@ if (!function_exists('single_price')) {
 }
 
 // Log OTP for local testing
-if (!function_exists('log_otp_for_testing')) {
+if (! function_exists('log_otp_for_testing')) {
     function log_otp_for_testing($type, $code, $destination, $message = null)
     {
         if (app()->environment('production')) {
             return;
         }
 
-        \Log::info('=== ' . strtoupper($type) . ' OTP VERIFICATION ===');
-        \Log::info('OTP Code: ' . $code . ' - Destination: ' . $destination);
-        \Log::info('Timestamp: ' . now()->format('Y-m-d H:i:s'));
+        Log::info('=== '.strtoupper($type).' OTP VERIFICATION ===');
+        Log::info('OTP Code: '.$code.' - Destination: '.$destination);
+        Log::info('Timestamp: '.now()->format('Y-m-d H:i:s'));
         if ($message) {
-            \Log::info('Message: ' . $message);
+            Log::info('Message: '.$message);
         }
-        \Log::info('=== END ' . strtoupper($type) . ' OTP VERIFICATION ===');
+        Log::info('=== END '.strtoupper($type).' OTP VERIFICATION ===');
     }
 }
 
-//converts currency to home default currency
-if (!function_exists('convert_price')) {
+// converts currency to home default currency
+if (! function_exists('convert_price')) {
     function convert_price($price)
     {
         $business_settings = Setting::where('type', 'system_default_currency')->first();
@@ -310,8 +308,8 @@ if (!function_exists('convert_price')) {
     }
 }
 
-//formats currency
-if (!function_exists('format_price')) {
+// formats currency
+if (! function_exists('format_price')) {
     function format_price($price)
     {
         if (get_setting('decimal_separator') == 1) {
@@ -321,54 +319,55 @@ if (!function_exists('format_price')) {
         }
 
         if (get_setting('symbol_format') == 1) {
-            return currency_symbol() . $fomated_price;
+            return currency_symbol().$fomated_price;
         }
-        return $fomated_price . currency_symbol();
+
+        return $fomated_price.currency_symbol();
     }
 }
 
-if (!function_exists('currency_symbol')) {
+if (! function_exists('currency_symbol')) {
     function currency_symbol()
     {
         $code = Currency::findOrFail(get_setting('system_default_currency'))->code;
         $currency = Currency::where('code', $code)->first();
+
         return $currency->symbol;
     }
 }
 
-
 // Unique code create and check
-if (!function_exists('unique_code')) {
+if (! function_exists('unique_code')) {
     function unique_code()
     {
         $latestUser = User::withTrashed()->latest('id')->first();
         $id = $latestUser ? $latestUser->id + 1 : 1;
-        $code = get_setting('member_code_prifix') . date('Ym') . $id;
+        $code = get_setting('member_code_prifix').date('Ym').$id;
+
         return $code;
     }
 }
 
 // Unique id create and check
-if (!function_exists('unique_notify_id')) {
+if (! function_exists('unique_notify_id')) {
     function unique_notify_id()
     {
         return null;
     }
 }
 
-
 // Filter min value
-if (!function_exists('filter_min_value')) {
+if (! function_exists('filter_min_value')) {
     function filter_min_value($value)
     {
-        return (empty($value) || !is_numeric($value) || $value <= 0.00) ? 0 : $value;
+        return (empty($value) || ! is_numeric($value) || $value <= 0.00) ? 0 : $value;
     }
 }
 
-if (!function_exists('chat_threads')) {
+if (! function_exists('chat_threads')) {
     function chat_threads()
     {
-        $data = array();
+        $data = [];
         if (Auth::check()) {
             foreach (ChatThread::where('sender_user_id', Auth::user()->id)->orWhere('receiver_user_id', Auth::user()->id)->get() as $key => $chat_thread) {
                 if (count($chat_thread->chats()->where('sender_user_id', '!=', Auth::user()->id)->where('seen', 0)->get()) > 0) {
@@ -376,13 +375,14 @@ if (!function_exists('chat_threads')) {
                 }
             }
         }
+
         return $data;
     }
 }
 
 function timezones()
 {
-    $timezones = array(
+    $timezones = [
         '(GMT-12:00) International Date Line West' => 'Pacific/Kwajalein',
         '(GMT-11:00) Midway Island' => 'Pacific/Midway',
         '(GMT-11:00) Samoa' => 'Pacific/Apia',
@@ -525,13 +525,13 @@ function timezones()
         '(GMT+12:00) Kamchatka' => 'Asia/Kamchatka',
         '(GMT+12:00) Marshall Is.' => 'Pacific/Fiji',
         '(GMT+12:00) Wellington' => 'Pacific/Auckland',
-        '(GMT+13:00) Nuku\'alofa' => 'Pacific/Tongatapu'
-    );
+        '(GMT+13:00) Nuku\'alofa' => 'Pacific/Tongatapu',
+    ];
 
     return $timezones;
 }
 
-if (!function_exists('app_timezone')) {
+if (! function_exists('app_timezone')) {
     function app_timezone()
     {
         return config('app.timezone');
@@ -540,23 +540,24 @@ if (!function_exists('app_timezone')) {
 
 function hex2rgba($color, $opacity = false)
 {
-    return (new ColorCodeConverter())->convertHexToRgba($color, $opacity);
+    return (new ColorCodeConverter)->convertHexToRgba($color, $opacity);
 }
 
-if (!function_exists('get_max_date')) {
+if (! function_exists('get_max_date')) {
     function get_max_date()
     {
         $member_min_age = get_setting('member_min_age') != null ? get_setting('member_min_age') : 0;
         $current_date = Carbon::now();
         $max_date = $current_date->subYears($member_min_age);
-        return date("Y-m-d", strtotime($max_date));
+
+        return date('Y-m-d', strtotime($max_date));
     }
 }
 
-if (!function_exists('show_profile_picture')) {
+if (! function_exists('show_profile_picture')) {
     function show_profile_picture($user)
     {
-        if (!$user || $user->photo == null || (int) $user->photo_approved !== 1) {
+        if (! $user || $user->photo == null || (int) $user->photo_approved !== 1) {
             return false;
         }
 
@@ -564,14 +565,14 @@ if (!function_exists('show_profile_picture')) {
             return true;
         }
 
-        $visibility = \App\Utility\MemberUtility::resolve_media_visibility($user->id, 'profile');
+        $visibility = MemberUtility::resolve_media_visibility($user->id, 'profile');
         $effectiveLevel = (int) ($visibility['effective_level'] ?? 0);
 
         if ($effectiveLevel === 0) {
             return true;
         }
 
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return false;
         }
 
@@ -583,22 +584,23 @@ if (!function_exists('show_profile_picture')) {
             return true;
         }
 
-        $photo_request = \App\Utility\MemberUtility::member_profile_photo_request_info($user->id);
+        $photo_request = MemberUtility::member_profile_photo_request_info($user->id);
+
         return ($photo_request['profile_photo_request_state'] ?? 'none') === 'approved';
     }
 }
 
 // file upload for api
-if (!function_exists('upload_api_file')) {
+if (! function_exists('upload_api_file')) {
     function upload_api_file($image)
     {
         $extension = strtolower((string) $image->getClientOriginalExtension());
         $convertible_extensions = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif'];
 
-        $filename = time() . '_' . uniqid();
+        $filename = time().'_'.uniqid();
         $destinationPath = public_path('uploads/all');
 
-        if (!file_exists($destinationPath)) {
+        if (! file_exists($destinationPath)) {
             mkdir($destinationPath, 0777, true);
         }
 
@@ -617,14 +619,14 @@ if (!function_exists('upload_api_file')) {
 
                 // Convert to webp for better compression
                 $filename .= '.webp';
-                $path = 'uploads/all/' . $filename;
-                $fullPath = $destinationPath . '/' . $filename;
+                $path = 'uploads/all/'.$filename;
+                $fullPath = $destinationPath.'/'.$filename;
 
                 $img->encode('webp', 80)->save($fullPath);
                 $extension = 'webp';
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 // Fallback to original file when optimization/conversion fails.
-                \Log::warning('Image optimization failed; storing original file', [
+                Log::warning('Image optimization failed; storing original file', [
                     'user_id' => auth()->id(),
                     'original_name' => $image->getClientOriginalName(),
                     'extension' => $extension,
@@ -632,34 +634,34 @@ if (!function_exists('upload_api_file')) {
                 ]);
 
                 $safeExtension = $extension !== '' ? $extension : 'bin';
-                $filename .= '.' . $safeExtension;
-                $path = 'uploads/all/' . $filename;
+                $filename .= '.'.$safeExtension;
+                $path = 'uploads/all/'.$filename;
                 $image->move($destinationPath, $filename);
                 $extension = $safeExtension;
             }
         } else {
             // Non-image or non-optimizable file
             $safeExtension = $extension !== '' ? $extension : 'bin';
-            $filename .= '.' . $safeExtension;
-            $path = 'uploads/all/' . $filename;
+            $filename .= '.'.$safeExtension;
+            $path = 'uploads/all/'.$filename;
             $image->move($destinationPath, $filename);
             $extension = $safeExtension;
         }
 
-        $upload = new App\Models\Upload();
+        $upload = new Upload;
         $upload->file_original_name = pathinfo($image->getClientOriginalName(), PATHINFO_FILENAME);
         $upload->file_name = $path;
         $upload->user_id = auth()->id();
         $upload->extension = $extension;
         $upload->type = 'image';
-        $upload->file_size = filesize($destinationPath . '/' . $filename);
+        $upload->file_size = filesize($destinationPath.'/'.$filename);
         $upload->save();
 
         return $upload->id;
     }
 }
 // text format for dose_not_matter
-if (!function_exists('attribute_text_format')) {
+if (! function_exists('attribute_text_format')) {
     function attribute_text_format($text = null)
     {
         $formatted_text = $text;
@@ -670,6 +672,7 @@ if (!function_exists('attribute_text_format')) {
         } elseif ($text == 'dose_not_matter') {
             $formatted_text = 'Does Not Matter';
         }
+
         return $formatted_text;
     }
 }
@@ -678,10 +681,12 @@ if (!function_exists('attribute_text_format')) {
  * Return gender-aware default avatar URL.
  * gender: 1=male, 2=female (matches members.gender column)
  */
-if (!function_exists("gender_avatar")) {
-    function gender_avatar($gender = null) {
+if (! function_exists('gender_avatar')) {
+    function gender_avatar($gender = null)
+    {
         $g = is_object($gender) ? ($gender->gender ?? null) : $gender;
-        $isFemale = ($g == 2 || $g === "2" || strtolower((string)$g) === "female" || strtolower((string)$g) === "f");
-        return static_asset($isFemale ? "assets/img/female-avatar-place.png" : "assets/img/avatar-place.png");
+        $isFemale = ($g == 2 || $g === '2' || strtolower((string) $g) === 'female' || strtolower((string) $g) === 'f');
+
+        return static_asset($isFemale ? 'assets/img/female-avatar-place.png' : 'assets/img/avatar-place.png');
     }
 }

@@ -74,6 +74,7 @@ class Referral extends Model
 
         $this->status = 'qualified';
         $this->qualified_at = now();
+
         return $this->save();
     }
 

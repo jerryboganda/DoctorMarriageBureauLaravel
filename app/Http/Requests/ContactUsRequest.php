@@ -2,12 +2,12 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Contracts\Validation\Validator;
-use Illuminate\Validation\ValidationException;
-use Illuminate\Http\Exceptions\HttpResponseException;
 use App\Rules\RecaptchaRule;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class ContactUsRequest extends FormRequest
 {
@@ -26,7 +26,6 @@ class ContactUsRequest extends FormRequest
      *
      * @return array
      */
-
     public function rules()
     {
         if ($this->getMethod() == 'POST') {
@@ -35,7 +34,7 @@ class ContactUsRequest extends FormRequest
                 'email' => 'required|email',
                 'subject' => 'required',
                 'description' => 'required',
-                'g-recaptcha-response' => [Rule::when(get_setting('google_recaptcha_activation') == 1, ['required', new RecaptchaRule()], ['sometimes'])]
+                'g-recaptcha-response' => [Rule::when(get_setting('google_recaptcha_activation') == 1, ['required', new RecaptchaRule], ['sometimes'])],
             ];
         } else {
             $rules = [
@@ -43,6 +42,7 @@ class ContactUsRequest extends FormRequest
                 'status' => 'required',
             ];
         }
+
         return $rules;
     }
 
@@ -62,18 +62,18 @@ class ContactUsRequest extends FormRequest
             'g-recaptcha-response.required' => translate('Google reCAPTCHA is required'),
         ];
     }
-    
+
     /**
      * Get the error messages for the defined validation rules.*
+     *
      * @return array
      */
-
     public function failedValidation(Validator $validator)
     {
         if ($this->expectsJson()) {
             throw new HttpResponseException(response()->json([
                 'message' => $validator->errors()->all(),
-                'result' => false
+                'result' => false,
             ], 422));
         } else {
             throw (new ValidationException($validator))

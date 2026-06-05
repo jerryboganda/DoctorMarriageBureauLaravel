@@ -1,12 +1,12 @@
 <?php
+
 /**
  * Simple script to view OTP logs from Laravel log file
  * Run this script to see the latest OTP verification codes
  */
+$logFile = __DIR__.'/storage/logs/laravel.log';
 
-$logFile = __DIR__ . '/storage/logs/laravel.log';
-
-if (!file_exists($logFile)) {
+if (! file_exists($logFile)) {
     echo "Log file not found: $logFile\n";
     exit(1);
 }
@@ -21,8 +21,8 @@ $lastLines = array_slice($lines, -50);
 
 $otpLines = [];
 foreach ($lastLines as $line) {
-    if (strpos($line, 'OTP') !== false || 
-        strpos($line, 'Code for Testing') !== false || 
+    if (strpos($line, 'OTP') !== false ||
+        strpos($line, 'Code for Testing') !== false ||
         strpos($line, 'verification_code') !== false ||
         strpos($line, 'SMS Code') !== false ||
         strpos($line, 'Email Code') !== false) {
@@ -34,10 +34,9 @@ if (empty($otpLines)) {
     echo "No OTP logs found in the last 50 lines.\n";
 } else {
     foreach ($otpLines as $line) {
-        echo $line . "\n";
+        echo $line."\n";
     }
 }
 
 echo "\n=== END OTP LOGS ===\n";
 echo "To view real-time logs, run: tail -f storage/logs/laravel.log\n";
-?>

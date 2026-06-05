@@ -1,5 +1,6 @@
 <?php
-$pdo = new PDO("mysql:host=db;dbname=marriagebureau;charset=utf8mb4", "root", "MarriageBureauRootPass123!");
+
+$pdo = new PDO('mysql:host=db;dbname=marriagebureau;charset=utf8mb4', 'root', 'MarriageBureauRootPass123!');
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 // Re-insert the citizen entry that was accidentally deleted

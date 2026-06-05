@@ -25,17 +25,17 @@ class RecaptchaRule implements Rule
      */
     public function passes($attribute, $value)
     {
-        $data = array(
+        $data = [
             'secret' => env('RECAPTCHA_SECRET_KEY'),
-            'response' => $value
-        );
+            'response' => $value,
+        ];
 
         try {
             $verify = curl_init();
             curl_setopt(
                 $verify,
                 CURLOPT_URL,
-                "https://www.google.com/recaptcha/api/siteverify"
+                'https://www.google.com/recaptcha/api/siteverify'
             );
             curl_setopt($verify, CURLOPT_POST, true);
             curl_setopt(

@@ -1,7 +1,6 @@
 <?php
 
 namespace App\Models;
-use App\Models\User;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -9,8 +8,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Education extends Model
 {
     use SoftDeletes;
-    protected $fillable = ['user_id', 'degree', 'present'];
 
+    protected $fillable = ['user_id', 'degree', 'present'];
 
     public function user()
     {

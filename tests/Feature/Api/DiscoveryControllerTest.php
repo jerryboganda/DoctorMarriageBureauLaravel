@@ -12,10 +12,10 @@ use App\Models\PhysicalAttribute;
 use App\Models\Religion;
 use App\Models\Sect;
 use App\Models\Shortlist;
-use App\Models\ViewGalleryImage;
-use App\Models\ViewProfilePicture;
 use App\Models\SpiritualBackground;
 use App\Models\User;
+use App\Models\ViewGalleryImage;
+use App\Models\ViewProfilePicture;
 use App\Utility\MemberUtility;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -90,7 +90,7 @@ class DiscoveryControllerTest extends TestCase
 
         Sanctum::actingAs($viewer);
 
-        $response = $this->getJson('/api/discovery/search?' . http_build_query([
+        $response = $this->getJson('/api/discovery/search?'.http_build_query([
             'verified' => 'yes',
             'age_min' => 28,
             'age_max' => 32,
@@ -162,7 +162,7 @@ class DiscoveryControllerTest extends TestCase
 
         Sanctum::actingAs($viewer);
 
-        $response = $this->getJson('/api/discovery/search?' . http_build_query([
+        $response = $this->getJson('/api/discovery/search?'.http_build_query([
             'verified' => 'yes',
             'country' => (string) $country->id,
             'religion' => (string) $religion->id,
@@ -215,7 +215,7 @@ class DiscoveryControllerTest extends TestCase
 
         Sanctum::actingAs($viewer);
 
-        $response = $this->getJson('/api/discovery/search?' . http_build_query([
+        $response = $this->getJson('/api/discovery/search?'.http_build_query([
             'verified' => 'yes',
             'country' => (string) $country->id,
             'religion' => (string) $religion->id,
@@ -329,7 +329,7 @@ class DiscoveryControllerTest extends TestCase
 
         Sanctum::actingAs($viewer);
 
-        $response = $this->getJson('/api/discovery?' . http_build_query([
+        $response = $this->getJson('/api/discovery?'.http_build_query([
             'bookmarked' => 'yes',
         ]));
 
@@ -395,7 +395,7 @@ class DiscoveryControllerTest extends TestCase
         $discoveryPending->assertJsonPath('data.all_profiles.0.profile_photo_request_requested', true);
         $discoveryPending->assertJsonPath('data.all_profiles.0.profile_photo_blur', true);
 
-        $publicPending = $this->getJson('/api/member/public-profile/' . $target->id);
+        $publicPending = $this->getJson('/api/member/public-profile/'.$target->id);
         $publicPending->assertOk();
         $publicPending->assertJsonPath('data.basic_info.profile_photo_request_state', 'pending');
         $publicPending->assertJsonPath('data.basic_info.profile_photo_request_requested', true);
@@ -422,7 +422,7 @@ class DiscoveryControllerTest extends TestCase
         $discoveryApproved->assertJsonPath('data.all_profiles.0.profile_photo_request_approved', true);
         $discoveryApproved->assertJsonPath('data.all_profiles.0.profile_photo_blur', true);
 
-        $publicApproved = $this->getJson('/api/member/public-profile/' . $target->id);
+        $publicApproved = $this->getJson('/api/member/public-profile/'.$target->id);
         $publicApproved->assertOk();
         $publicApproved->assertJsonPath('data.basic_info.profile_photo_request_state', 'approved');
         $publicApproved->assertJsonPath('data.basic_info.profile_photo_request_approved', true);
@@ -526,7 +526,7 @@ class DiscoveryControllerTest extends TestCase
         $discoveryPending->assertJsonPath('data.all_profiles.0.gallery_image_request_state', 'pending');
         $discoveryPending->assertJsonPath('data.all_profiles.0.gallery_image_request_requested', true);
 
-        $publicPending = $this->getJson('/api/member/public-profile/' . $target->id);
+        $publicPending = $this->getJson('/api/member/public-profile/'.$target->id);
         $publicPending->assertOk();
         $publicPending->assertJsonPath('data.basic_info.gallery_image_request_state', 'pending');
         $publicPending->assertJsonPath('data.basic_info.gallery_image_request_requested', true);
@@ -551,7 +551,7 @@ class DiscoveryControllerTest extends TestCase
         $discoveryApproved->assertJsonPath('data.all_profiles.0.gallery_image_request_state', 'approved');
         $discoveryApproved->assertJsonPath('data.all_profiles.0.gallery_image_request_approved', true);
 
-        $publicApproved = $this->getJson('/api/member/public-profile/' . $target->id);
+        $publicApproved = $this->getJson('/api/member/public-profile/'.$target->id);
         $publicApproved->assertOk();
         $publicApproved->assertJsonPath('data.basic_info.gallery_image_request_state', 'approved');
         $publicApproved->assertJsonPath('data.basic_info.gallery_image_request_approved', true);
@@ -657,7 +657,7 @@ class DiscoveryControllerTest extends TestCase
         $discovery->assertOk();
         $discovery->assertJsonPath('data.all_profiles.0.profile_photo_request_state', 'none');
 
-        $publicProfile = $this->getJson('/api/member/public-profile/' . $target->id);
+        $publicProfile = $this->getJson('/api/member/public-profile/'.$target->id);
         $publicProfile->assertOk();
         $publicProfile->assertJsonPath('data.basic_info.profile_photo_request_state', 'none');
         $publicProfile->assertJsonPath('data.profile_pic_request', true);
@@ -748,7 +748,7 @@ class DiscoveryControllerTest extends TestCase
 
         Sanctum::actingAs($viewer);
 
-        $response = $this->getJson('/api/discovery/search?' . http_build_query([
+        $response = $this->getJson('/api/discovery/search?'.http_build_query([
             'bookmarked' => 'yes',
             'age_min' => 28,
             'age_max' => 32,
@@ -784,7 +784,7 @@ class DiscoveryControllerTest extends TestCase
 
         Sanctum::actingAs($viewer);
 
-        $response = $this->getJson('/api/discovery?' . http_build_query([
+        $response = $this->getJson('/api/discovery?'.http_build_query([
             'bookmarked' => 'yes',
         ]));
 
@@ -806,6 +806,7 @@ class DiscoveryControllerTest extends TestCase
             'birthday' => now()->subYears(34)->format('Y-m-d'),
             'approved' => 1,
             'verification_info' => 'viewer-verified',
+            'membership' => 2,
             'package_validity' => now()->addDays(30)->format('Y-m-d'),
             'remaining_profile_viewer_view' => 1,
         ]);
@@ -830,7 +831,7 @@ class DiscoveryControllerTest extends TestCase
         $visibleResponse->assertJsonPath('data.0.id', $candidate->id);
 
         DB::table('profile_viewers')->delete();
-        $baselineProfile = $this->getJson('/api/member/public-profile/' . $candidate->id);
+        $baselineProfile = $this->getJson('/api/member/public-profile/'.$candidate->id);
         $baselineProfile->assertOk();
         $this->assertSame(1, DB::table('profile_viewers')->count());
 
@@ -881,7 +882,7 @@ class DiscoveryControllerTest extends TestCase
         DB::table('profile_viewers')->delete();
         DB::table('members')->where('user_id', $candidate->id)->update(['remaining_profile_viewer_view' => 1]);
 
-        $profileResponse = $this->getJson('/api/member/public-profile/' . $candidate->id);
+        $profileResponse = $this->getJson('/api/member/public-profile/'.$candidate->id);
         $profileResponse->assertOk();
         $profileResponse->assertJsonPath('data.basic_info.profile_photo_blur', true);
         $this->assertSame(0, DB::table('profile_viewers')->count());
@@ -929,7 +930,7 @@ class DiscoveryControllerTest extends TestCase
         $membersOnly->assertJsonPath('data.photo_visibility_members', true);
 
         Sanctum::actingAs($viewer);
-        $membersOnlyProfile = $this->getJson('/api/member/public-profile/' . $candidate->id);
+        $membersOnlyProfile = $this->getJson('/api/member/public-profile/'.$candidate->id);
         $membersOnlyProfile->assertOk();
         $membersOnlyProfile->assertJsonPath('data.profile_photo_request_required', false);
         $membersOnlyProfile->assertJsonPath('data.gallery_image_request_required', false);
@@ -946,7 +947,7 @@ class DiscoveryControllerTest extends TestCase
         $requestOnly->assertJsonPath('data.photo_visibility_members', false);
 
         Sanctum::actingAs($viewer);
-        $requestOnlyProfile = $this->getJson('/api/member/public-profile/' . $candidate->id);
+        $requestOnlyProfile = $this->getJson('/api/member/public-profile/'.$candidate->id);
         $requestOnlyProfile->assertOk();
         $requestOnlyProfile->assertJsonPath('data.profile_photo_request_required', true);
         $requestOnlyProfile->assertJsonPath('data.gallery_image_request_required', true);
@@ -1032,7 +1033,7 @@ class DiscoveryControllerTest extends TestCase
 
         Sanctum::actingAs($viewer);
 
-        $hiddenDiscovery = $this->getJson('/api/discovery/search?' . http_build_query([
+        $hiddenDiscovery = $this->getJson('/api/discovery/search?'.http_build_query([
             'verified' => 'yes',
             'country' => (string) $country->id,
             'religion' => (string) $religion->id,
@@ -1044,7 +1045,7 @@ class DiscoveryControllerTest extends TestCase
         $hiddenDiscovery->assertJsonPath('data.0.id', $candidate->id);
         $hiddenDiscovery->assertJsonPath('data.0.name', 'Hidden C.');
 
-        $hiddenPublicProfile = $this->getJson('/api/member/public-profile/' . $candidate->id);
+        $hiddenPublicProfile = $this->getJson('/api/member/public-profile/'.$candidate->id);
         $hiddenPublicProfile->assertOk();
         $hiddenPublicProfile->assertJsonPath('data.basic_info.firs_name', 'Hidden');
         $hiddenPublicProfile->assertJsonPath('data.basic_info.last_name', 'C.');
@@ -1063,7 +1064,7 @@ class DiscoveryControllerTest extends TestCase
 
         Sanctum::actingAs($viewer);
 
-        $visibleDiscovery = $this->getJson('/api/discovery/search?' . http_build_query([
+        $visibleDiscovery = $this->getJson('/api/discovery/search?'.http_build_query([
             'verified' => 'yes',
             'country' => (string) $country->id,
             'religion' => (string) $religion->id,
@@ -1075,7 +1076,7 @@ class DiscoveryControllerTest extends TestCase
         $visibleDiscovery->assertJsonPath('data.0.id', $candidate->id);
         $visibleDiscovery->assertJsonPath('data.0.name', 'Hidden Candidate');
 
-        $visiblePublicProfile = $this->getJson('/api/member/public-profile/' . $candidate->id);
+        $visiblePublicProfile = $this->getJson('/api/member/public-profile/'.$candidate->id);
         $visiblePublicProfile->assertOk();
         $visiblePublicProfile->assertJsonPath('data.basic_info.firs_name', 'Hidden');
         $visiblePublicProfile->assertJsonPath('data.basic_info.last_name', 'Candidate');
@@ -1437,6 +1438,13 @@ class DiscoveryControllerTest extends TestCase
             $table->timestamps();
         });
 
+        Schema::create('ignored_users', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('ignored_by');
+            $table->timestamps();
+        });
+
         Schema::create('reported_users', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id');
@@ -1482,8 +1490,9 @@ class DiscoveryControllerTest extends TestCase
         $user = User::create([
             'first_name' => $overrides['first_name'] ?? 'Test',
             'last_name' => $overrides['last_name'] ?? 'User',
-            'email' => $overrides['email'] ?? ('user-' . uniqid() . '@example.com'),
+            'email' => $overrides['email'] ?? ('user-'.uniqid().'@example.com'),
             'password' => Hash::make('password'),
+            'membership' => $overrides['membership'] ?? 1,
             'approved' => $overrides['approved'] ?? 1,
             'user_type' => 'member',
             'email_verified_at' => now(),
@@ -1522,7 +1531,7 @@ class DiscoveryControllerTest extends TestCase
             'complexion' => 'Fair',
         ]);
 
-        if (!empty($overrides['designation']) || !empty($overrides['job_title_id'])) {
+        if (! empty($overrides['designation']) || ! empty($overrides['job_title_id'])) {
             Career::create([
                 'user_id' => $user->id,
                 'designation' => $overrides['designation'] ?? 'Doctor',
@@ -1533,7 +1542,7 @@ class DiscoveryControllerTest extends TestCase
             ]);
         }
 
-        if (!empty($overrides['religion_id']) || !empty($overrides['country_id'])) {
+        if (! empty($overrides['religion_id']) || ! empty($overrides['country_id'])) {
             SpiritualBackground::create([
                 'user_id' => $user->id,
                 'religion_id' => $overrides['religion_id'] ?? null,
@@ -1542,7 +1551,7 @@ class DiscoveryControllerTest extends TestCase
             ]);
         }
 
-        if (!empty($overrides['country_id'])) {
+        if (! empty($overrides['country_id'])) {
             Address::create([
                 'user_id' => $user->id,
                 'type' => 'present',

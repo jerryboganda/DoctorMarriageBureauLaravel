@@ -19,7 +19,7 @@ return new class extends Migration
             $table->timestamp('expires_at');
             $table->boolean('verified')->default(false);
             $table->timestamps();
-            
+
             $table->index(['identifier', 'type']);
             $table->index('expires_at');
         });

@@ -1,7 +1,6 @@
 <?php
 
 namespace App\Models;
-use App\Models\User;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -51,5 +50,4 @@ class SpiritualBackground extends Model
     {
         return $this->belongsTo(FamilyValue::class)->withTrashed();
     }
-
 }

@@ -8,6 +8,7 @@ use Illuminate\Console\Command;
 class ProcessPendingReferrals extends Command
 {
     protected $signature = 'referrals:process-pending';
+
     protected $description = 'Check pending referrals against active qualification rules and apply rewards when eligible';
 
     public function handle(ReferralService $referralService): int

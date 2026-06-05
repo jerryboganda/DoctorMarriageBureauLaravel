@@ -26,7 +26,7 @@ return new class extends Migration
             $table->boolean('can_recover_account')->default(true);
             $table->boolean('notify_on_login')->default(false);
             $table->timestamps();
-            
+
             $table->index(['user_id', 'is_verified']);
             $table->index('verification_token');
         });
@@ -44,7 +44,7 @@ return new class extends Migration
             $table->timestamp('approved_at')->nullable();
             $table->timestamp('completed_at')->nullable();
             $table->timestamps();
-            
+
             $table->index(['user_id', 'status']);
             $table->index('recovery_token');
         });

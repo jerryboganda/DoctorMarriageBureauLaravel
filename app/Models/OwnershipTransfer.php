@@ -38,6 +38,7 @@ class OwnershipTransfer extends Model
     ];
 
     const STATUSES = ['pending', 'accepted', 'rejected', 'expired', 'cancelled'];
+
     const TRANSFER_VALIDITY_DAYS = 7;
 
     public function member(): BelongsTo
@@ -68,7 +69,7 @@ class OwnershipTransfer extends Model
     ): self {
         // Verify step-up auth
         $stepUp = StepUpAuthToken::getByToken($stepUpToken);
-        if (!$stepUp || !$stepUp->isComplete() || $stepUp->user_id !== $fromUserId) {
+        if (! $stepUp || ! $stepUp->isComplete() || $stepUp->user_id !== $fromUserId) {
             throw new \Exception('Step-up authentication required');
         }
 
@@ -128,6 +129,7 @@ class OwnershipTransfer extends Model
 
         if ($this->expires_at->isPast()) {
             $this->update(['status' => 'expired']);
+
             return false;
         }
 
@@ -146,7 +148,7 @@ class OwnershipTransfer extends Model
         $member = $this->member;
         if ($member) {
             $member->update(['user_id' => $userId]);
-            
+
             // Update primary manager
             ProfileManager::where('member_id', $member->id)
                 ->where('manager_type', 'owner')
@@ -217,10 +219,10 @@ class OwnershipTransfer extends Model
 
     protected function getMaskedEmail(): string
     {
-        if (!$this->to_email) {
+        if (! $this->to_email) {
             return '';
         }
-        
+
         $parts = explode('@', $this->to_email);
         if (count($parts) !== 2) {
             return '***@***';
@@ -228,9 +230,9 @@ class OwnershipTransfer extends Model
 
         $local = $parts[0];
         $domain = $parts[1];
-        
-        $maskedLocal = substr($local, 0, 2) . str_repeat('*', max(0, strlen($local) - 2));
-        
-        return $maskedLocal . '@' . $domain;
+
+        $maskedLocal = substr($local, 0, 2).str_repeat('*', max(0, strlen($local) - 2));
+
+        return $maskedLocal.'@'.$domain;
     }
 }

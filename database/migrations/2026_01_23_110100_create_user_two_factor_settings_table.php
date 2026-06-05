@@ -26,7 +26,7 @@ return new class extends Migration
             $table->unsignedInteger('failed_attempts')->default(0);
             $table->timestamp('locked_until')->nullable()->comment('Lockout after too many failed attempts');
             $table->timestamps();
-            
+
             $table->unique('user_id');
             $table->index(['user_id', 'is_enabled']);
         });
@@ -47,7 +47,7 @@ return new class extends Migration
         Schema::table('users', function (Blueprint $table) {
             $table->dropColumn(['two_factor_pending', 'two_factor_token', 'two_factor_token_expires_at']);
         });
-        
+
         Schema::dropIfExists('user_two_factor_settings');
     }
 };

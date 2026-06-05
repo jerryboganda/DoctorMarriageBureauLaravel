@@ -2,15 +2,14 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
-use App\Models\Member;
-use App\Models\ProfileManager;
-use App\Models\OwnershipTransfer;
-use App\Models\StepUpAuthToken;
 use App\Events\AccountUpdated;
+use App\Http\Controllers\Controller;
+use App\Models\Member;
+use App\Models\OwnershipTransfer;
+use App\Models\ProfileManager;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ProfileOwnershipController extends Controller
 {
@@ -22,7 +21,7 @@ class ProfileOwnershipController extends Controller
         $user = Auth::user();
         $member = $user->member;
 
-        if (!$member) {
+        if (! $member) {
             return response()->json([
                 'success' => false,
                 'message' => 'Member profile not found.',
@@ -34,7 +33,7 @@ class ProfileOwnershipController extends Controller
             'data' => [
                 'management_mode' => $member->management_mode ?? 'self',
                 'managers' => ProfileManager::getForMember($member->id)
-                    ->map(fn($m) => $m->toApiResponse())
+                    ->map(fn ($m) => $m->toApiResponse())
                     ->toArray(),
                 'pending_transfer' => $this->getPendingTransfer($member),
                 'available_modes' => $this->getAvailableModes(),
@@ -82,6 +81,7 @@ class ProfileOwnershipController extends Controller
     protected function getPendingTransfer(Member $member): ?array
     {
         $transfer = OwnershipTransfer::getPendingForMember($member->id);
+
         return $transfer?->toApiResponse();
     }
 
@@ -93,7 +93,7 @@ class ProfileOwnershipController extends Controller
         $user = Auth::user();
         $member = $user->member;
 
-        if (!$member) {
+        if (! $member) {
             return response()->json([
                 'success' => false,
                 'message' => 'Member profile not found.',
@@ -127,7 +127,7 @@ class ProfileOwnershipController extends Controller
         $user = Auth::user();
         $member = $user->member;
 
-        if (!$member) {
+        if (! $member) {
             return response()->json([
                 'success' => false,
                 'message' => 'Member profile not found.',
@@ -143,7 +143,7 @@ class ProfileOwnershipController extends Controller
             'is_primary' => 'sometimes|boolean',
         ]);
 
-        if (!$request->email && !$request->phone) {
+        if (! $request->email && ! $request->phone) {
             return response()->json([
                 'success' => false,
                 'message' => 'Either email or phone is required.',
@@ -177,7 +177,7 @@ class ProfileOwnershipController extends Controller
         $user = Auth::user();
         $manager = ProfileManager::acceptInvitation($request->token, $user->id);
 
-        if (!$manager) {
+        if (! $manager) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid or expired invitation.',
@@ -207,7 +207,7 @@ class ProfileOwnershipController extends Controller
         $user = Auth::user();
         $member = $user->member;
 
-        if (!$member) {
+        if (! $member) {
             return response()->json([
                 'success' => false,
                 'message' => 'Member profile not found.',
@@ -222,7 +222,7 @@ class ProfileOwnershipController extends Controller
             ->where('member_id', $member->id)
             ->first();
 
-        if (!$manager) {
+        if (! $manager) {
             return response()->json([
                 'success' => false,
                 'message' => 'Manager not found.',
@@ -250,7 +250,7 @@ class ProfileOwnershipController extends Controller
         $user = Auth::user();
         $member = $user->member;
 
-        if (!$member) {
+        if (! $member) {
             return response()->json([
                 'success' => false,
                 'message' => 'Member profile not found.',
@@ -262,7 +262,7 @@ class ProfileOwnershipController extends Controller
             ->where('manager_type', '!=', 'owner')
             ->first();
 
-        if (!$manager) {
+        if (! $manager) {
             return response()->json([
                 'success' => false,
                 'message' => 'Manager not found or cannot be removed.',
@@ -291,7 +291,7 @@ class ProfileOwnershipController extends Controller
         $user = Auth::user();
         $member = $user->member;
 
-        if (!$member) {
+        if (! $member) {
             return response()->json([
                 'success' => false,
                 'message' => 'Member profile not found.',
@@ -306,7 +306,7 @@ class ProfileOwnershipController extends Controller
             'reason' => 'nullable|string|max:500',
         ]);
 
-        if (!$request->to_email && !$request->to_phone) {
+        if (! $request->to_email && ! $request->to_phone) {
             return response()->json([
                 'success' => false,
                 'message' => 'Either email or phone of new owner is required.',
@@ -349,7 +349,7 @@ class ProfileOwnershipController extends Controller
     {
         $transfer = OwnershipTransfer::getByToken($token);
 
-        if (!$transfer) {
+        if (! $transfer) {
             return response()->json([
                 'success' => false,
                 'message' => 'Transfer not found or expired.',
@@ -380,14 +380,14 @@ class ProfileOwnershipController extends Controller
         $user = Auth::user();
         $transfer = OwnershipTransfer::getByToken($request->token);
 
-        if (!$transfer) {
+        if (! $transfer) {
             return response()->json([
                 'success' => false,
                 'message' => 'Transfer not found or expired.',
             ], 404);
         }
 
-        if (!$transfer->accept($user->id)) {
+        if (! $transfer->accept($user->id)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Could not accept transfer.',
@@ -417,7 +417,7 @@ class ProfileOwnershipController extends Controller
 
         $transfer = OwnershipTransfer::getByToken($request->token);
 
-        if (!$transfer) {
+        if (! $transfer) {
             return response()->json([
                 'success' => false,
                 'message' => 'Transfer not found or expired.',
@@ -445,7 +445,7 @@ class ProfileOwnershipController extends Controller
         $user = Auth::user();
         $member = $user->member;
 
-        if (!$member) {
+        if (! $member) {
             return response()->json([
                 'success' => false,
                 'message' => 'Member profile not found.',
@@ -457,7 +457,7 @@ class ProfileOwnershipController extends Controller
             ->where('status', 'pending')
             ->first();
 
-        if (!$transfer) {
+        if (! $transfer) {
             return response()->json([
                 'success' => false,
                 'message' => 'No pending transfer found.',

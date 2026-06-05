@@ -9,12 +9,14 @@ class PackagePaymentController extends BaseAdminController
     public function index()
     {
         $query = PackagePayment::query()->with(['user', 'package'])->orderByDesc('id');
+
         return $this->ok($this->paginateQuery(request(), $query));
     }
 
     public function show($id)
     {
         $payment = PackagePayment::with(['user', 'package'])->findOrFail($id);
+
         return $this->ok($payment);
     }
 
@@ -30,6 +32,7 @@ class PackagePaymentController extends BaseAdminController
     public function invoice($id)
     {
         $payment = PackagePayment::with(['user', 'package'])->findOrFail($id);
+
         return $this->ok([
             'payment' => $payment,
             'currency_symbol' => currency_symbol(),

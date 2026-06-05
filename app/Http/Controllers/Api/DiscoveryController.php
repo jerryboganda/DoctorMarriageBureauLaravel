@@ -14,6 +14,7 @@ class DiscoveryController extends Controller
     private function isTruthyQueryFlag(Request $request, string $key): bool
     {
         $value = strtolower(trim((string) $request->query($key, '')));
+
         return in_array($value, ['yes', 'true', '1', 'on'], true);
     }
 
@@ -24,25 +25,25 @@ class DiscoveryController extends Controller
         $opposite_gender = ($memberGender == 1) ? 2 : 1;
 
         $query = User::with([
-                'member',
-                'career',
-                'education',
-                'physical_attributes',
-                'spiritual_backgrounds.religion',
-                'spiritual_backgrounds.sect',
-                'spiritual_backgrounds.caste',
-                'addresses.country',
-                'addresses.state',
-                'addresses.city',
-            ])
+            'member',
+            'career',
+            'education',
+            'physical_attributes',
+            'spiritual_backgrounds.religion',
+            'spiritual_backgrounds.sect',
+            'spiritual_backgrounds.caste',
+            'addresses.country',
+            'addresses.state',
+            'addresses.city',
+        ])
             ->where('user_type', 'member')
             ->where('id', '!=', $user?->id)
             ->where('blocked', 0)
             ->where('deactivated', 0)
             ->where('approved', 1)
-            ->whereHas('member', function($q) use ($opposite_gender) {
+            ->whereHas('member', function ($q) use ($opposite_gender) {
                 $q->where('gender', $opposite_gender)
-                  ->where('is_visible', 1);
+                    ->where('is_visible', 1);
             });
 
         if ($user) {
@@ -52,11 +53,11 @@ class DiscoveryController extends Controller
 
         if ($this->isTruthyQueryFlag($request, 'verified')) {
             $query->where('verification_info', '!=', '')
-                  ->whereNotNull('verification_info');
+                ->whereNotNull('verification_info');
         } elseif (in_array(strtolower(trim((string) $request->query('verified', ''))), ['no', 'false', '0', 'off'], true)) {
-            $query->where(function($q) {
+            $query->where(function ($q) {
                 $q->whereNull('verification_info')
-                  ->orWhere('verification_info', '');
+                    ->orWhere('verification_info', '');
             });
         }
 
@@ -76,9 +77,9 @@ class DiscoveryController extends Controller
         $agent_picks = collect();
         $high_intent = collect();
 
-        if (!$request->has('verified') && !$this->isTruthyQueryFlag($request, 'bookmarked')) {
+        if (! $request->has('verified') && ! $this->isTruthyQueryFlag($request, 'bookmarked')) {
             $agent_picks = (clone $base_query)
-                ->whereHas('member', function($q) {
+                ->whereHas('member', function ($q) {
                     $q->where('is_agent_pick', 1);
                 })
                 ->orderBy('created_at', 'desc')
@@ -86,7 +87,7 @@ class DiscoveryController extends Controller
                 ->get();
 
             $high_intent = (clone $base_query)
-                ->whereHas('member', function($q) {
+                ->whereHas('member', function ($q) {
                     $q->where('is_high_intent', 1);
                 })
                 ->orderBy('created_at', 'desc')
@@ -135,19 +136,19 @@ class DiscoveryController extends Controller
         $profession = trim((string) $request->query('profession', ''));
 
         if ($age_min !== null && $age_min !== '') {
-            $query->whereHas('member', function($memberQuery) use ($age_min) {
+            $query->whereHas('member', function ($memberQuery) use ($age_min) {
                 $memberQuery->where('birthday', '<=', now()->subYears((int) $age_min)->format('Y-m-d'));
             });
         }
 
         if ($age_max !== null && $age_max !== '') {
-            $query->whereHas('member', function($memberQuery) use ($age_max) {
+            $query->whereHas('member', function ($memberQuery) use ($age_max) {
                 $memberQuery->where('birthday', '>=', now()->subYears(((int) $age_max) + 1)->format('Y-m-d'));
             });
         }
 
         if ($q !== '') {
-            $query->where(function($sub) use ($q) {
+            $query->where(function ($sub) use ($q) {
                 $sub->where('first_name', 'LIKE', "%{$q}%")
                     ->orWhere('last_name', 'LIKE', "%{$q}%")
                     ->orWhere('code', 'LIKE', "%{$q}%")
@@ -157,11 +158,11 @@ class DiscoveryController extends Controller
 
         if ($religion !== '') {
             if (is_numeric($religion)) {
-                $query->whereHas('spiritual_backgrounds', function($sub) use ($religion) {
+                $query->whereHas('spiritual_backgrounds', function ($sub) use ($religion) {
                     $sub->where('religion_id', (int) $religion);
                 });
             } else {
-                $query->whereHas('spiritual_backgrounds.religion', function($sub) use ($religion) {
+                $query->whereHas('spiritual_backgrounds.religion', function ($sub) use ($religion) {
                     $sub->where('name', 'LIKE', "%{$religion}%");
                 });
             }
@@ -169,11 +170,11 @@ class DiscoveryController extends Controller
 
         if ($sect !== '') {
             if (is_numeric($sect)) {
-                $query->whereHas('spiritual_backgrounds', function($sub) use ($sect) {
+                $query->whereHas('spiritual_backgrounds', function ($sub) use ($sect) {
                     $sub->where('sect_id', (int) $sect);
                 });
             } else {
-                $query->whereHas('spiritual_backgrounds.sect', function($sub) use ($sect) {
+                $query->whereHas('spiritual_backgrounds.sect', function ($sub) use ($sect) {
                     $sub->where('name', 'LIKE', "%{$sect}%");
                 });
             }
@@ -181,11 +182,11 @@ class DiscoveryController extends Controller
 
         if ($caste !== '') {
             if (is_numeric($caste)) {
-                $query->whereHas('spiritual_backgrounds', function($sub) use ($caste) {
+                $query->whereHas('spiritual_backgrounds', function ($sub) use ($caste) {
                     $sub->where('caste_id', (int) $caste);
                 });
             } else {
-                $query->whereHas('spiritual_backgrounds.caste', function($sub) use ($caste) {
+                $query->whereHas('spiritual_backgrounds.caste', function ($sub) use ($caste) {
                     $sub->where('name', 'LIKE', "%{$caste}%");
                 });
             }
@@ -193,11 +194,11 @@ class DiscoveryController extends Controller
 
         if ($country !== '') {
             if (is_numeric($country)) {
-                $query->whereHas('addresses', function($sub) use ($country) {
+                $query->whereHas('addresses', function ($sub) use ($country) {
                     $sub->where('country_id', (int) $country);
                 });
             } else {
-                $query->whereHas('addresses.country', function($sub) use ($country) {
+                $query->whereHas('addresses.country', function ($sub) use ($country) {
                     $sub->where('name', 'LIKE', "%{$country}%")
                         ->orWhere('code', 'LIKE', "%{$country}%");
                 });
@@ -206,11 +207,11 @@ class DiscoveryController extends Controller
 
         if ($state !== '') {
             if (is_numeric($state)) {
-                $query->whereHas('addresses', function($sub) use ($state) {
+                $query->whereHas('addresses', function ($sub) use ($state) {
                     $sub->where('state_id', (int) $state);
                 });
             } else {
-                $query->whereHas('addresses.state', function($sub) use ($state) {
+                $query->whereHas('addresses.state', function ($sub) use ($state) {
                     $sub->where('name', 'LIKE', "%{$state}%");
                 });
             }
@@ -218,11 +219,11 @@ class DiscoveryController extends Controller
 
         if ($city !== '') {
             if (is_numeric($city)) {
-                $query->whereHas('addresses', function($sub) use ($city) {
+                $query->whereHas('addresses', function ($sub) use ($city) {
                     $sub->where('city_id', (int) $city);
                 });
             } else {
-                $query->whereHas('addresses.city', function($sub) use ($city) {
+                $query->whereHas('addresses.city', function ($sub) use ($city) {
                     $sub->where('name', 'LIKE', "%{$city}%");
                 });
             }
@@ -230,29 +231,29 @@ class DiscoveryController extends Controller
 
         if ($marital_status !== '') {
             if (is_numeric($marital_status)) {
-                $query->whereHas('member', function($sub) use ($marital_status) {
+                $query->whereHas('member', function ($sub) use ($marital_status) {
                     $sub->where('marital_status_id', (int) $marital_status);
                 });
             } else {
-                $query->whereHas('member.marital_status', function($sub) use ($marital_status) {
+                $query->whereHas('member.marital_status', function ($sub) use ($marital_status) {
                     $sub->where('name', 'LIKE', "%{$marital_status}%");
                 });
             }
         }
 
         if ($profession !== '') {
-            $query->whereHas('career', function($sub) use ($profession) {
+            $query->whereHas('career', function ($sub) use ($profession) {
                 $sub->where('designation', 'LIKE', "%{$profession}%");
             });
         }
 
         if ($job_title_id !== '') {
             if (is_numeric($job_title_id)) {
-                $query->whereHas('career', function($sub) use ($job_title_id) {
+                $query->whereHas('career', function ($sub) use ($job_title_id) {
                     $sub->where('job_title_id', (int) $job_title_id);
                 });
             } else {
-                $query->whereHas('career.jobTitle', function($sub) use ($job_title_id) {
+                $query->whereHas('career.jobTitle', function ($sub) use ($job_title_id) {
                     $sub->where('name', 'LIKE', "%{$job_title_id}%");
                 });
             }

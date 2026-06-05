@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Api\Controller;
 use App\Http\Requests\AuthRequest;
 use App\Http\Resources\Profile\MaritialStatusResource;
 use App\Models\EmailTemplate;
@@ -10,27 +9,27 @@ use App\Models\MaritalStatus;
 use App\Models\Member;
 use App\Models\Notification;
 use App\Models\Package;
+use App\Models\ReferralCode;
 use App\Models\User;
 use App\Models\UserTwoFactorSetting;
-use App\Notifications\AppEmailVerificationNotification;
 use App\Notifications\DbStoreNotification;
 use App\Notifications\VerificationCode;
 use App\Services\MemberService;
 use App\Services\ReferralService;
 use App\Services\UserService;
-use App\Utility\MemberUtility;
 use App\Utility\EmailUtility;
+use App\Utility\MemberUtility;
 use App\Utility\PhoneUtility;
 use Carbon\Carbon;
+use GuzzleHttp\Client;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\PersonalAccessToken;
 use Socialite;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
-use App\Rules\RecaptchaRule;
-use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -47,27 +46,31 @@ class AuthController extends Controller
             ->latest()
             ->first();
 
-        if (!$verifiedEmail) {
+        if (! $verifiedEmail) {
             return response()->json([
                 'result' => false,
                 'message' => 'Please verify your email address before signup.',
             ], 422);
         }
 
-        $user_service = new UserService();
+        $user_service = new UserService;
         $user = $user_service->store($request->safe()->except(['gender', 'birthday', 'on_behalves_id', 'date_of_birth', 'on_behalf']));
 
         $package = Package::where('id', 1)->first();
-        $member_service = new MemberService();
+        $member_service = new MemberService;
         $request->merge(['user_id' => $user->id]);
-        $member = $member_service->store($request->only(['gender', 'birthday', 'on_behalves_id', 'user_id']), $package);
+        $memberData = $request->only(['gender', 'birthday', 'on_behalves_id', 'user_id']);
+        $memberData['birthday'] = $request->filled('date_of_birth')
+            ? date('Y-m-d', strtotime((string) $request->input('date_of_birth')))
+            : null;
+        $member = $member_service->store($memberData, $package);
 
         // SMS delivery is intentionally disabled. Email verification is enforced
         // server-side before signup.
         // Email to member
         if ($request->email != null && env('MAIL_USERNAME') != null) {
             $account_oppening_email = EmailTemplate::where('identifier', 'account_oppening_email')->first();
-            if ($account_oppening_email->status == 1) {
+            if ($account_oppening_email?->status == 1) {
                 try {
                     EmailUtility::account_oppening_email($user->id, $request->password);
                 } catch (\Exception $e) {
@@ -80,7 +83,7 @@ class AuthController extends Controller
             $id = null;
             $notify_by = $user->id;
             $info_id = $user->id;
-            $message = translate('A new member has been registered to your system. Name: ') . $user->first_name . ' ' . $user->last_name;
+            $message = translate('A new member has been registered to your system. Name: ').$user->first_name.' '.$user->last_name;
             $route = route('members.index', $user->membership);
 
             Notification::send(User::where('user_type', 'admin')->first(), new DbStoreNotification($notify_type, $id, $notify_by, $info_id, $message, $route));
@@ -96,30 +99,29 @@ class AuthController extends Controller
         $user->approved = get_setting('member_verification') == 1 ? 0 : 1;
         $user->save();
 
-        
         // ===== Referral System Integration =====
         try {
-            $referralService = new ReferralService();
+            $referralService = new ReferralService;
 
             // Auto-generate referral code for the new user
-            \App\Models\ReferralCode::getOrCreateForUser($user->id);
+            ReferralCode::getOrCreateForUser($user->id);
 
             // If a referral code was provided during signup, process the referral
             $referralCodeInput = $request->input('referral_code');
-            if (!empty($referralCodeInput)) {
+            if (! empty($referralCodeInput)) {
                 $referralResult = $referralService->createReferral($user->id, $referralCodeInput, 'link', [
                     'ip' => $request->ip(),
                     'user_agent' => $request->userAgent(),
                 ]);
 
                 if (empty($referralResult['success'])) {
-                    \Log::warning("Referral code could not be applied during signup for user {$user->id}: " . ($referralResult['message'] ?? 'Unknown error'));
+                    \Log::warning("Referral code could not be applied during signup for user {$user->id}: ".($referralResult['message'] ?? 'Unknown error'));
                 } else {
                     \Log::info("Referral created successfully for user {$user->id}");
                 }
             }
         } catch (\Exception $e) {
-            \Log::error("Referral processing error during signup: " . $e->getMessage());
+            \Log::error('Referral processing error during signup: '.$e->getMessage());
             // Don't fail registration if referral processing fails
         }
         // ===== End Referral System Integration =====
@@ -130,7 +132,6 @@ class AuthController extends Controller
     /**
      * Login using api
      */
-
     public function signin(Request $request)
     {
         // Accept both 'email_or_phone' and 'email' for backward compatibility
@@ -160,7 +161,7 @@ class AuthController extends Controller
                     'result' => false,
                     'code' => 'PASSWORD_NOT_SET',
                     'message' => 'This account was created with social login. Please use Google login or ask admin to set a password for your account.',
-                    'user' => null
+                    'user' => null,
                 ], 401);
             }
 
@@ -180,20 +181,23 @@ class AuthController extends Controller
                         'message' => 'Two-factor verification required.',
                     ]);
                 }
+
                 return $this->authResponse($user, $request);
             }
+
             return response()->json([
                 'result' => false,
                 'code' => 'INVALID_PASSWORD',
                 'message' => 'The password you entered is incorrect. Please try again.',
-                'user' => null
+                'user' => null,
             ], 401);
         }
+
         return response()->json([
             'result' => false,
             'code' => 'ACCOUNT_NOT_FOUND',
             'message' => 'No account was found with this email or phone number.',
-            'user' => null
+            'user' => null,
         ], 401);
     }
 
@@ -208,7 +212,7 @@ class AuthController extends Controller
         $provider = $request->social_provider;
         $token = $request->access_token;
 
-        if (!$provider || !$token) {
+        if (! $provider || ! $token) {
             return response()->json(['result' => false, 'message' => translate('Invalid Request')], 400);
         }
 
@@ -219,21 +223,21 @@ class AuthController extends Controller
                     $socialUser = Socialite::driver('google')->stateless()->userFromToken($token);
                 } catch (\Exception $e) {
                     // Fallback: Call Google's userinfo API directly
-                    \Log::info('Socialite failed, trying direct Google API: ' . $e->getMessage());
-                    $client = new \GuzzleHttp\Client();
+                    \Log::info('Socialite failed, trying direct Google API: '.$e->getMessage());
+                    $client = new Client;
                     $response = $client->get('https://www.googleapis.com/oauth2/v3/userinfo', [
                         'headers' => [
-                            'Authorization' => 'Bearer ' . $token,
+                            'Authorization' => 'Bearer '.$token,
                         ],
                     ]);
                     $googleUser = json_decode($response->getBody()->getContents());
 
-                    if (!$googleUser || !isset($googleUser->sub)) {
+                    if (! $googleUser || ! isset($googleUser->sub)) {
                         throw new \Exception('Invalid Google token response');
                     }
 
                     // Create a simple user object matching Socialite's interface
-                    $socialUser = new \stdClass();
+                    $socialUser = new \stdClass;
                     $socialUser->id = $googleUser->sub;
                     $socialUser->email = $googleUser->email ?? null;
                     $socialUser->name = $googleUser->name ?? 'User';
@@ -244,13 +248,14 @@ class AuthController extends Controller
                 return response()->json(['result' => false, 'message' => translate('Provider not supported')], 400);
             }
         } catch (\Exception $e) {
-            \Log::error('Social Login Error: ' . $e->getMessage());
-            \Log::error('Social Login Stack: ' . $e->getTraceAsString());
+            \Log::error('Social Login Error: '.$e->getMessage());
+            \Log::error('Social Login Stack: '.$e->getTraceAsString());
+
             return response()->json([
                 'result' => false,
                 'code' => 'INVALID_OR_EXPIRED_TOKEN',
                 'message' => 'Your login session is invalid or expired. Please sign in again.',
-                'user' => null
+                'user' => null,
             ], 401);
         }
 
@@ -259,10 +264,10 @@ class AuthController extends Controller
         $socialEmail = is_object($socialUser) && method_exists($socialUser, 'getEmail') ? $socialUser->getEmail() : ($socialUser->email ?? null);
         $socialName = is_object($socialUser) && method_exists($socialUser, 'getName') ? $socialUser->getName() : ($socialUser->name ?? 'User');
 
-            $user = User::where('provider_id', $socialId)->whereNull('deleted_at')->first();
+        $user = User::where('provider_id', $socialId)->whereNull('deleted_at')->first();
 
         // 2. If not found, try to find by Email
-        if (!$user) {
+        if (! $user) {
             $user = User::where('email', $socialEmail)->whereNull('deleted_at')->first();
             if ($user) {
                 // Link existing account
@@ -277,6 +282,7 @@ class AuthController extends Controller
             if ($user->approved == 0) {
                 return response()->json(['result' => false, 'message' => translate('Please wait for admin approval'), 'user' => null], 401);
             }
+
             return $this->authResponse($user, $request);
         }
 
@@ -291,7 +297,7 @@ class AuthController extends Controller
         $newUser->approved = get_setting('member_verification') == 1 ? 0 : 1;
         $newUser->save();
 
-        \App\Models\ReferralCode::getOrCreateForUser($newUser->id);
+        ReferralCode::getOrCreateForUser($newUser->id);
 
         $member = new Member;
         $member->user_id = $newUser->id;
@@ -309,14 +315,14 @@ class AuthController extends Controller
             $member->remaining_profile_image_view = $package->profile_image_view;
             $member->remaining_gallery_image_view = $package->gallery_image_view;
             $member->auto_profile_match = $package->auto_profile_match;
-            $member->package_validity = Date('Y-m-d', strtotime($package->validity . " days"));
+            $member->package_validity = date('Y-m-d', strtotime($package->validity.' days'));
         }
         $member->save();
 
         try {
             $referralCodeInput = $request->input('referral_code');
-            if (!empty($referralCodeInput)) {
-                $referralService = new ReferralService();
+            if (! empty($referralCodeInput)) {
+                $referralService = new ReferralService;
                 $referralResult = $referralService->createReferral($newUser->id, $referralCodeInput, 'link', [
                     'ip' => $request->ip(),
                     'user_agent' => $request->userAgent(),
@@ -324,11 +330,11 @@ class AuthController extends Controller
                 ]);
 
                 if (empty($referralResult['success'])) {
-                    \Log::warning("Referral code could not be applied during social signup for user {$newUser->id}: " . ($referralResult['message'] ?? 'Unknown error'));
+                    \Log::warning("Referral code could not be applied during social signup for user {$newUser->id}: ".($referralResult['message'] ?? 'Unknown error'));
                 }
             }
         } catch (\Exception $e) {
-            \Log::error('Referral processing error during social login signup: ' . $e->getMessage());
+            \Log::error('Referral processing error during social login signup: '.$e->getMessage());
         }
 
         if ($newUser->approved == 0) {
@@ -341,7 +347,6 @@ class AuthController extends Controller
     /**
      * Log Out using api
      */
-
     public function logout(Request $request)
     {
         $user = auth()->user();
@@ -349,13 +354,13 @@ class AuthController extends Controller
             ->tokens()
             ->where('id', $user->currentAccessToken()->id)
             ->delete();
+
         return $this->success_message('Successfully logged out');
     }
 
     /**
      * Log in success
      */
-
     protected function authResponse($user, ?Request $request = null)
     {
         $member = $user->member;
@@ -376,7 +381,7 @@ class AuthController extends Controller
             'user' => [
                 'id' => $user->id,
                 'type' => $user->user_type,
-                'name' => $user->first_name . ' ' . $user->last_name,
+                'name' => $user->first_name.' '.$user->last_name,
                 'membership' => $user->membership,
                 'email_verified_at' => $user->email_verified_at,
                 'photo_approved' => $user->photo_approved,
@@ -385,8 +390,8 @@ class AuthController extends Controller
                 'approved' => $user->approved,
                 'must_change_password' => (bool) $user->must_change_password,
                 'email' => $user->email,
-            'birthday' => $member?->birthday ?? null,
-            'age' => $age,
+                'birthday' => $member?->birthday ?? null,
+                'age' => $age,
                 'height' => $user->physical_attributes ? $user->physical_attributes->height : 0,
                 'marital_status_id' => $maritial_status ? new MaritialStatusResource($maritial_status) : null,
                 'avatar' => uploaded_asset($user->photo) ?? '',
@@ -411,12 +416,11 @@ class AuthController extends Controller
      * Forgot password request from forgot password form
      * generate a code and send it via email or phone
      */
-
     public function forgotPassword(Request $request)
     {
         $email = $request->email_or_phone ?? $request->email;
 
-        if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if (! $email || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return response()->json([
                 'result' => false,
                 'message' => 'Password reset is email-only. Please enter your email address.',
@@ -425,14 +429,14 @@ class AuthController extends Controller
 
         $user = User::where('email', $email)->whereNull('deleted_at')->first();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'result' => false,
                 'message' => 'User not found with the provided email address',
             ], 404);
         }
 
-        if (\Illuminate\Support\Facades\Cache::get('password_reset_attempts:' . $email, 0) >= 5) {
+        if (Cache::get('password_reset_attempts:'.$email, 0) >= 5) {
             return response()->json([
                 'result' => false,
                 'message' => 'Too many reset attempts. Please try again later.',
@@ -443,13 +447,13 @@ class AuthController extends Controller
         $user->verification_code = $verificationCode;
         $user->save();
         \App\Models\VerificationCode::createCode($email, 'password_reset', $verificationCode, 15);
-        \Illuminate\Support\Facades\Cache::put('password_reset_attempts:' . $email, \Illuminate\Support\Facades\Cache::get('password_reset_attempts:' . $email, 0) + 1, now()->addMinutes(15));
+        Cache::put('password_reset_attempts:'.$email, Cache::get('password_reset_attempts:'.$email, 0) + 1, now()->addMinutes(15));
 
         try {
             $emailResult = EmailUtility::password_reset_email($user, $verificationCode);
 
             if ($emailResult) {
-                \Log::info('Password reset email sent successfully to: ' . $user->email);
+                \Log::info('Password reset email sent successfully to: '.$user->email);
 
                 return response()->json([
                     'result' => true,
@@ -457,13 +461,15 @@ class AuthController extends Controller
                 ], 200);
             }
 
-            \Log::error('Failed to send password reset email to: ' . $user->email);
+            \Log::error('Failed to send password reset email to: '.$user->email);
+
             return response()->json([
                 'result' => false,
                 'message' => 'Failed to send reset code. Please check your SMTP settings or try again later.',
             ], 500);
         } catch (\Throwable $e) {
-            \Log::error('Email sending fatal error: ' . $e->getMessage());
+            \Log::error('Email sending fatal error: '.$e->getMessage());
+
             return response()->json([
                 'result' => false,
                 'message' => 'An internal server error occurred while sending the reset code.',
@@ -475,7 +481,6 @@ class AuthController extends Controller
      * Verify registered user first
      * Verify code
      */
-
     public function verifyCode(Request $request)
     {
 
@@ -489,8 +494,10 @@ class AuthController extends Controller
             $user->verification_code = null;
 
             $user->save();
+
             return $this->success_message('Your account is now verified');
         }
+
         return $this->failure_message('Verification code does not match!!');
     }
 
@@ -505,6 +512,7 @@ class AuthController extends Controller
             $user->notify(new VerificationCode($user));
         } catch (\Exception $e) {
         }
+
         return response()->json(
             [
                 'result' => true,
@@ -520,17 +528,16 @@ class AuthController extends Controller
      * Reset verification code
      * insert new password
      */
-
     public function resetPassword(Request $request)
     {
         $email = $request->email_or_phone ?? $request->email;
         $code = $request->code ?? $request->verification_code;
 
-        if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if (! $email || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return $this->failure_message('Password reset is email-only. Please enter your email address.');
         }
 
-        if (!$code) {
+        if (! $code) {
             return $this->failure_message('Verification code is required');
         }
 
@@ -540,7 +547,7 @@ class AuthController extends Controller
 
         $user = User::where('email', $email)->whereNull('deleted_at')->first();
 
-        if (!$user) {
+        if (! $user) {
             return $this->failure_message('No account was found with the provided email address.');
         }
 
@@ -551,13 +558,14 @@ class AuthController extends Controller
             $user->password = Hash::make($request['password']);
             $user->verification_code = null;
             $user->save();
-            \Illuminate\Support\Facades\Cache::forget('password_reset_attempts:' . $email);
+            Cache::forget('password_reset_attempts:'.$email);
 
             return response()->json([
                 'result' => true,
-                'message' => 'Password has been updated, you can login now'
+                'message' => 'Password has been updated, you can login now',
             ]);
         }
+
         return $this->failure_message('Verification code does not match.');
     }
 
@@ -569,26 +577,26 @@ class AuthController extends Controller
         $email = $request->email_or_phone ?? $request->email;
         $code = $request->code ?? $request->verification_code;
 
-        if (!$email || !$code) {
+        if (! $email || ! $code) {
             return response()->json([
                 'result' => false,
-                'message' => 'Email and code are required'
+                'message' => 'Email and code are required',
             ], 400);
         }
 
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return response()->json([
                 'result' => false,
-                'message' => 'Password reset is email-only. Please enter your email address.'
+                'message' => 'Password reset is email-only. Please enter your email address.',
             ], 422);
         }
 
         $user = User::where('email', $email)->whereNull('deleted_at')->first();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'result' => false,
-                'message' => 'User not found'
+                'message' => 'User not found',
             ], 404);
         }
 
@@ -602,29 +610,30 @@ class AuthController extends Controller
         if ($verification || hash_equals((string) $user->verification_code, (string) $code)) {
             return response()->json([
                 'result' => true,
-                'message' => 'Code verified successfully'
+                'message' => 'Code verified successfully',
             ]);
         }
 
         return response()->json([
             'result' => false,
-            'message' => 'Invalid or expired verification code'
+            'message' => 'Invalid or expired verification code',
         ], 400);
     }
 
     public function authData($user)
     {
         // $user = auth()->user();
-        if (!$user) {
+        if (! $user) {
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
         $member = $user->member;
         $maritial_status = $member ? MaritalStatus::where('id', $member->marital_status_id)->first() : null;
+
         return response()->json(
             [
                 'id' => $user->id,
                 'type' => $user->user_type,
-                'name' => $user->first_name . ' ' . $user->last_name,
+                'name' => $user->first_name.' '.$user->last_name,
                 'membership' => $user->membership,
                 'email_verified_at' => $user->email_verified_at,
                 'photo_approved' => $user->photo_approved,
@@ -652,12 +661,13 @@ class AuthController extends Controller
     public function checkedData()
     {
         $user = auth()->user();
+
         return response()->json(
             [
                 'id' => $user->id,
                 'type' => $user->user_type,
-                'name' => $user->first_name . ' ' . $user->last_name,
-                'phone' => $user->phone ?? ''
+                'name' => $user->first_name.' '.$user->last_name,
+                'phone' => $user->phone ?? '',
             ]
         );
     }
@@ -668,8 +678,10 @@ class AuthController extends Controller
         $user = null;
         if ($token) {
             $user = $token->tokenable;
+
             return $this->authData($user);
         }
+
         return response()->json(
             ['user' => $user]
         );
@@ -678,21 +690,20 @@ class AuthController extends Controller
     public function update_device_token(Request $request)
     {
         $user = User::find(auth()->user()->id);
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'result' => false,
-                'message' => translate("User not found.")
+                'message' => translate('User not found.'),
             ]);
         }
 
         $user->fcm_token = $request->device_token;
 
-
         $user->save();
 
         return response()->json([
             'result' => true,
-            'message' => translate("device token updated")
+            'message' => translate('device token updated'),
         ]);
     }
 
@@ -702,16 +713,16 @@ class AuthController extends Controller
     public function sendEmailVerification(Request $request)
     {
         try {
-            \Log::info('sendEmailVerification called for: ' . $request->email);
+            \Log::info('sendEmailVerification called for: '.$request->email);
 
             $validator = Validator::make($request->all(), [
-                'email' => 'required|email|max:255'
+                'email' => 'required|email|max:255',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Invalid email address'
+                    'message' => 'Invalid email address',
                 ], 400);
             }
 
@@ -723,7 +734,7 @@ class AuthController extends Controller
                 if ($existingUser) {
                     return response()->json([
                         'success' => false,
-                        'message' => translate('This email address is already registered. Please login instead.')
+                        'message' => translate('This email address is already registered. Please login instead.'),
                     ], 400);
                 }
             }
@@ -731,7 +742,7 @@ class AuthController extends Controller
             // Check if there's already a valid OTP for this email
             $existingCode = \App\Models\VerificationCode::getActiveCode($email, 'email');
             if ($existingCode) {
-                \Log::info('Using existing valid email verification code for: ' . $email);
+                \Log::info('Using existing valid email verification code for: '.$email);
                 // We'll still try to resend the email to be helpful
                 $verificationCode = $existingCode->code;
             } else {
@@ -742,12 +753,12 @@ class AuthController extends Controller
                 try {
                     \App\Models\VerificationCode::createCode($email, 'email', $verificationCode, 5);
                 } catch (\Exception $dbEx) {
-                    \Log::error('Database error creating code: ' . $dbEx->getMessage());
+                    \Log::error('Database error creating code: '.$dbEx->getMessage());
                     // If DB fails, we can still try to send the email for testing purposes
                 }
             }
 
-            $subject = 'Email Verification Code - ' . env('APP_NAME', 'Matrimonial Site');
+            $subject = 'Email Verification Code - '.env('APP_NAME', 'Matrimonial Site');
 
             // Always use the blade view as it's more reliable
             Mail::send('emails.email_verification', ['verificationCode' => $verificationCode], function ($message) use ($email, $subject) {
@@ -758,21 +769,23 @@ class AuthController extends Controller
                     ->subject($subject);
             });
 
-            \Log::info('Email verification code sent successfully to: ' . $email);
+            \Log::info('Email verification code sent successfully to: '.$email);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Verification code sent to your email'
+                'message' => 'Verification code sent to your email',
             ]);
         } catch (\Exception $e) {
-            \Log::error('CRITICAL Email verification error: ' . $e->getMessage());
+            \Log::error('CRITICAL Email verification error: '.$e->getMessage());
             \Log::error($e->getTraceAsString());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to send verification. Error: ' . $e->getMessage()
+                'message' => 'Failed to send verification. Error: '.$e->getMessage(),
             ], 500);
         }
     }
+
     /**
      * Verify Email Code
      */
@@ -780,13 +793,13 @@ class AuthController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'email' => 'required|email',
-            'code' => 'required|string|size:6'
+            'code' => 'required|string|size:6',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid verification data'
+                'message' => 'Invalid verification data',
             ], 400);
         }
 
@@ -796,10 +809,10 @@ class AuthController extends Controller
         // Use the VerificationCode model to verify the code
         $verification = \App\Models\VerificationCode::verifyCode($email, 'email', $code);
 
-        if (!$verification) {
+        if (! $verification) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid or expired verification code'
+                'message' => 'Invalid or expired verification code',
             ], 400);
         }
 
@@ -813,9 +826,9 @@ class AuthController extends Controller
             $user->save();
 
             try {
-                (new ReferralService())->checkAndQualifyReferral($user->id);
+                (new ReferralService)->checkAndQualifyReferral($user->id);
             } catch (\Exception $e) {
-                \Log::error('Referral qualification check failed after email verification: ' . $e->getMessage(), ['user_id' => $user->id]);
+                \Log::error('Referral qualification check failed after email verification: '.$e->getMessage(), ['user_id' => $user->id]);
             }
 
             return $this->authResponse($user, $request);
@@ -825,7 +838,7 @@ class AuthController extends Controller
             'success' => true,
             'result' => true, // React UI check
             'message' => 'Email verified successfully',
-            'user' => null // Means proceed to signup
+            'user' => null, // Means proceed to signup
         ]);
     }
 }

@@ -7,8 +7,11 @@ use Illuminate\Http\Request;
 class CrudController extends BaseAdminController
 {
     protected string $modelClass;
+
     protected array $searchColumns = ['name'];
+
     protected array $relations = [];
+
     protected array $sortable = ['id'];
 
     public function index(Request $request)
@@ -16,7 +19,7 @@ class CrudController extends BaseAdminController
         $modelClass = $this->modelClass;
         $query = $modelClass::query();
 
-        if (!empty($this->relations)) {
+        if (! empty($this->relations)) {
             $query->with($this->relations);
         }
 
@@ -41,7 +44,7 @@ class CrudController extends BaseAdminController
     public function store(Request $request)
     {
         $modelClass = $this->modelClass;
-        $item = new $modelClass();
+        $item = new $modelClass;
 
         foreach ($request->except(['_token']) as $key => $value) {
             $item->{$key} = $value;
@@ -55,7 +58,7 @@ class CrudController extends BaseAdminController
     {
         $modelClass = $this->modelClass;
         $query = $modelClass::query();
-        if (!empty($this->relations)) {
+        if (! empty($this->relations)) {
             $query->with($this->relations);
         }
         $item = $query->findOrFail($id);
@@ -88,7 +91,7 @@ class CrudController extends BaseAdminController
     public function bulkDelete(Request $request)
     {
         $ids = $request->get('ids', []);
-        if (!is_array($ids) || empty($ids)) {
+        if (! is_array($ids) || empty($ids)) {
             return $this->fail('No ids provided', 422);
         }
 

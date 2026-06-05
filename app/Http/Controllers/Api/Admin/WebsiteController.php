@@ -15,6 +15,7 @@ class WebsiteController extends BaseAdminController
     public function updateHeader(Request $request)
     {
         $this->writeGroup('website_header', $request->all());
+
         return $this->ok(null, 'Header settings updated');
     }
 
@@ -26,6 +27,7 @@ class WebsiteController extends BaseAdminController
     public function updateFooter(Request $request)
     {
         $this->writeGroup('website_footer', $request->all());
+
         return $this->ok(null, 'Footer settings updated');
     }
 
@@ -37,13 +39,14 @@ class WebsiteController extends BaseAdminController
     public function updateAppearances(Request $request)
     {
         $this->writeGroup('website_appearance', $request->all());
+
         return $this->ok(null, 'Appearance settings updated');
     }
 
     protected function readGroup(string $prefix): array
     {
         return DB::table('settings')
-            ->where('type', 'like', $prefix . '.%')
+            ->where('type', 'like', $prefix.'.%')
             ->pluck('value', 'type')
             ->toArray();
     }
@@ -51,13 +54,13 @@ class WebsiteController extends BaseAdminController
     protected function writeGroup(string $prefix, array $payload): void
     {
         foreach ($payload as $key => $value) {
-            $dotPrefix = $prefix . '.';
+            $dotPrefix = $prefix.'.';
             $normalizedKey = str_starts_with((string) $key, $dotPrefix)
                 ? substr((string) $key, strlen($dotPrefix))
                 : (string) $key;
 
             DB::table('settings')->updateOrInsert(
-                ['type' => $prefix . '.' . $normalizedKey],
+                ['type' => $prefix.'.'.$normalizedKey],
                 [
                     'value' => is_scalar($value) ? (string) $value : json_encode($value),
                     'updated_at' => now(),

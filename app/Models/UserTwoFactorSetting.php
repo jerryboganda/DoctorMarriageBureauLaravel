@@ -4,8 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Str;
 
 class UserTwoFactorSetting extends Model
 {
@@ -37,8 +37,11 @@ class UserTwoFactorSetting extends Model
     ];
 
     const METHODS = ['app', 'email'];
+
     const MAX_FAILED_ATTEMPTS = 5;
+
     const LOCKOUT_MINUTES = 30;
+
     const RECOVERY_CODE_COUNT = 8;
 
     public function user(): BelongsTo
@@ -67,10 +70,10 @@ class UserTwoFactorSetting extends Model
         for ($i = 0; $i < 32; $i++) {
             $secret .= $chars[random_int(0, 31)];
         }
-        
+
         $this->secret = Crypt::encryptString($secret);
         $this->save();
-        
+
         return $secret;
     }
 
@@ -79,10 +82,10 @@ class UserTwoFactorSetting extends Model
      */
     public function getDecryptedSecret(): ?string
     {
-        if (!$this->secret) {
+        if (! $this->secret) {
             return null;
         }
-        
+
         try {
             return Crypt::decryptString($this->secret);
         } catch (\Exception $e) {
@@ -96,13 +99,13 @@ class UserTwoFactorSetting extends Model
     public function getQrCodeUri(string $appName = 'DMB'): ?string
     {
         $secret = $this->getDecryptedSecret();
-        if (!$secret) {
+        if (! $secret) {
             return null;
         }
 
         $user = $this->user;
         $email = $user->email ?? 'user@example.com';
-        
+
         return sprintf(
             'otpauth://totp/%s:%s?secret=%s&issuer=%s&algorithm=SHA1&digits=6&period=30',
             urlencode($appName),
@@ -122,7 +125,7 @@ class UserTwoFactorSetting extends Model
         }
 
         $secret = $this->getDecryptedSecret();
-        if (!$secret) {
+        if (! $secret) {
             return false;
         }
 
@@ -140,11 +143,13 @@ class UserTwoFactorSetting extends Model
                     'failed_attempts' => 0,
                     'last_used_at' => now(),
                 ]);
+
                 return true;
             }
         }
 
         $this->incrementFailedAttempts();
+
         return false;
     }
 
@@ -158,14 +163,16 @@ class UserTwoFactorSetting extends Model
         $binarySecret = '';
         $buffer = 0;
         $bitsLeft = 0;
-        
+
         foreach (str_split(strtoupper($secret)) as $char) {
             $val = strpos($base32Chars, $char);
-            if ($val === false) continue;
-            
+            if ($val === false) {
+                continue;
+            }
+
             $buffer = ($buffer << 5) | $val;
             $bitsLeft += 5;
-            
+
             if ($bitsLeft >= 8) {
                 $bitsLeft -= 8;
                 $binarySecret .= chr(($buffer >> $bitsLeft) & 0xFF);
@@ -173,19 +180,19 @@ class UserTwoFactorSetting extends Model
         }
 
         // Generate HMAC
-        $timeBytes = pack('N*', 0) . pack('N*', $timeStep);
+        $timeBytes = pack('N*', 0).pack('N*', $timeStep);
         $hash = hash_hmac('sha1', $timeBytes, $binarySecret, true);
-        
+
         // Dynamic truncation
-        $offset = ord($hash[19]) & 0xf;
+        $offset = ord($hash[19]) & 0xF;
         $code = (
-            ((ord($hash[$offset]) & 0x7f) << 24) |
-            ((ord($hash[$offset + 1]) & 0xff) << 16) |
-            ((ord($hash[$offset + 2]) & 0xff) << 8) |
-            (ord($hash[$offset + 3]) & 0xff)
+            ((ord($hash[$offset]) & 0x7F) << 24) |
+            ((ord($hash[$offset + 1]) & 0xFF) << 16) |
+            ((ord($hash[$offset + 2]) & 0xFF) << 8) |
+            (ord($hash[$offset + 3]) & 0xFF)
         ) % 1000000;
 
-        return str_pad((string)$code, 6, '0', STR_PAD_LEFT);
+        return str_pad((string) $code, 6, '0', STR_PAD_LEFT);
     }
 
     /**
@@ -195,7 +202,7 @@ class UserTwoFactorSetting extends Model
     {
         $codes = [];
         for ($i = 0; $i < self::RECOVERY_CODE_COUNT; $i++) {
-            $codes[] = strtoupper(Str::random(4) . '-' . Str::random(4));
+            $codes[] = strtoupper(Str::random(4).'-'.Str::random(4));
         }
 
         $this->recovery_codes = Crypt::encryptString(json_encode($codes));
@@ -209,7 +216,7 @@ class UserTwoFactorSetting extends Model
      */
     public function getRecoveryCodes(): array
     {
-        if (!$this->recovery_codes) {
+        if (! $this->recovery_codes) {
             return [];
         }
 
@@ -227,7 +234,7 @@ class UserTwoFactorSetting extends Model
     {
         $codes = $this->getRecoveryCodes();
         $code = strtoupper(trim($code));
-        
+
         $index = array_search($code, $codes);
         if ($index === false) {
             return false;
@@ -284,11 +291,11 @@ class UserTwoFactorSetting extends Model
     protected function incrementFailedAttempts(): void
     {
         $this->failed_attempts++;
-        
+
         if ($this->failed_attempts >= self::MAX_FAILED_ATTEMPTS) {
             $this->locked_until = now()->addMinutes(self::LOCKOUT_MINUTES);
         }
-        
+
         $this->save();
     }
 
@@ -297,15 +304,15 @@ class UserTwoFactorSetting extends Model
      */
     public function getMaskedBackupPhoneAttribute(): ?string
     {
-        if (!$this->backup_phone) {
+        if (! $this->backup_phone) {
             return null;
         }
-        
+
         $len = strlen($this->backup_phone);
         if ($len <= 4) {
             return str_repeat('*', $len);
         }
-        
-        return str_repeat('*', $len - 4) . substr($this->backup_phone, -4);
+
+        return str_repeat('*', $len - 4).substr($this->backup_phone, -4);
     }
 }

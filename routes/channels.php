@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\ChatThread;
 use Illuminate\Support\Facades\Broadcast;
 
 /*
@@ -33,8 +34,11 @@ Broadcast::channel('account.{userId}', function ($user, $userId) {
 });
 
 Broadcast::channel('chat.{threadId}', function ($user, $threadId) {
-    $thread = \App\Models\ChatThread::find($threadId);
-    if (!$thread) return false;
+    $thread = ChatThread::find($threadId);
+    if (! $thread) {
+        return false;
+    }
+
     return $user->id === $thread->sender_user_id || $user->id === $thread->receiver_user_id;
 });
 

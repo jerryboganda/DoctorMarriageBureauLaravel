@@ -3,8 +3,10 @@
 use App\Http\Controllers\AdditionalMemberInfoController;
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\AizUploadController;
+use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\AstrologyController;
 use App\Http\Controllers\AttitudeController;
+use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\VerificationController;
 use App\Http\Controllers\BlogController;
@@ -13,7 +15,6 @@ use App\Http\Controllers\CasteController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\CityController;
 use App\Http\Controllers\ContactUsController;
-use App\Http\Controllers\CurrencyController;
 use App\Http\Controllers\DemoController;
 use App\Http\Controllers\EducationController;
 use App\Http\Controllers\ExpressInterestController;
@@ -45,9 +46,13 @@ use App\Http\Controllers\ViewContactController;
 use App\Http\Controllers\ViewGalleryImageController;
 use App\Http\Controllers\ViewProfilePictureController;
 use App\Http\Controllers\WalletController;
-use Illuminate\Support\Facades\Route;
+use App\Models\ChatThread;
+use App\Models\ExpressInterest;
+use App\Models\IgnoredUser;
+use App\Services\InterestService;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
-
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -60,7 +65,7 @@ use Illuminate\Http\Request;
 |
 */
 
-//demo
+// demo
 Route::controller(DemoController::class)->group(function () {
     Route::get('/demo/cron_1', 'cron_1');
     Route::get('/demo/cron_2', 'cron_2');
@@ -77,10 +82,10 @@ Route::get('/password/email', function () {
     return view('auth.passwords.email');
 })->name('password.email.form');
 
-Route::post('/password/email', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
+Route::post('/password/email', [ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
 
 Route::controller(HomeController::class)->group(function () {
-    //Home Page
+    // Home Page
     Route::get('/', 'index')->name('index');
     Route::get('/', 'index')->name('home');
 
@@ -89,13 +94,15 @@ Route::controller(HomeController::class)->group(function () {
 });
 
 // Registration Verification Routes
-Route::post('/send-email-verification', [App\Http\Controllers\Api\AuthController::class, 'sendEmailVerification']);
-Route::post('/verify-email-code', [App\Http\Controllers\Api\AuthController::class, 'verifyEmailCode']);
+Route::post('/send-email-verification', [AuthController::class, 'sendEmailVerification']);
+Route::post('/verify-email-code', [AuthController::class, 'verifyEmailCode']);
 
 Route::controller(VerificationController::class)->group(function () {
     Route::get('/email_change/callback', 'email_change_callback')->name('email_change.callback');
     // Show reset password form (GET) to avoid 405 after POST validation errors
-    Route::get('/password/reset/email', function(){ return view('auth.passwords.reset'); })->name('password.reset.form');
+    Route::get('/password/reset/email', function () {
+        return view('auth.passwords.reset');
+    })->name('password.reset.form');
     Route::post('/password/reset/email/submit', 'reset_password_with_code')->name('password.update.email_code');
     Route::get('/users/login', 'login')->name('user.login');
     Route::get('/happy-stories', 'happy_stories')->name('happy_stories');
@@ -133,21 +140,21 @@ Route::post('/language', [LanguageController::class, 'changeLanguage'])->name('l
 Route::get('/packages', [PackageController::class, 'select_package'])->name('packages');
 
 // Email verification notice (must exist as it's referenced by Laravel auth)
-Route::get('/email/verify', function() { return response()->json(['message' => 'Please verify your email address.'], 200); })->name('verification.notice')->middleware('auth');
-
+Route::get('/email/verify', function () {
+    return response()->json(['message' => 'Please verify your email address.'], 200);
+})->name('verification.notice')->middleware('auth');
 
 Route::group(['middleware' => ['auth']], function () {
-    Route::post('/send-email-verification', [App\Http\Controllers\Api\AuthController::class, 'sendEmailVerification']);
-        Route::post('/verify-email-code', [App\Http\Controllers\Api\AuthController::class, 'verifyEmailCode']);
-    });
+    Route::post('/send-email-verification', [AuthController::class, 'sendEmailVerification']);
+    Route::post('/verify-email-code', [AuthController::class, 'verifyEmailCode']);
+});
 
-//Blog
+// Blog
 Route::controller(BlogController::class)->group(function () {
     Route::get('/blog', 'all_blog')->name('blog');
     Route::get('/blog/{slug}', 'blog_details')->name('blog.details');
     Route::get('/blog/description/{slug}', 'blog_description')->name('blog.description');
 });
-
 
 Route::group(['middleware' => ['member', 'verified']], function () {
     // Ignore User API
@@ -155,120 +162,122 @@ Route::group(['middleware' => ['member', 'verified']], function () {
         try {
             $user = $request->user();
             $targetUserId = $request->user_id;
-            
+
             // Add to ignored users
-            \App\Models\IgnoredUser::create([
+            IgnoredUser::create([
                 'user_id' => $targetUserId,
-                'ignored_by' => $user->id
+                'ignored_by' => $user->id,
             ]);
-            
+
             return response()->json(['success' => true]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     });
-    
+
     // Accept Interest API
     Route::post('/legacy-api/interest/accept', function (Request $request) {
         try {
-            if (!auth()->check()) {
+            if (! auth()->check()) {
                 return response()->json(['success' => false, 'message' => 'User not authenticated'], 401);
             }
-            
+
             $user = auth()->user();
             $interestId = $request->interest_id;
-            
-            $interest = \App\Models\ExpressInterest::find($interestId);
-            if (!$interest) {
+
+            $interest = ExpressInterest::find($interestId);
+            if (! $interest) {
                 return response()->json(['success' => false, 'message' => 'Proposal request not found'], 404);
             }
-            
+
             // Check if user owns this interest
             if ($interest->user_id != $user->id) {
                 return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
             }
-            
+
             $interest->status = 1;
             if ($interest->save()) {
                 // Create chat thread if it doesn't exist
-                $existing_chat_thread = \App\Models\ChatThread::where(function ($query) use ($interest) {
+                $existing_chat_thread = ChatThread::where(function ($query) use ($interest) {
                     $query->where('sender_user_id', $interest->interested_by)->where('receiver_user_id', $interest->user_id);
                 })->orWhere(function ($query) use ($interest) {
                     $query->where('receiver_user_id', $interest->interested_by)->where('sender_user_id', $interest->user_id);
                 })->first();
 
                 if ($existing_chat_thread == null) {
-                    $chat_thread = new \App\Models\ChatThread;
-                    $chat_thread->thread_code = $interest->interested_by . date('Ymd') . $interest->user_id;
+                    $chat_thread = new ChatThread;
+                    $chat_thread->thread_code = $interest->interested_by.date('Ymd').$interest->user_id;
                     $chat_thread->sender_user_id = $interest->interested_by;
                     $chat_thread->receiver_user_id = $interest->user_id;
                     $chat_thread->save();
                 }
-                
+
                 return response()->json(['success' => true, 'message' => 'Proposal accepted successfully']);
             } else {
                 return response()->json(['success' => false, 'message' => 'Failed to accept proposal'], 500);
             }
-        } catch (\Exception $e) {
-            \Log::error('Error accepting interest: ' . $e->getMessage());
+        } catch (Exception $e) {
+            Log::error('Error accepting interest: '.$e->getMessage());
+
             return response()->json(['success' => false, 'message' => 'Internal server error'], 500);
         }
     });
-    
+
     // Decline Interest API
     Route::post('/legacy-api/interest/decline', function (Request $request) {
         try {
-            if (!auth()->check()) {
+            if (! auth()->check()) {
                 return response()->json(['success' => false, 'message' => 'User not authenticated'], 401);
             }
-            
+
             $user = auth()->user();
             $interestId = $request->interest_id;
-            
-            $interest = \App\Models\ExpressInterest::find($interestId);
-            if (!$interest) {
+
+            $interest = ExpressInterest::find($interestId);
+            if (! $interest) {
                 return response()->json(['success' => false, 'message' => 'Proposal request not found'], 404);
             }
-            
+
             // Check if user owns this interest
             if ($interest->user_id != $user->id) {
                 return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
             }
-            
-            if (\App\Models\ExpressInterest::destroy($interestId)) {
+
+            if (ExpressInterest::destroy($interestId)) {
                 return response()->json(['success' => true, 'message' => 'Proposal declined successfully']);
             } else {
                 return response()->json(['success' => false, 'message' => 'Failed to decline proposal'], 500);
             }
-        } catch (\Exception $e) {
-            \Log::error('Error declining interest: ' . $e->getMessage());
+        } catch (Exception $e) {
+            Log::error('Error declining interest: '.$e->getMessage());
+
             return response()->json(['success' => false, 'message' => 'Internal server error'], 500);
         }
     });
-    
+
     // Check Interest Status API
     Route::get('/legacy-api/check-interest-status/{userId}', function (Request $request, $userId) {
         try {
-            if (!auth()->check()) {
+            if (! auth()->check()) {
                 return response()->json(['success' => false, 'message' => 'User not authenticated'], 401);
             }
-            
+
             $user = auth()->user();
-            
+
             // Check if current user has already sent interest to this user
-            $sentInterest = \App\Models\ExpressInterest::where('interested_by', $user->id)
+            $sentInterest = ExpressInterest::where('interested_by', $user->id)
                 ->where('user_id', $userId)
                 ->first();
-            
+
             // Check if this user has sent interest to current user
-            $receivedInterest = \App\Models\ExpressInterest::where('user_id', $user->id)
+            $receivedInterest = ExpressInterest::where('user_id', $user->id)
                 ->where('interested_by', $userId)
                 ->first();
-            
+
             $status = 'none';
             $buttonText = 'Send Proposal';
             $buttonClass = 'btn-send-interest';
-            
+
             if ($sentInterest) {
                 if ($sentInterest->status == 1) {
                     $status = 'accepted';
@@ -279,7 +288,7 @@ Route::group(['middleware' => ['member', 'verified']], function () {
                     $buttonText = 'Proposal Sent';
                     $buttonClass = 'btn-interest-sent';
                 }
-            } else if ($receivedInterest) {
+            } elseif ($receivedInterest) {
                 if ($receivedInterest->status == 1) {
                     $status = 'mutual';
                     $buttonText = 'Mutual Proposal';
@@ -290,43 +299,44 @@ Route::group(['middleware' => ['member', 'verified']], function () {
                     $buttonClass = 'btn-respond-interest';
                 }
             }
-            
+
             return response()->json([
                 'success' => true,
                 'status' => $status,
                 'button_text' => $buttonText,
-                'button_class' => $buttonClass
+                'button_class' => $buttonClass,
             ]);
-        } catch (\Exception $e) {
-            \Log::error('Error checking interest status: ' . $e->getMessage());
+        } catch (Exception $e) {
+            Log::error('Error checking interest status: '.$e->getMessage());
+
             return response()->json(['success' => false, 'message' => 'Internal server error'], 500);
         }
     });
-    
+
     // Express Interest API
     Route::post('/legacy-api/express-interest', function (Request $request) {
         try {
-            if (!auth()->check()) {
+            if (! auth()->check()) {
                 return response()->json(['success' => false, 'message' => 'User not authenticated'], 401);
             }
-            
+
             $user = auth()->user();
             $targetUserId = $request->user_id;
 
-            $existingInterest = \App\Models\ExpressInterest::where('user_id', $targetUserId)
+            $existingInterest = ExpressInterest::where('user_id', $targetUserId)
                 ->where('interested_by', $user->id)
                 ->first();
-            
+
             if ($existingInterest) {
                 return response()->json(['success' => false, 'message' => 'Proposal already sent']);
             }
-            
+
             // Check if user is trying to send interest to themselves
             if ($targetUserId == $user->id) {
                 return response()->json(['success' => false, 'message' => 'Cannot send proposal to yourself']);
             }
 
-            $result = (new \App\Services\InterestService())->store($targetUserId);
+            $result = (new InterestService)->store($targetUserId);
 
             if (is_array($result) && ($result['success'] ?? false)) {
                 return response()->json(['success' => true, 'message' => 'Proposal sent successfully']);
@@ -345,45 +355,46 @@ Route::group(['middleware' => ['member', 'verified']], function () {
                 'used' => $payload['used'] ?? null,
                 'message' => $payload['message'] ?? 'Failed to send proposal',
             ], $payload['http_status'] ?? 200);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
-        }
-    });
-    
-    // Accept Interest API
-    Route::post('/legacy-api/interest/accept', function (Request $request) {
-        try {
-            $interestId = $request->interest_id;
-            $interest = \App\Models\ExpressInterest::find($interestId);
-            
-            if ($interest) {
-                $interest->update(['status' => 1]); // Accepted
-                return response()->json(['success' => true]);
-            }
-            
-            return response()->json(['success' => false, 'message' => 'Proposal request not found']);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
-        }
-    });
-    
-    // Decline Interest API
-    Route::post('/legacy-api/interest/decline', function (Request $request) {
-        try {
-            $interestId = $request->interest_id;
-            $interest = \App\Models\ExpressInterest::find($interestId);
-            
-            if ($interest) {
-                $interest->update(['status' => 2]); // Declined
-                return response()->json(['success' => true]);
-            }
-            
-            return response()->json(['success' => false, 'message' => 'Proposal request not found']);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     });
 
+    // Accept Interest API
+    Route::post('/legacy-api/interest/accept', function (Request $request) {
+        try {
+            $interestId = $request->interest_id;
+            $interest = ExpressInterest::find($interestId);
+
+            if ($interest) {
+                $interest->update(['status' => 1]); // Accepted
+
+                return response()->json(['success' => true]);
+            }
+
+            return response()->json(['success' => false, 'message' => 'Proposal request not found']);
+        } catch (Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    });
+
+    // Decline Interest API
+    Route::post('/legacy-api/interest/decline', function (Request $request) {
+        try {
+            $interestId = $request->interest_id;
+            $interest = ExpressInterest::find($interestId);
+
+            if ($interest) {
+                $interest->update(['status' => 2]); // Declined
+
+                return response()->json(['success' => true]);
+            }
+
+            return response()->json(['success' => false, 'message' => 'Proposal request not found']);
+        } catch (Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    });
 
 });
 
@@ -408,7 +419,7 @@ Route::group(['middleware' => ['member', 'verified']], function () {
 
         Route::post('/user/remaining_package_value', 'user_remaining_package_value')->name('user.remaining_package_value');
         Route::post('/upload-profile-picture', 'upload_profile_picture')->name('upload.profile.picture');
-        
+
         // Dashboard AJAX endpoints
         Route::get('/dashboard/incoming-interests', 'getIncomingInterests')->name('dashboard.incoming.interests');
         Route::get('/dashboard/mutual-matches', 'getMutualMatches')->name('dashboard.mutual.matches');
@@ -416,31 +427,29 @@ Route::group(['middleware' => ['member', 'verified']], function () {
         Route::get('/dashboard/today-matches', 'getTodayMatches')->name('dashboard.today.matches');
         Route::get('/dashboard/success-stories', 'getSuccessStories')->name('dashboard.success.stories');
     });
-    
 
     Route::controller(MemberController::class)->group(function () {
         // Password Change
         Route::get('/members/change-password', 'change_password')->name('member.change_password');
         Route::post('/member/password-update/{id}', 'password_update')->name('member.password_update');
         Route::get('/profile-settings', 'profile_settings')->name('profile_settings');
-        
+
         // Account deacticvation & deletation
         Route::post('/member/account-activation', 'update_account_deactivation_status')->name('member.account_deactivation');
         Route::post('/member/account-delete', 'account_delete')->name('member.account_delete');
     });
-    
 
     Route::get('/package-payment-methods/{id}', [PackageController::class, 'package_payemnt_methods'])->name('package_payment_methods');
     Route::controller(PackagePaymentController::class)->group(function () {
         Route::post('/package-payment', 'store')->name('package.payment');
         Route::get('/package-purchase-history', 'package_purchase_history')->name('package_purchase_history');
     });
-    
+
     // Gallery Image
     Route::resource('/gallery-image', GalleryImageController::class);
     Route::get('/gallery_image/destroy/{id}', [GalleryImageController::class, 'destroy'])->name('gallery_image.destroy');
     // Redirect create to index since we merged the functionality
-    Route::get('/gallery-image/create', function() {
+    Route::get('/gallery-image/create', function () {
         return redirect()->route('gallery-image.index');
     });
 
@@ -463,14 +472,14 @@ Route::group(['middleware' => ['member', 'verified']], function () {
         Route::get('/chat/refresh/{id}', 'chat_refresh')->name('chat_refresh');
         Route::post('/chat/old-messages', 'get_old_messages')->name('get-old-message');
     });
-    
+
     // ShortList list, Add, Remove
     Route::controller(ShortlistController::class)->group(function () {
         Route::get('/my-shortlists', 'index')->name('my_shortlists');
         Route::post('/member/add-to-shortlist', 'create')->name('member.add_to_shortlist');
         Route::post('/member/remove-from-shortlist', 'remove')->name('member.remove_from_shortlist');
     });
-    
+
     // Ignore list, Add, Remove
     Route::controller(IgnoredUserController::class)->group(function () {
         Route::get('/ignored-list', 'index')->name('my_ignored_list');
@@ -478,13 +487,12 @@ Route::group(['middleware' => ['member', 'verified']], function () {
         Route::post('/member/remove-from-ignored-list', 'remove_from_ignored_list')->name('member.remove_from_ignored_list');
     });
 
-    // Profile_picture view request 
+    // Profile_picture view request
     Route::resource('/profile-picture-view-request', ViewProfilePictureController::class);
     Route::controller(ViewProfilePictureController::class)->group(function () {
         Route::post('/profile-picture-view-request/accept', 'accept_request')->name('profile_picture_view_request_accept');
         Route::post('/profile-picture-view-request/reject', 'reject_request')->name('profile_picture_view_request_reject');
     });
-
 
     // Gallery Image View Request
     Route::resource('/gallery-image-view-request', ViewGalleryImageController::class);
@@ -492,7 +500,6 @@ Route::group(['middleware' => ['member', 'verified']], function () {
         Route::post('/gallery-image-view-request/accept', 'accept_request')->name('gallery_image_view_request_accept');
         Route::post('/gallery-image-view-request/reject', 'reject_request')->name('gallery_image_view_request_reject');
     });
-    
 
     Route::resource('reportusers', ReportedUserController::class);
     Route::resource('view_contacts', ViewContactController::class);
@@ -514,36 +521,37 @@ Route::group(['middleware' => ['member', 'verified']], function () {
     });
 
     Route::resource('profile-viewers', ProfileViewerController::class);
-    Route::get('/matched-profiles',[ProfileMatchController::class, 'myMatchedProfiles'])->name('my_matched_profiles');
+    Route::get('/matched-profiles', [ProfileMatchController::class, 'myMatchedProfiles'])->name('my_matched_profiles');
 });
 
-Route::get('/registration-success', function() {
+Route::get('/registration-success', function () {
     return view('frontend.registration_success');
 })->name('registration.success')->middleware('auth');
 
 Route::get('/run-manual-migration', function () {
     try {
-        if (!Schema::hasColumn('members', 'medical_license_number')) {
-            Schema::table('members', function (Illuminate\Database\Schema\Blueprint $table) {
+        if (! Schema::hasColumn('members', 'medical_license_number')) {
+            Schema::table('members', function (Blueprint $table) {
                 $table->string('medical_license_number')->nullable()->after('introduction');
             });
-            echo "Added medical_license_number<br>";
+            echo 'Added medical_license_number<br>';
         }
-        if (!Schema::hasColumn('members', 'specialization')) {
-            Schema::table('members', function (Illuminate\Database\Schema\Blueprint $table) {
+        if (! Schema::hasColumn('members', 'specialization')) {
+            Schema::table('members', function (Blueprint $table) {
                 $table->string('specialization')->nullable()->after('medical_license_number');
             });
-            echo "Added specialization<br>";
+            echo 'Added specialization<br>';
         }
-        if (!Schema::hasColumn('members', 'verification_document')) {
-            Schema::table('members', function (Illuminate\Database\Schema\Blueprint $table) {
+        if (! Schema::hasColumn('members', 'verification_document')) {
+            Schema::table('members', function (Blueprint $table) {
                 $table->string('verification_document')->nullable()->after('specialization');
             });
-            echo "Added verification_document<br>";
+            echo 'Added verification_document<br>';
         }
-        return "Migration checks completed.";
-    } catch (\Exception $e) {
-        return "Error: " . $e->getMessage();
+
+        return 'Migration checks completed.';
+    } catch (Exception $e) {
+        return 'Error: '.$e->getMessage();
     }
 });
 
@@ -555,7 +563,6 @@ Route::group(['middleware' => ['auth']], function () {
         Route::post('/members/basic_info_update/{id}', 'basic_info_update')->name('member.basic_info_update');
         Route::post('/members/language_info_update/{id}', 'language_info_update')->name('member.language_info_update');
     });
-   
 
     Route::resource('/address', AddressController::class);
 
@@ -570,10 +577,9 @@ Route::group(['middleware' => ['auth']], function () {
         Route::post('/education/edit', 'edit')->name('education.edit');
         Route::post('/education/update_education_present_status', 'update_education_present_status')->name('education.update_education_present_status');
         Route::post('/education/update-highest-degree', 'updateHighestDegree')->name('education.update_highest_degree');
-        
+
         Route::get('/education/destroy/{id}', 'destroy')->name('education.destroy');
     });
-
 
     // Member Career
     Route::resource('/career', CareerController::class)->names([
@@ -610,7 +616,7 @@ Route::group(['middleware' => ['auth']], function () {
         Route::get('/notification-view/{id}', 'notification_view')->name('notification_view');
         Route::get('/notification/mark-all-as-read', 'mark_all_as_read')->name('notification.mark_all_as_read');
     });
-    
+
 });
 
 // Contact Us page
@@ -621,12 +627,12 @@ Route::controller(ContactUsController::class)->group(function () {
 
 // Payment gateway Redirect
 
-//Paypal START
+// Paypal START
 Route::get('/paypal/payment/done', 'PaypalController@getDone')->name('payment.done');
 Route::get('/paypal/payment/cancel', 'PaypalController@getCancel')->name('payment.cancel');
-//Paypal END
+// Paypal END
 
-//amarpay
+// amarpay
 
 Route::post('/aamarpay/success', 'AamarpayController@success')->name('aamarpay.success');
 Route::post('/aamarpay/fail', 'AamarpayController@fail')->name('aamarpay.fail');
@@ -638,12 +644,11 @@ Route::any('/sslcommerz/fail', 'SslcommerzController@fail');
 Route::any('/sslcommerz/cancel', 'SslcommerzController@cancel');
 Route::post('/sslcommerz/ipn', 'SslcommerzController@ipn');
 
-
 Route::get('/instamojo/payment/pay-success', 'InstamojoController@success')->name('instamojo.success');
 Route::post('rozer/payment/pay-success', 'RazorpayController@payment')->name('payment.rozer');
 Route::get('/paystack/payment/callback', 'PaystackController@handleGatewayCallback');
 
-//Stipe Start
+// Stipe Start
 Route::controller(StripeController::class)->group(function () {
     Route::get('stripe', 'stripe');
     Route::post('/stripe/create-checkout-session', 'create_checkout_session')->name('stripe.get_token');
@@ -651,9 +656,9 @@ Route::controller(StripeController::class)->group(function () {
     Route::get('/stripe/success', 'success')->name('stripe.success');
     Route::get('/stripe/cancel', 'cancel')->name('stripe.cancel');
 });
-//Stripe END
+// Stripe END
 
-//Paytm
+// Paytm
 Route::get('/paytm/index', 'PaytmController@index');
 Route::post('/paytm/callback', 'PaytmController@callback')->name('paytm.callback');
 
@@ -670,12 +675,10 @@ Route::get('/check_for_package_invalid', 'PackageController@check_for_package_in
 Route::get('/match_profiles', 'ProfileMatchController@match_profiles')->name('match_profiles');
 Route::get('/migrate/products/', 'ProfileMatchController@migrate_profiles');
 
-
-
-//Custom page
+// Custom page
 Route::get('/admin-react/{any?}', function () {
     $path = public_path('admin-panel/index.html');
-    if (!file_exists($path)) {
+    if (! file_exists($path)) {
         abort(404, 'Admin React build not found. Please run npm run build in Admin Panel Frontend.');
     }
 

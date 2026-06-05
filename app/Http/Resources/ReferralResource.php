@@ -4,6 +4,8 @@ namespace App\Http\Resources;
 
 use App\Models\Referral;
 use App\Models\User;
+use Illuminate\Contracts\Support\Arrayable;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class ReferralResource extends JsonResource
@@ -11,8 +13,8 @@ class ReferralResource extends JsonResource
     /**
      * Transform the resource into an array.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return array|\Illuminate\Contracts\Support\Arrayable|\JsonSerializable
+     * @param  Request  $request
+     * @return array|Arrayable|\JsonSerializable
      */
     public function toArray($request)
     {
@@ -21,7 +23,7 @@ class ReferralResource extends JsonResource
         $displayDate = $resource instanceof Referral ? $resource->created_at : ($resource->created_at ?? null);
 
         return [
-            'name' => trim(($referredUser->first_name ?? '') . ' ' . ($referredUser->last_name ?? '')),
+            'name' => trim(($referredUser->first_name ?? '').' '.($referredUser->last_name ?? '')),
             'date' => $displayDate ? date('d-m-Y', strtotime($displayDate)) : null,
         ];
     }

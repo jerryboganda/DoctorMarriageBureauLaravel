@@ -72,6 +72,7 @@ class ReferralSetting extends Model
     public static function isEnabled()
     {
         $settings = static::instance();
+
         return $settings->referral_enabled;
     }
 
@@ -81,6 +82,7 @@ class ReferralSetting extends Model
     public function getAntiFraudSetting($key, $default = null)
     {
         $settings = $this->anti_fraud_settings ?? [];
+
         return $settings[$key] ?? $default;
     }
 }

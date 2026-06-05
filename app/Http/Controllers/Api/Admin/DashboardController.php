@@ -14,6 +14,7 @@ class DashboardController extends AdminDashboardController
     public function earningsChart(Request $request)
     {
         $data = $this->index($request)->getData(true);
+
         return response()->json([
             'result' => true,
             'data' => [
@@ -26,6 +27,7 @@ class DashboardController extends AdminDashboardController
     public function happyStoriesChart(Request $request)
     {
         $data = $this->index($request)->getData(true);
+
         return response()->json([
             'result' => true,
             'data' => [
@@ -39,6 +41,7 @@ class DashboardController extends AdminDashboardController
     public function happyStories(Request $request)
     {
         $data = $this->index($request)->getData(true);
+
         return response()->json([
             'result' => true,
             'data' => $data['data']['happy_stories']['recent'] ?? [],

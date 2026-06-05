@@ -4,24 +4,26 @@ namespace App\Http\Controllers;
 
 use App\Models\ManualPaymentMethod;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class ManualPaymentMethodController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index()
     {
         $manual_payment_methods = ManualPaymentMethod::latest()->get();
+
         return view('admin.manual_payment_methods.index', compact('manual_payment_methods'));
     }
 
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create()
     {
@@ -31,8 +33,7 @@ class ManualPaymentMethodController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(Request $request)
     {
@@ -43,9 +44,9 @@ class ManualPaymentMethodController extends Controller
         $manual_payment_method->description = $request->description;
 
         if ($request->type == 'bank_payment') {
-            $banks_informations = array();
+            $banks_informations = [];
             for ($i = 0; $i < count($request->bank_name); $i++) {
-                $item = array();
+                $item = [];
                 $item['bank_name'] = $request->bank_name[$i];
                 $item['account_name'] = $request->account_name[$i];
                 $item['account_number'] = $request->account_number[$i];
@@ -58,14 +59,14 @@ class ManualPaymentMethodController extends Controller
 
         $manual_payment_method->save();
         flash(translate('Method has been inserted successfully'))->success();
+
         return redirect()->route('manual_payment_methods.index');
     }
 
     /**
      * Display the specified resource.
      *
-     * @param  \App\Models\ManualPaymentMethod  $manualPaymentMethod
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function show(ManualPaymentMethod $manualPaymentMethod)
     {
@@ -75,21 +76,19 @@ class ManualPaymentMethodController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  \App\Models\ManualPaymentMethod  $manualPaymentMethod
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function edit(ManualPaymentMethod $manualPaymentMethod)
     {
         $manual_payment_method = ManualPaymentMethod::find(($manualPaymentMethod))->first();
+
         return view('admin.manual_payment_methods.edit', compact('manual_payment_method'));
     }
 
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\ManualPaymentMethod  $manualPaymentMethod
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function update(Request $request, ManualPaymentMethod $manualPaymentMethod)
     {
@@ -99,9 +98,9 @@ class ManualPaymentMethodController extends Controller
         $manual_payment_method->description = $request->description;
 
         if ($request->type == 'bank_payment') {
-            $banks_informations = array();
+            $banks_informations = [];
             for ($i = 0; $i < count($request->bank_name); $i++) {
-                $item = array();
+                $item = [];
                 $item['bank_name'] = $request->bank_name[$i];
                 $item['account_name'] = $request->account_name[$i];
                 $item['account_number'] = $request->account_number[$i];
@@ -114,14 +113,15 @@ class ManualPaymentMethodController extends Controller
         $manual_payment_method->photo = $request->photo;
         $manual_payment_method->save();
         flash(translate('Method has been updated successfully'))->success();
+
         return redirect()->route('manual_payment_methods.index');
     }
 
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\Models\ManualPaymentMethod  $manualPaymentMethod
-     * @return \Illuminate\Http\Response
+     * @param  ManualPaymentMethod  $manualPaymentMethod
+     * @return Response
      */
     public function destroy($id)
     {
@@ -130,6 +130,7 @@ class ManualPaymentMethodController extends Controller
         } else {
             flash(translate('Something went wrong'))->error();
         }
+
         return redirect()->route('manual_payment_methods.index');
     }
 }

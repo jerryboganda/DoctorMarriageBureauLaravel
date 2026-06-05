@@ -8,6 +8,6 @@ use Illuminate\Database\Eloquent\Model;
 class ProgressionStage extends Model
 {
     use HasFactory;
-    
+
     protected $guarded = [];
 }

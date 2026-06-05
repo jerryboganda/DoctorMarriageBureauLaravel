@@ -1,8 +1,10 @@
 <?php
 
 namespace App\Http\Controllers;
-use Illuminate\Http\Request;
+
 use App\Models\Religion;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Redirect;
 use Validator;
 
@@ -15,35 +17,37 @@ class ReligionController extends Controller
         $this->middleware(['permission:delete_religion'])->only('destroy');
 
         $this->rules = [
-            'name' => ['required','max:255'],
+            'name' => ['required', 'max:255'],
         ];
 
         $this->messages = [
-            'name.required'             => translate('Name is required'),
-            'name.max'                  => translate('Max 255 characters'),
+            'name.required' => translate('Name is required'),
+            'name.max' => translate('Max 255 characters'),
         ];
     }
+
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index(Request $request)
     {
-        $sort_search  = null;
-        $religions    = Religion::latest();
-        if ($request->has('search')){
-            $sort_search  = $request->search;
-            $religions    = $religions->where('name', 'like', '%'.$sort_search.'%');
+        $sort_search = null;
+        $religions = Religion::latest();
+        if ($request->has('search')) {
+            $sort_search = $request->search;
+            $religions = $religions->where('name', 'like', '%'.$sort_search.'%');
         }
         $religions = $religions->paginate(10);
-        return view('admin.member_profile_attributes.religions.index', compact('religions','sort_search'));
+
+        return view('admin.member_profile_attributes.religions.index', compact('religions', 'sort_search'));
     }
 
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create()
     {
@@ -53,27 +57,29 @@ class ReligionController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(Request $request)
     {
-        $rules      = $this->rules;
-        $messages   = $this->messages;
-        $validator  = Validator::make($request->all(), $rules, $messages);
+        $rules = $this->rules;
+        $messages = $this->messages;
+        $validator = Validator::make($request->all(), $rules, $messages);
 
         if ($validator->fails()) {
             flash(translate('Sorry! Something went wrong'))->error();
+
             return Redirect::back()->withErrors($validator);
         }
 
-        $religion       = new Religion;
+        $religion = new Religion;
         $religion->name = $request->name;
-        if($religion->save()){
+        if ($religion->save()) {
             flash(translate('New religion has been added successfully'))->success();
+
             return redirect()->route('religions.index');
         } else {
             flash(translate('Sorry! Something went wrong.'))->error();
+
             return back();
         }
 
@@ -83,7 +89,7 @@ class ReligionController extends Controller
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function show($id)
     {
@@ -94,39 +100,42 @@ class ReligionController extends Controller
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function edit($id)
     {
         $religion = Religion::findOrFail(decrypt($id));
-        return view('admin.member_profile_attributes.religions.edit',compact('religion'));
+
+        return view('admin.member_profile_attributes.religions.edit', compact('religion'));
     }
 
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function update(Request $request, $id)
     {
-        $rules      = $this->rules;
-        $messages   = $this->messages;
-        $validator  = Validator::make($request->all(), $rules, $messages);
+        $rules = $this->rules;
+        $messages = $this->messages;
+        $validator = Validator::make($request->all(), $rules, $messages);
 
         if ($validator->fails()) {
             flash(translate('Sorry! Something went wrong'))->error();
+
             return Redirect::back()->withErrors($validator);
         }
 
-        $religion       = Religion::findOrFail($id);
+        $religion = Religion::findOrFail($id);
         $religion->name = $request->name;
-        if($religion->save()){
+        if ($religion->save()) {
             flash(translate('Religion info has been updated successfully'))->success();
+
             return redirect()->route('religions.index');
         } else {
             flash(translate('Sorry! Something went wrong.'))->error();
+
             return back();
         }
     }
@@ -137,6 +146,7 @@ class ReligionController extends Controller
             foreach ($request->id as $id) {
                 $this->destroy($id);
             }
+
             return 1;
         } else {
             return 0;
@@ -147,7 +157,7 @@ class ReligionController extends Controller
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function destroy($id)
     {
@@ -160,9 +170,11 @@ class ReligionController extends Controller
         }
         if (Religion::destroy($id)) {
             flash(translate('Religion info has been deleted successfully'))->success();
+
             return redirect()->route('religions.index');
         } else {
             flash(translate('Sorry! Something went wrong.'))->error();
+
             return back();
         }
     }

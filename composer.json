@@ -10,8 +10,8 @@
         "anandsiddharth/laravel-paytm-wallet": "^2.0",
         "bacon/bacon-qr-code": "^3.0",
         "barryvdh/laravel-ide-helper": "^2.13",
-        "genealabs/laravel-sign-in-with-apple": "*",
-        "genealabs/laravel-socialiter": "*",
+        "genealabs/laravel-sign-in-with-apple": "^12.0",
+        "genealabs/laravel-socialiter": "^12.0",
         "guzzlehttp/guzzle": "^7.5",
         "instamojo/instamojo-php": "^0.4.0",
         "intervention/image": "^2.5",
@@ -22,14 +22,14 @@
         "laravel/sanctum": "^3.2",
         "laravel/socialite": "^5.6",
         "laravel/tinker": "^2.8",
-        "laravel/ui": "4.2",
+        "laravel/ui": "^4.2",
         "maatwebsite/excel": "^3.1",
-        "mehedi-iitdu/core-component-repository": "2.2",
+        "mehedi-iitdu/core-component-repository": "^2.2",
         "niklasravnsborg/laravel-pdf": "^4.1",
         "paypal/paypal-checkout-sdk": "dev-master",
         "pusher/pusher-php-server": "^7.2",
         "razorpay/razorpay": "2.*",
-        "spatie/db-dumper": "3.3",
+        "spatie/db-dumper": "^3.3",
         "spatie/laravel-permission": "^5.5",
         "stripe/stripe-php": "^10.5",
         "unicodeveloper/laravel-paystack": "^1.0"
@@ -39,8 +39,11 @@
         "beyondcode/laravel-dump-server": "^1.0",
         "filp/whoops": "^2.0",
         "fakerphp/faker": "^1.9.1",
+        "laravel/pint": "^1.18",
         "mockery/mockery": "^1.4.4",
         "nunomaduro/collision": "^7.0",
+        "nunomaduro/larastan": "^2.9",
+        "phpstan/phpstan": "^1.11",
         "phpunit/phpunit": "^10.0",
         "spatie/laravel-ignition": "^2.0"
     },
@@ -89,6 +92,25 @@
         ],
         "post-create-project-cmd": [
             "@php artisan key:generate --ansi"
+        ],
+        "lint:php": [
+            "git ls-files '*.php' ':!:vendor/*' ':!:storage/*' ':!:bootstrap/cache/*' | xargs -r -n 1 php -l"
+        ],
+        "format:check": [
+            "pint --test"
+        ],
+        "analyse": [
+            "phpstan analyse --memory-limit=1G"
+        ],
+        "test:backend": [
+            "@php artisan test"
+        ],
+        "ci:backend": [
+            "@composer validate --strict",
+            "@composer lint:php",
+            "@composer format:check",
+            "@composer analyse",
+            "@composer test:backend"
         ]
     }
 }

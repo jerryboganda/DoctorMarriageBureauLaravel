@@ -1,13 +1,14 @@
 <?php
 
 namespace App\Http\Controllers\Auth;
-use Illuminate\Http\Request;
+
 use App\Http\Controllers\Controller;
-use App\Providers\RouteServiceProvider;
-use Illuminate\Foundation\Auth\VerifiesEmails;
-use Carbon\Carbon;
 use App\Models\User;
+use App\Providers\RouteServiceProvider;
 use App\Services\ReferralService;
+use Carbon\Carbon;
+use Illuminate\Foundation\Auth\VerifiesEmails;
+use Illuminate\Http\Request;
 
 class VerificationController extends Controller
 {
@@ -49,8 +50,7 @@ class VerificationController extends Controller
             return $request->user()->hasVerifiedEmail()
                             ? redirect($this->redirectPath())
                             : view('auth.verify');
-        }
-        else {
+        } else {
             // For phone-only users, redirect to verification page
             // The OTP will be sent via the existing notification system
             return redirect()->route('verification');
@@ -68,22 +68,22 @@ class VerificationController extends Controller
         return back()->with('resent', true);
     }
 
-    public function verification_confirmation($code){
+    public function verification_confirmation($code)
+    {
         $user = User::where('verification_code', $code)->first();
-        if($user != null){
+        if ($user != null) {
             $user->email_verified_at = Carbon::now();
             $user->save();
 
             try {
-                (new ReferralService())->checkAndQualifyReferral($user->id);
+                (new ReferralService)->checkAndQualifyReferral($user->id);
             } catch (\Exception $e) {
-                \Log::error('Referral qualification check failed after web email verification: ' . $e->getMessage(), ['user_id' => $user->id]);
+                \Log::error('Referral qualification check failed after web email verification: '.$e->getMessage(), ['user_id' => $user->id]);
             }
 
             auth()->login($user, true);
             flash(translate('Your email has been verified successfully'))->success();
-        }
-        else {
+        } else {
             flash(translate('Sorry, we could not verifiy you. Please try again'))->error();
         }
 

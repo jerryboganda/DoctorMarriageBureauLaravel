@@ -15,7 +15,7 @@ class OnBehalfSeeder extends Seeder
             'Sibling',
             'Relative',
             'Friend',
-            'Guardian'
+            'Guardian',
         ];
 
         foreach ($onBehalves as $name) {

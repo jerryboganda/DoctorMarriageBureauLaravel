@@ -3,7 +3,6 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -16,11 +15,11 @@ class EmailNotification extends Notification
      *
      * @return void
      */
-     public function __construct($subject, $email_body)
-     {
-         $this->subject     = $subject;
-         $this->email_body  = $email_body;
-     }
+    public function __construct($subject, $email_body)
+    {
+        $this->subject = $subject;
+        $this->email_body = $email_body;
+    }
 
     /**
      * Get the notification's delivery channels.
@@ -37,14 +36,14 @@ class EmailNotification extends Notification
      * Get the mail representation of the notification.
      *
      * @param  mixed  $notifiable
-     * @return \Illuminate\Notifications\Messages\MailMessage
+     * @return MailMessage
      */
-     public function toMail($notifiable)
-     {
-         return (new MailMessage)
-                 ->subject($this->subject)
-                 ->view('emails.index',['email_body'=>$this->email_body]);
-     }
+    public function toMail($notifiable)
+    {
+        return (new MailMessage)
+            ->subject($this->subject)
+            ->view('emails.index', ['email_body' => $this->email_body]);
+    }
 
     /**
      * Get the array representation of the notification.

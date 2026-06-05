@@ -3,14 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Models\User;
 
 class ExpressInterest extends Model
 {
     protected $fillable = [
         'user_id',
         'interested_by',
-        'status'
+        'status',
     ];
 
     public function user()
@@ -22,6 +21,7 @@ class ExpressInterest extends Model
     {
         return $this->hasMany(Notification::class);
     }
+
     public function interestedby()
     {
         return $this->belongsTo(User::class, 'interested_by');

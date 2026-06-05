@@ -2,22 +2,15 @@
 
 namespace App\Notifications;
 
-use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
-use Illuminate\Notifications\Notification;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Support\Facades\URL;
-use App\Mail\EmailManager;
-use Auth;
-use App\Models\User;
+use Illuminate\Notifications\Notification;
 
 class EmailVerificationNotification extends Notification
 {
     use Queueable;
 
-    public function __construct()
-    {
-    }
+    public function __construct() {}
 
     public function via($notifiable)
     {
@@ -35,7 +28,7 @@ class EmailVerificationNotification extends Notification
         $array['link'] = route('email.verification.confirmation', $notifiable->verification_code);
 
         // Ensure all required array keys exist
-        if (!isset($array['link'])) {
+        if (! isset($array['link'])) {
             $array['link'] = '';
         }
 

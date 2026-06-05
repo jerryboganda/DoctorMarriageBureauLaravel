@@ -2,18 +2,21 @@
 
 namespace App\Http\Controllers\Api\Payment;
 
-use App\Models\Currency;
-use Illuminate\Http\Request;
-use App\Http\Controllers\Api\Controller;
 use App\Http\Controllers\Api\AddonPurchaseController;
-use App\Http\Controllers\Api\WalletController;
+use App\Http\Controllers\Api\Controller;
 use App\Http\Controllers\Api\PackageController;
+use App\Http\Controllers\Api\WalletController;
 use App\Models\AddonProduct;
+use App\Models\Currency;
+use App\Models\Package;
+use App\Models\User;
 use App\Services\CouponService;
+use Illuminate\Http\Request;
+use Stripe\Checkout\Session;
+use Stripe\Stripe;
 
 class StripeController extends Controller
 {
-
     public function stripe(Request $request)
     {
         $data['payment_type'] = $request->payment_type;
@@ -31,7 +34,7 @@ class StripeController extends Controller
         $purchaseType = null;
 
         if ($request->payment_type == 'package_payment') {
-            $package = \App\Models\Package::find($request->package_id);
+            $package = Package::find($request->package_id);
             if ($package) {
                 $data['package_id'] = $package->id;
                 $amount = (float) $package->price;
@@ -47,8 +50,8 @@ class StripeController extends Controller
         }
 
         $originalAmount = $amount;
-        if (!empty($request->coupon_code) && $purchaseType) {
-            $couponService = new CouponService();
+        if (! empty($request->coupon_code) && $purchaseType) {
+            $couponService = new CouponService;
             $couponResult = $couponService->validateCode($request->coupon_code, auth()->user(), $originalAmount, $purchaseType);
             if ($couponResult['valid']) {
                 $data['coupon_id'] = $couponResult['coupon']->id;
@@ -63,7 +66,8 @@ class StripeController extends Controller
         }
 
         $data['amount'] = $amount;
-        return view('frontend.payment_gateway.stripe_app',  $data);
+
+        return view('frontend.payment_gateway.stripe_app', $data);
     }
 
     public function create_checkout_session(Request $request)
@@ -77,7 +81,7 @@ class StripeController extends Controller
         $couponCode = $request->coupon_code;
 
         if ($request->payment_type == 'package_payment') {
-            $package = \App\Models\Package::find($request->package_id);
+            $package = Package::find($request->package_id);
             if ($package) {
                 $originalAmount = (float) $package->price;
                 $resolvedAmount = $originalAmount;
@@ -92,10 +96,10 @@ class StripeController extends Controller
             }
         }
 
-        if (!empty($request->coupon_code) && $purchaseType) {
-            $couponUser = \App\Models\User::find($request->user_id);
+        if (! empty($request->coupon_code) && $purchaseType) {
+            $couponUser = User::find($request->user_id);
             if ($couponUser) {
-                $couponService = new CouponService();
+                $couponService = new CouponService;
                 $couponResult = $couponService->validateCode($request->coupon_code, $couponUser, $originalAmount, $purchaseType);
                 if ($couponResult['valid']) {
                     $couponId = $couponResult['coupon']->id;
@@ -110,35 +114,34 @@ class StripeController extends Controller
             $amount = round($resolvedAmount * 100);
         }
 
-        $data = array();
+        $data = [];
 
-        $data['payment_type']   = $request->payment_type;
-        $data['amount']         = $resolvedAmount;
+        $data['payment_type'] = $request->payment_type;
+        $data['amount'] = $resolvedAmount;
         $data['payment_method'] = $request->payment_method;
-        $data['package_id']     = $request->package_id;
-        $data['addon_id']       = $request->addon_id;
-        $data['user_id']        = $request->user_id;
+        $data['package_id'] = $request->package_id;
+        $data['addon_id'] = $request->addon_id;
+        $data['user_id'] = $request->user_id;
         $data['original_amount'] = $originalAmount;
         $data['discount_amount'] = $discountAmount;
         $data['coupon_id'] = $couponId;
         $data['coupon_code'] = $couponCode;
 
+        Stripe::setApiKey(env('STRIPE_SECRET'));
 
-        \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
-
-        $session = \Stripe\Checkout\Session::create([
+        $session = Session::create([
             'payment_method_types' => ['card'],
             'line_items' => [
                 [
                     'price_data' => [
-                        'currency' => \App\Models\Currency::findOrFail(get_setting('system_default_currency'))->code,
+                        'currency' => Currency::findOrFail(get_setting('system_default_currency'))->code,
                         'product_data' => [
-                            'name' => "Payment"
+                            'name' => 'Payment',
                         ],
                         'unit_amount' => $amount,
                     ],
                     'quantity' => 1,
-                ]
+                ],
             ],
             'mode' => 'payment',
             'success_url' => route('api.stripe.success', $data),
@@ -148,40 +151,43 @@ class StripeController extends Controller
         return response()->json(['id' => $session->id, 'status' => 200]);
     }
 
-    // 
+    //
     public function success(Request $request)
     {
         $payment_data = [
-            "package_id" => $request->package_id,
-            "addon_id" => $request->addon_id,
-            "payment_method" => $request->payment_method,
-            "amount" => $request->amount,
-            "original_amount" => $request->original_amount ?? $request->amount,
-            "discount_amount" => $request->discount_amount ?? 0,
-            "coupon_id" => $request->coupon_id ?? null,
-            "coupon_code" => $request->coupon_code ?? null,
+            'package_id' => $request->package_id,
+            'addon_id' => $request->addon_id,
+            'payment_method' => $request->payment_method,
+            'amount' => $request->amount,
+            'original_amount' => $request->original_amount ?? $request->amount,
+            'discount_amount' => $request->discount_amount ?? 0,
+            'coupon_id' => $request->coupon_id ?? null,
+            'coupon_code' => $request->coupon_code ?? null,
         ];
         try {
-            $payment = ["status" => "Success"];
+            $payment = ['status' => 'Success'];
             if ($request->payment_type) {
                 if ($request->payment_type == 'package_payment') {
                     $packagePaymentController = new PackageController;
+
                     return $packagePaymentController->package_payment_done($request->user_id, $payment_data, json_encode($payment));
                 } elseif ($request->payment_type == 'addon_payment') {
                     $addonPurchaseController = new AddonPurchaseController;
+
                     return $addonPurchaseController->addon_payment_done($request->user_id, $payment_data, json_encode($payment));
                 } elseif ($request->payment_type == 'wallet_payment') {
                     $walletController = new WalletController;
+
                     return $walletController->wallet_payment_done($request->user_id, $payment_data, json_encode($payment));
                 }
             }
         } catch (\Exception $e) {
-            return response()->json(['result' => false, 'message' => translate("Payment is unsuccessful")]);
+            return response()->json(['result' => false, 'message' => translate('Payment is unsuccessful')]);
         }
     }
 
     public function cancel(Request $request)
     {
-        return response()->json(['result' => false, 'message' => translate("Payment is cancelled")]);
+        return response()->json(['result' => false, 'message' => translate('Payment is cancelled')]);
     }
 }

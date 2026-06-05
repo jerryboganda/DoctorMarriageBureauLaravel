@@ -2,25 +2,19 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Models\User;
-use App\Models\Career;
-use App\Models\Member;
-use App\Models\Address;
-use App\Models\IgnoredUser;
-use App\Models\ReportedUser;
-use Illuminate\Http\Request;
-use App\Models\PhysicalAttribute;
-use App\Models\SpiritualBackground;
-use App\Http\Controllers\Api\Controller;
 use App\Http\Resources\ActiveUserResource;
 use App\Http\Resources\IgnoredUserResource;
 use App\Http\Resources\PackageResource;
 use App\Models\ExpressInterest;
+use App\Models\IgnoredUser;
+use App\Models\Member;
 use App\Models\Package;
+use App\Models\ReportedUser;
 use App\Models\Setting;
 use App\Models\Shortlist;
-use App\Models\ViewGalleryImage;
+use App\Models\User;
 use App\Utility\MemberUtility;
+use Illuminate\Http\Request;
 use Laravel\Sanctum\PersonalAccessToken;
 
 class MemberController extends Controller
@@ -40,23 +34,23 @@ class MemberController extends Controller
     public function member_listing(Request $request)
     {
         $authUser = auth()->user();
-        $age_from       = ($request->age_from != null) ? $request->age_from : null;
-        $age_to         = ($request->age_to != null) ? $request->age_to : null;
-        $member_code    = ($request->member_code != null) ? $request->member_code : null;
+        $age_from = ($request->age_from != null) ? $request->age_from : null;
+        $age_to = ($request->age_to != null) ? $request->age_to : null;
+        $member_code = ($request->member_code != null) ? $request->member_code : null;
         $marital_status = ($request->marital_status != null) ? $request->marital_status : null;
-        $religion_id    = ($request->religion_id != null) ? $request->religion_id : null;
-        $caste_id       = ($request->caste_id != null) ? $request->caste_id : null;
-        $sub_caste_id   = ($request->sub_caste_id != null) ? $request->sub_caste_id : null;
-        $mother_tongue  = ($request->mother_tongue != null) ? $request->mother_tongue : null;
-        $profession     = ($request->profession != null) ? $request->profession : null;
-        $country_id     = ($request->country_id != null) ? $request->country_id : null;
-        $state_id       = ($request->state_id != null) ? $request->state_id : null;
-        $city_id        = ($request->city_id != null) ? $request->city_id : null;
-        $min_height     = ($request->min_height != null) ? $request->min_height : null;
-        $max_height     = ($request->max_height != null) ? $request->max_height : null;
-        $member_type    = ($request->member_type != null) ? $request->member_type : 0;
-        $page           = max((int) $request->input('page', 1), 1);
-        $perPage        = min(max((int) $request->input('per_page', 24), 1), 48);
+        $religion_id = ($request->religion_id != null) ? $request->religion_id : null;
+        $caste_id = ($request->caste_id != null) ? $request->caste_id : null;
+        $sub_caste_id = ($request->sub_caste_id != null) ? $request->sub_caste_id : null;
+        $mother_tongue = ($request->mother_tongue != null) ? $request->mother_tongue : null;
+        $profession = ($request->profession != null) ? $request->profession : null;
+        $country_id = ($request->country_id != null) ? $request->country_id : null;
+        $state_id = ($request->state_id != null) ? $request->state_id : null;
+        $city_id = ($request->city_id != null) ? $request->city_id : null;
+        $min_height = ($request->min_height != null) ? $request->min_height : null;
+        $max_height = ($request->max_height != null) ? $request->max_height : null;
+        $member_type = ($request->member_type != null) ? $request->member_type : 0;
+        $page = max((int) $request->input('page', 1), 1);
+        $perPage = min(max((int) $request->input('per_page', 24), 1), 48);
 
         $users_query = User::query();
         $users_query->orderBy('created_at', 'desc')
@@ -80,7 +74,7 @@ class MemberController extends Controller
         }
 
         // Ignored member and ignored by member check
-        $users_query->whereNotIn("id", function ($query) use ($authUser) {
+        $users_query->whereNotIn('id', function ($query) use ($authUser) {
             $query->select('user_id')
                 ->from('ignored_users')
                 ->where(function ($ignored) use ($authUser) {
@@ -88,7 +82,7 @@ class MemberController extends Controller
                         ->orWhere('user_id', $authUser->id);
                 });
         })
-            ->whereNotIn("id", function ($query) use ($authUser) {
+            ->whereNotIn('id', function ($query) use ($authUser) {
                 $query->select('ignored_by')
                     ->from('ignored_users')
                     ->where(function ($ignored) use ($authUser) {
@@ -108,14 +102,14 @@ class MemberController extends Controller
         }
 
         // Sort By age
-        if (!empty($age_from)) {
+        if (! empty($age_from)) {
             $age = $age_from + 1;
             $start = date('Y-m-d', strtotime("- $age years"));
             $users_query->whereHas('member', function ($query) use ($start) {
                 $query->where('birthday', '<=', $start);
             });
         }
-        if (!empty($age_to)) {
+        if (! empty($age_to)) {
             $age = $age_to + 1;
             $end = date('Y-m-d', strtotime("- $age years +1 day"));
             $users_query->whereHas('member', function ($query) use ($end) {
@@ -124,7 +118,7 @@ class MemberController extends Controller
         }
 
         // Search by Member Code
-        if (!empty($member_code)) {
+        if (! empty($member_code)) {
             $users_query->where('code', $member_code);
         }
 
@@ -136,36 +130,36 @@ class MemberController extends Controller
         }
 
         // Sort By religion
-        if (!empty($sub_caste_id)) {
+        if (! empty($sub_caste_id)) {
             $users_query->whereHas('spiritual_backgrounds', function ($query) use ($sub_caste_id) {
                 $query->where('sub_caste_id', $sub_caste_id);
             });
-        } elseif (!empty($caste_id)) {
+        } elseif (! empty($caste_id)) {
             $users_query->whereHas('spiritual_backgrounds', function ($query) use ($caste_id) {
                 $query->where('caste_id', $caste_id);
             });
-        } elseif (!empty($religion_id)) {
+        } elseif (! empty($religion_id)) {
             $users_query->whereHas('spiritual_backgrounds', function ($query) use ($religion_id) {
                 $query->where('religion_id', $religion_id);
             });
         }
         // Profession
-        elseif (!empty($profession)) {
+        elseif (! empty($profession)) {
             $users_query->whereHas('career', function ($query) use ($profession) {
-                $query->where('designation', 'like', '%' . $profession . '%');
+                $query->where('designation', 'like', '%'.$profession.'%');
             });
         }
 
         // Sort By location
-        if (!empty($city_id)) {
+        if (! empty($city_id)) {
             $users_query->whereHas('addresses', function ($query) use ($city_id) {
                 $query->where('city_id', $city_id);
             });
-        } elseif (!empty($state_id)) {
+        } elseif (! empty($state_id)) {
             $users_query->whereHas('addresses', function ($query) use ($state_id) {
                 $query->where('state_id', $state_id);
             });
-        } elseif (!empty($country_id)) {
+        } elseif (! empty($country_id)) {
             $users_query->whereHas('addresses', function ($query) use ($country_id) {
                 $query->where('country_id', $country_id);
             });
@@ -179,12 +173,12 @@ class MemberController extends Controller
         }
 
         // Sort by Height
-        if (!empty($min_height)) {
+        if (! empty($min_height)) {
             $users_query->whereHas('physical_attributes', function ($query) use ($min_height) {
                 $query->where('height', '>=', $min_height);
             });
         }
-        if (!empty($max_height)) {
+        if (! empty($max_height)) {
             $users_query->whereHas('physical_attributes', function ($query) use ($max_height) {
                 $query->where('height', '<=', $max_height);
             });
@@ -239,13 +233,14 @@ class MemberController extends Controller
     {
         $package_id = auth()->user()->member->current_package_id;
         $package = Package::where('id', $package_id)->first();
+
         return new PackageResource($package);
     }
 
     public function ignored_user_list()
     {
         return IgnoredUserResource::collection(IgnoredUser::where('ignored_by', auth()->user()->id)->latest()->paginate(10))->additional([
-            'result' => true
+            'result' => true,
         ]);
     }
 
@@ -268,6 +263,7 @@ class MemberController extends Controller
                 return $this->failure_message('Something went wrong');
             }
         }
+
         return $this->failure_message('Invalid Member to ignore.');
     }
 
@@ -276,8 +272,10 @@ class MemberController extends Controller
         $ignored_user = IgnoredUser::where('user_id', $request->user_id)->where('ignored_by', auth()->user()->id)->first();
         if ($ignored_user) {
             IgnoredUser::destroy($ignored_user->id);
+
             return $this->success_message('You have removed this member from your ignored list');
         }
+
         return $this->failure_message('Something went wrong');
     }
 
@@ -293,10 +291,12 @@ class MemberController extends Controller
         if (User::find($request->user_id)) {
             ReportedUser::create($request->only('reason') + [
                 'user_id' => $request->user_id,
-                'reported_by' => auth()->user()->id
+                'reported_by' => auth()->user()->id,
             ]);
+
             return $this->success_message('Reported to this member successfully.');
         }
+
         return $this->failure_message('Invalid Member to Report.');
     }
 
@@ -307,14 +307,15 @@ class MemberController extends Controller
         $user->save();
 
         $deacticvation_msg = $request->deacticvation == 1 ? translate('deactivated') : translate('reactivated');
-        return $this->success_message('Your account ' . $deacticvation_msg . ' successfully!');
+
+        return $this->success_message('Your account '.$deacticvation_msg.' successfully!');
     }
 
     public function member_info($id)
     {
-        $data = array();
+        $data = [];
         $profileUser = User::with('member')->find($id);
-        if (!$profileUser) {
+        if (! $profileUser) {
             return response()->json([
                 'result' => false,
                 'message' => 'This profile is not available.',
@@ -335,7 +336,6 @@ class MemberController extends Controller
         $gallery_request_info = MemberUtility::member_gallery_image_request_info($id);
         $do_interest = ExpressInterest::where('user_id', $id)->where('interested_by', auth()->id())->first();
         $received_interest = ExpressInterest::where('user_id', auth()->id())->where('interested_by', $id)->first();
-
 
         if ($do_interest && $received_interest) {
             $isAccepted = ((int) $do_interest->status === 1) || ((int) $received_interest->status === 1);
@@ -363,25 +363,25 @@ class MemberController extends Controller
             $data['proposal_status'] = 'none';
             $data['proposal_updated_at'] = null;
         }
-        $data['shortlist_status']    = $shortlist ? 1 : 0;
-        $data['report_status']        = $profile_reported ? true : false;
-        $data['profile_view_resquest_status']   = $photo_request_info['profile_photo_request_approved'];
-        $data['profile_photo_request_state']     = $photo_request_info['profile_photo_request_state'];
-        $data['profile_photo_request_text']      = $photo_request_info['profile_photo_request_text'];
+        $data['shortlist_status'] = $shortlist ? 1 : 0;
+        $data['report_status'] = $profile_reported ? true : false;
+        $data['profile_view_resquest_status'] = $photo_request_info['profile_photo_request_approved'];
+        $data['profile_photo_request_state'] = $photo_request_info['profile_photo_request_state'];
+        $data['profile_photo_request_text'] = $photo_request_info['profile_photo_request_text'];
         $data['profile_photo_request_requested'] = $photo_request_info['profile_photo_request_requested'];
-        $data['profile_photo_request_approved']  = $photo_request_info['profile_photo_request_approved'];
-        $data['profile_photo_request_required']  = $photo_request_info['profile_photo_request_required'];
-        $data['profile_photo_accessible']        = $photo_request_info['profile_photo_accessible'];
-        $data['profile_photo_exists']            = $photo_request_info['profile_photo_exists'];
-        $data['profile_photo_blur']              = MemberUtility::member_profile_photo_blur($id);
-        $data['gallery_image_request_state']     = $gallery_request_info['gallery_image_request_state'];
-        $data['gallery_image_request_text']      = $gallery_request_info['gallery_image_request_text'];
+        $data['profile_photo_request_approved'] = $photo_request_info['profile_photo_request_approved'];
+        $data['profile_photo_request_required'] = $photo_request_info['profile_photo_request_required'];
+        $data['profile_photo_accessible'] = $photo_request_info['profile_photo_accessible'];
+        $data['profile_photo_exists'] = $photo_request_info['profile_photo_exists'];
+        $data['profile_photo_blur'] = MemberUtility::member_profile_photo_blur($id);
+        $data['gallery_image_request_state'] = $gallery_request_info['gallery_image_request_state'];
+        $data['gallery_image_request_text'] = $gallery_request_info['gallery_image_request_text'];
         $data['gallery_image_request_requested'] = $gallery_request_info['gallery_image_request_requested'];
-        $data['gallery_image_request_approved']  = $gallery_request_info['gallery_image_request_approved'];
-        $data['gallery_image_request_required']   = $gallery_request_info['gallery_image_request_required'];
-        $data['gallery_image_accessible']        = $gallery_request_info['gallery_image_accessible'];
-        $data['gallery_image_exists']            = $gallery_request_info['gallery_image_exists'];
-        $data['gallery_view_resquest_status']   = $gallery_request_info['gallery_image_request_approved'];
+        $data['gallery_image_request_approved'] = $gallery_request_info['gallery_image_request_approved'];
+        $data['gallery_image_request_required'] = $gallery_request_info['gallery_image_request_required'];
+        $data['gallery_image_accessible'] = $gallery_request_info['gallery_image_accessible'];
+        $data['gallery_image_exists'] = $gallery_request_info['gallery_image_exists'];
+        $data['gallery_view_resquest_status'] = $gallery_request_info['gallery_image_request_approved'];
 
         return $this->response_data($data);
     }
@@ -390,22 +390,22 @@ class MemberController extends Controller
     {
 
         $false_response = [
-            "result" => false,
-            "user" =>   [
-                'member_name' => "",
-                'member_email' => "",
-                'member_photo' => "",
-                'remaining_interest' => "",
-                'remaining_contact_view' => "",
-                'remaining_photo_gallery' => "",
-                'remaining_profile_image_view' => "",
-                'remaining_gallery_image_view' => "",
-                'current_package_info' => ""
-            ]
+            'result' => false,
+            'user' => [
+                'member_name' => '',
+                'member_email' => '',
+                'member_photo' => '',
+                'remaining_interest' => '',
+                'remaining_contact_view' => '',
+                'remaining_photo_gallery' => '',
+                'remaining_profile_image_view' => '',
+                'remaining_gallery_image_view' => '',
+                'current_package_info' => '',
+            ],
         ];
 
         $token = PersonalAccessToken::findToken($request->bearerToken());
-        if (!$token) {
+        if (! $token) {
             return response()->json($false_response);
         }
 
@@ -414,7 +414,7 @@ class MemberController extends Controller
             return response()->json($false_response);
         }
 
-        $data['member_name'] = $user->first_name . ' ' . $user->last_name;
+        $data['member_name'] = $user->first_name.' '.$user->last_name;
         $data['member_email'] = $user->email;
         $data['member_photo'] = uploaded_asset($user->photo) !== null ? uploaded_asset($user->photo) : gender_avatar($user?->member);
         $data['remaining_interest'] = get_remaining_package_value($user->id, 'remaining_interest');
@@ -425,13 +425,13 @@ class MemberController extends Controller
 
         $member = $user->member;
         $package = $member?->package;
-        $current_package_info = array(
+        $current_package_info = [
             'package_id' => $package?->id,
             'package_name' => $package?->name ?? translate('No active package'),
             'package_expiry' => ($member && $package && package_validity($user->id))
                 ? date('d.m.Y', strtotime($member->package_validity))
                 : translate('Expired'),
-        );
+        ];
         $data['current_package_info'] = $current_package_info;
 
         return $this->response_data($data);
@@ -442,9 +442,11 @@ class MemberController extends Controller
         $user = auth()->user();
         if ($user->verification_info == null) {
             $formData = get_setting('verification_form');
+
             return response()->json(json_decode($formData));
         } else {
             $status = $user->approved == 1 ? 'approved' : 'pending';
+
             return response()->json([
                 'result' => false,
                 'verification_status' => $status,
@@ -455,15 +457,16 @@ class MemberController extends Controller
         }
     }
 
-     public function isApproved(){
-        $user = User::where('id',  auth()->user()->id)->first();
+    public function isApproved()
+    {
+        $user = User::where('id', auth()->user()->id)->first();
         $verification_info = false;
-        if($user->verification_info != null){
+        if ($user->verification_info != null) {
             $verification_info = true;
         }
+
         return response()->json(['is_approved' => $user->approved, 'verification_info' => $verification_info]);
     }
-
 
     public function store_verification_info(Request $request)
     {
@@ -479,6 +482,7 @@ class MemberController extends Controller
                     'message' => translate('Your identity has already been verified and approved. No further action is needed.'),
                 ]);
             }
+
             return response()->json([
                 'result' => true,
                 'error_code' => 'already_pending',
@@ -489,7 +493,7 @@ class MemberController extends Controller
 
         try {
             $setting = Setting::where('type', 'verification_form')->first();
-            if (!$setting || !$setting->value) {
+            if (! $setting || ! $setting->value) {
                 return response()->json([
                     'result' => false,
                     'error_code' => 'form_unavailable',
@@ -498,7 +502,7 @@ class MemberController extends Controller
             }
 
             $formFields = json_decode($setting->value);
-            if (!$formFields || !is_array($formFields)) {
+            if (! $formFields || ! is_array($formFields)) {
                 return response()->json([
                     'result' => false,
                     'error_code' => 'form_invalid',
@@ -506,31 +510,32 @@ class MemberController extends Controller
                 ]);
             }
 
-            $data = array();
+            $data = [];
             $i = 0;
             foreach ($formFields as $key => $element) {
-                $item = array();
+                $item = [];
                 if ($element->type == 'text') {
                     $item['type'] = 'text';
                     $item['label'] = $element->label;
-                    $item['value'] = $request['element_' . $i] ?? '';
+                    $item['value'] = $request['element_'.$i] ?? '';
                 } elseif ($element->type == 'select' || $element->type == 'radio') {
                     $item['type'] = 'select';
                     $item['label'] = $element->label;
-                    $item['value'] = $request['element_' . $i] ?? '';
+                    $item['value'] = $request['element_'.$i] ?? '';
                 } elseif ($element->type == 'multi_select') {
                     $item['type'] = 'multi_select';
                     $item['label'] = $element->label;
-                    $item['value'] = json_encode(explode(',', $request['element_' . $i] ?? ''));
+                    $item['value'] = json_encode(explode(',', $request['element_'.$i] ?? ''));
                 } elseif ($element->type == 'file') {
                     $item['type'] = 'file';
                     $item['label'] = $element->label;
-                    $file = $request->file('element_' . $i);
-                    if (!$file) {
+                    $file = $request->file('element_'.$i);
+                    if (! $file) {
                         if ($this->isOptionalVerificationField($element)) {
                             $item['value'] = '';
                             array_push($data, $item);
                             $i++;
+
                             continue;
                         }
 
@@ -540,7 +545,7 @@ class MemberController extends Controller
                             'message' => translate('Please upload the required document: :label', ['label' => $element->label]),
                         ]);
                     }
-                    if (!$file->isValid()) {
+                    if (! $file->isValid()) {
                         return response()->json([
                             'result' => false,
                             'error_code' => 'invalid_document_upload',
@@ -565,10 +570,11 @@ class MemberController extends Controller
                 'message' => translate('Could not save your verification data. Please try again.'),
             ]);
         } catch (\Exception $e) {
-            \Log::error('Verification submission error: ' . $e->getMessage(), [
+            \Log::error('Verification submission error: '.$e->getMessage(), [
                 'user_id' => $user->id,
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return response()->json([
                 'result' => false,
                 'error_code' => 'server_error',
@@ -576,5 +582,4 @@ class MemberController extends Controller
             ], 500);
         }
     }
-
 }

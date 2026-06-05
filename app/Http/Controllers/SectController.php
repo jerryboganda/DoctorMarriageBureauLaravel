@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Sect;
+use Illuminate\Http\Request;
 use Redirect;
 use Validator;
 
@@ -21,7 +21,7 @@ class SectController extends Controller
 
         $this->messages = [
             'name.required' => translate('Name is required'),
-            'name.max'      => translate('Max 255 characters'),
+            'name.max' => translate('Max 255 characters'),
         ];
     }
 
@@ -32,7 +32,7 @@ class SectController extends Controller
 
         if ($request->has('search')) {
             $sort_search = $request->search;
-            $sects = $sects->where('name', 'like', '%' . $sort_search . '%');
+            $sects = $sects->where('name', 'like', '%'.$sort_search.'%');
         }
 
         $sects = $sects->paginate(15);
@@ -45,6 +45,7 @@ class SectController extends Controller
         $validator = Validator::make($request->all(), $this->rules, $this->messages);
         if ($validator->fails()) {
             flash(translate('Something went wrong'))->error();
+
             return Redirect::back()->withErrors($validator);
         }
 
@@ -53,12 +54,14 @@ class SectController extends Controller
         $sect->save();
 
         flash(translate('New Sect has been added successfully'))->success();
+
         return redirect()->route('sects.index');
     }
 
     public function edit($id)
     {
         $sect = Sect::findOrFail(decrypt($id));
+
         return view('admin.member_profile_attributes.sects.edit', compact('sect'));
     }
 
@@ -67,6 +70,7 @@ class SectController extends Controller
         $validator = Validator::make($request->all(), $this->rules, $this->messages);
         if ($validator->fails()) {
             flash(translate('Something went wrong'))->error();
+
             return Redirect::back()->withErrors($validator);
         }
 
@@ -75,6 +79,7 @@ class SectController extends Controller
         $sect->save();
 
         flash(translate('Sect has been updated successfully'))->success();
+
         return redirect()->route('sects.index');
     }
 
@@ -84,6 +89,7 @@ class SectController extends Controller
         $sect->delete();
 
         flash(translate('Sect has been deleted successfully'))->success();
+
         return redirect()->route('sects.index');
     }
 
@@ -94,6 +100,7 @@ class SectController extends Controller
                 $this->destroy($sect_id);
             }
         }
+
         return 1;
     }
 }

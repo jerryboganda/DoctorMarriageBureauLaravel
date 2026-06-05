@@ -10,12 +10,13 @@ class AddonController extends BaseAdminController
     public function index()
     {
         $query = Addon::query()->orderByDesc('id');
+
         return $this->ok($this->paginateQuery(request(), $query));
     }
 
     public function store(Request $request)
     {
-        $addon = new Addon();
+        $addon = new Addon;
         foreach ($request->except(['_token']) as $key => $value) {
             $addon->{$key} = $value;
         }
@@ -27,7 +28,7 @@ class AddonController extends BaseAdminController
     public function toggle($id)
     {
         $addon = Addon::findOrFail($id);
-        $addon->activated = (int) !$addon->activated;
+        $addon->activated = (int) ! $addon->activated;
         $addon->save();
 
         return $this->ok($addon, 'Addon status updated');

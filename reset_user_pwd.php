@@ -1,4 +1,5 @@
 <?php
+
 // Simple script to reset a user's password
 // Run: php reset_user_pwd.php
 
@@ -17,8 +18,8 @@ $user = User::where('email', $email)->first();
 if ($user) {
     $user->password = Hash::make($newPassword);
     $user->save();
-    echo "Password reset successfully for: " . $user->email . "\n";
-    echo "New password: " . $newPassword . "\n";
+    echo 'Password reset successfully for: '.$user->email."\n";
+    echo 'New password: '.$newPassword."\n";
 } else {
-    echo "User not found: " . $email . "\n";
+    echo 'User not found: '.$email."\n";
 }

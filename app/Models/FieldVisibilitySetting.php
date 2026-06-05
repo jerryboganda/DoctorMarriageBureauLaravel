@@ -114,7 +114,7 @@ class FieldVisibilitySetting extends Model
             ->where('field_name', $fieldName)
             ->first();
 
-        $newValue = $current ? !$current->is_visible : false;
+        $newValue = $current ? ! $current->is_visible : false;
 
         self::setVisibility($userId, $fieldName, $newValue);
 

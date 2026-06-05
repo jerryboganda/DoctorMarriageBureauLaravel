@@ -18,7 +18,7 @@ class UserService
 
         $membership = 1; // Default membership
         $user_type = 'member'; // Default user type
-        
+
         $data = $collection->merge(compact('password', 'code', 'approved', 'verification_code', 'membership', 'user_type'))->toArray();
 
         // Remove referral_code from data before creating user - it's not a column in users table

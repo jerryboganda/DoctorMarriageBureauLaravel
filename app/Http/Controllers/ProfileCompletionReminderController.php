@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ProfileCompletionReminderSetting;
 use App\Models\ProfileCompletionReminderLog;
+use App\Models\ProfileCompletionReminderSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 
@@ -59,6 +59,7 @@ class ProfileCompletionReminderController extends Controller
         ]);
 
         flash(translate('Reminder settings updated successfully.'))->success();
+
         return redirect()->route('admin.profile_completion_reminders.index');
     }
 
@@ -70,9 +71,9 @@ class ProfileCompletionReminderController extends Controller
         try {
             Artisan::call('reminders:profile-completion');
             $output = Artisan::output();
-            flash(translate('Reminders sent successfully! ') . $output)->success();
+            flash(translate('Reminders sent successfully! ').$output)->success();
         } catch (\Exception $e) {
-            flash(translate('Failed to send reminders: ') . $e->getMessage())->error();
+            flash(translate('Failed to send reminders: ').$e->getMessage())->error();
         }
 
         return redirect()->route('admin.profile_completion_reminders.index');
@@ -85,6 +86,7 @@ class ProfileCompletionReminderController extends Controller
     {
         ProfileCompletionReminderLog::truncate();
         flash(translate('All reminder logs have been cleared.'))->success();
+
         return redirect()->route('admin.profile_completion_reminders.index');
     }
 }

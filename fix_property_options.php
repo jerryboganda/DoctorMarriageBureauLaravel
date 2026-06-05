@@ -1,9 +1,10 @@
 <?php
+
 // Fix property options: remove "Plot Only" and "Under Construction Home"
 // Run via: docker exec marriagebureau-app php fix_property_options.php
 
-require __DIR__ . '/vendor/autoload.php';
-$app = require_once __DIR__ . '/bootstrap/app.php';
+require __DIR__.'/vendor/autoload.php';
+$app = require_once __DIR__.'/bootstrap/app.php';
 $app->make('Illuminate\Contracts\Console\Kernel')->bootstrap();
 
 use Illuminate\Support\Facades\DB;

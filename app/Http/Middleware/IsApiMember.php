@@ -2,20 +2,20 @@
 
 namespace App\Http\Middleware;
 
-use Closure;
-use Illuminate\Http\Request;
-use Auth;
 use Cache;
 use Carbon\Carbon;
+use Closure;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class IsApiMember
 {
     /**
      * Handle an incoming request.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure(\Illuminate\Http\Request): (\Illuminate\Http\Response|\Illuminate\Http\RedirectResponse)  $next
-     * @return \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
+     * @param  Closure(Request): (Response|RedirectResponse)  $next
+     * @return Response|RedirectResponse
      */
     public function handle(Request $request, Closure $next)
     {
@@ -24,7 +24,7 @@ class IsApiMember
         // Track online status for API users (cache for 3 minutes)
         if ($user) {
             $expiresAt = Carbon::now()->addMinutes(3);
-            Cache::put('user-is-online-' . $user->id, true, $expiresAt);
+            Cache::put('user-is-online-'.$user->id, true, $expiresAt);
         }
 
         // Check deactivated users first (across all API routes)
@@ -33,11 +33,12 @@ class IsApiMember
             if ($user->currentAccessToken()) {
                 $user->currentAccessToken()->delete();
             }
+
             return response()->json([
                 'result' => false,
                 'status' => 'deactivated',
                 'code' => 'ACCOUNT_DEACTIVATED',
-                'message' => translate('Your account has been deactivated by the administrator. Please contact support for assistance.')
+                'message' => translate('Your account has been deactivated by the administrator. Please contact support for assistance.'),
             ], 403);
         }
 
@@ -46,20 +47,21 @@ class IsApiMember
             if ($user->currentAccessToken()) {
                 $user->currentAccessToken()->delete();
             }
+
             return response()->json([
                 'result' => false,
                 'status' => 'blocked',
                 'code' => 'ACCOUNT_BLOCKED',
-                'message' => translate('Your account has been blocked. Please contact support for assistance.')
+                'message' => translate('Your account has been blocked. Please contact support for assistance.'),
             ], 403);
         }
 
         // Check approved status, but allow limited communication routes to apply their own quotas.
-        if ($user->approved == 0 && !$this->allowsUnverifiedCommunication($request)) {
+        if ($user->approved == 0 && ! $this->allowsUnverifiedCommunication($request)) {
             return response()->json([
                 'result' => false,
                 'status' => 'non_verified',
-                'message' => translate('User is not verified')
+                'message' => translate('User is not verified'),
             ]);
         }
 

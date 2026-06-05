@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Api\Controller;
 use App\Http\Resources\AddonPurchaseResource;
 use App\Models\AddonProduct;
 use App\Models\AddonPurchase;
@@ -38,7 +37,7 @@ class AddonPurchaseController extends Controller
             ->where('is_active', 1)
             ->first();
 
-        if (!$addon) {
+        if (! $addon) {
             return $this->failure_message('Invalid add-on.');
         }
 
@@ -48,9 +47,9 @@ class AddonPurchaseController extends Controller
         $coupon = null;
 
         if ($request->coupon_code) {
-            $couponService = new CouponService();
+            $couponService = new CouponService;
             $couponResult = $couponService->validateCode($request->coupon_code, $user, $originalAmount, 'addon');
-            if (!$couponResult['valid']) {
+            if (! $couponResult['valid']) {
                 return $this->failure_message($couponResult['message']);
             }
             $coupon = $couponResult['coupon'];
@@ -87,7 +86,7 @@ class AddonPurchaseController extends Controller
 
             $manualMethod = ManualPaymentMethod::find($request->manual_payment_id);
 
-            $addonPurchase = new AddonPurchase();
+            $addonPurchase = new AddonPurchase;
             $addonPurchase->payment_code = date('ymd-His');
             $addonPurchase->user_id = $user->id;
             $addonPurchase->addon_product_id = $addon->id;
@@ -106,7 +105,7 @@ class AddonPurchaseController extends Controller
             $addonPurchase->custom_payment_details = $request->payment_details;
             $addonPurchase->save();
 
-            return response()->json(['result' => true, 'message' => translate("Payment completed")]);
+            return response()->json(['result' => true, 'message' => translate('Payment completed')]);
         }
 
         return $this->failure_message('Invalid payment method.');
@@ -116,7 +115,7 @@ class AddonPurchaseController extends Controller
     {
         $user = User::where('id', $user_id)->first();
 
-        $addonPurchase = new AddonPurchase();
+        $addonPurchase = new AddonPurchase;
         $addonPurchase->payment_code = date('ymd-His');
         $addonPurchase->user_id = $user->id;
         $addonPurchase->addon_product_id = $payment_data['addon_id'];
@@ -131,8 +130,8 @@ class AddonPurchaseController extends Controller
         $addonPurchase->offline_payment = 2;
         $addonPurchase->save();
 
-        if (!empty($payment_data['coupon_id'])) {
-            $couponService = new CouponService();
+        if (! empty($payment_data['coupon_id'])) {
+            $couponService = new CouponService;
             $coupon = Coupon::find($payment_data['coupon_id']);
             if ($coupon) {
                 $couponService->recordRedemption(
@@ -149,6 +148,6 @@ class AddonPurchaseController extends Controller
             }
         }
 
-        return response()->json(['result' => true, 'message' => translate("Payment completed")]);
+        return response()->json(['result' => true, 'message' => translate('Payment completed')]);
     }
 }

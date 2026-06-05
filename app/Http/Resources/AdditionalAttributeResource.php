@@ -2,6 +2,8 @@
 
 namespace App\Http\Resources;
 
+use Illuminate\Contracts\Support\Arrayable;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class AdditionalAttributeResource extends JsonResource
@@ -9,16 +11,17 @@ class AdditionalAttributeResource extends JsonResource
     /**
      * Transform the resource into an array.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return array|\Illuminate\Contracts\Support\Arrayable|\JsonSerializable
+     * @param  Request  $request
+     * @return array|Arrayable|\JsonSerializable
      */
     public function toArray($request)
     {
         $user_id = auth()->user()->id;
+
         return [
             'id' => $this->id ?? null,
             'title' => $this->title ?? null,
-            'member_info' => $this->additional_member_info()->where('user_id', $user_id)->first()->value ?? null
+            'member_info' => $this->additional_member_info()->where('user_id', $user_id)->first()->value ?? null,
         ];
     }
 }

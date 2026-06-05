@@ -8,13 +8,13 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (!Schema::hasColumn('users', 'referral_comission')) {
+        if (! Schema::hasColumn('users', 'referral_comission')) {
             Schema::table('users', function (Blueprint $table) {
                 $table->boolean('referral_comission')->default(0)->after('referred_by');
             });
         }
 
-        if (!Schema::hasColumn('wallets', 'referral_user')) {
+        if (! Schema::hasColumn('wallets', 'referral_user')) {
             Schema::table('wallets', function (Blueprint $table) {
                 $table->unsignedBigInteger('referral_user')->nullable()->after('payment_details');
                 $table->index('referral_user');

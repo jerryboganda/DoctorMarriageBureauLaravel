@@ -2,32 +2,37 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Cache;
 use App\Mail\SecondEmailVerifyMailManager;
 use App\Models\AdditionalAttribute;
-use App\Notifications\DbStoreNotification;
-use App\Services\FirbaseNotification;
-use Kutia\Larafirebase\Facades\Larafirebase;
-use App\Models\User;
-use App\Models\Member;
-use App\Models\PhysicalAttribute;
-use App\Models\SpiritualBackground;
-use App\Models\Career;
 use App\Models\Address;
+use App\Models\Career;
+use App\Models\ChatThread;
+use App\Models\ExpressInterest;
 use App\Models\HappyStory;
 use App\Models\IgnoredUser;
+use App\Models\Member;
+use App\Models\PhysicalAttribute;
 use App\Models\ProfileMatch;
 use App\Models\ProfileViewer;
+use App\Models\SpiritualBackground;
+use App\Models\User;
+use App\Notifications\DbStoreNotification;
+use App\Services\FirbaseNotification;
+use App\Services\MatchScoreService;
 use App\Utility\EmailUtility;
 use App\Utility\MemberUtility;
-use Notification;
-use Hash;
 use Artisan;
-use Mail;
 use Auth;
-
+use Carbon\Carbon;
+use Hash;
+use Illuminate\Contracts\Support\Renderable;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
+use Kutia\Larafirebase\Facades\Larafirebase;
+use Mail;
+use Notification;
 
 class HomeController extends Controller
 {
@@ -38,13 +43,13 @@ class HomeController extends Controller
      */
     public function __construct()
     {
-        //$this->middleware('auth');
+        // $this->middleware('auth');
     }
 
     /**
      * Show the application dashboard.
      *
-     * @return \Illuminate\Contracts\Support\Renderable
+     * @return Renderable
      */
     public function index()
     {
@@ -56,7 +61,7 @@ class HomeController extends Controller
 
         if (Auth::user() && Auth::user()->user_type == 'member') {
             $members = $members->where('id', '!=', Auth::user()->id)
-                ->whereIn("id", function ($query) {
+                ->whereIn('id', function ($query) {
                     $query->select('user_id')
                         ->from('members')
                         ->where('gender', '!=', Auth::user()->member->gender);
@@ -79,17 +84,15 @@ class HomeController extends Controller
         $new_members = $new_members->orderBy('id', 'desc')->limit(get_setting('max_new_member_show_homepage'))->get()->shuffle();
         $premium_members = $premium_members->where('membership', 2)->inRandomOrder()->limit(get_setting('max_premium_member_homepage'))->get();
 
-
         return view('frontend.index', compact('premium_members', 'new_members'));
     }
-
 
     public function admin_login()
     {
         if (auth()->user() != null && (auth()->user()->user_type == 'admin' || auth()->user()->user_type == 'staff')) {
             return redirect()->route('admin.dashboard');
         } else {
-            return view("admin.auth.login");
+            return view('admin.auth.login');
         }
     }
 
@@ -98,9 +101,9 @@ class HomeController extends Controller
         if (Auth::check()) {
             return redirect()->route('home');
         }
+
         return view('frontend.user_login');
     }
-
 
     public function admin_dashboard()
     {
@@ -116,13 +119,15 @@ class HomeController extends Controller
         if ($request->new_password != null && ($request->new_password == $request->confirm_password)) {
             $admin->password = Hash::make($request->new_password);
         }
-        //$admin->save();
+        // $admin->save();
         if ($admin->save()) {
             flash(translate('Your Profile has been updated successfully!'))->success();
+
             return back();
         }
 
         flash(translate('Sorry! Something went wrong.'))->error();
+
         return back();
     }
 
@@ -139,27 +144,27 @@ class HomeController extends Controller
                 // Dashboard Data with Exception Handling
                 $incoming_interests = collect();
                 try {
-                    $incoming_interests = \App\Models\ExpressInterest::where('user_id', $user->id)
+                    $incoming_interests = ExpressInterest::where('user_id', $user->id)
                         ->where('status', 0)
                         ->with([
                             'interestedby' => function ($query) {
                                 $query->select('id', 'first_name', 'last_name', 'photo');
-                            }
+                            },
                         ])
                         ->with([
                             'interestedby.member' => function ($query) {
                                 $query->select('user_id', 'birthday');
-                            }
+                            },
                         ])
                         ->with([
                             'interestedby.addresses' => function ($query) {
                                 $query->select('user_id', 'city_id')->where('type', 'present');
-                            }
+                            },
                         ])
                         ->with([
                             'interestedby.addresses.city' => function ($query) {
                                 $query->select('id', 'name');
-                            }
+                            },
                         ])
                         ->latest()
                         ->limit(5)
@@ -167,8 +172,9 @@ class HomeController extends Controller
                         ->map(function ($interest) {
                             try {
                                 $interestedUser = $interest->interestedby ?? null;
-                                if (!$interestedUser)
+                                if (! $interestedUser) {
                                     return null;
+                                }
 
                                 $age = MemberUtility::member_age($interestedUser->id);
 
@@ -182,30 +188,31 @@ class HomeController extends Controller
                                     $location = 'N/A';
                                 }
 
-                                $isOnline = Cache::has('user-is-online-' . $interestedUser->id);
+                                $isOnline = Cache::has('user-is-online-'.$interestedUser->id);
 
                                 return [
                                     'id' => $interestedUser->id ?? 0,
-                                    'name' => ($interestedUser->first_name ?? '') . ' ' . ($interestedUser->last_name ?? ''),
+                                    'name' => ($interestedUser->first_name ?? '').' '.($interestedUser->last_name ?? ''),
                                     'age' => $age,
                                     'location' => $location,
                                     'photo' => $interestedUser->photo ? uploaded_asset($interestedUser->photo) : null,
                                     'interest_id' => $interest->id ?? 0,
-                                    'is_online' => $isOnline
+                                    'is_online' => $isOnline,
                                 ];
                             } catch (\Exception $e) {
-                                \Log::error('Error processing incoming interest: ' . $e->getMessage());
+                                \Log::error('Error processing incoming interest: '.$e->getMessage());
+
                                 return null;
                             }
                         })->filter();
                 } catch (\Exception $e) {
-                    \Log::error('Error loading incoming interests: ' . $e->getMessage());
+                    \Log::error('Error loading incoming interests: '.$e->getMessage());
                     $incoming_interests = collect();
                 }
 
                 $message_previews = collect();
                 try {
-                    $message_previews = \App\Models\ChatThread::where(function ($query) use ($user) {
+                    $message_previews = ChatThread::where(function ($query) use ($user) {
                         $query->where('sender_user_id', $user->id)
                             ->orWhere('receiver_user_id', $user->id);
                     })
@@ -213,7 +220,7 @@ class HomeController extends Controller
                         ->with([
                             'chats' => function ($query) {
                                 $query->latest()->limit(1);
-                            }
+                            },
                         ])
                         ->latest()
                         ->limit(3)
@@ -223,19 +230,20 @@ class HomeController extends Controller
                                 $otherUser = $thread->sender_user_id == $user->id ? $thread->receiver : $thread->sender;
                                 $latestMessage = $thread->chats->first();
 
-                                if (!$otherUser)
+                                if (! $otherUser) {
                                     return null;
+                                }
 
                                 $senderName = '';
                                 try {
-                                    $senderName = ($otherUser->first_name ?? '') . ' ' . ($otherUser->last_name ?? '');
+                                    $senderName = ($otherUser->first_name ?? '').' '.($otherUser->last_name ?? '');
                                 } catch (\Exception $e) {
                                     $senderName = 'Unknown User';
                                 }
 
                                 $messagePreview = 'No messages yet';
                                 try {
-                                    $messagePreview = $latestMessage ? substr($latestMessage->message ?? '', 0, 50) . '...' : 'No messages yet';
+                                    $messagePreview = $latestMessage ? substr($latestMessage->message ?? '', 0, 50).'...' : 'No messages yet';
                                 } catch (\Exception $e) {
                                     $messagePreview = 'No messages yet';
                                 }
@@ -253,6 +261,7 @@ class HomeController extends Controller
                                 } catch (\Exception $e) {
                                     $unreadCount = 0;
                                 }
+
                                 return [
                                     'sender_name' => $senderName,
                                     'message_preview' => $messagePreview,
@@ -260,41 +269,42 @@ class HomeController extends Controller
                                     'unread_count' => $unreadCount,
                                     'thread_id' => $thread->id ?? 0,
                                     'sender_image' => $otherUser->photo ?? null,
-                                    'sender_id' => $otherUser->id ?? null
+                                    'sender_id' => $otherUser->id ?? null,
                                 ];
                             } catch (\Exception $e) {
-                                \Log::error('Error processing message preview: ' . $e->getMessage());
+                                \Log::error('Error processing message preview: '.$e->getMessage());
+
                                 return null;
                             }
                         })->filter();
                 } catch (\Exception $e) {
-                    \Log::error('Error loading message previews: ' . $e->getMessage());
+                    \Log::error('Error loading message previews: '.$e->getMessage());
                     $message_previews = collect();
                 }
 
                 $mutual_matches = collect();
                 try {
-                    $mutual_matches = \App\Models\ExpressInterest::where('user_id', $user->id)
+                    $mutual_matches = ExpressInterest::where('user_id', $user->id)
                         ->where('status', 1)
                         ->with([
                             'interestedby' => function ($query) {
                                 $query->select('id', 'first_name', 'last_name', 'photo');
-                            }
+                            },
                         ])
                         ->with([
                             'interestedby.member' => function ($query) {
                                 $query->select('user_id', 'birthday');
-                            }
+                            },
                         ])
                         ->with([
                             'interestedby.addresses' => function ($query) {
                                 $query->select('user_id', 'city_id')->where('type', 'present');
-                            }
+                            },
                         ])
                         ->with([
                             'interestedby.addresses.city' => function ($query) {
                                 $query->select('id', 'name');
-                            }
+                            },
                         ])
                         ->latest()
                         ->limit(3)
@@ -302,8 +312,9 @@ class HomeController extends Controller
                         ->map(function ($match) {
                             try {
                                 $matchUser = $match->interestedby ?? null;
-                                if (!$matchUser)
+                                if (! $matchUser) {
                                     return null;
+                                }
 
                                 $age = MemberUtility::member_age($matchUser->id);
 
@@ -317,57 +328,59 @@ class HomeController extends Controller
                                     $location = 'N/A';
                                 }
 
-                                $isOnline = Cache::has('user-is-online-' . $matchUser->id);
+                                $isOnline = Cache::has('user-is-online-'.$matchUser->id);
 
                                 return [
                                     'id' => $matchUser->id ?? 0,
-                                    'name' => ($matchUser->first_name ?? '') . ' ' . ($matchUser->last_name ?? ''),
+                                    'name' => ($matchUser->first_name ?? '').' '.($matchUser->last_name ?? ''),
                                     'age' => $age,
                                     'location' => $location,
                                     'photo' => $matchUser->photo ? uploaded_asset($matchUser->photo) : null,
-                                    'match_percentage' => auth()->check() ? \App\Services\MatchScoreService::score(auth()->user(), $matchUser) : 50,
-                                    'is_online' => $isOnline
+                                    'match_percentage' => auth()->check() ? MatchScoreService::score(auth()->user(), $matchUser) : 50,
+                                    'is_online' => $isOnline,
                                 ];
                             } catch (\Exception $e) {
-                                \Log::error('Error processing mutual match: ' . $e->getMessage());
+                                \Log::error('Error processing mutual match: '.$e->getMessage());
+
                                 return null;
                             }
                         })->filter();
                 } catch (\Exception $e) {
-                    \Log::error('Error loading mutual matches: ' . $e->getMessage());
+                    \Log::error('Error loading mutual matches: '.$e->getMessage());
                     $mutual_matches = collect();
                 }
 
                 $recent_visitors = collect();
                 try {
-                    $recent_visitors = \App\Models\ProfileViewer::where('user_id', $user->id)
+                    $recent_visitors = ProfileViewer::where('user_id', $user->id)
                         ->with([
                             'profileViewer' => function ($query) {
                                 $query->select('id', 'first_name', 'last_name', 'photo');
-                            }
+                            },
                         ])
                         ->with([
                             'profileViewer.member' => function ($query) {
                                 $query->select('user_id', 'birthday');
-                            }
+                            },
                         ])
                         ->with([
                             'profileViewer.addresses' => function ($query) {
                                 $query->select('user_id', 'city_id')->where('type', 'present');
-                            }
+                            },
                         ])
                         ->with([
                             'profileViewer.addresses.city' => function ($query) {
                                 $query->select('id', 'name');
-                            }
+                            },
                         ])
                         ->latest()
                         ->limit(3)
                         ->get()
                         ->map(function ($visitor) {
                             try {
-                                if (!$visitor->profileViewer)
+                                if (! $visitor->profileViewer) {
                                     return null;
+                                }
 
                                 $age = MemberUtility::member_age($visitor->profileViewer->id);
 
@@ -388,35 +401,36 @@ class HomeController extends Controller
                                     $visitedTime = 'Just now';
                                 }
 
-                                $isOnline = Cache::has('user-is-online-' . $visitor->profileViewer->id);
+                                $isOnline = Cache::has('user-is-online-'.$visitor->profileViewer->id);
 
                                 return [
                                     'id' => $visitor->profileViewer->id ?? 0,
-                                    'name' => ($visitor->profileViewer->first_name ?? '') . ' ' . ($visitor->profileViewer->last_name ?? ''),
+                                    'name' => ($visitor->profileViewer->first_name ?? '').' '.($visitor->profileViewer->last_name ?? ''),
                                     'age' => $age,
                                     'location' => $location,
                                     'photo' => $visitor->profileViewer->photo ? uploaded_asset($visitor->profileViewer->photo) : null,
                                     'visited_time' => $visitedTime,
-                                    'is_online' => $isOnline
+                                    'is_online' => $isOnline,
                                 ];
                             } catch (\Exception $e) {
-                                \Log::error('Error processing recent visitor: ' . $e->getMessage());
+                                \Log::error('Error processing recent visitor: '.$e->getMessage());
+
                                 return null;
                             }
                         })->filter();
                 } catch (\Exception $e) {
-                    \Log::error('Error loading recent visitors: ' . $e->getMessage());
+                    \Log::error('Error loading recent visitors: '.$e->getMessage());
                     $recent_visitors = collect();
                 }
 
                 $success_stories = collect();
                 try {
-                    $success_stories = \App\Models\HappyStory::where('approved', 1)
+                    $success_stories = HappyStory::where('approved', 1)
                         ->where('user_id', '!=', $user->id)
                         ->with([
                             'user' => function ($query) {
                                 $query->select('id', 'first_name', 'last_name');
-                            }
+                            },
                         ])
                         ->latest()
                         ->limit(5)
@@ -425,7 +439,7 @@ class HomeController extends Controller
                             try {
                                 $coupleNames = 'Unknown Couple';
                                 try {
-                                    $coupleNames = ($story->user->first_name ?? 'Unknown') . ' & ' . ($story->partner_name ?? 'Partner');
+                                    $coupleNames = ($story->user->first_name ?? 'Unknown').' & '.($story->partner_name ?? 'Partner');
                                 } catch (\Exception $e) {
                                     $coupleNames = 'Unknown Couple';
                                 }
@@ -440,7 +454,7 @@ class HomeController extends Controller
                                 $storyPreview = 'No story available';
                                 try {
                                     $details = strip_tags($story->details ?? '');
-                                    $storyPreview = strlen($details) > 150 ? substr($details, 0, 150) . '...' : $details;
+                                    $storyPreview = strlen($details) > 150 ? substr($details, 0, 150).'...' : $details;
                                 } catch (\Exception $e) {
                                     $storyPreview = 'No story available';
                                 }
@@ -449,7 +463,7 @@ class HomeController extends Controller
                                 try {
                                     if ($story->photos) {
                                         $photos = explode(',', $story->photos);
-                                        if (!empty($photos[0])) {
+                                        if (! empty($photos[0])) {
                                             $storyImage = uploaded_asset($photos[0]);
                                         }
                                     }
@@ -460,7 +474,7 @@ class HomeController extends Controller
                                 $marriageDate = 'N/A';
                                 try {
                                     if ($story->marriage_date) {
-                                        $marriageDate = \Carbon\Carbon::parse($story->marriage_date)->format('M d, Y');
+                                        $marriageDate = Carbon::parse($story->marriage_date)->format('M d, Y');
                                     } else {
                                         $marriageDate = $story->created_at->format('M d, Y');
                                     }
@@ -477,38 +491,39 @@ class HomeController extends Controller
                                     'marriage_date' => $marriageDate,
                                     'image' => $storyImage,
                                     'user_id' => $story->user_id ?? 0,
-                                    'user_name' => ($story->user->first_name ?? '') . ' ' . ($story->user->last_name ?? '')
+                                    'user_name' => ($story->user->first_name ?? '').' '.($story->user->last_name ?? ''),
                                 ];
                             } catch (\Exception $e) {
-                                \Log::error('Error processing success story: ' . $e->getMessage());
+                                \Log::error('Error processing success story: '.$e->getMessage());
+
                                 return null;
                             }
                         })->filter();
                 } catch (\Exception $e) {
-                    \Log::error('Error loading success stories: ' . $e->getMessage());
+                    \Log::error('Error loading success stories: '.$e->getMessage());
                     $success_stories = collect();
                 }
 
                 $today_matches = collect();
                 try {
-                    $today_matches = \App\Models\User::where('user_type', 'member')
+                    $today_matches = User::where('user_type', 'member')
                         ->where('approved', 1)
                         ->where('id', '!=', $user->id)
                         ->where('created_at', '>=', now()->subMonth())
                         ->with([
                             'member' => function ($query) {
                                 $query->select('user_id', 'birthday');
-                            }
+                            },
                         ])
                         ->with([
                             'addresses' => function ($query) {
                                 $query->select('user_id', 'city_id')->where('type', 'present');
-                            }
+                            },
                         ])
                         ->with([
                             'addresses.city' => function ($query) {
                                 $query->select('id', 'name');
-                            }
+                            },
                         ])
                         ->latest()
                         ->limit(10)
@@ -534,24 +549,25 @@ class HomeController extends Controller
                                     $joinedTime = 'Just now';
                                 }
 
-                                $isOnline = Cache::has('user-is-online-' . $newUser->id);
+                                $isOnline = Cache::has('user-is-online-'.$newUser->id);
 
                                 return [
                                     'id' => $newUser->id ?? 0,
-                                    'name' => ($newUser->first_name ?? '') . ' ' . ($newUser->last_name ?? ''),
+                                    'name' => ($newUser->first_name ?? '').' '.($newUser->last_name ?? ''),
                                     'age' => $age,
                                     'location' => $location,
                                     'photo' => $newUser->photo ? uploaded_asset($newUser->photo) : null,
                                     'joined_time' => $joinedTime,
-                                    'is_online' => $isOnline
+                                    'is_online' => $isOnline,
                                 ];
                             } catch (\Exception $e) {
-                                \Log::error('Error processing today match: ' . $e->getMessage());
+                                \Log::error('Error processing today match: '.$e->getMessage());
+
                                 return null;
                             }
                         })->filter();
                 } catch (\Exception $e) {
-                    \Log::error('Error loading today matches: ' . $e->getMessage());
+                    \Log::error('Error loading today matches: '.$e->getMessage());
                     $today_matches = collect();
                 }
 
@@ -568,13 +584,13 @@ class HomeController extends Controller
                     try {
                         $ignored_to = IgnoredUser::where('ignored_by', $user->id)->pluck('user_id')->toArray();
                     } catch (\Exception $e) {
-                        \Log::error('Error loading ignored users: ' . $e->getMessage());
+                        \Log::error('Error loading ignored users: '.$e->getMessage());
                     }
 
                     try {
                         $ignored_by_ids = IgnoredUser::where('user_id', $user->id)->pluck('ignored_by')->toArray();
                     } catch (\Exception $e) {
-                        \Log::error('Error loading ignored by users: ' . $e->getMessage());
+                        \Log::error('Error loading ignored by users: '.$e->getMessage());
                     }
 
                     if (count($ignored_to) > 0) {
@@ -586,9 +602,10 @@ class HomeController extends Controller
 
                     $similar_profiles = $similar_profiles->get();
                 } catch (\Exception $e) {
-                    \Log::error('Error loading similar profiles: ' . $e->getMessage());
+                    \Log::error('Error loading similar profiles: '.$e->getMessage());
                     $similar_profiles = collect();
                 }
+
                 return view('frontend.member.dashboard', compact(
                     'user',
                     'similar_profiles',
@@ -603,7 +620,7 @@ class HomeController extends Controller
                 abort(404);
             }
         } catch (\Exception $e) {
-            \Log::error('Dashboard error: ' . $e->getMessage());
+            \Log::error('Dashboard error: '.$e->getMessage());
 
             // Return dashboard with empty data if there's an error
             return view('frontend.member.dashboard', [
@@ -613,7 +630,7 @@ class HomeController extends Controller
                 'mutual_matches' => collect(),
                 'recent_visitors' => collect(),
                 'success_stories' => collect(),
-                'today_matches' => collect()
+                'today_matches' => collect(),
             ]);
         }
     }
@@ -626,12 +643,14 @@ class HomeController extends Controller
     public function happy_stories()
     {
         $happy_stories = HappyStory::where('approved', 1)->latest()->paginate(12);
+
         return view('frontend.happy_stories.index', compact('happy_stories'));
     }
 
     public function story_details($id)
     {
         $happy_story = HappyStory::findOrFail($id);
+
         return view('frontend.happy_stories.story_details', compact('happy_story'));
     }
 
@@ -654,7 +673,6 @@ class HomeController extends Controller
         $member_type = ($request->member_type != null) ? $request->member_type : 0;
         $search_query = ($request->q != null) ? $request->q : null;
 
-
         $users = User::where('users.user_type', 'member')
             // ->orderBy('created_at', 'desc')
             ->where('users.id', '!=', Auth::user()->id)
@@ -663,26 +681,26 @@ class HomeController extends Controller
         // Gender Check
         $user_ids = Member::where('gender', '!=', auth()->user()->member->gender)->pluck('user_id')->toArray();
         $users->whereIn('id', $user_ids);
-        $users->whereNotIn("id", function ($query) {
+        $users->whereNotIn('id', function ($query) {
             $query->select('user_id')
                 ->from('ignored_users')
                 ->where('ignored_by', auth()->user()->id)->orWhere('user_id', auth()->user()->id);
         })
-            ->whereNotIn("id", function ($query) {
+            ->whereNotIn('id', function ($query) {
                 $query->select('ignored_by')
                     ->from('ignored_users')
                     ->where('ignored_by', auth()->user()->id)->orWhere('user_id', auth()->user()->id);
             });
 
         // Handle search by name (q parameter)
-        if (!empty($search_query)) {
+        if (! empty($search_query)) {
             $search_terms = explode(' ', trim($search_query));
             $users = $users->where(function ($query) use ($search_terms) {
                 foreach ($search_terms as $term) {
                     $query->where(function ($subQuery) use ($term) {
-                        $subQuery->where('first_name', 'like', '%' . $term . '%')
-                            ->orWhere('last_name', 'like', '%' . $term . '%')
-                            ->orWhere('email', 'like', '%' . $term . '%');
+                        $subQuery->where('first_name', 'like', '%'.$term.'%')
+                            ->orWhere('last_name', 'like', '%'.$term.'%')
+                            ->orWhere('email', 'like', '%'.$term.'%');
                     });
                 }
             });
@@ -755,7 +773,7 @@ class HomeController extends Controller
         // }
 
         // Sort By age
-        if (!empty($age_from)) {
+        if (! empty($age_from)) {
             $age = $age_from + 1;
             $start = date('Y-m-d', strtotime("- $age years"));
             $user_ids = Member::where('birthday', '<=', $start)->pluck('user_id')->toArray();
@@ -763,7 +781,7 @@ class HomeController extends Controller
                 $users = $users->WhereIn('users.id', $user_ids);
             }
         }
-        if (!empty($age_to)) {
+        if (! empty($age_to)) {
             $age = $age_to + 1;
             $end = date('Y-m-d', strtotime("- $age years +1 day"));
             $user_ids = Member::where('birthday', '>=', $end)->pluck('user_id')->toArray();
@@ -773,7 +791,7 @@ class HomeController extends Controller
         }
 
         // Search by Member Code
-        if (!empty($member_code)) {
+        if (! empty($member_code)) {
             $users = $users->where('users.code', $member_code);
         }
 
@@ -786,30 +804,30 @@ class HomeController extends Controller
         }
 
         // Sort By religion
-        if (!empty($sub_caste_id)) {
+        if (! empty($sub_caste_id)) {
             $user_ids = SpiritualBackground::where('sub_caste_id', $sub_caste_id)->pluck('user_id')->toArray();
             $users = $users->WhereIn('users.id', $user_ids);
-        } elseif (!empty($caste_id)) {
+        } elseif (! empty($caste_id)) {
             $user_ids = SpiritualBackground::where('caste_id', $caste_id)->pluck('user_id')->toArray();
             $users = $users->WhereIn('users.id', $user_ids);
-        } elseif (!empty($religion_id)) {
+        } elseif (! empty($religion_id)) {
             $user_ids = SpiritualBackground::where('religion_id', $religion_id)->pluck('user_id')->toArray();
             $users = $users->WhereIn('users.id', $user_ids);
         }
         // Profession
-        elseif (!empty($profession)) {
-            $user_ids = Career::where('designation', 'like', '%' . $profession . '%')->pluck('user_id')->toArray();
+        elseif (! empty($profession)) {
+            $user_ids = Career::where('designation', 'like', '%'.$profession.'%')->pluck('user_id')->toArray();
             $users = $users->WhereIn('users.id', $user_ids);
         }
 
         // Sort By location
-        if (!empty($city_id)) {
+        if (! empty($city_id)) {
             $user_ids = Address::where('city_id', $city_id)->pluck('user_id')->toArray();
             $users = $users->WhereIn('users.id', $user_ids);
-        } elseif (!empty($state_id)) {
+        } elseif (! empty($state_id)) {
             $user_ids = Address::where('state_id', $state_id)->pluck('user_id')->toArray();
             $users = $users->WhereIn('users.id', $user_ids);
-        } elseif (!empty($country_id)) {
+        } elseif (! empty($country_id)) {
             $user_ids = Address::where('country_id', $country_id)->pluck('user_id')->toArray();
             $users = $users->WhereIn('users.id', $user_ids);
         }
@@ -823,13 +841,13 @@ class HomeController extends Controller
         }
 
         // Sort by Height
-        if (!empty($min_height)) {
+        if (! empty($min_height)) {
             $user_ids = PhysicalAttribute::where('height', '>=', $min_height)->pluck('user_id')->toArray();
             if (count($user_ids) > 0) {
                 $users = $users->WhereIn('users.id', $user_ids);
             }
         }
-        if (!empty($max_height)) {
+        if (! empty($max_height)) {
             $user_ids = PhysicalAttribute::where('height', '<=', $max_height)->pluck('user_id')->toArray();
             if (count($user_ids) > 0) {
                 $users = $users->WhereIn('users.id', $user_ids);
@@ -837,6 +855,7 @@ class HomeController extends Controller
         }
 
         $users = $users->paginate(10);
+
         return view('frontend.member.member_listing.index', compact('users', 'age_from', 'age_to', 'member_code', 'matital_status', 'religion_id', 'caste_id', 'sub_caste_id', 'mother_tongue', 'profession', 'country_id', 'state_id', 'city_id', 'min_height', 'max_height', 'member_type', 'sort', 'search_query'));
     }
 
@@ -844,17 +863,17 @@ class HomeController extends Controller
     {
         $data['url'] = $_SERVER['SERVER_NAME'];
         $request_data_json = json_encode($data);
-        $gate = "https://activation.activeitzone.com/check_activation";
+        $gate = 'https://activation.activeitzone.com/check_activation';
 
-        $header = array(
-            'Content-Type:application/json'
-        );
+        $header = [
+            'Content-Type:application/json',
+        ];
 
         $stream = curl_init();
 
         curl_setopt($stream, CURLOPT_URL, $gate);
         curl_setopt($stream, CURLOPT_HTTPHEADER, $header);
-        curl_setopt($stream, CURLOPT_CUSTOMREQUEST, "POST");
+        curl_setopt($stream, CURLOPT_CUSTOMREQUEST, 'POST');
         curl_setopt($stream, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($stream, CURLOPT_POSTFIELDS, $request_data_json);
         curl_setopt($stream, CURLOPT_FOLLOWLOCATION, 1);
@@ -863,18 +882,19 @@ class HomeController extends Controller
         $rn = curl_exec($stream);
         curl_close($stream);
 
-        if ($rn == "bad" && env('DEMO_MODE') != 'On') {
+        if ($rn == 'bad' && env('DEMO_MODE') != 'On') {
             $user = User::where('user_type', 'admin')->first();
             auth()->login($user);
+
             return redirect()->route('admin.dashboard');
         }
     }
-
 
     // My shortlistd
     public function my_shortlists()
     {
         $shortlists = Member::where('user_id', Auth::user()->id)->first()->short_listed_users;
+
         return view('frontend.member.my_shortlists', compact('shortlists'));
     }
 
@@ -901,13 +921,13 @@ class HomeController extends Controller
         $user = User::findOrFail($id);
 
         // Profile view data store
-        if ($user->id != $authUser->id && !\App\Utility\MemberUtility::member_is_incognito($authUser->id)) {
+        if ($user->id != $authUser->id && ! MemberUtility::member_is_incognito($authUser->id)) {
             $profileViewed = ProfileViewer::where('user_id', $user->id)->where('viewed_by', $authUser->id)->first();
             if ($profileViewed == null) {
                 if (package_validity($user->id) && $user->member->remaining_profile_viewer_view > 0) {
                     ProfileViewer::create([
                         'user_id' => $user->id,
-                        'viewed_by' => $authUser->id
+                        'viewed_by' => $authUser->id,
                     ]);
                     $usermember = $user->member;
                     $usermember->remaining_profile_viewer_view = $usermember->remaining_profile_viewer_view - 1;
@@ -919,10 +939,10 @@ class HomeController extends Controller
                         $id = null;
                         $notify_by = $authUser->id;
                         $info_id = $user->id;
-                        $message = $authUser->first_name . ' ' . $authUser->last_name . ' ' . translate(' has viewed your profile.');
+                        $message = $authUser->first_name.' '.$authUser->last_name.' '.translate(' has viewed your profile.');
                         $route = route('member_profile', $authUser->id);
 
-                        // fcm 
+                        // fcm
                         if (get_setting('firebase_push_notification') == 1) {
                             $fcmTokens = User::where('id', $user->id)->whereNotNull('fcm_token')->pluck('fcm_token')->toArray();
                             self::sendFirebaseNotification($fcmTokens, $user, $notify_type, $message, $notify_by);
@@ -949,10 +969,12 @@ class HomeController extends Controller
         if (User::where('email', $email)->whereNull('deleted_at')->count() > 0) {
             $response['status'] = 2;
             $response['message'] = 'Email already exists!';
+
             return json_encode($response);
         }
 
         $response = $this->send_email_change_verification_mail($request, $email);
+
         return json_encode($response);
     }
 
@@ -963,10 +985,12 @@ class HomeController extends Controller
         if (User::where('email', $email)->whereNull('deleted_at')->count() == 0) {
             $this->send_email_change_verification_mail($request, $email);
             flash(translate('A verification mail has been sent to the mail you provided us with.'))->success();
+
             return back();
         }
 
         flash(translate('Email already exists!'))->warning();
+
         return back();
     }
 
@@ -980,9 +1004,9 @@ class HomeController extends Controller
         $array['subject'] = 'Email Verification';
         $array['from'] = EmailUtility::fromAddress();
         $array['content'] = 'Verify your account';
-        $array['link'] = route('email_change.callback') . '?new_email_verificiation_code=' . $verification_code . '&email=' . $email;
+        $array['link'] = route('email_change.callback').'?new_email_verificiation_code='.$verification_code.'&email='.$email;
         $array['sender'] = Auth::user()->name;
-        $array['details'] = "Email Second";
+        $array['details'] = 'Email Second';
 
         $user = Auth::user();
         $user->new_email_verificiation_code = $verification_code;
@@ -992,10 +1016,10 @@ class HomeController extends Controller
             Mail::to($email)->queue(new SecondEmailVerifyMailManager($array));
 
             $response['status'] = 1;
-            $response['message'] = translate("Your verification mail has been Sent to your email.");
+            $response['message'] = translate('Your verification mail has been Sent to your email.');
         } catch (\Exception $e) {
             $response['status'] = 0;
-            $response['message'] = translate("Failed to send verification email. Please try again.");
+            $response['message'] = translate('Failed to send verification email. Please try again.');
         }
 
         return $response;
@@ -1018,11 +1042,13 @@ class HomeController extends Controller
                 auth()->login($user, true);
 
                 flash(translate('Email Changed successfully'))->success();
+
                 return redirect()->route('dashboard');
             }
         }
 
         flash(translate('Email was not verified. Please resend your mail!'))->error();
+
         return redirect()->route('dashboard');
     }
 
@@ -1046,6 +1072,7 @@ class HomeController extends Controller
             if (auth()->user()->user_type == 'admin' || auth()->user()->user_type == 'staff') {
                 return redirect()->route('admin.dashboard');
             }
+
             return redirect()->route('home');
         } else {
             return redirect()->route('password.reset.form')
@@ -1054,10 +1081,11 @@ class HomeController extends Controller
         }
     }
 
-    function clearCache()
+    public function clearCache()
     {
         Artisan::call('optimize:clear');
         flash(translate('Cache cleared successfully'))->success();
+
         return back();
     }
 
@@ -1065,6 +1093,7 @@ class HomeController extends Controller
     {
         $colmn_name = $request->colmn_name;
         $value = Member::where('user_id', $request->id)->first()->$colmn_name;
+
         return $value;
     }
 
@@ -1073,13 +1102,15 @@ class HomeController extends Controller
     {
         try {
             $request->user()->update(['fcm_token' => $request->fcm_token]);
+
             return response()->json([
-                'success' => true
+                'success' => true,
             ]);
         } catch (\Exception $e) {
             report($e);
+
             return response()->json([
-                'success' => false
+                'success' => false,
             ], 500);
         }
     }
@@ -1097,7 +1128,7 @@ class HomeController extends Controller
         }
         // end of  firebase notification
 
-        Larafirebase::withTitle(str_replace("_", " ", $notify_type))
+        Larafirebase::withTitle(str_replace('_', ' ', $notify_type))
             ->withBody($message)
             ->sendMessage($fcmTokens);
     }
@@ -1105,8 +1136,7 @@ class HomeController extends Controller
     /**
      * Upload profile picture
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function upload_profile_picture(Request $request)
     {
@@ -1117,10 +1147,10 @@ class HomeController extends Controller
 
             $user = Auth::user();
 
-            if (!$user) {
+            if (! $user) {
                 return response()->json([
                     'success' => false,
-                    'message' => translate('User not authenticated')
+                    'message' => translate('User not authenticated'),
                 ], 401);
             }
 
@@ -1146,20 +1176,21 @@ class HomeController extends Controller
                     'message' => translate('Profile picture uploaded successfully!'),
                     'photo_url' => uploaded_asset($photo),
                     'photo_id' => $photo,
-                    'requires_approval' => get_setting('profile_picture_approval_by_admin') && auth()->user()->user_type == 'member'
+                    'requires_approval' => get_setting('profile_picture_approval_by_admin') && auth()->user()->user_type == 'member',
                 ]);
             }
 
             return response()->json([
                 'success' => false,
-                'message' => translate('No file uploaded')
+                'message' => translate('No file uploaded'),
             ], 400);
 
         } catch (\Exception $e) {
-            \Log::error('Profile picture upload error: ' . $e->getMessage());
+            \Log::error('Profile picture upload error: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => translate('Failed to upload profile picture. Please try again.')
+                'message' => translate('Failed to upload profile picture. Please try again.'),
             ], 500);
         }
     }
@@ -1171,31 +1202,31 @@ class HomeController extends Controller
     {
         try {
             $user = auth()->user();
-            if (!$user || $user->user_type != 'member') {
+            if (! $user || $user->user_type != 'member') {
                 return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
             }
 
-            $incoming_interests = \App\Models\ExpressInterest::where('user_id', $user->id)
+            $incoming_interests = ExpressInterest::where('user_id', $user->id)
                 ->where('status', 0)
                 ->with([
                     'interestedby' => function ($query) {
                         $query->select('id', 'first_name', 'last_name', 'photo');
-                    }
+                    },
                 ])
                 ->with([
                     'interestedby.member' => function ($query) {
                         $query->select('user_id', 'birthday');
-                    }
+                    },
                 ])
                 ->with([
                     'interestedby.addresses' => function ($query) {
                         $query->select('user_id', 'city_id')->where('type', 'present');
-                    }
+                    },
                 ])
                 ->with([
                     'interestedby.addresses.city' => function ($query) {
                         $query->select('id', 'name');
-                    }
+                    },
                 ])
                 ->latest()
                 ->limit(5)
@@ -1203,8 +1234,9 @@ class HomeController extends Controller
                 ->map(function ($interest) {
                     try {
                         $interestedUser = $interest->interestedby ?? null;
-                        if (!$interestedUser)
+                        if (! $interestedUser) {
                             return null;
+                        }
 
                         $age = MemberUtility::member_age($interestedUser->id);
 
@@ -1214,16 +1246,16 @@ class HomeController extends Controller
                             $location = $address->city->name ?? 'N/A';
                         }
 
-                        $isOnline = Cache::has('user-is-online-' . $interestedUser->id);
+                        $isOnline = Cache::has('user-is-online-'.$interestedUser->id);
 
                         return [
                             'id' => $interestedUser->id ?? 0,
-                            'name' => ($interestedUser->first_name ?? '') . ' ' . ($interestedUser->last_name ?? ''),
+                            'name' => ($interestedUser->first_name ?? '').' '.($interestedUser->last_name ?? ''),
                             'age' => $age,
                             'location' => $location,
                             'photo' => $interestedUser->photo ? uploaded_asset($interestedUser->photo) : null,
                             'interest_id' => $interest->id ?? 0,
-                            'is_online' => $isOnline
+                            'is_online' => $isOnline,
                         ];
                     } catch (\Exception $e) {
                         return null;
@@ -1233,7 +1265,7 @@ class HomeController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $incoming_interests,
-                'count' => $incoming_interests->count()
+                'count' => $incoming_interests->count(),
             ]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
@@ -1247,31 +1279,31 @@ class HomeController extends Controller
     {
         try {
             $user = auth()->user();
-            if (!$user || $user->user_type != 'member') {
+            if (! $user || $user->user_type != 'member') {
                 return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
             }
 
-            $mutual_matches = \App\Models\ExpressInterest::where('user_id', $user->id)
+            $mutual_matches = ExpressInterest::where('user_id', $user->id)
                 ->where('status', 1)
                 ->with([
                     'interestedby' => function ($query) {
                         $query->select('id', 'first_name', 'last_name', 'photo');
-                    }
+                    },
                 ])
                 ->with([
                     'interestedby.member' => function ($query) {
                         $query->select('user_id', 'birthday');
-                    }
+                    },
                 ])
                 ->with([
                     'interestedby.addresses' => function ($query) {
                         $query->select('user_id', 'city_id')->where('type', 'present');
-                    }
+                    },
                 ])
                 ->with([
                     'interestedby.addresses.city' => function ($query) {
                         $query->select('id', 'name');
-                    }
+                    },
                 ])
                 ->latest()
                 ->limit(3)
@@ -1279,8 +1311,9 @@ class HomeController extends Controller
                 ->map(function ($match) {
                     try {
                         $matchUser = $match->interestedby ?? null;
-                        if (!$matchUser)
+                        if (! $matchUser) {
                             return null;
+                        }
 
                         $age = MemberUtility::member_age($matchUser->id);
 
@@ -1290,16 +1323,16 @@ class HomeController extends Controller
                             $location = $address->city->name ?? 'N/A';
                         }
 
-                        $isOnline = Cache::has('user-is-online-' . $matchUser->id);
+                        $isOnline = Cache::has('user-is-online-'.$matchUser->id);
 
                         return [
                             'id' => $matchUser->id ?? 0,
-                            'name' => ($matchUser->first_name ?? '') . ' ' . ($matchUser->last_name ?? ''),
+                            'name' => ($matchUser->first_name ?? '').' '.($matchUser->last_name ?? ''),
                             'age' => $age,
                             'location' => $location,
                             'photo' => $matchUser->photo ? uploaded_asset($matchUser->photo) : null,
-                            'match_percentage' => auth()->check() ? \App\Services\MatchScoreService::score(auth()->user(), $matchUser) : 50,
-                            'is_online' => $isOnline
+                            'match_percentage' => auth()->check() ? MatchScoreService::score(auth()->user(), $matchUser) : 50,
+                            'is_online' => $isOnline,
                         ];
                     } catch (\Exception $e) {
                         return null;
@@ -1308,7 +1341,7 @@ class HomeController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $mutual_matches
+                'data' => $mutual_matches,
             ]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
@@ -1322,38 +1355,39 @@ class HomeController extends Controller
     {
         try {
             $user = auth()->user();
-            if (!$user || $user->user_type != 'member') {
+            if (! $user || $user->user_type != 'member') {
                 return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
             }
 
-            $recent_visitors = \App\Models\ProfileViewer::where('user_id', $user->id)
+            $recent_visitors = ProfileViewer::where('user_id', $user->id)
                 ->with([
                     'profileViewer' => function ($query) {
                         $query->select('id', 'first_name', 'last_name', 'photo');
-                    }
+                    },
                 ])
                 ->with([
                     'profileViewer.member' => function ($query) {
                         $query->select('user_id', 'birthday');
-                    }
+                    },
                 ])
                 ->with([
                     'profileViewer.addresses' => function ($query) {
                         $query->select('user_id', 'city_id')->where('type', 'present');
-                    }
+                    },
                 ])
                 ->with([
                     'profileViewer.addresses.city' => function ($query) {
                         $query->select('id', 'name');
-                    }
+                    },
                 ])
                 ->latest()
                 ->limit(3)
                 ->get()
                 ->map(function ($visitor) {
                     try {
-                        if (!$visitor->profileViewer)
+                        if (! $visitor->profileViewer) {
                             return null;
+                        }
 
                         $age = MemberUtility::member_age($visitor->profileViewer->id);
 
@@ -1364,16 +1398,16 @@ class HomeController extends Controller
                         }
 
                         $visitedTime = $visitor->created_at->diffForHumans();
-                        $isOnline = Cache::has('user-is-online-' . $visitor->profileViewer->id);
+                        $isOnline = Cache::has('user-is-online-'.$visitor->profileViewer->id);
 
                         return [
                             'id' => $visitor->profileViewer->id ?? 0,
-                            'name' => ($visitor->profileViewer->first_name ?? '') . ' ' . ($visitor->profileViewer->last_name ?? ''),
+                            'name' => ($visitor->profileViewer->first_name ?? '').' '.($visitor->profileViewer->last_name ?? ''),
                             'age' => $age,
                             'location' => $location,
                             'photo' => $visitor->profileViewer->photo ? uploaded_asset($visitor->profileViewer->photo) : null,
                             'visited_time' => $visitedTime,
-                            'is_online' => $isOnline
+                            'is_online' => $isOnline,
                         ];
                     } catch (\Exception $e) {
                         return null;
@@ -1382,7 +1416,7 @@ class HomeController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $recent_visitors
+                'data' => $recent_visitors,
             ]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
@@ -1396,28 +1430,28 @@ class HomeController extends Controller
     {
         try {
             $user = auth()->user();
-            if (!$user || $user->user_type != 'member') {
+            if (! $user || $user->user_type != 'member') {
                 return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
             }
 
-            $today_matches = \App\Models\User::where('user_type', 'member')
+            $today_matches = User::where('user_type', 'member')
                 ->where('approved', 1)
                 ->where('id', '!=', $user->id)
                 ->where('created_at', '>=', now()->subMonth())
                 ->with([
                     'member' => function ($query) {
                         $query->select('user_id', 'birthday');
-                    }
+                    },
                 ])
                 ->with([
                     'addresses' => function ($query) {
                         $query->select('user_id', 'city_id')->where('type', 'present');
-                    }
+                    },
                 ])
                 ->with([
                     'addresses.city' => function ($query) {
                         $query->select('id', 'name');
-                    }
+                    },
                 ])
                 ->latest()
                 ->limit(10)
@@ -1433,16 +1467,16 @@ class HomeController extends Controller
                         }
 
                         $joinedTime = $newUser->created_at->diffForHumans();
-                        $isOnline = Cache::has('user-is-online-' . $newUser->id);
+                        $isOnline = Cache::has('user-is-online-'.$newUser->id);
 
                         return [
                             'id' => $newUser->id ?? 0,
-                            'name' => ($newUser->first_name ?? '') . ' ' . ($newUser->last_name ?? ''),
+                            'name' => ($newUser->first_name ?? '').' '.($newUser->last_name ?? ''),
                             'age' => $age,
                             'location' => $location,
                             'photo' => $newUser->photo ? uploaded_asset($newUser->photo) : null,
                             'joined_time' => $joinedTime,
-                            'is_online' => $isOnline
+                            'is_online' => $isOnline,
                         ];
                     } catch (\Exception $e) {
                         return null;
@@ -1451,7 +1485,7 @@ class HomeController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $today_matches
+                'data' => $today_matches,
             ]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
@@ -1465,16 +1499,16 @@ class HomeController extends Controller
     {
         try {
             $user = auth()->user();
-            if (!$user || $user->user_type != 'member') {
+            if (! $user || $user->user_type != 'member') {
                 return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
             }
 
-            $success_stories = \App\Models\HappyStory::where('approved', 1)
+            $success_stories = HappyStory::where('approved', 1)
                 ->where('user_id', '!=', $user->id)
                 ->with([
                     'user' => function ($query) {
                         $query->select('id', 'first_name', 'last_name');
-                    }
+                    },
                 ])
                 ->latest()
                 ->limit(5)
@@ -1483,7 +1517,7 @@ class HomeController extends Controller
                     try {
                         $coupleNames = 'Unknown Couple';
                         if ($story->user && $story->partner_name) {
-                            $coupleNames = ($story->user->first_name ?? 'Unknown') . ' & ' . ($story->partner_name ?? 'Partner');
+                            $coupleNames = ($story->user->first_name ?? 'Unknown').' & '.($story->partner_name ?? 'Partner');
                         }
 
                         $storyTitle = $story->title ?? 'Success Story';
@@ -1491,20 +1525,20 @@ class HomeController extends Controller
                         $storyPreview = 'No story available';
                         if ($story->details) {
                             $details = strip_tags($story->details);
-                            $storyPreview = strlen($details) > 150 ? substr($details, 0, 150) . '...' : $details;
+                            $storyPreview = strlen($details) > 150 ? substr($details, 0, 150).'...' : $details;
                         }
 
                         $storyImage = null;
                         if ($story->photos) {
                             $photos = explode(',', $story->photos);
-                            if (!empty($photos[0])) {
+                            if (! empty($photos[0])) {
                                 $storyImage = uploaded_asset($photos[0]);
                             }
                         }
 
                         $marriageDate = 'N/A';
                         if ($story->marriage_date) {
-                            $marriageDate = \Carbon\Carbon::parse($story->marriage_date)->format('M d, Y');
+                            $marriageDate = Carbon::parse($story->marriage_date)->format('M d, Y');
                         } else {
                             $marriageDate = $story->created_at->format('M d, Y');
                         }
@@ -1518,17 +1552,18 @@ class HomeController extends Controller
                             'marriage_date' => $marriageDate,
                             'image' => $storyImage,
                             'user_id' => $story->user_id ?? 0,
-                            'user_name' => ($story->user->first_name ?? '') . ' ' . ($story->user->last_name ?? '')
+                            'user_name' => ($story->user->first_name ?? '').' '.($story->user->last_name ?? ''),
                         ];
                     } catch (\Exception $e) {
-                        \Log::error('Error processing success story: ' . $e->getMessage());
+                        \Log::error('Error processing success story: '.$e->getMessage());
+
                         return null;
                     }
                 })->filter()->values();
 
             return response()->json([
                 'success' => true,
-                'data' => $success_stories // Return all stories for slider
+                'data' => $success_stories, // Return all stories for slider
             ]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);

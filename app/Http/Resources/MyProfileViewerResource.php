@@ -2,9 +2,11 @@
 
 namespace App\Http\Resources;
 
-use App\Utility\MemberUtility;
 use App\Models\ProfileViewer;
 use App\Models\User;
+use App\Utility\MemberUtility;
+use Illuminate\Contracts\Support\Arrayable;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class MyProfileViewerResource extends JsonResource
@@ -12,8 +14,8 @@ class MyProfileViewerResource extends JsonResource
     /**
      * Transform the resource into an array.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return array|\Illuminate\Contracts\Support\Arrayable|\JsonSerializable
+     * @param  Request  $request
+     * @return array|Arrayable|\JsonSerializable
      */
     public function toArray($request)
     {
@@ -26,14 +28,14 @@ class MyProfileViewerResource extends JsonResource
             $profile_picture_show = show_profile_picture($user);
 
             return [
-                'user_id'              => $viewedBy->id,
+                'user_id' => $viewedBy->id,
                 'package_update_alert' => $package_update_alert,
-                'photo'                => $profile_picture_show ? uploaded_asset($user->photo) : static_asset($avatar_image),
-                'name'                 => $viewedBy->first_name . ' ' . $viewedBy->last_name,
-                'age'                  => MemberUtility::member_age($viewedBy->id),
-                'religion'             => MemberUtility::member_religion($viewedBy->id),
-                'country'              => MemberUtility::member_country($viewedBy->id),
-                'mothere_tongue'       => MemberUtility::member_mothere_tongue($viewedBy->id)
+                'photo' => $profile_picture_show ? uploaded_asset($user->photo) : static_asset($avatar_image),
+                'name' => $viewedBy->first_name.' '.$viewedBy->last_name,
+                'age' => MemberUtility::member_age($viewedBy->id),
+                'religion' => MemberUtility::member_religion($viewedBy->id),
+                'country' => MemberUtility::member_country($viewedBy->id),
+                'mothere_tongue' => MemberUtility::member_mothere_tongue($viewedBy->id),
             ];
         }
     }

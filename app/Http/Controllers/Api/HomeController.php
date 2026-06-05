@@ -2,107 +2,111 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Models\User;
+use App\Http\Requests\ContactUsRequest;
+use App\Http\Resources\BlogResource;
+use App\Http\Resources\HappyStoryResource;
+use App\Http\Resources\HowItWorksResource;
+use App\Http\Resources\MemberResource;
+use App\Http\Resources\PackageResource;
+use App\Http\Resources\PublicProposalResource;
 use App\Models\Blog;
-use App\Models\Package;
 use App\Models\ContactUs;
 use App\Models\HappyStory;
 use App\Models\IgnoredUser;
-use App\Models\ProfileMatch;
-use Illuminate\Http\Request;
-use App\Http\Resources\BlogResource;
-use App\Http\Resources\MemberResource;
-use App\Http\Requests\ContactUsRequest;
-use App\Http\Resources\PackageResource;
-use App\Http\Controllers\Api\Controller;
-use App\Http\Resources\GalleryImageResource;
-use App\Notifications\EmailNotification;
-use App\Http\Resources\HappyStoryResource;
-use App\Http\Resources\HowItWorksResource;
-use Illuminate\Support\Facades\Notification;
-use App\Http\Resources\MatchedProfileResource;
+use App\Models\Package;
 use App\Models\Setting;
+use App\Models\User;
+use App\Notifications\EmailNotification;
 use ArrayIterator;
-use MultipleIterator;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Notification;
 use Laravel\Sanctum\PersonalAccessToken;
+use MultipleIterator;
 
 class HomeController extends Controller
 {
-
     public function home_slider()
     {
         // Slider images
-        $slider_images = array();
+        $slider_images = [];
         $sliders = get_setting('show_homepage_slider') == 'on' && get_setting('home_slider_images') != null ?
             json_decode(get_setting('home_slider_images'), true) : [];
         foreach ($sliders as $key => $slider) {
-            $slider_data = array(
+            $slider_data = [
                 'image' => get_setting('home_slider_images_small') != null
                     ? uploaded_asset(json_decode(get_setting('home_slider_images_small'), true)[$key])
-                    : uploaded_asset($slider)
-            );
+                    : uploaded_asset($slider),
+            ];
             $slider_images[] = $slider_data;
         }
+
         return $this->response_data($slider_images);
     }
+
     public function home_banner()
     {
         // banner
-        $banner = array();
+        $banner = [];
         $banner_imags = get_setting('show_home_banner1_section') == 'on' && get_setting('home_banner1_images') != null ?
             json_decode(get_setting('home_banner1_images')) : [];
         foreach ($banner_imags as $key => $value) {
-            $banner_data = array(
-                'link'  => json_decode(get_setting('home_banner1_links'), true)[$key],
-                'image' => uploaded_asset($value)
-            );
+            $banner_data = [
+                'link' => json_decode(get_setting('home_banner1_links'), true)[$key],
+                'image' => uploaded_asset($value),
+            ];
             $banner[] = $banner_data;
         }
         $data['banner'] = $banner;
+
         return $this->response_data($banner);
     }
+
     public function home_how_it_works()
     {
         // How It Works
-        $how_it_works = array();
+        $how_it_works = [];
         if (get_setting('show_how_it_works_section') == 'on' && get_setting('how_it_works_steps_titles') != null) {
             $how_it_works_title = get_setting('how_it_works_title') ?? '';
             $how_it_works_sub_title = get_setting('how_it_works_sub_title') ?? '';
-            $how_it_works_steps_titles = array();
+            $how_it_works_steps_titles = [];
             $how_it_works_steps_titles = json_decode(get_setting('how_it_works_steps_titles'));
 
             foreach ($how_it_works_steps_titles as $key => $how_it_works_steps_title) {
-                $how_it_works_data = array(
-                    'step'     => $key + 1,
-                    'title'    => $how_it_works_steps_title,
+                $how_it_works_data = [
+                    'step' => $key + 1,
+                    'title' => $how_it_works_steps_title,
                     'subtitle' => json_decode(get_setting('how_it_works_steps_sub_titles'), true)[$key],
-                    'icon'     => uploaded_asset(json_decode(get_setting('how_it_works_steps_icons'), true)[$key]),
-                );
+                    'icon' => uploaded_asset(json_decode(get_setting('how_it_works_steps_icons'), true)[$key]),
+                ];
                 $how_it_works[] = $how_it_works_data;
             }
 
             return HowItWorksResource::collection($how_it_works)->additional([
                 'how_it_works_title' => $how_it_works_title,
-                'how_it_works_sub_title' => $how_it_works_sub_title
+                'how_it_works_sub_title' => $how_it_works_sub_title,
             ]);
         }
+
         return $this->failure_data($how_it_works);
     }
+
     public function home_trusted_by_millions()
     {
         // trusted by millions
-        $trusted_by_millions = array();
+        $trusted_by_millions = [];
         $homepage_best_features = get_setting('show_trusted_by_millions_section') == 'on' ?
             json_decode(get_setting('homepage_best_features')) : [];
         foreach ($homepage_best_features as $key => $homepage_best_feature) {
-            $homepage_best_feature_data = array(
+            $homepage_best_feature_data = [
                 'title' => $homepage_best_feature,
-                'icon'  => uploaded_asset(json_decode(get_setting('homepage_best_features_icons'), true)[$key]),
-            );
+                'icon' => uploaded_asset(json_decode(get_setting('homepage_best_features_icons'), true)[$key]),
+            ];
             $trusted_by_millions[] = $homepage_best_feature_data;
         }
+
         return $this->response_data($trusted_by_millions);
     }
+
     public function home_happy_stories()
     {
         // Happy Stories
@@ -111,41 +115,48 @@ class HomeController extends Controller
             ->limit(get_setting('max_happy_story_show_homepage'))
             ->get();
         $happy_stories = get_setting('show_happy_story_section') == 'on' ? (HappyStoryResource::collection($stories)) : [];
+
         return $this->response_data($happy_stories);
     }
+
     public function home_packages()
     {
         // packages
         $packages = get_setting('show_homapege_package_section') == 'on' ? (PackageResource::collection(Package::where('active', '1')->get())) : [];
+
         return $this->response_data($packages);
     }
+
     public function home_reviews()
     {
         // reviews
-        $reviews = array();
+        $reviews = [];
         $homepage_reviews = get_setting('show_homepage_review_section') == 'on' && get_setting('homepage_reviews') != null ?
             json_decode(get_setting('homepage_reviews')) : [];
         if (count($homepage_reviews) > 0) {
             $reviews['bg_image'] = uploaded_asset(get_setting('homepage_review_section_background_image'));
-            $reviews['items'] = array();
+            $reviews['items'] = [];
             foreach ($homepage_reviews as $key => $review) {
-                $review_data = array(
-                    'image'  => uploaded_asset(json_decode(get_setting('homepage_reviewers_images'), true)[$key]) ?? static_asset('assets/img/placeholder.jpg'),
-                    'review' => $review
-                );
+                $review_data = [
+                    'image' => uploaded_asset(json_decode(get_setting('homepage_reviewers_images'), true)[$key]) ?? static_asset('assets/img/placeholder.jpg'),
+                    'review' => $review,
+                ];
                 $reviews['items'][] = $review_data;
             }
         }
 
-        return  $reviews ? $this->response_data($reviews) : $this->failure_data(null);
+        return $reviews ? $this->response_data($reviews) : $this->failure_data(null);
     }
+
     public function home_blogs()
     {
         // blogs
         $blogs = get_setting('show_blog_section') == 'on' ?
             (BlogResource::collection(Blog::latest()->active()->limit(get_setting('max_blog_show_homepage'))->get())) : [];
+
         return $this->response_data($blogs);
     }
+
     public function home_premium_members()
     {
         $token = PersonalAccessToken::findToken(request()->bearerToken());
@@ -161,7 +172,7 @@ class HomeController extends Controller
 
         if ($token && $user->user_type == 'member') {
             $members = $members->where('id', '!=', $user->id)
-                ->whereIn("id", function ($query) use ($user) {
+                ->whereIn('id', function ($query) use ($user) {
                     $query->select('user_id')
                         ->from('members')
                         ->where('gender', '!=', $user->member->gender);
@@ -183,6 +194,7 @@ class HomeController extends Controller
 
         return get_setting('show_premium_member_section') == 'on' ? $this->response_data($premium_members) : $this->response_data([]);
     }
+
     public function home_new_members()
     {
         $token = PersonalAccessToken::findToken(request()->bearerToken());
@@ -198,7 +210,7 @@ class HomeController extends Controller
 
         if ($user && $user->user_type == 'member') {
             $members = $members->where('id', '!=', $user->id)
-                ->whereIn("id", function ($query) use ($user) {
+                ->whereIn('id', function ($query) use ($user) {
                     $query->select('user_id')
                         ->from('members')
                         ->where('gender', '!=', $user->member->gender);
@@ -224,13 +236,13 @@ class HomeController extends Controller
     public function home()
     {
         // Slider images
-        $slider_images = array();
+        $slider_images = [];
         $sliders = get_setting('show_homepage_slider') == 'on' && get_setting('home_slider_images') != null ?
             json_decode(get_setting('home_slider_images'), true) : [];
         foreach ($sliders as $key => $slider) {
-            $slider_data = array(
-                'image' => uploaded_asset($slider)
-            );
+            $slider_data = [
+                'image' => uploaded_asset($slider),
+            ];
             $slider_images[] = $slider_data;
         }
         $data['slider_images'] = $slider_images;
@@ -240,10 +252,10 @@ class HomeController extends Controller
             ->where('approved', 1)
             ->where('blocked', 0)
             ->where('deactivated', 0);
-            
+
         if (auth()->user() && auth()->user()->user_type == 'member') {
             $members = $members->where('id', '!=', auth()->user()->id)
-                ->whereIn("id", function ($query) {
+                ->whereIn('id', function ($query) {
                     $query->select('user_id')
                         ->from('members')
                         ->where('gender', '!=', auth()->user()->member->gender);
@@ -269,47 +281,47 @@ class HomeController extends Controller
         $data['premium_members'] = MemberResource::collection($premium_members);
 
         // banner
-        $banner = array();
+        $banner = [];
         $banner_imags = get_setting('show_home_banner1_section') == 'on' && get_setting('home_banner1_images') != null ?
             json_decode(get_setting('home_banner1_images')) : [];
         foreach ($banner_imags as $key => $value) {
-            $banner_data = array(
-                'link'  => json_decode(get_setting('home_banner1_links'), true)[$key],
-                'photo' => uploaded_asset($value)
-            );
+            $banner_data = [
+                'link' => json_decode(get_setting('home_banner1_links'), true)[$key],
+                'photo' => uploaded_asset($value),
+            ];
             $banner[] = $banner_data;
         }
         $data['banner'] = $banner;
 
         // How It Works
-        $how_it_works = array();
+        $how_it_works = [];
         $how_it_works_steps_titles = get_setting('show_how_it_works_section') == 'on' && get_setting('how_it_works_steps_titles') != null ?
             json_decode(get_setting('how_it_works_steps_titles')) : [];
         if (count($how_it_works_steps_titles) > 0) {
             $how_it_works['how_it_works_title'] = get_setting('how_it_works_title');
             $how_it_works['how_it_works_sub_title'] = get_setting('how_it_works_sub_title');
-            $how_it_works['items'] = array();
+            $how_it_works['items'] = [];
             foreach ($how_it_works_steps_titles as $key => $how_it_works_steps_title) {
-                $how_it_works_data = array(
-                    'step'     => $key + 1,
-                    'title'    => $how_it_works_steps_title,
+                $how_it_works_data = [
+                    'step' => $key + 1,
+                    'title' => $how_it_works_steps_title,
                     'subtitle' => json_decode(get_setting('how_it_works_steps_sub_titles'), true)[$key],
-                    'icon'     => uploaded_asset(json_decode(get_setting('how_it_works_steps_icons'), true)[$key]),
-                );
+                    'icon' => uploaded_asset(json_decode(get_setting('how_it_works_steps_icons'), true)[$key]),
+                ];
                 $how_it_works['items'][] = $how_it_works_data;
             }
         }
         $data['how_it_works'] = $how_it_works;
 
         // trusted by millions
-        $trusted_by_millions = array();
+        $trusted_by_millions = [];
         $homepage_best_features = get_setting('show_trusted_by_millions_section') == 'on' ?
             json_decode(get_setting('homepage_best_features')) : [];
         foreach ($homepage_best_features as $key => $homepage_best_feature) {
-            $homepage_best_feature_data = array(
+            $homepage_best_feature_data = [
                 'title' => $homepage_best_feature,
-                'icon'  => uploaded_asset(json_decode(get_setting('homepage_best_features_icons'), true)[$key]),
-            );
+                'icon' => uploaded_asset(json_decode(get_setting('homepage_best_features_icons'), true)[$key]),
+            ];
             $trusted_by_millions[] = $homepage_best_feature_data;
         }
         $data['trusted_by_millions'] = $trusted_by_millions;
@@ -327,17 +339,17 @@ class HomeController extends Controller
         $data['packages'] = $packages;
 
         // reviews
-        $reviews = array();
+        $reviews = [];
         $homepage_reviews = get_setting('show_homepage_review_section') == 'on' && get_setting('homepage_reviews') != null ?
             json_decode(get_setting('homepage_reviews')) : [];
         if (count($homepage_reviews) > 0) {
             $reviews['bg_image'] = uploaded_asset(get_setting('homepage_review_section_background_image'));
-            $reviews['items'] = array();
+            $reviews['items'] = [];
             foreach ($homepage_reviews as $key => $review) {
-                $review_data = array(
-                    'image'  => uploaded_asset(json_decode(get_setting('homepage_reviewers_images'), true)[$key]),
-                    'review' => $review
-                );
+                $review_data = [
+                    'image' => uploaded_asset(json_decode(get_setting('homepage_reviewers_images'), true)[$key]),
+                    'review' => $review,
+                ];
                 $reviews['items'][] = $review_data;
             }
         }
@@ -361,7 +373,7 @@ class HomeController extends Controller
 
         if (auth()->user() && auth()->user()->user_type == 'member') {
             $members->where('id', '!=', auth()->user()->id)
-                ->whereIn("id", function ($query) {
+                ->whereIn('id', function ($query) {
                     $query->select('user_id')
                         ->from('members')
                         ->where('gender', '!=', auth()->user()->member->gender);
@@ -381,9 +393,10 @@ class HomeController extends Controller
         $members = $members->orderBy('id', 'desc')->limit(15)->get()->shuffle();
 
         return MemberResource::collection($members)->additional([
-            'result' => true
+            'result' => true,
         ]);
     }
+
     // app_info
     public function app_info()
     {
@@ -396,10 +409,10 @@ class HomeController extends Controller
             $how_it_works_steps_icons[] = uploaded_asset(json_decode(get_setting('how_it_works_steps_icons'), true)[$key]);
         }
 
-        #Combine multiple arrays into single array
-        $keys = array("steps", "how_it_works_steps_titles", "how_it_works_steps_sub_titles", "how_it_works_steps_icons");
-        $how_it_works = array();
-        $mi = new MultipleIterator();
+        // Combine multiple arrays into single array
+        $keys = ['steps', 'how_it_works_steps_titles', 'how_it_works_steps_sub_titles', 'how_it_works_steps_icons'];
+        $how_it_works = [];
+        $mi = new MultipleIterator;
         $mi->attachIterator(new ArrayIterator($steps));
         $mi->attachIterator(new ArrayIterator($how_it_works_steps_titles));
         $mi->attachIterator(new ArrayIterator($how_it_works_steps_sub_titles));
@@ -415,22 +428,24 @@ class HomeController extends Controller
         $data['how_it_works_title'] = get_setting('how_it_works_title');
         $data['how_it_works_sub_title'] = get_setting('how_it_works_sub_title');
         $data['how_it_works'] = $how_it_works;
+
         return $this->response_data($data);
     }
-    //Member Dashboard 
+
+    // Member Dashboard
     public function member_dashboard()
     {
         $user = auth()->user();
 
-        if($user->blocked == 1){
+        if ($user->blocked == 1) {
             return response()->json([
                 'result' => false,
                 'status' => 'blocked',
-                'message' => translate('user is banned')
+                'message' => translate('user is banned'),
             ]);
         }
 
-        $data['member_name'] = $user->first_name . ' ' . $user->last_name;
+        $data['member_name'] = $user->first_name.' '.$user->last_name;
         $data['member_email'] = $user->email;
         $data['member_photo'] = uploaded_asset($user->photo) !== null ? uploaded_asset($user->photo) : gender_avatar($user?->member);
         $data['remaining_interest'] = get_remaining_package_value($user->id, 'remaining_interest');
@@ -441,13 +456,13 @@ class HomeController extends Controller
 
         $member = $user->member;
         $package = $member?->package;
-        $current_package_info = array(
+        $current_package_info = [
             'package_id' => $package?->id,
             'package_name' => $package?->name ?? translate('No active package'),
             'package_expiry' => ($member && $package && package_validity($user->id))
                 ? date('d.m.Y', strtotime($member->package_validity))
                 : translate('Expired'),
-        );
+        ];
         $data['current_package_info'] = $current_package_info;
 
         return $this->response_data($data);
@@ -455,9 +470,9 @@ class HomeController extends Controller
 
     public function addon_check()
     {
-        $addons = array();
+        $addons = [];
         $addons['referral_system'] = addon_activation('referral_system') ? true : false;
-        $addons['support_tickets'] = addon_activation('support_tickets')  ? true : false;
+        $addons['support_tickets'] = addon_activation('support_tickets') ? true : false;
 
         return $this->response_data($addons);
     }
@@ -486,6 +501,7 @@ class HomeController extends Controller
         foreach ($features as $feature) {
             $new_array[$feature->type] = $feature->value;
         }
+
         // dd($temp_array);
         return $this->response_data($new_array);
     }
@@ -496,11 +512,13 @@ class HomeController extends Controller
             ContactUs::create($request->except('g-recaptcha-response'));
             $users = User::where('user_type', 'admin')->get();
             Notification::send($users, new EmailNotification($request->subject, $request->description));
+
             return $this->success_message('Your query has been sent successfully');
         } catch (\Throwable $th) {
             return $this->failure_message('Something went wrong');
         }
     }
+
     public function upload_profile_picture(Request $request)
     {
         try {
@@ -509,7 +527,7 @@ class HomeController extends Controller
                 'photo' => [
                     'required',
                     'file',
-                    'max:' . $maxPhotoSizeKb,
+                    'max:'.$maxPhotoSizeKb,
                     function ($attribute, $value, $fail) {
                         $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif'];
                         $extension = strtolower((string) $value->getClientOriginalExtension());
@@ -517,12 +535,13 @@ class HomeController extends Controller
                         $isImageMime = str_starts_with($mimeType, 'image/');
                         $isHeicMime = in_array($mimeType, ['application/octet-stream', 'application/x-heic'], true);
 
-                        if (!in_array($extension, $allowedExtensions, true)) {
+                        if (! in_array($extension, $allowedExtensions, true)) {
                             $fail(translate('Photo must be JPG, JPEG, PNG, GIF, WEBP, HEIC, or HEIF format'));
+
                             return;
                         }
 
-                        if (!$isImageMime && !$isHeicMime) {
+                        if (! $isImageMime && ! $isHeicMime) {
                             $fail(translate('File must be a valid image'));
                         }
                     },
@@ -541,21 +560,22 @@ class HomeController extends Controller
                     'extension' => $request->hasFile('photo') ? $request->file('photo')->getClientOriginalExtension() : null,
                     'errors' => $validator->errors()->toArray(),
                 ]);
+
                 return response()->json([
                     'result' => false,
                     'success' => false,
                     'message' => $validator->errors()->first(),
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
             $user = auth()->user();
-            
-            if (!$user) {
+
+            if (! $user) {
                 return response()->json([
                     'result' => false,
                     'success' => false,
-                    'message' => translate('User not authenticated')
+                    'message' => translate('User not authenticated'),
                 ], 401);
             }
 
@@ -563,27 +583,27 @@ class HomeController extends Controller
             $photo = null;
             if ($request->hasFile('photo')) {
                 $photo = upload_api_file($request->file('photo'));
-                
-                if (!$photo) {
+
+                if (! $photo) {
                     return response()->json([
                         'result' => false,
                         'success' => false,
-                        'message' => translate('Failed to upload image. Please try again.')
+                        'message' => translate('Failed to upload image. Please try again.'),
                     ], 500);
                 }
-                
+
                 // Update user photo
                 $user->photo = $photo;
-                
+
                 // Check if admin approval is required
                 if (get_setting('profile_picture_approval_by_admin') && $user->user_type == 'member') {
                     $user->photo_approved = 0;
                 } else {
                     $user->photo_approved = 1;
                 }
-                
+
                 $user->save();
-                
+
                 return response()->json([
                     'result' => true,
                     'success' => true,
@@ -591,29 +611,30 @@ class HomeController extends Controller
                     'data' => [
                         'photo_url' => uploaded_asset($photo),
                         'photo_id' => $photo,
-                        'requires_approval' => get_setting('profile_picture_approval_by_admin') && $user->user_type == 'member'
-                    ]
+                        'requires_approval' => get_setting('profile_picture_approval_by_admin') && $user->user_type == 'member',
+                    ],
                 ]);
             }
 
             return response()->json([
                 'result' => false,
                 'success' => false,
-                'message' => translate('No file uploaded')
+                'message' => translate('No file uploaded'),
             ], 400);
 
         } catch (\Exception $e) {
-            \Log::error('Profile picture upload error: ' . $e->getMessage(), [
+            \Log::error('Profile picture upload error: '.$e->getMessage(), [
                 'user_id' => auth()->id(),
                 'size_bytes' => $request->hasFile('photo') ? $request->file('photo')->getSize() : null,
                 'mime_type' => $request->hasFile('photo') ? $request->file('photo')->getMimeType() : null,
                 'extension' => $request->hasFile('photo') ? $request->file('photo')->getClientOriginalExtension() : null,
             ]);
+
             return response()->json([
                 'result' => false,
                 'success' => false,
                 'message' => translate('Failed to upload profile picture. Please try again.'),
-                'error' => app()->environment('local') ? $e->getMessage() : null
+                'error' => app()->environment('local') ? $e->getMessage() : null,
             ], 500);
         }
     }
@@ -625,8 +646,8 @@ class HomeController extends Controller
     public function randomProposals()
     {
         $users = User::whereHas('member', function ($q) {
-                $q->where('onboarding_completed', 1);
-            })
+            $q->where('onboarding_completed', 1);
+        })
             ->where('approved', 1)
             ->where('user_type', 'member')
             ->whereNull('deleted_at')
@@ -641,8 +662,7 @@ class HomeController extends Controller
             ->get();
 
         return $this->response_data(
-            \App\Http\Resources\PublicProposalResource::collection($users)
+            PublicProposalResource::collection($users)
         );
     }
-
 }

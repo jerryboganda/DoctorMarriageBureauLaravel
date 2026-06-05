@@ -15,6 +15,7 @@ class SettingsController extends BaseAdminController
     public function updateGeneral(Request $request)
     {
         $this->saveByPrefix('general.', $request->all());
+
         return $this->ok(null, 'General settings updated');
     }
 
@@ -26,6 +27,7 @@ class SettingsController extends BaseAdminController
     public function updateSmtp(Request $request)
     {
         $this->saveByPrefix('smtp.', $request->all());
+
         return $this->ok(null, 'SMTP settings updated');
     }
 
@@ -42,6 +44,7 @@ class SettingsController extends BaseAdminController
     public function updatePaymentMethods(Request $request)
     {
         $this->saveByPrefix('payment_method.', $request->all());
+
         return $this->ok(null, 'Payment method settings updated');
     }
 
@@ -53,6 +56,7 @@ class SettingsController extends BaseAdminController
     public function updateThirdParty(Request $request)
     {
         $this->saveByPrefix('third_party.', $request->all());
+
         return $this->ok(null, 'Third-party settings updated');
     }
 
@@ -64,6 +68,7 @@ class SettingsController extends BaseAdminController
     public function updateSocialLogin(Request $request)
     {
         $this->saveByPrefix('social_login.', $request->all());
+
         return $this->ok(null, 'Social login settings updated');
     }
 
@@ -75,6 +80,7 @@ class SettingsController extends BaseAdminController
     public function updateFcm(Request $request)
     {
         $this->saveByPrefix('fcm.', $request->all());
+
         return $this->ok(null, 'FCM settings updated');
     }
 
@@ -86,6 +92,7 @@ class SettingsController extends BaseAdminController
     public function updateVerificationForm(Request $request)
     {
         $this->saveByPrefix('member_verification_form.', $request->all());
+
         return $this->ok(null, 'Verification form settings updated');
     }
 
@@ -97,25 +104,28 @@ class SettingsController extends BaseAdminController
     public function updateProfileSections(Request $request)
     {
         $this->saveByPrefix('member_profile_sections.', $request->all());
+
         return $this->ok(null, 'Profile sections updated');
     }
 
     public function envUpdate(Request $request)
     {
         $this->saveByPrefix('env.', $request->all());
+
         return $this->ok(null, 'Environment values stored');
     }
 
     public function updateActivation(Request $request)
     {
         $this->saveByPrefix('activation.', $request->all());
+
         return $this->ok(null, 'Activation settings updated');
     }
 
     protected function readByPrefix(string $prefix): array
     {
         return DB::table('settings')
-            ->where('type', 'like', $prefix . '%')
+            ->where('type', 'like', $prefix.'%')
             ->pluck('value', 'type')
             ->toArray();
     }
@@ -128,7 +138,7 @@ class SettingsController extends BaseAdminController
                 : (string) $key;
 
             DB::table('settings')->updateOrInsert(
-                ['type' => $prefix . $normalizedKey],
+                ['type' => $prefix.$normalizedKey],
                 [
                     'value' => is_scalar($value) ? (string) $value : json_encode($value),
                     'updated_at' => now(),

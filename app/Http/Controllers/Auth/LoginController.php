@@ -2,32 +2,31 @@
 
 namespace App\Http\Controllers\Auth;
 
-use Socialite;
-use App\Models\User;
-use App\Models\Hobby;
-use App\Models\Staff;
-use App\Models\Career;
-use App\Models\Family;
-use App\Models\Member;
-use App\Models\Address;
-use App\Models\Package;
-use App\Models\Attitude;
-use App\Models\Astrology;
-use App\Models\Education;
-use App\Models\Lifestyle;
-use App\Models\Recidency;
-use App\Models\ChatThread;
-use App\Models\HappyStory;
-use CoreComponentRepository;
-use Illuminate\Http\Request;
-use App\Models\PackagePayment;
-use App\Models\PhysicalAttribute;
-use App\Models\PartnerExpectation;
-use App\Models\SpiritualBackground;
 use App\Http\Controllers\Controller;
+use App\Models\Address;
+use App\Models\Astrology;
+use App\Models\Attitude;
+use App\Models\Career;
+use App\Models\ChatThread;
+use App\Models\Education;
+use App\Models\Family;
+use App\Models\HappyStory;
+use App\Models\Hobby;
+use App\Models\Lifestyle;
+use App\Models\Member;
+use App\Models\Package;
+use App\Models\PackagePayment;
+use App\Models\PartnerExpectation;
+use App\Models\PhysicalAttribute;
+use App\Models\Recidency;
+use App\Models\SpiritualBackground;
+use App\Models\Staff;
+use App\Models\User;
 use App\Providers\RouteServiceProvider;
+use CoreComponentRepository;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
-use GeneaLabs\LaravelSocialiter\Facades\Socialiter;
+use Illuminate\Http\Request;
+use Socialite;
 
 class LoginController extends Controller
 {
@@ -49,7 +48,7 @@ class LoginController extends Controller
      *
      * @var string
      */
-    //protected $redirectTo = RouteServiceProvider::HOME;
+    // protected $redirectTo = RouteServiceProvider::HOME;
 
     public function redirectToProvider($provider)
     {
@@ -57,10 +56,11 @@ class LoginController extends Controller
             request()->session()->put('login_from', 'mobile_app');
         }
         if ($provider == 'apple') {
-            return Socialite::driver("sign-in-with-apple")
-                ->scopes(["name", "email"])
+            return Socialite::driver('sign-in-with-apple')
+                ->scopes(['name', 'email'])
                 ->redirect();
         }
+
         return Socialite::driver($provider)->redirect();
     }
 
@@ -76,17 +76,18 @@ class LoginController extends Controller
                 $user = Socialite::driver($provider)->stateless()->user();
             }
         } catch (\Exception $e) {
-            flash("Something Went wrong. Please try again.")->error();
+            flash('Something Went wrong. Please try again.')->error();
+
             return redirect()->route('user.login');
         }
 
-        //check if provider_id exist
+        // check if provider_id exist
         $existingUserByProviderId = User::where('provider_id', $user->id)->whereNull('deleted_at')->first();
 
         if ($existingUserByProviderId) {
             $existingUserByProviderId->access_token = $user->token;
             $existingUserByProviderId->save();
-            //proceed to login
+            // proceed to login
             auth()->login($existingUserByProviderId, true);
         } else {
             // check if email exist
@@ -122,7 +123,7 @@ class LoginController extends Controller
                 $member->remaining_profile_image_view = $package->profile_image_view;
                 $member->remaining_gallery_image_view = $package->gallery_image_view;
                 $member->auto_profile_match = $package->auto_profile_match;
-                $member->package_validity = Date('Y-m-d', strtotime($package->validity . " days"));
+                $member->package_validity = date('Y-m-d', strtotime($package->validity.' days'));
                 $member->save();
 
                 auth()->login($newUser, true);
@@ -140,33 +141,34 @@ class LoginController extends Controller
     public function handleAppleCallback(Request $request)
     {
         try {
-            $user = Socialite::driver("sign-in-with-apple")->user();
+            $user = Socialite::driver('sign-in-with-apple')->user();
         } catch (\Exception $e) {
-            flash(translate("Something Went wrong. Please try again."))->error();
+            flash(translate('Something Went wrong. Please try again.'))->error();
+
             return redirect()->route('user.login');
         }
-        //check if provider_id exist
+        // check if provider_id exist
         $existingUserByProviderId = User::where('provider_id', $user->id)->whereNull('deleted_at')->first();
 
         if ($existingUserByProviderId) {
             $existingUserByProviderId->access_token = $user->token;
             $existingUserByProviderId->refresh_token = $user->refreshToken;
-            if (!isset($user->user['is_private_email'])) {
+            if (! isset($user->user['is_private_email'])) {
                 $existingUserByProviderId->email = $user->email;
             }
             $existingUserByProviderId->save();
-            //proceed to login
+            // proceed to login
             auth()->login($existingUserByProviderId, true);
         } else {
-            //check if email exist
+            // check if email exist
             $existing_or_new_user = User::firstOrNew([
-                'email' => $user->email
+                'email' => $user->email,
             ]);
             $existing_or_new_user->provider_id = $user->id;
             $existing_or_new_user->access_token = $user->token;
             $existing_or_new_user->refresh_token = $user->refreshToken;
             $existing_or_new_user->provider = 'apple';
-            if (!$existing_or_new_user->exists) {
+            if (! $existing_or_new_user->exists) {
                 $existing_or_new_user->name = 'Apple User';
                 if ($user->name) {
                     $existing_or_new_user->name = $user->name;
@@ -178,7 +180,6 @@ class LoginController extends Controller
 
             auth()->login($existing_or_new_user, true);
         }
-
 
         if (session('link') != null) {
             return redirect(session('link'));
@@ -195,16 +196,16 @@ class LoginController extends Controller
             $return_provider = $provider;
             $result = true;
         }
+
         return response()->json([
             'result' => $result,
-            'provider' => $return_provider
+            'provider' => $return_provider,
         ]);
     }
 
     /**
      * Get the needed authorization credentials from the request.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @return array
      */
     protected function credentials(Request $request)
@@ -254,6 +255,7 @@ class LoginController extends Controller
         if (request()->is('admin') || request()->is('admin/*')) {
             return view('auth.login');
         }
+
         // Keep local environments on the local app instead of the production panel.
         return redirect(rtrim(env('FRONTEND_URL', env('APP_URL', 'http://localhost')), '/'));
     }
@@ -284,8 +286,8 @@ class LoginController extends Controller
             $uploads = $auth_user->uploads;
             if ($uploads) {
                 foreach ($uploads as $upload) {
-                    if (file_exists(public_path() . '/' . $upload->file_name)) {
-                        unlink(public_path() . '/' . $upload->file_name);
+                    if (file_exists(public_path().'/'.$upload->file_name)) {
+                        unlink(public_path().'/'.$upload->file_name);
                         $upload->delete();
                     }
                 }
@@ -313,10 +315,12 @@ class LoginController extends Controller
             auth()->guard()->logout();
             $request->session()->invalidate();
 
-            flash(translate("Your account deletion successfully done."))->success();
+            flash(translate('Your account deletion successfully done.'))->success();
+
             return redirect()->route($redirect_route);
         }
-        flash(translate("Something Went Wrong"))->error();
+        flash(translate('Something Went Wrong'))->error();
+
         return redirect()->back();
     }
 }

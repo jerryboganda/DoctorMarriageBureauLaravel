@@ -9,13 +9,15 @@ use Illuminate\Http\Request;
 class LanguageController extends CrudController
 {
     protected string $modelClass = Language::class;
+
     protected array $searchColumns = ['name', 'code'];
+
     protected array $sortable = ['id', 'name', 'code', 'created_at'];
 
     public function toggleRtl($id)
     {
         $language = Language::findOrFail($id);
-        $language->rtl = (int) !$language->rtl;
+        $language->rtl = (int) ! $language->rtl;
         $language->save();
 
         return $this->ok($language, 'RTL status updated');
@@ -44,7 +46,7 @@ class LanguageController extends CrudController
         $translations = $request->get('translations', []);
 
         foreach ($translations as $item) {
-            if (!isset($item['key'])) {
+            if (! isset($item['key'])) {
                 continue;
             }
             Translation::updateOrCreate(

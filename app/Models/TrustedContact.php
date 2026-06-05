@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 class TrustedContact extends Model
 {
@@ -34,6 +35,7 @@ class TrustedContact extends Model
     ];
 
     const RELATIONSHIPS = ['parent', 'sibling', 'spouse', 'friend', 'relative', 'other'];
+
     const MAX_TRUSTED_CONTACTS = 3;
 
     public function user(): BelongsTo
@@ -49,7 +51,7 @@ class TrustedContact extends Model
     /**
      * Get contacts for a user
      */
-    public static function getForUser(int $userId): \Illuminate\Database\Eloquent\Collection
+    public static function getForUser(int $userId): Collection
     {
         return self::where('user_id', $userId)
             ->orderBy('is_verified', 'desc')
@@ -85,10 +87,11 @@ class TrustedContact extends Model
      */
     public function sendVerification(): bool
     {
-        if (!$this->email) {
+        if (! $this->email) {
             Log::warning('Trusted contact verification requires email because SMS is disabled.', [
                 'trusted_contact_id' => $this->id,
             ]);
+
             return false;
         }
 
@@ -96,12 +99,12 @@ class TrustedContact extends Model
         $this->verification_sent_at = now();
         $this->save();
 
-        $verifyUrl = url('/api/trusted-contact/verify/' . $this->verification_token);
+        $verifyUrl = url('/api/trusted-contact/verify/'.$this->verification_token);
 
         if ($this->email) {
             try {
-                $subject = 'Trusted Contact Verification - ' . env('APP_NAME', 'Matrimonial Site');
-                $userName = $this->user ? ($this->user->first_name . ' ' . $this->user->last_name) : 'a member';
+                $subject = 'Trusted Contact Verification - '.env('APP_NAME', 'Matrimonial Site');
+                $userName = $this->user ? ($this->user->first_name.' '.$this->user->last_name) : 'a member';
 
                 Mail::send('emails.trusted_contact_verification', [
                     'contactName' => $this->name,
@@ -114,9 +117,11 @@ class TrustedContact extends Model
                         ->to($this->email)
                         ->subject($subject);
                 });
+
                 return true;
             } catch (\Exception $e) {
-                Log::error('Trusted contact email failed: ' . $e->getMessage());
+                Log::error('Trusted contact email failed: '.$e->getMessage());
+
                 return false;
             }
         }
@@ -133,7 +138,7 @@ class TrustedContact extends Model
             ->where('is_verified', false)
             ->first();
 
-        if (!$contact) {
+        if (! $contact) {
             return null;
         }
 
@@ -151,7 +156,7 @@ class TrustedContact extends Model
      */
     public function getMaskedEmailAttribute(): ?string
     {
-        if (!$this->email) {
+        if (! $this->email) {
             return null;
         }
 
@@ -162,15 +167,15 @@ class TrustedContact extends Model
 
         $local = $parts[0];
         $domain = $parts[1];
-        
-        $maskedLocal = substr($local, 0, 2) . str_repeat('*', max(0, strlen($local) - 2));
-        
-        return $maskedLocal . '@' . $domain;
+
+        $maskedLocal = substr($local, 0, 2).str_repeat('*', max(0, strlen($local) - 2));
+
+        return $maskedLocal.'@'.$domain;
     }
 
     public function getMaskedPhoneAttribute(): ?string
     {
-        if (!$this->phone) {
+        if (! $this->phone) {
             return null;
         }
 
@@ -179,7 +184,7 @@ class TrustedContact extends Model
             return str_repeat('*', $len);
         }
 
-        return str_repeat('*', $len - 4) . substr($this->phone, -4);
+        return str_repeat('*', $len - 4).substr($this->phone, -4);
     }
 
     /**

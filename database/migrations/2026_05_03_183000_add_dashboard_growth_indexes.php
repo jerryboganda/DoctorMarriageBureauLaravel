@@ -9,14 +9,14 @@ return new class extends Migration
 {
     private function indexExists(string $table, string $indexName): bool
     {
-        $rows = DB::select('SHOW INDEX FROM `' . $table . '` WHERE Key_name = ?', [$indexName]);
+        $rows = DB::select('SHOW INDEX FROM `'.$table.'` WHERE Key_name = ?', [$indexName]);
 
-        return !empty($rows);
+        return ! empty($rows);
     }
 
     private function addIndex(string $tableName, array $columns, string $indexName): void
     {
-        if (!Schema::hasTable($tableName) || $this->indexExists($tableName, $indexName)) {
+        if (! Schema::hasTable($tableName) || $this->indexExists($tableName, $indexName)) {
             return;
         }
 
@@ -76,7 +76,7 @@ return new class extends Migration
         ];
 
         foreach ($indexes as $tableName => $indexNames) {
-            if (!Schema::hasTable($tableName)) {
+            if (! Schema::hasTable($tableName)) {
                 continue;
             }
 

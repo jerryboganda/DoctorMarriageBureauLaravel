@@ -2,11 +2,11 @@
 
 namespace App\Providers;
 
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Support\Facades\Route;
 
 class RouteServiceProvider extends ServiceProvider
 {
@@ -89,6 +89,7 @@ class RouteServiceProvider extends ServiceProvider
             ->namespace($this->namespace)
             ->group(base_path('routes/support_tickets.php'));
     }
+
     protected function mapReferralRoutes()
     {
         Route::middleware('web')
@@ -138,6 +139,6 @@ class RouteServiceProvider extends ServiceProvider
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(1000)->by(optional($request->user())->id ?: $request->ip());
         });
-        
+
     }
 }

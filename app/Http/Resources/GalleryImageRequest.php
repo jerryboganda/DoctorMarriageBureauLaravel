@@ -2,9 +2,11 @@
 
 namespace App\Http\Resources;
 
-use App\Models\ViewGalleryImage;
 use App\Models\User;
+use App\Models\ViewGalleryImage;
 use App\Utility\MemberUtility;
+use Illuminate\Contracts\Support\Arrayable;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class GalleryImageRequest extends JsonResource
@@ -12,8 +14,8 @@ class GalleryImageRequest extends JsonResource
     /**
      * Transform the resource into an array.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return array|\Illuminate\Contracts\Support\Arrayable|\JsonSerializable
+     * @param  Request  $request
+     * @return array|Arrayable|\JsonSerializable
      */
     public function toArray($request)
     {
@@ -22,10 +24,11 @@ class GalleryImageRequest extends JsonResource
         if ($user != null) {
             $galleryRequestInfo = MemberUtility::member_gallery_image_request_info($user->id);
             $requestState = (int) $view_gallery_images->status === 1 ? 'approved' : 'pending';
+
             return [
                 'id' => $this->id,
                 'photo' => uploaded_asset($user->photo) ?? gender_avatar($user?->member),
-                'name' => $user->first_name . $user->last_name,
+                'name' => $user->first_name.$user->last_name,
                 'date_of_birth' => MemberUtility::member_birthdate($user->id),
                 'age' => MemberUtility::member_age($user->id),
                 'status' => $view_gallery_images->status,

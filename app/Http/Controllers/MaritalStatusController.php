@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\MaritalStatus;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Redirect;
 use Validator;
 
@@ -16,37 +17,38 @@ class MaritalStatusController extends Controller
         $this->middleware(['permission:delete_marital_status'])->only('destroy');
 
         $this->rules = [
-            'name'      => ['required','max:255'],
+            'name' => ['required', 'max:255'],
         ];
 
         $this->messages = [
-            'name.required'    => translate('Name is required'),
-            'name.max'         => translate('Max 255 characters'),
+            'name.required' => translate('Name is required'),
+            'name.max' => translate('Max 255 characters'),
         ];
     }
 
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index(Request $request)
     {
-      $sort_search   = null;
-      $marital_statuses = MaritalStatus::latest();
+        $sort_search = null;
+        $marital_statuses = MaritalStatus::latest();
 
-      if ($request->has('search')){
-          $sort_search       = $request->search;
-          $marital_statuses  = $marital_statuses->where('name', 'like', '%'.$sort_search.'%');
-      }
-      $marital_statuses = $marital_statuses->paginate(10);
-      return view('admin.member_profile_attributes.marital_statuses.index', compact('marital_statuses','sort_search'));
+        if ($request->has('search')) {
+            $sort_search = $request->search;
+            $marital_statuses = $marital_statuses->where('name', 'like', '%'.$sort_search.'%');
+        }
+        $marital_statuses = $marital_statuses->paginate(10);
+
+        return view('admin.member_profile_attributes.marital_statuses.index', compact('marital_statuses', 'sort_search'));
     }
 
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create()
     {
@@ -56,29 +58,29 @@ class MaritalStatusController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(Request $request)
     {
-        $rules      = $this->rules;
-        $messages   = $this->messages;
-        $validator  = Validator::make($request->all(), $rules, $messages);
+        $rules = $this->rules;
+        $messages = $this->messages;
+        $validator = Validator::make($request->all(), $rules, $messages);
 
         if ($validator->fails()) {
             flash(translate('Sorry! Something went wrong'))->error();
+
             return Redirect::back()->withErrors($validator);
         }
 
-        $marital_status              = new MaritalStatus;
-        $marital_status->name        = $request->name;
-        if($marital_status->save())
-        {
+        $marital_status = new MaritalStatus;
+        $marital_status->name = $request->name;
+        if ($marital_status->save()) {
             flash('New Marital Status has been added successfully')->success();
+
             return redirect()->route('marital-statuses.index');
-        }
-        else {
+        } else {
             flash('Sorry! Something went wrong.')->error();
+
             return back();
         }
 
@@ -88,7 +90,7 @@ class MaritalStatusController extends Controller
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function show($id)
     {
@@ -99,41 +101,42 @@ class MaritalStatusController extends Controller
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function edit($id)
     {
-        $marital_status       = MaritalStatus::findOrFail(decrypt($id));
+        $marital_status = MaritalStatus::findOrFail(decrypt($id));
+
         return view('admin.member_profile_attributes.marital_statuses.edit', compact('marital_status'));
     }
 
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function update(Request $request, $id)
     {
-        $rules      = $this->rules;
-        $messages   = $this->messages;
-        $validator  = Validator::make($request->all(), $rules, $messages);
+        $rules = $this->rules;
+        $messages = $this->messages;
+        $validator = Validator::make($request->all(), $rules, $messages);
 
         if ($validator->fails()) {
             flash(translate('Sorry! Something went wrong'))->error();
+
             return Redirect::back()->withErrors($validator);
         }
 
-        $marital_status              = MaritalStatus::findOrFail($id);
-        $marital_status->name        = $request->name;
-        if($marital_status->save())
-        {
+        $marital_status = MaritalStatus::findOrFail($id);
+        $marital_status->name = $request->name;
+        if ($marital_status->save()) {
             flash('Marital Status has been updated successfully')->success();
+
             return redirect()->route('marital-statuses.index');
-        }
-        else {
+        } else {
             flash('Sorry! Something went wrong.')->error();
+
             return back();
         }
     }
@@ -142,15 +145,17 @@ class MaritalStatusController extends Controller
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function destroy($id)
     {
         if (MaritalStatus::destroy($id)) {
             flash('Marital Status info has been deleted successfully')->success();
+
             return redirect()->route('marital-statuses.index');
         } else {
             flash('Sorry! Something went wrong.')->error();
+
             return back();
         }
     }

@@ -5,11 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Package;
 use App\Models\Referral;
 use App\Models\ReferralAuditLog;
-use App\Models\ReferralCode;
 use App\Models\ReferralReward;
 use App\Models\ReferralRule;
 use App\Models\ReferralSetting;
-use App\Models\User;
 use App\Services\ReferralService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -20,7 +18,7 @@ class ReferralController extends Controller
 
     public function __construct()
     {
-        $this->referralService = new ReferralService();
+        $this->referralService = new ReferralService;
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -47,6 +45,7 @@ class ReferralController extends Controller
     {
         $settings = ReferralSetting::instance();
         $rules = ReferralRule::orderBy('created_at', 'desc')->get();
+
         return view('admin.referral.settings', compact('settings', 'rules'));
     }
 
@@ -102,6 +101,7 @@ class ReferralController extends Controller
         Cache::forget('referral_settings');
 
         flash(translate('Referral settings updated successfully'))->success();
+
         return redirect()->back();
     }
 
@@ -113,6 +113,7 @@ class ReferralController extends Controller
     {
         $rules = ReferralRule::orderBy('created_at', 'desc')->get();
         $packages = Package::where('active', 1)->whereNull('deleted_at')->get();
+
         return view('admin.referral.rules', compact('rules', 'packages'));
     }
 
@@ -154,6 +155,7 @@ class ReferralController extends Controller
         ReferralAuditLog::log('admin', auth()->id(), 'rule_created', 'referral_rule', $rule->id, null, $rule->toArray());
 
         flash(translate('Referral rule created successfully'))->success();
+
         return redirect()->back();
     }
 
@@ -197,6 +199,7 @@ class ReferralController extends Controller
         ReferralAuditLog::log('admin', auth()->id(), 'rule_updated', 'referral_rule', $rule->id, $before, $rule->toArray());
 
         flash(translate('Referral rule updated successfully'))->success();
+
         return redirect()->back();
     }
 
@@ -207,6 +210,7 @@ class ReferralController extends Controller
         // Check if rule has rewards
         if ($rule->rewards()->exists()) {
             flash(translate('Cannot delete rule with existing rewards. Deactivate it instead.'))->error();
+
             return redirect()->back();
         }
 
@@ -214,6 +218,7 @@ class ReferralController extends Controller
         $rule->delete();
 
         flash(translate('Referral rule deleted successfully'))->success();
+
         return redirect()->back();
     }
 
@@ -234,12 +239,12 @@ class ReferralController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->whereHas('referrer', function ($q2) use ($search) {
                     $q2->where('first_name', 'like', "%{$search}%")
-                       ->orWhere('last_name', 'like', "%{$search}%")
-                       ->orWhere('email', 'like', "%{$search}%");
+                        ->orWhere('last_name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
                 })->orWhereHas('referred', function ($q2) use ($search) {
                     $q2->where('first_name', 'like', "%{$search}%")
-                       ->orWhere('last_name', 'like', "%{$search}%")
-                       ->orWhere('email', 'like', "%{$search}%");
+                        ->orWhere('last_name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
                 });
             });
         }
@@ -249,7 +254,7 @@ class ReferralController extends Controller
         }
 
         if ($request->filled('date_to')) {
-            $query->where('created_at', '<=', $request->date_to . ' 23:59:59');
+            $query->where('created_at', '<=', $request->date_to.' 23:59:59');
         }
 
         $referrals = $query->orderBy('created_at', 'desc')->paginate(20);
@@ -267,7 +272,7 @@ class ReferralController extends Controller
             $this->referralService->adminInvalidateReferral($id, auth()->id(), $request->reason);
             flash(translate('Referral invalidated successfully'))->success();
         } catch (\Exception $e) {
-            flash(translate('Error: ') . $e->getMessage())->error();
+            flash(translate('Error: ').$e->getMessage())->error();
         }
 
         return redirect()->back();
@@ -300,7 +305,7 @@ class ReferralController extends Controller
             $this->referralService->adminReverseReward($id, auth()->id(), $request->reason);
             flash(translate('Reward reversed successfully'))->success();
         } catch (\Exception $e) {
-            flash(translate('Error: ') . $e->getMessage())->error();
+            flash(translate('Error: ').$e->getMessage())->error();
         }
 
         return redirect()->back();
@@ -330,7 +335,8 @@ class ReferralController extends Controller
     public function backfillCodes()
     {
         $count = $this->referralService->backfillReferralCodes();
-        flash(translate('Referral codes generated for ') . $count . translate(' users'))->success();
+        flash(translate('Referral codes generated for ').$count.translate(' users'))->success();
+
         return redirect()->back();
     }
 }

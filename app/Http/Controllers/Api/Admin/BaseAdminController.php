@@ -28,13 +28,13 @@ class BaseAdminController extends Controller
 
     protected function applySearch($query, ?string $search, array $columns)
     {
-        if (!$search) {
+        if (! $search) {
             return $query;
         }
 
         return $query->where(function ($q) use ($search, $columns) {
             foreach ($columns as $column) {
-                $q->orWhere($column, 'like', '%' . $search . '%');
+                $q->orWhere($column, 'like', '%'.$search.'%');
             }
         });
     }

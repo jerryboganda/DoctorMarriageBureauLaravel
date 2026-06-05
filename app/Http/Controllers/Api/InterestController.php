@@ -2,20 +2,13 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Models\User;
-use App\Models\ChatThread;
-use Illuminate\Http\Request;
-use App\Utility\EmailUtility;
+use App\Http\Resources\ExpressInterestResource;
+use App\Http\Resources\MyInterestResource;
 use App\Models\ExpressInterest;
 use App\Models\IgnoredUser;
+use App\Models\User;
 use App\Services\InterestService;
-use App\Http\Requests\InterestRequest;
-use App\Http\Controllers\Api\Controller;
-use App\Http\Resources\MyInterestResource;
-use App\Notifications\DbStoreNotification;
-use Illuminate\Support\Facades\Notification;
-use Kutia\Larafirebase\Facades\Larafirebase;
-use App\Http\Resources\ExpressInterestResource;
+use Illuminate\Http\Request;
 
 class InterestController extends Controller
 {
@@ -39,7 +32,7 @@ class InterestController extends Controller
         $interests = $interestsQuery->paginate(10);
 
         return MyInterestResource::collection($interests)->additional([
-            'result' => true
+            'result' => true,
         ]);
     }
 
@@ -65,7 +58,7 @@ class InterestController extends Controller
         }
 
         $targetUser = User::find($request->user_id);
-        if (!$targetUser) {
+        if (! $targetUser) {
             return response()->json([
                 'result' => false,
                 'error_code' => 'invalid_target',
@@ -113,14 +106,15 @@ class InterestController extends Controller
                 return $this->success_message('Proposal already accepted');
             }
 
-            $interestService = new InterestService();
+            $interestService = new InterestService;
             $accepted = $interestService->accept($receivedInterest->id);
+
             return $accepted
                 ? $this->success_message('Proposal accepted successfully.')
                 : $this->failure_message('Could not accept proposal at this time. Please try again.');
         }
 
-        $interest = new InterestService();
+        $interest = new InterestService;
         $result = $interest->store($request->user_id);
 
         // InterestService now returns an array with structured error info
@@ -128,6 +122,7 @@ class InterestController extends Controller
             if ($result['success']) {
                 return $this->success_message('Proposal Sent Successfully');
             }
+
             return response()->json([
                 'result' => false,
                 'status' => $result['status'] ?? null,
@@ -157,14 +152,15 @@ class InterestController extends Controller
             ->where('user_id', auth()->user()->id)
             ->latest()
             ->paginate(10);
+
         return ExpressInterestResource::collection($interests)->additional([
-            'result' => true
+            'result' => true,
         ]);
     }
 
     public function accept_interest(Request $request)
     {
-        $interest = new InterestService();
+        $interest = new InterestService;
         $accept_interest = $interest->accept($request->interest_id);
 
         return ($accept_interest) ?
@@ -174,7 +170,7 @@ class InterestController extends Controller
 
     public function reject_interest(Request $request)
     {
-        $interest = new InterestService();
+        $interest = new InterestService;
         $reject_interest = $interest->reject($request->interest_id);
 
         return ($reject_interest) ?
@@ -190,24 +186,24 @@ class InterestController extends Controller
     {
         $interest_id = $request->interest_id;
         $interest = ExpressInterest::find($interest_id);
-        
-        if (!$interest) {
+
+        if (! $interest) {
             return $this->failure_message('Proposal request not found.');
         }
-        
+
         // Only the person who sent the interest can withdraw it
         if ($interest->interested_by != auth()->user()->id) {
             return $this->failure_message('You are not authorized to cancel this proposal.');
         }
-        
+
         // Can only withdraw pending interests
         if ($interest->status != 0) {
             return $this->failure_message('Can only cancel pending proposals.');
         }
-        
+
         // Delete the interest
         ExpressInterest::destroy($interest_id);
-        
+
         return $this->success_message('Proposal withdrawn successfully.');
     }
 }

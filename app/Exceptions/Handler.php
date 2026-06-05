@@ -4,6 +4,9 @@ namespace App\Exceptions;
 
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
 class Handler extends ExceptionHandler
@@ -30,24 +33,37 @@ class Handler extends ExceptionHandler
     /**
      * Report or log an exception.
      *
-     * @param  \Throwable  $exception
      * @return void
      *
      * @throws \Exception
      */
     public function report(Throwable $exception)
     {
+        if (request()?->is('api/*')) {
+            $request = request();
+
+            Log::error('API exception', [
+                'exception' => get_class($exception),
+                'message' => $exception->getMessage(),
+                'route' => optional($request->route())->uri(),
+                'method' => $request->method(),
+                'path' => $request->path(),
+                'user_id' => optional($request->user())->id,
+                'request_id' => $request->headers->get('X-Request-Id'),
+                'ip' => $request->ip(),
+            ]);
+        }
+
         parent::report($exception);
     }
 
     /**
      * Render an exception into an HTTP response.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Throwable  $exception
-     * @return \Symfony\Component\HttpFoundation\Response
+     * @param  Request  $request
+     * @return Response
      *
-     * @throws \Throwable
+     * @throws Throwable
      */
     public function render($request, Throwable $exception)
     {

@@ -2,18 +2,20 @@
 
 namespace App\Services;
 
+use App\Models\Member;
+use App\Models\Package;
 use App\Models\Referral;
 use App\Models\ReferralAuditLog;
 use App\Models\ReferralCode;
 use App\Models\ReferralReward;
 use App\Models\ReferralRule;
 use App\Models\ReferralSetting;
-use App\Models\Wallet;
 use App\Models\User;
-use App\Models\Member;
-use App\Models\Package;
+use App\Models\Wallet;
+use App\Notifications\DbStoreNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 
 class ReferralService
 {
@@ -38,7 +40,7 @@ class ReferralService
     {
         $normalized = $this->normalizeReferralCode($referralCode);
 
-        if (!$normalized) {
+        if (! $normalized) {
             return null;
         }
 
@@ -54,20 +56,22 @@ class ReferralService
     {
         $settings = ReferralSetting::instance();
 
-        if (!$settings->referral_enabled) {
+        if (! $settings->referral_enabled) {
             Log::info("Referral system disabled. Skipping referral for user {$referredUserId}");
+
             return ['success' => false, 'message' => 'Referral system is currently disabled'];
         }
 
         $referredUser = User::find($referredUserId);
-        if (!$referredUser) {
+        if (! $referredUser) {
             return ['success' => false, 'message' => 'Referred user not found'];
         }
 
         $referralCode = $this->resolveReferralCode($referralCodeString);
 
-        if (!$referralCode) {
+        if (! $referralCode) {
             Log::warning("Invalid referral code: {$referralCodeString}");
+
             return ['success' => false, 'message' => 'Invalid or inactive referral code'];
         }
 
@@ -76,6 +80,7 @@ class ReferralService
         // Block self-referral
         if ($referrerUserId == $referredUserId) {
             Log::warning("Self-referral attempt blocked. User: {$referredUserId}");
+
             return ['success' => false, 'message' => 'Self-referral is not allowed'];
         }
 
@@ -89,13 +94,15 @@ class ReferralService
             }
 
             Log::warning("User {$referredUserId} already has a referral record");
+
             return ['success' => false, 'message' => 'User has already been referred'];
         }
 
         // Anti-fraud checks
         $fraudCheck = $this->performAntiFraudChecks($referrerUserId, $referredUserId, $metadata, $settings);
-        if (!$fraudCheck['passed']) {
+        if (! $fraudCheck['passed']) {
             Log::warning("Anti-fraud check failed for referral: {$fraudCheck['reason']}");
+
             return ['success' => false, 'message' => $fraudCheck['reason']];
         }
 
@@ -104,10 +111,10 @@ class ReferralService
             $referrer = User::find($referrerUserId);
             $referred = User::find($referredUserId);
             if ($referrer && $referred && $referrer->email && $referred->email) {
-                $referrerDomain = substr(strrchr($referrer->email, "@"), 1);
-                $referredDomain = substr(strrchr($referred->email, "@"), 1);
+                $referrerDomain = substr(strrchr($referrer->email, '@'), 1);
+                $referredDomain = substr(strrchr($referred->email, '@'), 1);
                 $commonDomains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com'];
-                if ($referrerDomain === $referredDomain && !in_array(strtolower($referrerDomain), $commonDomains)) {
+                if ($referrerDomain === $referredDomain && ! in_array(strtolower($referrerDomain), $commonDomains)) {
                     return ['success' => false, 'message' => 'Referrals from same email domain are restricted'];
                 }
             }
@@ -178,7 +185,7 @@ class ReferralService
      */
     public function applyReferralCommissionIfEligible(User $user, ?float $commissionAmount = null): array
     {
-        if (!addon_activation('referral_system')) {
+        if (! addon_activation('referral_system')) {
             return ['success' => false, 'message' => 'Referral system is disabled'];
         }
 
@@ -187,7 +194,7 @@ class ReferralService
         }
 
         $referrer = User::find($user->referred_by);
-        if (!$referrer) {
+        if (! $referrer) {
             return ['success' => false, 'message' => 'Referrer not found'];
         }
 
@@ -252,12 +259,12 @@ class ReferralService
             ->chunkById(100, function ($users) use (&$count) {
                 foreach ($users as $user) {
                     $referrer = User::find($user->referred_by);
-                    if (!$referrer) {
+                    if (! $referrer) {
                         continue;
                     }
 
                     $referrerCode = ReferralCode::where('user_id', $referrer->id)->where('status', 'active')->first();
-                    if (!$referrerCode) {
+                    if (! $referrerCode) {
                         $referrerCode = ReferralCode::getOrCreateForUser($referrer->id);
                     }
 
@@ -265,7 +272,7 @@ class ReferralService
                         'backfilled' => true,
                     ]);
 
-                    if (!empty($result['success'])) {
+                    if (! empty($result['success'])) {
                         $count++;
                     }
                 }
@@ -281,7 +288,7 @@ class ReferralService
     public function checkAndQualifyReferral($referredUserId)
     {
         $settings = ReferralSetting::instance();
-        if (!$settings->referral_enabled) {
+        if (! $settings->referral_enabled) {
             return;
         }
 
@@ -289,7 +296,7 @@ class ReferralService
             ->where('status', 'pending')
             ->first();
 
-        if (!$referral) {
+        if (! $referral) {
             return;
         }
 
@@ -302,7 +309,7 @@ class ReferralService
         }
 
         $referred = User::find($referredUserId);
-        if (!$referred) {
+        if (! $referred) {
             return;
         }
 
@@ -315,7 +322,7 @@ class ReferralService
                         ->lockForUpdate()
                         ->first();
 
-                    if (!$lockedReferral) {
+                    if (! $lockedReferral) {
                         return; // Already processed
                     }
 
@@ -350,15 +357,19 @@ class ReferralService
                 return $user->email_verified_at !== null;
             case 'paid_subscription':
                 $member = $user->member;
-                if (!$member) return false;
+                if (! $member) {
+                    return false;
+                }
+
                 return $member->current_package_id && $member->current_package_id > 1;
 
             case 'active_days':
                 $days = $rule->qualification_params['active_days'] ?? 7;
+
                 return $user->created_at && $user->created_at->copy()->addDays($days)->isPast();
 
             case 'identity_verified':
-                return (int) $user->approved === 1 && !empty($user->verification_info);
+                return (int) $user->approved === 1 && ! empty($user->verification_info);
 
             default:
                 return $user->email_verified_at !== null;
@@ -416,6 +427,7 @@ class ReferralService
         // Check idempotency
         if (ReferralReward::where('idempotency_key', $idempotencyKey)->exists()) {
             Log::info("Reward already exists for idempotency key: {$idempotencyKey}");
+
             return;
         }
 
@@ -453,7 +465,7 @@ class ReferralService
 
             } catch (\Exception $e) {
                 $reward->markAsFailed($e->getMessage());
-                Log::error("Failed to apply referral reward #{$reward->id}: " . $e->getMessage());
+                Log::error("Failed to apply referral reward #{$reward->id}: ".$e->getMessage());
             }
         });
     }
@@ -470,12 +482,12 @@ class ReferralService
         $targetPackageId = $rule->getTargetPackageId();
         $package = Package::find($targetPackageId);
 
-        if (!$package) {
+        if (! $package) {
             throw new \Exception("Target package not found: {$targetPackageId}");
         }
 
         $member = Member::where('user_id', $reward->user_id)->first();
-        if (!$member) {
+        if (! $member) {
             throw new \Exception("Member not found for user: {$reward->user_id}");
         }
 
@@ -607,6 +619,7 @@ class ReferralService
         }
 
         Log::info("Backfilled referral codes for {$count} users");
+
         return $count;
     }
 
@@ -617,7 +630,9 @@ class ReferralService
     {
         try {
             $user = User::find($userId);
-            if (!$user) return;
+            if (! $user) {
+                return;
+            }
 
             $message = '';
             switch ($type) {
@@ -629,21 +644,21 @@ class ReferralService
                     break;
                 case 'upgrade_applied':
                     $ruleName = $data['rule_name'] ?? '';
-                    $message = translate('Congratulations! Your package has been upgraded via referral program: ') . $ruleName;
+                    $message = translate('Congratulations! Your package has been upgraded via referral program: ').$ruleName;
                     break;
             }
 
             if ($message) {
-                $notifyType = 'referral_' . $type;
+                $notifyType = 'referral_'.$type;
                 $id = null;
                 $route = '#';
 
-                \Illuminate\Support\Facades\Notification::send($user, new \App\Notifications\DbStoreNotification(
+                Notification::send($user, new DbStoreNotification(
                     $notifyType, $id, 0, $userId, $message, $route
                 ));
             }
         } catch (\Exception $e) {
-            Log::error("Failed to send referral notification: " . $e->getMessage());
+            Log::error('Failed to send referral notification: '.$e->getMessage());
         }
     }
 
@@ -761,9 +776,10 @@ class ReferralService
                 ->get()
                 ->map(function ($item) {
                     $user = User::find($item->referrer_user_id);
+
                     return [
                         'user_id' => $item->referrer_user_id,
-                        'name' => $user ? $user->first_name . ' ' . $user->last_name : 'Unknown',
+                        'name' => $user ? $user->first_name.' '.$user->last_name : 'Unknown',
                         'email' => $user ? $user->email : '',
                         'total_referrals' => $item->total_referrals,
                         'qualified_referrals' => $item->qualified_referrals,

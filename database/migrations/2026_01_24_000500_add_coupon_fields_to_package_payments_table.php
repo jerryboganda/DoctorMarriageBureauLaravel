@@ -8,21 +8,21 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (!Schema::hasTable('package_payments')) {
+        if (! Schema::hasTable('package_payments')) {
             return;
         }
 
         Schema::table('package_payments', function (Blueprint $table) {
-            if (!Schema::hasColumn('package_payments', 'original_amount')) {
+            if (! Schema::hasColumn('package_payments', 'original_amount')) {
                 $table->double('original_amount')->nullable()->after('amount');
             }
-            if (!Schema::hasColumn('package_payments', 'discount_amount')) {
+            if (! Schema::hasColumn('package_payments', 'discount_amount')) {
                 $table->double('discount_amount')->nullable()->after('original_amount');
             }
-            if (!Schema::hasColumn('package_payments', 'coupon_id')) {
+            if (! Schema::hasColumn('package_payments', 'coupon_id')) {
                 $table->unsignedBigInteger('coupon_id')->nullable()->after('discount_amount');
             }
-            if (!Schema::hasColumn('package_payments', 'coupon_code')) {
+            if (! Schema::hasColumn('package_payments', 'coupon_code')) {
                 $table->string('coupon_code', 100)->nullable()->after('coupon_id');
             }
         });
@@ -30,7 +30,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        if (!Schema::hasTable('package_payments')) {
+        if (! Schema::hasTable('package_payments')) {
             return;
         }
 

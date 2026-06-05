@@ -2,16 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\User;
 use Hash;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class ProfileController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index()
     {
@@ -21,7 +22,7 @@ class ProfileController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create()
     {
@@ -31,8 +32,7 @@ class ProfileController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(Request $request)
     {
@@ -43,7 +43,7 @@ class ProfileController extends Controller
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function show($id)
     {
@@ -54,7 +54,7 @@ class ProfileController extends Controller
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function edit($id)
     {
@@ -64,26 +64,27 @@ class ProfileController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function update(Request $request, $id)
     {
-        $user             = User::findOrFail($id);
+        $user = User::findOrFail($id);
         $user->first_name = $request->first_name;
-        $user->last_name  = $request->last_name;
-        $user->email      = $request->email;
-        if($request->new_password != null && ($request->new_password == $request->confirm_password)){
+        $user->last_name = $request->last_name;
+        $user->email = $request->email;
+        if ($request->new_password != null && ($request->new_password == $request->confirm_password)) {
             $user->password = Hash::make($request->new_password);
         }
         $user->photo = $request->photo;
-        if($user->save()){
+        if ($user->save()) {
             flash(translate('Your Profile has been updated successfully!'))->success();
+
             return back();
         }
 
         flash(translate('Sorry! Something went wrong.'))->error();
+
         return back();
     }
 
@@ -91,7 +92,7 @@ class ProfileController extends Controller
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function destroy($id)
     {

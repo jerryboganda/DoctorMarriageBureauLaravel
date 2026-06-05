@@ -63,6 +63,7 @@ class ReferralReward extends Model
 
         $this->status = 'applied';
         $this->applied_at = now();
+
         return $this->save();
     }
 
@@ -75,6 +76,7 @@ class ReferralReward extends Model
         if ($notes) {
             $this->admin_notes = $notes;
         }
+
         return $this->save();
     }
 
@@ -91,7 +93,7 @@ class ReferralReward extends Model
         $this->status = 'reversed';
         $this->reversed_at = now();
         if ($reason) {
-            $this->admin_notes = ($this->admin_notes ? $this->admin_notes . "\n" : '') . "Reversed: " . $reason;
+            $this->admin_notes = ($this->admin_notes ? $this->admin_notes."\n" : '').'Reversed: '.$reason;
         }
 
         $saved = $this->save();

@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Mail\EmailManager;
 use App\Models\Setting;
 use Artisan;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use MehediIitdu\CoreComponentRepository\CoreComponentRepository;
 
 class SettingController extends Controller
@@ -30,6 +32,7 @@ class SettingController extends Controller
     {
         CoreComponentRepository::instantiateShopRepository();
         CoreComponentRepository::initializeCache();
+
         return view('admin.settings.general_settings');
     }
 
@@ -42,6 +45,7 @@ class SettingController extends Controller
     {
         CoreComponentRepository::instantiateShopRepository();
         CoreComponentRepository::initializeCache();
+
         return view('admin.settings.payment_method_settings');
     }
 
@@ -62,14 +66,14 @@ class SettingController extends Controller
 
     public function member_verification_form_update(Request $request)
     {
-        $form = array();
+        $form = [];
         $select_types = ['select', 'multi_select', 'radio'];
         $j = 0;
         for ($i = 0; $i < count($request->type); $i++) {
             $item['type'] = $request->type[$i];
             $item['label'] = $request->label[$i];
             if (in_array($request->type[$i], $select_types)) {
-                $item['options'] = json_encode($request['options_' . $request->option[$j]]);
+                $item['options'] = json_encode($request['options_'.$request->option[$j]]);
                 $j++;
             }
             array_push($form, $item);
@@ -79,7 +83,8 @@ class SettingController extends Controller
         if ($business_settings->save()) {
             Artisan::call('cache:clear');
 
-            flash(translate("Verification form updated successfully"))->success();
+            flash(translate('Verification form updated successfully'))->success();
+
             return back();
         }
     }
@@ -109,27 +114,28 @@ class SettingController extends Controller
      */
     public function testSmtp(Request $request)
     {
-        $array['view']    = 'emails.verification';
+        $array['view'] = 'emails.verification';
         $array['subject'] = 'SMTP Test';
-        $array['from']    = env('MAIL_USERNAME');
+        $array['from'] = env('MAIL_USERNAME');
         $array['content'] = 'This is a test email.';
 
         try {
-            \Mail::to($request->email)->queue(new \App\Mail\EmailManager($array));
+            \Mail::to($request->email)->queue(new EmailManager($array));
         } catch (\Exception $e) {
-            flash(translate('Failed to send: ' . $e->getMessage()))->error();
+            flash(translate('Failed to send: '.$e->getMessage()))->error();
+
             return back();
         }
 
         flash(translate('An email has been sent.'))->success();
+
         return back();
     }
-
 
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create()
     {
@@ -139,8 +145,7 @@ class SettingController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(Request $request)
     {
@@ -151,7 +156,7 @@ class SettingController extends Controller
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function show($id)
     {
@@ -162,7 +167,7 @@ class SettingController extends Controller
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function edit($id)
     {
@@ -172,9 +177,8 @@ class SettingController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function update(Request $request)
     {
@@ -209,10 +213,10 @@ class SettingController extends Controller
 
         Artisan::call('cache:clear');
 
-        flash(translate("Settings updated successfully"))->success();
+        flash(translate('Settings updated successfully'))->success();
+
         return back();
     }
-
 
     public function payment_method_update(Request $request)
     {
@@ -220,9 +224,9 @@ class SettingController extends Controller
             $this->overWriteEnvFile($type, $request[$type]);
         }
 
-        $payemnt_sandbox = Setting::where('type', $request->payment_method . '_sandbox')->first();
+        $payemnt_sandbox = Setting::where('type', $request->payment_method.'_sandbox')->first();
         if ($payemnt_sandbox != null) {
-            if ($request->has($request->payment_method . '_sandbox')) {
+            if ($request->has($request->payment_method.'_sandbox')) {
                 $payemnt_sandbox->value = 1;
                 $payemnt_sandbox->save();
             } else {
@@ -238,20 +242,20 @@ class SettingController extends Controller
                 $phonepeVersion->value = $request->phonepe_version;
                 $phonepeVersion->save();
             } else {
-                $newSetting = new Setting();
+                $newSetting = new Setting;
                 $newSetting->type = 'phonepe_version';
                 $newSetting->value = $request->phonepe_version;
                 $newSetting->save();
             }
         }
-        $payemnt_activation = Setting::where('type', $request->payment_method . '_payment_activation')->first();
+        $payemnt_activation = Setting::where('type', $request->payment_method.'_payment_activation')->first();
         if ($payemnt_activation == null) {
             $payemnt_activation = new Setting;
-            $payemnt_activation->type = $request->payment_method . '_payment_activation';
+            $payemnt_activation->type = $request->payment_method.'_payment_activation';
             $payemnt_activation->save();
         }
 
-        if ($request->has($request->payment_method . '_payment_activation')) {
+        if ($request->has($request->payment_method.'_payment_activation')) {
             $payemnt_activation->value = 1;
             $payemnt_activation->save();
         } else {
@@ -261,7 +265,8 @@ class SettingController extends Controller
 
         Artisan::call('cache:clear');
 
-        flash(translate("Settings updated successfully"))->success();
+        flash(translate('Settings updated successfully'))->success();
+
         return back();
     }
 
@@ -271,9 +276,9 @@ class SettingController extends Controller
             $this->overWriteEnvFile($type, $request[$type]);
         }
 
-        $activation = Setting::where('type', $request->setting_type . '_activation')->first();
+        $activation = Setting::where('type', $request->setting_type.'_activation')->first();
         if ($activation != null) {
-            if ($request->has($request->setting_type . '_activation')) {
+            if ($request->has($request->setting_type.'_activation')) {
                 $activation->value = 1;
                 $activation->save();
             } else {
@@ -284,17 +289,18 @@ class SettingController extends Controller
 
         Artisan::call('cache:clear');
 
-        flash(translate("Settings updated successfully"))->success();
+        flash(translate('Settings updated successfully'))->success();
+
         return back();
     }
-
 
     public function env_key_update(Request $request)
     {
         foreach ($request->types as $key => $type) {
             $this->overWriteEnvFile($type, $request[$type]);
         }
-        flash(translate("Settings has been updated successfully"))->success();
+        flash(translate('Settings has been updated successfully'))->success();
+
         return back();
     }
 
@@ -303,7 +309,7 @@ class SettingController extends Controller
         if (env('DEMO_MODE') != 'On') {
             $path = base_path('.env');
             if (file_exists($path)) {
-                $val = '"' . trim($val) . '"';
+                $val = '"'.trim($val).'"';
                 $old_val = env($type);
 
                 $content = file_get_contents($path);
@@ -313,7 +319,7 @@ class SettingController extends Controller
                     $content = preg_replace("/^{$type}=(.*)$/m", "{$type}={$val}", $content);
                 } else {
                     // Append if it doesn't exist
-                    $content .= "\n" . $type . '=' . $val;
+                    $content .= "\n".$type.'='.$val;
                 }
 
                 file_put_contents($path, $content);
@@ -353,20 +359,19 @@ class SettingController extends Controller
         }
     }
 
-
     public function updateActivationSettingsInEnv($request)
     {
         if ($request->type == 'FORCE_HTTPS' && $request->value == '1') {
             $this->overWriteEnvFile($request->type, 'On');
 
-            if (strpos(env('APP_URL'), 'http:') !== FALSE) {
-                $this->overWriteEnvFile('APP_URL', str_replace("http:", "https:", env('APP_URL')));
+            if (strpos(env('APP_URL'), 'http:') !== false) {
+                $this->overWriteEnvFile('APP_URL', str_replace('http:', 'https:', env('APP_URL')));
             }
 
         } elseif ($request->type == 'FORCE_HTTPS' && $request->value == '0') {
             $this->overWriteEnvFile($request->type, 'Off');
-            if (strpos(env('APP_URL'), 'https:') !== FALSE) {
-                $this->overWriteEnvFile('APP_URL', str_replace("https:", "http:", env('APP_URL')));
+            if (strpos(env('APP_URL'), 'https:') !== false) {
+                $this->overWriteEnvFile('APP_URL', str_replace('https:', 'http:', env('APP_URL')));
             }
 
         }
@@ -378,7 +383,7 @@ class SettingController extends Controller
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function destroy($id)
     {
@@ -405,7 +410,7 @@ class SettingController extends Controller
                 $settings->save();
             }
         } else {
-            $settings = new Setting();
+            $settings = new Setting;
             $settings->type = 'firebase_push_notification';
             $settings->value = 1;
             $settings->save();
@@ -413,7 +418,8 @@ class SettingController extends Controller
 
         Artisan::call('cache:clear');
 
-        flash(translate("Settings updated successfully"))->success();
+        flash(translate('Settings updated successfully'))->success();
+
         return back();
     }
 }

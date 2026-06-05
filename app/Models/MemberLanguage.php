@@ -7,13 +7,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class MemberLanguage extends Model
 {
-  use SoftDeletes;
+    use SoftDeletes;
 
-  protected $fillable = ['id', 'name'];
+    protected $fillable = ['id', 'name'];
 
-  public function partner_expectations()
-  {
-    return $this->hasmany(PartnerExpectation::class)->withTrashed();
-  }
-
+    public function partner_expectations()
+    {
+        return $this->hasmany(PartnerExpectation::class)->withTrashed();
+    }
 }

@@ -77,11 +77,11 @@ return new class extends Migration
         Schema::table('members', function (Blueprint $table) {
             $table->dropColumn([
                 'marriage_timeline',
-                'relocation_willingness', 
+                'relocation_willingness',
                 'seriousness_level',
                 'voice_intro_path',
                 'intro_video_path',
-                'nationality'
+                'nationality',
             ]);
         });
 

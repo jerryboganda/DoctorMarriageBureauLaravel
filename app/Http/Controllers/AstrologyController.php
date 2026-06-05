@@ -2,17 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Astrology;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Redirect;
 use Validator;
-Use Redirect;
 
 class AstrologyController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index()
     {
@@ -22,7 +23,7 @@ class AstrologyController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create()
     {
@@ -32,8 +33,7 @@ class AstrologyController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(Request $request)
     {
@@ -44,7 +44,7 @@ class AstrologyController extends Controller
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function show($id)
     {
@@ -55,7 +55,7 @@ class AstrologyController extends Controller
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function edit($id)
     {
@@ -65,61 +65,62 @@ class AstrologyController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
-     public function update(Request $request, $id)
-     {
-         $this->rules = [
-             'sun_sign'         => [ 'max:255'],
-             'moon_sign'        => [ 'max:255'],
-             'time_of_birth'    => [ 'max:10'],
-             'city_of_birth'    => [ 'max:20'],
-         ];
-         $this->messages = [
-             'sun_sign.max'       => translate('Max 255 characters'),
-             'moon_sign.max'      => translate('Max 255 characters'),
-             'time_of_birth.max'  => translate('Max 10 characters'),
-             'city_of_birth.max'  => translate('Max 20 characters'),
-         ];
+    public function update(Request $request, $id)
+    {
+        $this->rules = [
+            'sun_sign' => ['max:255'],
+            'moon_sign' => ['max:255'],
+            'time_of_birth' => ['max:10'],
+            'city_of_birth' => ['max:20'],
+        ];
+        $this->messages = [
+            'sun_sign.max' => translate('Max 255 characters'),
+            'moon_sign.max' => translate('Max 255 characters'),
+            'time_of_birth.max' => translate('Max 10 characters'),
+            'city_of_birth.max' => translate('Max 20 characters'),
+        ];
 
-         $rules = $this->rules;
-         $messages = $this->messages;
-         $validator = Validator::make($request->all(), $rules, $messages);
+        $rules = $this->rules;
+        $messages = $this->messages;
+        $validator = Validator::make($request->all(), $rules, $messages);
 
-         if ($validator->fails()) {
-             flash(translate('Something went wrong'))->error();
-             return Redirect::back()->withErrors($validator);
-         }
+        if ($validator->fails()) {
+            flash(translate('Something went wrong'))->error();
 
-         $astrologies = Astrology::where('user_id', $id)->first();
-         if(empty($astrologies)){
-             $astrologies           = new Astrology;
-             $astrologies->user_id  = $id;
-         }
+            return Redirect::back()->withErrors($validator);
+        }
 
-         $astrologies->sun_sign         = $request->sun_sign;
-         $astrologies->moon_sign        = $request->moon_sign;
-         $astrologies->time_of_birth    = $request->time_of_birth;
-         $astrologies->city_of_birth    = $request->city_of_birth;
+        $astrologies = Astrology::where('user_id', $id)->first();
+        if (empty($astrologies)) {
+            $astrologies = new Astrology;
+            $astrologies->user_id = $id;
+        }
 
-         if($astrologies->save()){
-             flash(translate('Astronomic Info has been updated successfully'))->success();
-             return back();
-         }
-         else {
-             flash(translate('Sorry! Something went wrong.'))->error();
-             return back();
-         }
+        $astrologies->sun_sign = $request->sun_sign;
+        $astrologies->moon_sign = $request->moon_sign;
+        $astrologies->time_of_birth = $request->time_of_birth;
+        $astrologies->city_of_birth = $request->city_of_birth;
 
-     }
+        if ($astrologies->save()) {
+            flash(translate('Astronomic Info has been updated successfully'))->success();
+
+            return back();
+        } else {
+            flash(translate('Sorry! Something went wrong.'))->error();
+
+            return back();
+        }
+
+    }
 
     /**
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function destroy($id)
     {

@@ -5,12 +5,11 @@ namespace App\Http\Requests;
 use App\Models\User;
 use App\Rules\RecaptchaRule;
 use App\Utility\PhoneUtility;
-use Illuminate\Validation\Rule;
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
-
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class AuthRequest extends FormRequest
 {
@@ -34,24 +33,24 @@ class AuthRequest extends FormRequest
         $userId = auth()->id();
 
         return [
-            'first_name'           => 'required|string|max:255',
-            'last_name'            => 'required|string|max:255',
-            'phone'                => [
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'phone' => [
                 'required',
                 'string',
-                Rule::unique('users')->ignore($userId)->whereNull('deleted_at')
+                Rule::unique('users')->ignore($userId)->whereNull('deleted_at'),
             ],
-            'email'                => [
+            'email' => [
                 'required',
                 'email',
-                Rule::unique('users')->ignore($userId)->whereNull('deleted_at')
+                Rule::unique('users')->ignore($userId)->whereNull('deleted_at'),
             ],
-            'gender'               => 'required',
-            'on_behalf'            => 'required|integer',
-            'date_of_birth'        => 'nullable|date',
-            'password'             => 'required|string|min:8|confirmed',
-            'referral_code'        => 'nullable|string|max:50',
-            'g-recaptcha-response' => [Rule::when(get_setting('google_recaptcha_activation') == 1, ['required', new RecaptchaRule()], ['sometimes'])]
+            'gender' => 'required',
+            'on_behalf' => 'required|integer',
+            'date_of_birth' => 'nullable|date',
+            'password' => 'required|string|min:8|confirmed',
+            'referral_code' => 'nullable|string|max:50',
+            'g-recaptcha-response' => [Rule::when(get_setting('google_recaptcha_activation') == 1, ['required', new RecaptchaRule], ['sometimes'])],
         ];
     }
 
@@ -84,24 +83,25 @@ class AuthRequest extends FormRequest
     {
         $this->merge([
             'phone' => PhoneUtility::normalize($this->phone),
-            'on_behalves_id'  => $this->on_behalf,
-            'birthday'  => $this->date_of_birth ? date('Y-m-d', strtotime($this->date_of_birth)) : null,
-            'membership'  => 1,
+            'on_behalves_id' => $this->on_behalf,
+            'birthday' => $this->date_of_birth ? date('Y-m-d', strtotime($this->date_of_birth)) : null,
+            'membership' => 1,
             'gender' => ($this->gender == 'Female') ? 2 : 1,
         ]);
     }
+
     /**
      * Get the error messages for the defined validation rules.*
+     *
      * @return array
      */
-
     public function failedValidation(Validator $validator)
     {
         // dd($this->expectsJson());
         if ($this->expectsJson()) {
             throw new HttpResponseException(response()->json([
                 'message' => $validator->errors()->all(),
-                'result' => false
+                'result' => false,
             ], 422));
         } else {
             throw (new ValidationException($validator))

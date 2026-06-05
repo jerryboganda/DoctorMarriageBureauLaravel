@@ -5,11 +5,11 @@ namespace App\Mail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Contracts\Queue\ShouldQueue;
 
 class EmailManager extends Mailable
 {
     use Queueable, SerializesModels;
+
     /**
      * Create a new message instance.
      *
@@ -21,6 +21,7 @@ class EmailManager extends Mailable
     {
         $this->array = $array;
     }
+
     /**
      * Build the message.
      *
@@ -29,7 +30,7 @@ class EmailManager extends Mailable
     public function build()
     {
         return $this->view($this->array['view'])
-                    ->from($this->array['from'])
-                    ->subject($this->array['subject']);
+            ->from($this->array['from'])
+            ->subject($this->array['subject']);
     }
 }

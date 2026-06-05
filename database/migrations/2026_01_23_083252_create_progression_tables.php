@@ -25,23 +25,23 @@ return new class extends Migration
             $table->unsignedBigInteger('user_id');     // The active user
             $table->unsignedBigInteger('partner_id');  // The match
             $table->unsignedBigInteger('current_stage_id')->nullable();
-            
+
             $table->enum('status', ['active', 'on_hold', 'archived', 'married'])->default('active');
             $table->text('next_steps')->nullable();
-            $table->integer('total_progress_percent')->default(0); 
+            $table->integer('total_progress_percent')->default(0);
             $table->timestamps();
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('partner_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('current_stage_id')->references('id')->on('progression_stages');
-            
-            $table->unique(['user_id', 'partner_id']); 
+
+            $table->unique(['user_id', 'partner_id']);
         });
 
         Schema::create('progression_events', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('member_progression_id');
-            
+
             $table->string('title');
             $table->dateTime('event_at');
             $table->string('location')->nullable();

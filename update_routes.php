@@ -1,9 +1,10 @@
 <?php
+
 $filePath = 'routes/api.php';
 $content = file_get_contents($filePath);
 
 // 1. Move Dropdown routes
-$dropdownRoutes = <<<EOD
+$dropdownRoutes = <<<'EOD'
             Route::get('/maritial-status', 'ProfileDropdownController@maritial_status');
             Route::get('/countries', 'ProfileDropdownController@country_list');
             Route::get('/states/{id}', 'ProfileDropdownController@state_list');
@@ -19,12 +20,12 @@ EOD;
 $qualityRoute = "            Route::get('/profile/quality-score', 'ProfileCenterController@getQualityScore');";
 
 // Remove them from their original locations
-$content = str_replace($dropdownRoutes, "", $content);
-$content = str_replace($qualityRoute, "", $content);
+$content = str_replace($dropdownRoutes, '', $content);
+$content = str_replace($qualityRoute, '', $content);
 
 // Add them to the auth:sanctum group
 $insertionPoint = "        Route::get('/profile/download-biodata', 'ProfileController@download_biodata');";
-$newRoutes = <<<EOD
+$newRoutes = <<<'EOD'
         Route::get('/profile/download-biodata', 'ProfileController@download_biodata');
 
         // Dropdowns and Profile Center (Accessible even if email not verified)

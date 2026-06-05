@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\ViewContact;
-use App\Models\Member;
 use Auth;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class ViewContactController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index()
     {
@@ -22,7 +22,7 @@ class ViewContactController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create()
     {
@@ -32,32 +32,30 @@ class ViewContactController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(Request $request)
     {
         $view_contact_by_user = Auth::user();
         $view_contact_by_member = $view_contact_by_user->member;
 
-        if($view_contact_by_member->remaining_contact_view > 0){
+        if ($view_contact_by_member->remaining_contact_view > 0) {
 
             // Store view contact data
-            $view_contact             = new ViewContact;
-            $view_contact->user_id    = $request->id;
-            $view_contact->viewed_by  = $view_contact_by_user->id;
-            if($view_contact->save()){
+            $view_contact = new ViewContact;
+            $view_contact->user_id = $request->id;
+            $view_contact->viewed_by = $view_contact_by_user->id;
+            if ($view_contact->save()) {
 
                 // Deduct View Contact by user's remaining contact views
                 $view_contact_by_member->remaining_contact_view -= 1;
                 $view_contact_by_member->save();
+
                 return true;
-            }
-            else {
+            } else {
                 return false;
             }
-        }
-        else{
+        } else {
             return false;
         }
     }
@@ -66,7 +64,7 @@ class ViewContactController extends Controller
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function show($id)
     {
@@ -77,7 +75,7 @@ class ViewContactController extends Controller
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function edit($id)
     {
@@ -87,9 +85,8 @@ class ViewContactController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function update(Request $request, $id)
     {
@@ -100,7 +97,7 @@ class ViewContactController extends Controller
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function destroy($id)
     {

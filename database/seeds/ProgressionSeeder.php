@@ -11,6 +11,6 @@ class ProgressionSeeder extends Seeder
      */
     public function run()
     {
-        app(\Database\Seeders\ProgressionSeeder::class)->run();
+        app(Database\Seeders\ProgressionSeeder::class)->run();
     }
 }

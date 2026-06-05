@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\Religion;
 use App\Models\Caste;
+use App\Models\Religion;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Redirect;
 use Validator;
 
@@ -17,13 +18,13 @@ class CasteController extends Controller
         $this->middleware(['permission:delete_caste'])->only('destroy');
 
         $this->rules = [
-            'name'      => ['required','max:255'],
-            'religion'  => ['required'],
+            'name' => ['required', 'max:255'],
+            'religion' => ['required'],
         ];
 
         $this->messages = [
-            'name.required'     => translate('Name is required'),
-            'name.max'          => translate('Max 255 characters'),
+            'name.required' => translate('Name is required'),
+            'name.max' => translate('Max 255 characters'),
             'religion.required' => translate('Religion is required'),
         ];
     }
@@ -31,26 +32,27 @@ class CasteController extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index(Request $request)
     {
-        $sort_search  = null;
-        $castes       = Caste::latest();
-        $religions    = Religion::all();
+        $sort_search = null;
+        $castes = Caste::latest();
+        $religions = Religion::all();
 
-        if ($request->has('search')){
-            $sort_search  = $request->search;
-            $castes       = $castes->where('name', 'like', '%'.$sort_search.'%');
+        if ($request->has('search')) {
+            $sort_search = $request->search;
+            $castes = $castes->where('name', 'like', '%'.$sort_search.'%');
         }
         $castes = $castes->paginate(10);
-        return view('admin.member_profile_attributes.castes.index', compact('castes','religions','sort_search'));
+
+        return view('admin.member_profile_attributes.castes.index', compact('castes', 'religions', 'sort_search'));
     }
 
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create()
     {
@@ -60,30 +62,30 @@ class CasteController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(Request $request)
     {
-        $rules      = $this->rules;
-        $messages   = $this->messages;
-        $validator  = Validator::make($request->all(), $rules, $messages);
+        $rules = $this->rules;
+        $messages = $this->messages;
+        $validator = Validator::make($request->all(), $rules, $messages);
 
         if ($validator->fails()) {
             flash(translate('Sorry! Something went wrong'))->error();
+
             return Redirect::back()->withErrors($validator);
         }
 
-        $caste              = new Caste;
-        $caste->name        = $request->name;
+        $caste = new Caste;
+        $caste->name = $request->name;
         $caste->religion_id = $request->religion;
-        if($caste->save())
-        {
+        if ($caste->save()) {
             flash('New caste has been added successfully')->success();
+
             return redirect()->route('castes.index');
-        }
-        else {
+        } else {
             flash('Sorry! Something went wrong.')->error();
+
             return back();
         }
 
@@ -93,7 +95,7 @@ class CasteController extends Controller
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function show($id)
     {
@@ -104,43 +106,44 @@ class CasteController extends Controller
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function edit($id)
     {
-        $caste          = Caste::findOrFail(decrypt($id));
-        $religions      = Religion::all();
-        return view('admin.member_profile_attributes.castes.edit', compact('caste','religions'));
+        $caste = Caste::findOrFail(decrypt($id));
+        $religions = Religion::all();
+
+        return view('admin.member_profile_attributes.castes.edit', compact('caste', 'religions'));
     }
 
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function update(Request $request, $id)
     {
-        $rules      = $this->rules;
-        $messages   = $this->messages;
-        $validator  = Validator::make($request->all(), $rules, $messages);
+        $rules = $this->rules;
+        $messages = $this->messages;
+        $validator = Validator::make($request->all(), $rules, $messages);
 
         if ($validator->fails()) {
             flash(translate('Sorry! Something went wrong'))->error();
+
             return Redirect::back()->withErrors($validator);
         }
 
-        $caste              = Caste::findOrFail($id);
-        $caste->name        = $request->name;
+        $caste = Caste::findOrFail($id);
+        $caste->name = $request->name;
         $caste->religion_id = $request->religion;
-        if($caste->save())
-        {
+        if ($caste->save()) {
             flash('Caste info has been updated successfully')->success();
+
             return redirect()->route('castes.index');
-        }
-        else {
+        } else {
             flash('Sorry! Something went wrong.')->error();
+
             return back();
         }
 
@@ -152,6 +155,7 @@ class CasteController extends Controller
             foreach ($request->id as $id) {
                 $this->destroy($id);
             }
+
             return 1;
         } else {
             return 0;
@@ -162,7 +166,7 @@ class CasteController extends Controller
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function destroy($id)
     {
@@ -172,9 +176,11 @@ class CasteController extends Controller
         }
         if (Caste::destroy($id)) {
             flash('Caste info has been deleted successfully')->success();
+
             return redirect()->route('castes.index');
         } else {
             flash('Sorry! Something went wrong.')->error();
+
             return back();
         }
     }
@@ -183,6 +189,7 @@ class CasteController extends Controller
     public function get_caste_by_religion(Request $request)
     {
         $castes = Caste::where('religion_id', $request->religion_id)->get();
+
         return $castes;
     }
 }

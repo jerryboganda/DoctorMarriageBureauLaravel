@@ -1,28 +1,40 @@
 <?php
+
 namespace App\Utility;
-use Carbon\Carbon;
-use App\Models\User;
+
+use App\Models\ExpressInterest;
 use App\Models\FieldVisibilitySetting;
-use App\Models\Shortlist;
-use App\Models\ReportedUser;
 use App\Models\GalleryImage;
 use App\Models\MemberLanguage;
-use App\Models\ExpressInterest;
-use App\Models\ViewProfilePicture;
+use App\Models\ReportedUser;
+use App\Models\Shortlist;
+use App\Models\User;
 use App\Models\ViewGalleryImage;
+use App\Models\ViewProfilePicture;
+use Carbon\Carbon;
 
 class MemberUtility
 {
     protected static array $userCache = [];
+
     protected static array $countryCache = [];
+
     protected static array $religionCache = [];
+
     protected static array $motherTongueCache = [];
+
     protected static array $interestCache = [];
+
     protected static array $shortlistCache = [];
+
     protected static array $reportCache = [];
+
     protected static array $visibilitySnapshotCache = [];
+
     protected static array $mediaVisibilityCache = [];
+
     protected static array $profilePhotoRequestCache = [];
+
     protected static array $galleryImageRequestCache = [];
 
     public static function resetCaches(): void
@@ -43,7 +55,7 @@ class MemberUtility
     public static function primeUserCache($users): void
     {
         foreach ($users as $user) {
-            if (!$user || empty($user->id)) {
+            if (! $user || empty($user->id)) {
                 continue;
             }
 
@@ -55,7 +67,7 @@ class MemberUtility
     {
         $ids = collect($userIds)
             ->map(fn ($id) => (int) $id)
-            ->filter(fn ($id) => $id > 0 && !array_key_exists($id, self::$visibilitySnapshotCache))
+            ->filter(fn ($id) => $id > 0 && ! array_key_exists($id, self::$visibilitySnapshotCache))
             ->unique()
             ->values();
 
@@ -87,7 +99,7 @@ class MemberUtility
 
     protected static function boolSetting(array $settings, string $key, bool $default): bool
     {
-        if (!array_key_exists($key, $settings)) {
+        if (! array_key_exists($key, $settings)) {
             return $default;
         }
 
@@ -109,7 +121,7 @@ class MemberUtility
             ];
         }
 
-        if (!array_key_exists($userId, self::$visibilitySnapshotCache)) {
+        if (! array_key_exists($userId, self::$visibilitySnapshotCache)) {
             $user = self::getUserWithProfileRelations($userId);
             $settings = FieldVisibilitySetting::where('user_id', $userId)
                 ->pluck('is_visible', 'field_name')
@@ -162,7 +174,7 @@ class MemberUtility
         }
 
         $maskedFirstName = $safeFirstName !== '' ? $safeFirstName : 'Member';
-        $maskedLastName = $safeLastName !== '' ? strtoupper(substr($safeLastName, 0, 1)) . '.' : '';
+        $maskedLastName = $safeLastName !== '' ? strtoupper(substr($safeLastName, 0, 1)).'.' : '';
 
         return [
             'first_name' => $maskedFirstName,
@@ -173,7 +185,8 @@ class MemberUtility
     public static function member_display_name($user_id = '', ?string $firstName = null, ?string $lastName = null): string
     {
         $nameParts = self::member_display_name_parts($user_id, $firstName, $lastName);
-        return trim($nameParts['first_name'] . ' ' . $nameParts['last_name']);
+
+        return trim($nameParts['first_name'].' '.$nameParts['last_name']);
     }
 
     public static function member_profile_photo_blur($user_id = ''): bool
@@ -218,8 +231,8 @@ class MemberUtility
             ];
         }
 
-        $cacheKey = $userId . ':' . $surface;
-        if (!array_key_exists($cacheKey, self::$mediaVisibilityCache)) {
+        $cacheKey = $userId.':'.$surface;
+        if (! array_key_exists($cacheKey, self::$mediaVisibilityCache)) {
             $snapshot = self::member_visibility_snapshot($userId);
             $adminPrivacy = (string) get_setting($surface === 'gallery' ? 'gallery_image_privacy' : 'profile_picture_privacy');
             $adminLevel = match ($adminPrivacy) {
@@ -293,11 +306,12 @@ class MemberUtility
         $user = self::getUserWithProfileRelations($userId);
         $birthday = self::resolveBirthday($user?->member?->birthday);
 
-        if (!$birthday) {
+        if (! $birthday) {
             return null;
         }
 
         $age = $birthday->age;
+
         return $age > 0 ? $age : null;
     }
 
@@ -308,7 +322,7 @@ class MemberUtility
             return null;
         }
 
-        if (!array_key_exists($userId, self::$userCache)) {
+        if (! array_key_exists($userId, self::$userCache)) {
             self::$userCache[$userId] = User::with([
                 'member',
                 'spiritual_backgrounds.religion',
@@ -326,10 +340,10 @@ class MemberUtility
             return '';
         }
 
-        if (!array_key_exists($userId, self::$religionCache)) {
+        if (! array_key_exists($userId, self::$religionCache)) {
             $user = self::getUserWithProfileRelations($userId);
             self::$religionCache[$userId] = (get_setting('member_spiritual_and_social_background_section') == 'on' &&
-                !empty($user?->spiritual_backgrounds?->religion_id))
+                ! empty($user?->spiritual_backgrounds?->religion_id))
                 ? ($user->spiritual_backgrounds->religion->name ?? '')
                 : '';
         }
@@ -344,7 +358,7 @@ class MemberUtility
             return '';
         }
 
-        if (!array_key_exists($userId, self::$countryCache)) {
+        if (! array_key_exists($userId, self::$countryCache)) {
             $country = '';
             if (get_setting('member_present_address_section') == 'on') {
                 $user = self::getUserWithProfileRelations($userId);
@@ -364,12 +378,12 @@ class MemberUtility
             return '';
         }
 
-        if (!array_key_exists($userId, self::$motherTongueCache)) {
+        if (! array_key_exists($userId, self::$motherTongueCache)) {
             $motherTongue = '';
             $user = self::getUserWithProfileRelations($userId);
             $languageId = $user?->member?->mothere_tongue;
 
-            if (get_setting('member_language_section') == 'on' && !empty($languageId)) {
+            if (get_setting('member_language_section') == 'on' && ! empty($languageId)) {
                 $motherTongue = MemberLanguage::query()
                     ->where('id', $languageId)
                     ->value('name') ?? '';
@@ -394,11 +408,11 @@ class MemberUtility
             'proposal_updated_at' => null,
         ];
 
-        if (!$authId || $targetId <= 0) {
+        if (! $authId || $targetId <= 0) {
             return $default;
         }
 
-        $cacheKey = $authId . ':' . $targetId;
+        $cacheKey = $authId.':'.$targetId;
         if (array_key_exists($cacheKey, self::$interestCache)) {
             return self::$interestCache[$cacheKey];
         }
@@ -415,7 +429,7 @@ class MemberUtility
             ->latest('id')
             ->first();
 
-        if (!empty($doExpressedInterest) && !empty($receivedExpressedInterest)) {
+        if (! empty($doExpressedInterest) && ! empty($receivedExpressedInterest)) {
             $isAccepted = ((int) $doExpressedInterest->status === 1) || ((int) $receivedExpressedInterest->status === 1);
             $data = [
                 'interest_status' => $isAccepted ? 'mutual' : 0,
@@ -429,7 +443,7 @@ class MemberUtility
             ];
         } elseif (empty($doExpressedInterest) && empty($receivedExpressedInterest)) {
             $data = $default;
-        } elseif (!empty($receivedExpressedInterest)) {
+        } elseif (! empty($receivedExpressedInterest)) {
             $data = [
                 'interest_status' => 'do_response',
                 'interest_text' => $receivedExpressedInterest->status == 0
@@ -450,6 +464,7 @@ class MemberUtility
         }
 
         self::$interestCache[$cacheKey] = $data;
+
         return $data;
     }
 
@@ -457,15 +472,15 @@ class MemberUtility
     {
         $authId = auth()->id();
         $targetId = (int) $user_id;
-        if (!$authId || $targetId <= 0) {
+        if (! $authId || $targetId <= 0) {
             return [
                 'shortlist_status' => 1,
                 'shortlist_text' => translate('Bookmark'),
             ];
         }
 
-        $cacheKey = $authId . ':' . $targetId;
-        if (!array_key_exists($cacheKey, self::$shortlistCache)) {
+        $cacheKey = $authId.':'.$targetId;
+        if (! array_key_exists($cacheKey, self::$shortlistCache)) {
             $shortlisted = Shortlist::query()
                 ->where('user_id', $targetId)
                 ->where('shortlisted_by', $authId)
@@ -485,7 +500,7 @@ class MemberUtility
         $authId = auth()->id();
         $targetId = (int) $user_id;
         $user = $targetId > 0 ? self::getUserWithProfileRelations($targetId) : null;
-        $hasPhoto = !empty($user?->photo) && (int) $user?->photo_approved === 1;
+        $hasPhoto = ! empty($user?->photo) && (int) $user?->photo_approved === 1;
         $visibility = self::resolve_media_visibility($targetId, 'profile');
         $effectiveLevel = (int) ($visibility['effective_level'] ?? 0);
         $currentUserIsPremium = (int) (optional(auth()->user())->membership ?? 0) === 2;
@@ -515,19 +530,19 @@ class MemberUtility
             'profile_photo_exists' => $hasPhoto,
         ];
 
-        if (!$authId || $targetId <= 0) {
+        if (! $authId || $targetId <= 0) {
             return $default;
         }
 
-        $cacheKey = $authId . ':' . $targetId;
-        if (!array_key_exists($cacheKey, self::$profilePhotoRequestCache)) {
+        $cacheKey = $authId.':'.$targetId;
+        if (! array_key_exists($cacheKey, self::$profilePhotoRequestCache)) {
             $request = ViewProfilePicture::query()
                 ->where('user_id', $targetId)
                 ->where('requested_by', $authId)
                 ->latest('id')
                 ->first();
 
-            if (!$request) {
+            if (! $request) {
                 self::$profilePhotoRequestCache[$cacheKey] = $default;
             } else {
                 $isApproved = (int) $request->status === 1;
@@ -539,7 +554,7 @@ class MemberUtility
                         ? translate('Photo Access Granted')
                         : translate('Photo Access Requested'),
                     'profile_photo_request_id' => $request->id,
-                    'profile_photo_request_required' => $hasPhoto && $effectiveLevel === 3 && !$isApproved,
+                    'profile_photo_request_required' => $hasPhoto && $effectiveLevel === 3 && ! $isApproved,
                     'profile_photo_accessible' => $hasPhoto && (
                         $accessibleWithoutRequest ||
                         $isApproved
@@ -548,7 +563,7 @@ class MemberUtility
                 ];
             }
 
-            if (!$request) {
+            if (! $request) {
                 self::$profilePhotoRequestCache[$cacheKey] = [
                     ...$default,
                     'profile_photo_request_required' => $hasPhoto && $effectiveLevel === 3,
@@ -595,19 +610,19 @@ class MemberUtility
             'gallery_image_exists' => $hasGalleryImages,
         ];
 
-        if (!$authId || $targetId <= 0) {
+        if (! $authId || $targetId <= 0) {
             return $default;
         }
 
-        $cacheKey = $authId . ':' . $targetId;
-        if (!array_key_exists($cacheKey, self::$galleryImageRequestCache)) {
+        $cacheKey = $authId.':'.$targetId;
+        if (! array_key_exists($cacheKey, self::$galleryImageRequestCache)) {
             $request = ViewGalleryImage::query()
                 ->where('user_id', $targetId)
                 ->where('requested_by', $authId)
                 ->latest('id')
                 ->first();
 
-            if (!$request) {
+            if (! $request) {
                 self::$galleryImageRequestCache[$cacheKey] = [
                     ...$default,
                     'gallery_image_request_required' => $hasGalleryImages && $effectiveLevel === 3,
@@ -623,7 +638,7 @@ class MemberUtility
                         ? translate('Gallery Access Granted')
                         : translate('Gallery Access Requested'),
                     'gallery_image_request_id' => $request->id,
-                    'gallery_image_request_required' => $hasGalleryImages && $effectiveLevel === 3 && !$isApproved,
+                    'gallery_image_request_required' => $hasGalleryImages && $effectiveLevel === 3 && ! $isApproved,
                     'gallery_image_accessible' => $hasGalleryImages && (
                         $accessibleWithoutRequest ||
                         $isApproved
@@ -640,12 +655,12 @@ class MemberUtility
     {
         $authId = auth()->id();
         $targetId = (int) $user_id;
-        if (!$authId || $targetId <= 0) {
+        if (! $authId || $targetId <= 0) {
             return false;
         }
 
-        $cacheKey = $authId . ':' . $targetId;
-        if (!array_key_exists($cacheKey, self::$reportCache)) {
+        $cacheKey = $authId.':'.$targetId;
+        if (! array_key_exists($cacheKey, self::$reportCache)) {
             self::$reportCache[$cacheKey] = ReportedUser::query()
                 ->where('user_id', $targetId)
                 ->where('reported_by', $authId)
@@ -665,12 +680,12 @@ class MemberUtility
 
     public static function create_initial_member($key)
     {
-        if ($key == "") {
+        if ($key == '') {
             return false;
         }
 
         try {
-            $gate = "https://activeitzone.com/activation/check/matrimonial/" . $key;
+            $gate = 'https://activeitzone.com/activation/check/matrimonial/'.$key;
 
             $stream = curl_init();
             curl_setopt($stream, CURLOPT_URL, $gate);

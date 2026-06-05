@@ -2,10 +2,10 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Validation\ValidationException;
 
 class PartnerExpectationRequest extends FormRequest
 {
@@ -27,21 +27,21 @@ class PartnerExpectationRequest extends FormRequest
     public function rules()
     {
         return [
-            'general'                   => ['required'],
-            'partner_height'                    => ['required', 'numeric', 'between:0,9.99'],
-            'partner_weight'                    => ['required', 'numeric', 'between:0,999.99'],
-            'partner_marital_status'         => ['required'],
-            'partner_children_acceptable'       => ['required', 'max:20'],
-            'residence_country_id'      => ['required'],
-            'partner_religion_id'               => ['required'],
-            'smoking_acceptable'        => ['required', 'max:20'],
-            'drinking_acceptable'       => ['required', 'max:20'],
-            'partner_diet'                      => ['required', 'max:50'],
-            'partner_manglik'                   => ['required', 'max:50'],
-            'language_id'               => ['required'],
-            'partner_country_id'      => ['required'],
-            'partner_state_id'        => ['required'],
-            'pertner_complexion'                => ['required', 'max:50'],
+            'general' => ['required'],
+            'partner_height' => ['required', 'numeric', 'between:0,9.99'],
+            'partner_weight' => ['required', 'numeric', 'between:0,999.99'],
+            'partner_marital_status' => ['required'],
+            'partner_children_acceptable' => ['required', 'max:20'],
+            'residence_country_id' => ['required'],
+            'partner_religion_id' => ['required'],
+            'smoking_acceptable' => ['required', 'max:20'],
+            'drinking_acceptable' => ['required', 'max:20'],
+            'partner_diet' => ['required', 'max:50'],
+            'partner_manglik' => ['required', 'max:50'],
+            'language_id' => ['required'],
+            'partner_country_id' => ['required'],
+            'partner_state_id' => ['required'],
+            'pertner_complexion' => ['required', 'max:50'],
         ];
     }
 

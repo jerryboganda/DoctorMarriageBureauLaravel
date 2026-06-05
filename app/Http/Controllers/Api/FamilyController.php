@@ -9,16 +9,16 @@ use App\Models\FamilyGuardian;
 use App\Models\FamilyPhoto;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Log;
 
 class FamilyController extends Controller
 {
     public function index()
     {
         $user = Auth::user();
-        if (!$user) {
+        if (! $user) {
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
@@ -36,8 +36,8 @@ class FamilyController extends Controller
             ->where('user_id', $user->id)
             ->first();
 
-        if (!$owner) {
-            $ownerName = trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? ''));
+        if (! $owner) {
+            $ownerName = trim(($user->first_name ?? '').' '.($user->last_name ?? ''));
             if ($ownerName === '') {
                 $ownerName = $user->name ?? $user->email ?? 'Owner';
             }
@@ -73,7 +73,7 @@ class FamilyController extends Controller
         ];
 
         $guardians = $family->guardians()->get()->map(function (FamilyGuardian $guardian) use ($user) {
-            $isSelf = $guardian->user_id && (int)$guardian->user_id === (int)$user->id;
+            $isSelf = $guardian->user_id && (int) $guardian->user_id === (int) $user->id;
 
             return [
                 'id' => $guardian->id,
@@ -83,7 +83,7 @@ class FamilyController extends Controller
                 'phone' => $guardian->phone,
                 'status' => $guardian->user_id ? 'Verified' : 'Pending',
                 'isOwner' => $isSelf,
-                'isPrimaryContact' => (bool)$guardian->is_primary_contact,
+                'isPrimaryContact' => (bool) $guardian->is_primary_contact,
                 'permissions' => $isSelf ? [] : ['View', 'Comment'],
             ];
         });
@@ -94,7 +94,7 @@ class FamilyController extends Controller
             $specialty = $member?->specialization ?? $member?->designation ?? '';
             $city = $target?->city->name ?? 'Unknown City';
             $status = $approval->status ?: 'pending';
-            $targetName = trim(($target?->first_name ?? '') . ' ' . ($target?->last_name ?? ''));
+            $targetName = trim(($target?->first_name ?? '').' '.($target?->last_name ?? ''));
             if ($targetName === '') {
                 $targetName = $target?->name ?? 'Unknown';
             }
@@ -103,14 +103,14 @@ class FamilyController extends Controller
             if ($target?->photo) {
                 $photoUrl = uploaded_asset($target->photo);
             }
-            if (!$photoUrl) {
+            if (! $photoUrl) {
                 $photoUrl = gender_avatar($targetUser?->member ?? null);
             }
 
             return [
                 'id' => $approval->id,
                 'name' => $targetName,
-                'desc' => trim($specialty . ' - ' . $city),
+                'desc' => trim($specialty.' - '.$city),
                 'status' => ucfirst($status),
                 'img' => $photoUrl,
                 'time' => $approval->created_at?->diffForHumans() ?? '',
@@ -158,7 +158,7 @@ class FamilyController extends Controller
             'relationship' => $request->relationship,
             'email' => $request->email,
             'phone' => $request->phone,
-            'is_primary_contact' => (bool)$request->is_primary_contact,
+            'is_primary_contact' => (bool) $request->is_primary_contact,
         ]);
 
         if ($guardian->is_primary_contact) {
@@ -170,7 +170,7 @@ class FamilyController extends Controller
         // Send invitation email to the guardian if they have an email
         if ($guardian->email) {
             try {
-                $memberName = trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? ''));
+                $memberName = trim(($user->first_name ?? '').' '.($user->last_name ?? ''));
                 if ($memberName === '') {
                     $memberName = $user->name ?? 'A member';
                 }
@@ -182,17 +182,17 @@ class FamilyController extends Controller
                     'portalUrl' => 'https://panel.doctormarriagebureau.com.pk',
                 ], function ($message) use ($guardian, $memberName) {
                     $message->to($guardian->email, $guardian->name)
-                            ->subject("Family Guardian Invitation — {$memberName} added you on Doctor Marriage Bureau");
+                        ->subject("Family Guardian Invitation — {$memberName} added you on Doctor Marriage Bureau");
                 });
 
                 Log::info("Guardian invitation email sent to {$guardian->email} for user {$user->id}");
             } catch (\Exception $e) {
-                Log::error("Failed to send guardian invitation email: " . $e->getMessage());
+                Log::error('Failed to send guardian invitation email: '.$e->getMessage());
                 // Don't fail the request if email fails — guardian is already saved
             }
         }
 
-        return response()->json(['message' => 'Guardian added successfully' . ($guardian->email ? '. Invitation email sent!' : '')]);
+        return response()->json(['message' => 'Guardian added successfully'.($guardian->email ? '. Invitation email sent!' : '')]);
     }
 
     public function updateGuardian(Request $request, $id)
@@ -227,7 +227,7 @@ class FamilyController extends Controller
         $guardian = $family->guardians()->findOrFail($id);
 
         // Cannot remove yourself
-        if ($guardian->user_id && (int)$guardian->user_id === (int)$user->id) {
+        if ($guardian->user_id && (int) $guardian->user_id === (int) $user->id) {
             return response()->json(['message' => 'You cannot remove yourself from the family portal'], 422);
         }
 

@@ -2,29 +2,32 @@
 
 namespace App\Console\Commands;
 
-use App\Models\User;
-use App\Models\Member;
 use App\Models\Address;
-use App\Models\SpiritualBackground;
+use App\Models\Member;
 use App\Models\PhysicalAttribute;
-use App\Models\ProfileCompletionReminderSetting;
 use App\Models\ProfileCompletionReminderLog;
+use App\Models\ProfileCompletionReminderSetting;
+use App\Models\SpiritualBackground;
+use App\Models\User;
+use App\Utility\EmailUtility;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class SendProfileCompletionReminders extends Command
 {
     protected $signature = 'reminders:profile-completion';
+
     protected $description = 'Send email reminders to members whose profile completion is below the configured threshold';
 
     public function handle(): int
     {
         $settings = ProfileCompletionReminderSetting::getSettings();
 
-        if (!$settings->is_enabled) {
+        if (! $settings->is_enabled) {
             $this->info('Profile completion reminders are disabled.');
+
             return 0;
         }
 
@@ -53,7 +56,7 @@ class SendProfileCompletionReminders extends Command
         foreach ($users as $user) {
             try {
                 $member = Member::where('user_id', $user->id)->first();
-                if (!$member) {
+                if (! $member) {
                     continue;
                 }
 
@@ -72,6 +75,7 @@ class SendProfileCompletionReminders extends Command
 
                 if ($totalSent >= $maxReminders) {
                     $skippedCount++;
+
                     continue;
                 }
 
@@ -83,16 +87,17 @@ class SendProfileCompletionReminders extends Command
 
                 if ($lastReminder && $lastReminder->sent_at->diffInDays(now()) < $intervalDays) {
                     $skippedCount++;
+
                     continue;
                 }
 
                 // Build email body with placeholders
-                $name = trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')) ?: 'Member';
+                $name = trim(($user->first_name ?? '').' '.($user->last_name ?? '')) ?: 'Member';
                 $link = 'https://panel.doctormarriagebureau.com.pk/profile-settings';
 
                 $emailBody = str_replace(
                     ['{name}', '{percentage}', '{link}'],
-                    [$name, $percentage . '%', '<a href="' . $link . '" style="color: #fff; background-color: #e74c3c; padding: 12px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Complete My Profile</a>'],
+                    [$name, $percentage.'%', '<a href="'.$link.'" style="color: #fff; background-color: #e74c3c; padding: 12px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Complete My Profile</a>'],
                     $bodyTemplate
                 );
 
@@ -100,7 +105,7 @@ class SendProfileCompletionReminders extends Command
                 Mail::send('emails.index', ['email_body' => $emailBody], function ($message) use ($user, $subject, $name) {
                     $message->to($user->email, $name)
                         ->subject($subject)
-                        ->from(\App\Utility\EmailUtility::fromAddress(), \App\Utility\EmailUtility::fromName());
+                        ->from(EmailUtility::fromAddress(), EmailUtility::fromName());
                 });
 
                 // Log success
@@ -123,12 +128,13 @@ class SendProfileCompletionReminders extends Command
                     'error_message' => substr($e->getMessage(), 0, 500),
                 ]);
 
-                Log::error("Profile completion reminder failed for user #{$user->id}: " . $e->getMessage());
+                Log::error("Profile completion reminder failed for user #{$user->id}: ".$e->getMessage());
                 $errorCount++;
             }
         }
 
         $this->info("Profile completion reminders: {$sentCount} sent, {$skippedCount} skipped, {$errorCount} failed.");
+
         return 0;
     }
 
@@ -157,18 +163,18 @@ class SendProfileCompletionReminders extends Command
         $fields = [
             trim((string) $user->first_name) !== '',
             trim((string) $user->last_name) !== '',
-            !empty($member->gender),
-            !empty($member->birthday),
-            !empty($member->marital_status_id),
+            ! empty($member->gender),
+            ! empty($member->birthday),
+            ! empty($member->marital_status_id),
         ];
 
         // Step 2: Location & Religion (5 fields)
         $fields = array_merge($fields, [
-            $presentAddress && !empty($presentAddress->country_id),
-            $presentAddress && !empty($presentAddress->state_id),
-            $presentAddress && !empty($presentAddress->city_id),
-            $spiritual && !empty($spiritual->religion_id),
-            $spiritual && !empty($spiritual->caste_id),
+            $presentAddress && ! empty($presentAddress->country_id),
+            $presentAddress && ! empty($presentAddress->state_id),
+            $presentAddress && ! empty($presentAddress->city_id),
+            $spiritual && ! empty($spiritual->religion_id),
+            $spiritual && ! empty($spiritual->caste_id),
         ]);
 
         // Step 3: Career & Education (5 fields)
@@ -177,7 +183,7 @@ class SendProfileCompletionReminders extends Command
             $career && trim((string) ($career->company ?? '')) !== '',
             $education && trim((string) ($education->degree ?? '')) !== '',
             $education && trim((string) ($education->institution ?? '')) !== '',
-            !empty($member->annual_salary_range_id),
+            ! empty($member->annual_salary_range_id),
         ]);
 
         // Step 4: Appearance (3 fields)
@@ -191,7 +197,7 @@ class SendProfileCompletionReminders extends Command
         $fields[] = trim((string) ($member->introduction ?? '')) !== '';
 
         // Step 6: Photo (1 field)
-        $fields[] = !empty($user->photo);
+        $fields[] = ! empty($user->photo);
 
         $total = count($fields);
         $filled = count(array_filter($fields));

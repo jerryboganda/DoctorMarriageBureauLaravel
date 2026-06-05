@@ -45,7 +45,7 @@ class MemberCommunicationLimitService
 
     private function ensureCanUseUnverifiedQuota(?User $user, string $type)
     {
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'result' => false,
                 'message' => 'Unauthenticated.',
@@ -57,7 +57,7 @@ class MemberCommunicationLimitService
         }
 
         $member = $user->member;
-        if (!$member) {
+        if (! $member) {
             return response()->json([
                 'result' => false,
                 'error_code' => 'profile_incomplete',
@@ -75,7 +75,7 @@ class MemberCommunicationLimitService
 
     private function incrementUnverifiedCounter(User $user, string $type): void
     {
-        if ($this->isVerified($user) || !$user->member) {
+        if ($this->isVerified($user) || ! $user->member) {
             return;
         }
 
@@ -86,6 +86,7 @@ class MemberCommunicationLimitService
     private function usedCount(Member $member, string $type): int
     {
         $column = $this->counterColumn($type);
+
         return (int) ($member->{$column} ?? 0);
     }
 

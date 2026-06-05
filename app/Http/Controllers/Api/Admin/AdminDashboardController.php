@@ -56,16 +56,17 @@ class AdminDashboardController extends Controller
             ->get()
             ->map(function ($story) {
                 $photos = explode(',', $story->photos ?? '');
+
                 return [
                     'id' => $story->id,
                     'title' => $story->title,
-                    'couple_name' => ($story->user->first_name ?? '') . ' & ' . ($story->partner_name ?? ''),
-                    'photo' => !empty($photos[0]) ? uploaded_asset($photos[0]) : null,
+                    'couple_name' => ($story->user->first_name ?? '').' & '.($story->partner_name ?? ''),
+                    'photo' => ! empty($photos[0]) ? uploaded_asset($photos[0]) : null,
                 ];
             });
 
         // SMTP warning check
-        $smtpConfigured = !empty(env('MAIL_USERNAME')) && !empty(env('MAIL_PASSWORD'));
+        $smtpConfigured = ! empty(env('MAIL_USERNAME')) && ! empty(env('MAIL_PASSWORD'));
 
         return response()->json([
             'result' => true,
@@ -91,7 +92,7 @@ class AdminDashboardController extends Controller
                     'recent' => $recentHappyStories,
                 ],
                 'warnings' => [
-                    'smtp_not_configured' => !$smtpConfigured,
+                    'smtp_not_configured' => ! $smtpConfigured,
                 ],
             ],
         ]);

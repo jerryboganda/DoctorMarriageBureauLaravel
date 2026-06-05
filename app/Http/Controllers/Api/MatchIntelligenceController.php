@@ -3,22 +3,16 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
-use App\Models\Member;
-use App\Models\PartnerExpectation;
-use App\Models\PhysicalAttribute;
-use App\Models\SpiritualBackground;
-use App\Models\Lifestyle;
 use App\Models\Career;
 use App\Models\Education;
-use App\Models\Country;
-use App\Models\Religion;
-use App\Models\MaritalStatus;
+use App\Models\Member;
 use App\Models\MemberLanguage;
+use App\Models\PartnerExpectation;
+use App\Models\Religion;
+use App\Models\User;
 use App\Utility\MemberUtility;
-use Illuminate\Http\Request;
-use Carbon\Carbon;
 use DB;
+use Illuminate\Http\Request;
 
 class MatchIntelligenceController extends Controller
 {
@@ -68,56 +62,92 @@ class MatchIntelligenceController extends Controller
         // 1. Age Compatibility
         $ageScore = $this->calculateAgeScore($viewer, $target, $viewerExpectations);
         $categories[] = ['name' => 'Age Compatibility', 'score' => $ageScore['score'], 'weight' => $ageScore['weight']];
-        if ($ageScore['match']) $topReasons[] = $ageScore['reason'];
-        if ($ageScore['friction']) $frictionPoints[] = $ageScore['friction'];
+        if ($ageScore['match']) {
+            $topReasons[] = $ageScore['reason'];
+        }
+        if ($ageScore['friction']) {
+            $frictionPoints[] = $ageScore['friction'];
+        }
 
         // 2. Medical Career Compatibility
         $careerScore = $this->calculateCareerScore($viewer, $target, $viewerExpectations);
         $categories[] = ['name' => 'Medical Career', 'score' => $careerScore['score'], 'weight' => $careerScore['weight']];
-        if ($careerScore['match']) $topReasons[] = $careerScore['reason'];
-        if ($careerScore['friction']) $frictionPoints[] = $careerScore['friction'];
+        if ($careerScore['match']) {
+            $topReasons[] = $careerScore['reason'];
+        }
+        if ($careerScore['friction']) {
+            $frictionPoints[] = $careerScore['friction'];
+        }
 
         // 3. Religion/Spiritual Compatibility
         $religionScore = $this->calculateReligionScore($viewer, $target, $viewerExpectations);
         $categories[] = ['name' => 'Religious Values', 'score' => $religionScore['score'], 'weight' => $religionScore['weight']];
-        if ($religionScore['match']) $topReasons[] = $religionScore['reason'];
-        if ($religionScore['friction']) $frictionPoints[] = $religionScore['friction'];
+        if ($religionScore['match']) {
+            $topReasons[] = $religionScore['reason'];
+        }
+        if ($religionScore['friction']) {
+            $frictionPoints[] = $religionScore['friction'];
+        }
 
         // 4. Location Compatibility
         $locationScore = $this->calculateLocationScore($viewer, $target, $viewerExpectations);
         $categories[] = ['name' => 'Location Match', 'score' => $locationScore['score'], 'weight' => $locationScore['weight']];
-        if ($locationScore['match']) $topReasons[] = $locationScore['reason'];
-        if ($locationScore['friction']) $frictionPoints[] = $locationScore['friction'];
+        if ($locationScore['match']) {
+            $topReasons[] = $locationScore['reason'];
+        }
+        if ($locationScore['friction']) {
+            $frictionPoints[] = $locationScore['friction'];
+        }
 
         // 5. Education Compatibility
         $educationScore = $this->calculateEducationScore($viewer, $target, $viewerExpectations);
         $categories[] = ['name' => 'Educational Background', 'score' => $educationScore['score'], 'weight' => $educationScore['weight']];
-        if ($educationScore['match']) $topReasons[] = $educationScore['reason'];
-        if ($educationScore['friction']) $frictionPoints[] = $educationScore['friction'];
+        if ($educationScore['match']) {
+            $topReasons[] = $educationScore['reason'];
+        }
+        if ($educationScore['friction']) {
+            $frictionPoints[] = $educationScore['friction'];
+        }
 
         // 6. Height Compatibility
         $heightScore = $this->calculateHeightScore($viewer, $target, $viewerExpectations);
         $categories[] = ['name' => 'Physical Preferences', 'score' => $heightScore['score'], 'weight' => $heightScore['weight']];
-        if (!empty($heightScore['match'])) $topReasons[] = $heightScore['reason'] ?? null;
-        if ($heightScore['friction']) $frictionPoints[] = $heightScore['friction'];
+        if (! empty($heightScore['match'])) {
+            $topReasons[] = $heightScore['reason'] ?? null;
+        }
+        if ($heightScore['friction']) {
+            $frictionPoints[] = $heightScore['friction'];
+        }
 
         // 7. Marital Status Compatibility
         $maritalScore = $this->calculateMaritalStatusScore($viewer, $target, $viewerExpectations);
         $categories[] = ['name' => 'Marital Status', 'score' => $maritalScore['score'], 'weight' => $maritalScore['weight']];
-        if ($maritalScore['match']) $topReasons[] = $maritalScore['reason'];
-        if ($maritalScore['friction']) $frictionPoints[] = $maritalScore['friction'];
+        if ($maritalScore['match']) {
+            $topReasons[] = $maritalScore['reason'];
+        }
+        if ($maritalScore['friction']) {
+            $frictionPoints[] = $maritalScore['friction'];
+        }
 
         // 8. Family Values
         $familyScore = $this->calculateFamilyScore($viewer, $target, $viewerExpectations);
         $categories[] = ['name' => 'Family Values', 'score' => $familyScore['score'], 'weight' => $familyScore['weight']];
-        if ($familyScore['match']) $topReasons[] = $familyScore['reason'];
-        if ($familyScore['friction']) $frictionPoints[] = $familyScore['friction'];
+        if ($familyScore['match']) {
+            $topReasons[] = $familyScore['reason'];
+        }
+        if ($familyScore['friction']) {
+            $frictionPoints[] = $familyScore['friction'];
+        }
 
         // 9. Language Compatibility (NEW)
         $languageScore = $this->calculateLanguageScore($viewer, $target, $viewerExpectations);
         $categories[] = ['name' => 'Language', 'score' => $languageScore['score'], 'weight' => $languageScore['weight']];
-        if ($languageScore['match']) $topReasons[] = $languageScore['reason'];
-        if ($languageScore['friction']) $frictionPoints[] = $languageScore['friction'];
+        if ($languageScore['match']) {
+            $topReasons[] = $languageScore['reason'];
+        }
+        if ($languageScore['friction']) {
+            $frictionPoints[] = $languageScore['friction'];
+        }
 
         // Calculate overall score (weighted average)
         $totalScore = $this->calculateTotalScore($categories);
@@ -146,8 +176,8 @@ class MatchIntelligenceController extends Controller
                 'frictionPoints' => $frictionPoints,
                 'agentNotes' => $agentNotes,
                 'behavioralReason' => $this->getBehavioralInsight($viewer, $target),
-                'generatedAt' => now()->toIso8601String()
-            ]
+                'generatedAt' => now()->toIso8601String(),
+            ],
         ]);
     }
 
@@ -159,7 +189,7 @@ class MatchIntelligenceController extends Controller
 
         $weight = $this->formatWeight($viewerExp?->age_importance);
 
-        if (!$targetAge) {
+        if (! $targetAge) {
             return ['score' => self::MISSING_DATA_SCORE, 'weight' => $weight, 'match' => false, 'reason' => null, 'friction' => 'Age information not available'];
         }
 
@@ -167,7 +197,7 @@ class MatchIntelligenceController extends Controller
         $maxAge = $viewerExp?->max_age;
 
         // If viewer hasn't set age preferences, return neutral
-        if (!$minAge && !$maxAge) {
+        if (! $minAge && ! $maxAge) {
             return ['score' => self::MISSING_DATA_SCORE, 'weight' => $weight, 'match' => false, 'reason' => null, 'friction' => null];
         }
 
@@ -192,7 +222,7 @@ class MatchIntelligenceController extends Controller
             'weight' => $weight,
             'match' => false,
             'reason' => null,
-            'friction' => "Age ({$targetAge}) is " . ($targetAge < $minAge ? 'below' : 'above') . " your preference ({$minAge}-{$maxAge})",
+            'friction' => "Age ({$targetAge}) is ".($targetAge < $minAge ? 'below' : 'above')." your preference ({$minAge}-{$maxAge})",
         ];
     }
 
@@ -206,11 +236,11 @@ class MatchIntelligenceController extends Controller
         // Use a medium weight by default; no _importance column for career exists yet
         $weight = 'Medium';
 
-        if (!$targetCareer) {
+        if (! $targetCareer) {
             return ['score' => self::MISSING_DATA_SCORE, 'weight' => $weight, 'match' => false, 'reason' => null, 'friction' => 'Limited career information available'];
         }
 
-        if (!$viewerCareer) {
+        if (! $viewerCareer) {
             return ['score' => self::MISSING_DATA_SCORE, 'weight' => $weight, 'match' => false, 'reason' => null, 'friction' => null];
         }
 
@@ -239,7 +269,7 @@ class MatchIntelligenceController extends Controller
         if ($viewerIsMedical && $targetIsMedical) {
             $score = 95;
             $match = true;
-            $reason = "Both are in the medical field";
+            $reason = 'Both are in the medical field';
         } elseif ($viewerIsMedical || $targetIsMedical) {
             $score = 75;
         }
@@ -255,18 +285,19 @@ class MatchIntelligenceController extends Controller
         $prefReligionId = $viewerExp?->religion_id;
 
         // If no preference set, return neutral
-        if (!$prefReligionId) {
+        if (! $prefReligionId) {
             return ['score' => self::MISSING_DATA_SCORE, 'weight' => $weight, 'match' => false, 'reason' => null, 'friction' => null];
         }
 
         $targetReligionId = $target->spiritual_backgrounds?->religion_id;
 
-        if (!$targetReligionId) {
+        if (! $targetReligionId) {
             return ['score' => self::MISSING_DATA_SCORE, 'weight' => $weight, 'match' => false, 'reason' => null, 'friction' => 'Religion information not available'];
         }
 
         if ($prefReligionId == $targetReligionId) {
             $targetReligionName = $target->spiritual_backgrounds?->religion?->name ?? 'Same religion';
+
             return [
                 'score' => 100,
                 'weight' => $weight,
@@ -285,7 +316,7 @@ class MatchIntelligenceController extends Controller
             'match' => false,
             'reason' => null,
             'friction' => ($importance === 'Dealbreaker' || $importance === 'Must have')
-                ? "Different religious backgrounds"
+                ? 'Different religious backgrounds'
                 : null,
         ];
     }
@@ -297,14 +328,14 @@ class MatchIntelligenceController extends Controller
         $weight = $this->formatWeight($viewerExp?->residence_importance);
         $prefCountryId = $viewerExp?->residence_country_id;
 
-        if (!$prefCountryId) {
+        if (! $prefCountryId) {
             return ['score' => self::MISSING_DATA_SCORE, 'weight' => $weight, 'match' => false, 'reason' => null, 'friction' => null];
         }
 
         $targetCountryId = $target->addresses?->firstWhere('type', 'present')?->country_id
                         ?? $target->addresses?->first()?->country_id;
 
-        if (!$targetCountryId) {
+        if (! $targetCountryId) {
             return ['score' => self::MISSING_DATA_SCORE, 'weight' => $weight, 'match' => false, 'reason' => null, 'friction' => 'Location information not available'];
         }
 
@@ -312,6 +343,7 @@ class MatchIntelligenceController extends Controller
             $countryName = $target->addresses?->firstWhere('type', 'present')?->country?->name
                         ?? $target->addresses?->first()?->country?->name
                         ?? 'same country';
+
             return [
                 'score' => 100,
                 'weight' => $weight,
@@ -330,7 +362,7 @@ class MatchIntelligenceController extends Controller
             'match' => false,
             'reason' => null,
             'friction' => ($importance === 'Dealbreaker' || $importance === 'Must have')
-                ? "Located in different countries"
+                ? 'Located in different countries'
                 : null,
         ];
     }
@@ -344,11 +376,11 @@ class MatchIntelligenceController extends Controller
 
         $weight = 'Medium'; // No _importance column for education yet
 
-        if (!$targetEdu) {
+        if (! $targetEdu) {
             return ['score' => self::MISSING_DATA_SCORE, 'weight' => $weight, 'match' => false, 'reason' => null, 'friction' => 'Education information not available'];
         }
 
-        if (!$viewerEdu) {
+        if (! $viewerEdu) {
             return ['score' => self::MISSING_DATA_SCORE, 'weight' => $weight, 'match' => false, 'reason' => null, 'friction' => null];
         }
 
@@ -365,18 +397,22 @@ class MatchIntelligenceController extends Controller
         $targetMedDegree = false;
 
         foreach ($medicalDegrees as $deg) {
-            if (str_contains($viewerDegree, $deg)) $viewerMedDegree = true;
-            if (str_contains($targetDegree, $deg)) $targetMedDegree = true;
+            if (str_contains($viewerDegree, $deg)) {
+                $viewerMedDegree = true;
+            }
+            if (str_contains($targetDegree, $deg)) {
+                $targetMedDegree = true;
+            }
         }
 
         if ($viewerMedDegree && $targetMedDegree) {
             $score = 95;
             $match = true;
-            $reason = "Both have medical degrees";
+            $reason = 'Both have medical degrees';
         } elseif ($targetMedDegree) {
             $score = 80;
             $match = true;
-            $reason = "Has a medical degree";
+            $reason = 'Has a medical degree';
         }
 
         return ['score' => $score, 'weight' => $weight, 'match' => $match, 'reason' => $reason, 'friction' => $friction];
@@ -389,13 +425,13 @@ class MatchIntelligenceController extends Controller
         $weight = $this->formatWeight($viewerExp?->height_importance);
         $minHeight = $viewerExp?->height;
 
-        if (!$minHeight) {
+        if (! $minHeight) {
             return ['score' => self::MISSING_DATA_SCORE, 'weight' => $weight, 'match' => false, 'reason' => null, 'friction' => null];
         }
 
         $targetHeight = $target->physical_attributes?->height;
 
-        if (!$targetHeight) {
+        if (! $targetHeight) {
             return ['score' => self::MISSING_DATA_SCORE, 'weight' => $weight, 'match' => false, 'reason' => null, 'friction' => 'Height information not available'];
         }
 
@@ -411,7 +447,7 @@ class MatchIntelligenceController extends Controller
             'weight' => $weight,
             'match' => false,
             'reason' => null,
-            'friction' => $diff > 5 ? "Height is below your preference" : null,
+            'friction' => $diff > 5 ? 'Height is below your preference' : null,
         ];
     }
 
@@ -424,12 +460,12 @@ class MatchIntelligenceController extends Controller
 
         $targetStatusName = $target->member?->marital_status?->name ?? null;
 
-        if (!$expectedMaritalId) {
+        if (! $expectedMaritalId) {
             // No preference set → neutral
             return ['score' => self::MISSING_DATA_SCORE, 'weight' => $weight, 'match' => false, 'reason' => null, 'friction' => null];
         }
 
-        if (!$targetStatusName) {
+        if (! $targetStatusName) {
             return ['score' => self::MISSING_DATA_SCORE, 'weight' => $weight, 'match' => false, 'reason' => null, 'friction' => 'Marital status not available'];
         }
 
@@ -466,19 +502,19 @@ class MatchIntelligenceController extends Controller
         $weight = 'Medium'; // No _importance column for family yet
         $expectedFamilyValue = $viewerExp?->family_value_id;
 
-        if (!$expectedFamilyValue) {
+        if (! $expectedFamilyValue) {
             return ['score' => self::MISSING_DATA_SCORE, 'weight' => $weight, 'match' => false, 'reason' => null, 'friction' => null];
         }
 
         $targetFamily = DB::table('families')->where('user_id', $target->id)->first();
 
-        if (!$targetFamily) {
+        if (! $targetFamily) {
             return ['score' => self::MISSING_DATA_SCORE, 'weight' => $weight, 'match' => false, 'reason' => null, 'friction' => 'Family information not available'];
         }
 
         $targetFamilyValue = $targetFamily->family_value_id ?? null;
 
-        if (!$targetFamilyValue) {
+        if (! $targetFamilyValue) {
             return ['score' => self::MISSING_DATA_SCORE, 'weight' => $weight, 'match' => false, 'reason' => null, 'friction' => null];
         }
 
@@ -487,7 +523,7 @@ class MatchIntelligenceController extends Controller
                 'score' => 95,
                 'weight' => $weight,
                 'match' => true,
-                'reason' => "Compatible family values and traditions",
+                'reason' => 'Compatible family values and traditions',
                 'friction' => null,
             ];
         }
@@ -502,19 +538,20 @@ class MatchIntelligenceController extends Controller
         $weight = $this->formatWeight($viewerExp?->language_importance);
         $prefLangId = $viewerExp?->language_id;
 
-        if (!$prefLangId) {
+        if (! $prefLangId) {
             return ['score' => self::MISSING_DATA_SCORE, 'weight' => $weight, 'match' => false, 'reason' => null, 'friction' => null];
         }
 
         // Target's mother tongue is stored on member.mothere_tongue (MemberLanguage id)
         $targetLangId = $target->member?->mothere_tongue;
 
-        if (!$targetLangId) {
+        if (! $targetLangId) {
             return ['score' => self::MISSING_DATA_SCORE, 'weight' => $weight, 'match' => false, 'reason' => null, 'friction' => 'Language information not available'];
         }
 
         if ($prefLangId == $targetLangId) {
             $langName = MemberLanguage::find($targetLangId)?->name ?? 'same language';
+
             return [
                 'score' => 100,
                 'weight' => $weight,
@@ -533,7 +570,7 @@ class MatchIntelligenceController extends Controller
             'match' => false,
             'reason' => null,
             'friction' => ($importance === 'Dealbreaker' || $importance === 'Must have')
-                ? "Different preferred languages"
+                ? 'Different preferred languages'
                 : null,
         ];
     }
@@ -563,7 +600,7 @@ class MatchIntelligenceController extends Controller
      */
     private function calculateHowWellYouMeetTheirCriteria(User $person, ?PartnerExpectation $theirExpectations): int
     {
-        if (!$theirExpectations) {
+        if (! $theirExpectations) {
             return self::MISSING_DATA_SCORE; // Was hardcoded 85, now 50
         }
 
@@ -667,6 +704,7 @@ class MatchIntelligenceController extends Controller
         $targetSpec = $target->member?->specialization
                    ?? $target->career->first()?->designation
                    ?? 'medical';
+
         return "Both users show interest in profiles within the {$targetSpec} specialty.";
     }
 
@@ -677,9 +715,9 @@ class MatchIntelligenceController extends Controller
     {
         return match ($importance) {
             'Dealbreaker', 'Must have' => 'High',
-            'Nice to have'             => 'Medium',
-            'Not important'            => 'Low',
-            default                    => 'Medium',
+            'Nice to have' => 'Medium',
+            'Not important' => 'Low',
+            default => 'Medium',
         };
     }
 }

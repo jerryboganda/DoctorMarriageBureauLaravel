@@ -10,6 +10,7 @@ class WalletController extends BaseAdminController
     public function transactions()
     {
         $query = Transaction::query()->orderByDesc('id');
+
         return $this->ok($this->paginateQuery(request(), $query));
     }
 
@@ -27,6 +28,7 @@ class WalletController extends BaseAdminController
     public function paymentDetail($id)
     {
         $payment = PackagePayment::with(['user', 'package'])->findOrFail($id);
+
         return $this->ok($payment);
     }
 

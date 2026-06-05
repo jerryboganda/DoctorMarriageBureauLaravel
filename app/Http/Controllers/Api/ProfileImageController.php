@@ -11,6 +11,7 @@ use App\Services\FirbaseNotification;
 use App\Utility\EmailUtility;
 use DB;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Kutia\Larafirebase\Facades\Larafirebase;
 use Notification;
 
@@ -25,25 +26,24 @@ class ProfileImageController extends Controller
             ->select('view_profile_pictures.id')
             ->distinct()
             ->paginate(10);
+
         return ProfileImageRequest::collection($my_profile_pic_view_requests);
         // return $this->response_data($my_profile_pic_view_requests);
     }
 
-
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store_image_view_request(Request $request)
     {
         $auth_user = auth()->user();
         $exist_check = ViewProfilePicture::where('user_id', $request->id)->where('requested_by', $auth_user->id)->first();
-        if (!$exist_check) {
-            $view_profile_picture                 = new ViewProfilePicture;
-            $view_profile_picture->user_id        = $request->id;
-            $view_profile_picture->requested_by   = $auth_user->id;
+        if (! $exist_check) {
+            $view_profile_picture = new ViewProfilePicture;
+            $view_profile_picture->user_id = $request->id;
+            $view_profile_picture->requested_by = $auth_user->id;
             if ($view_profile_picture->save()) {
                 $member = Member::where('user_id', $auth_user->id)->first();
                 $member->remaining_profile_image_view = $member->remaining_profile_image_view - 1;
@@ -53,14 +53,14 @@ class ProfileImageController extends Controller
 
                 // View Profile Picture Store Notification for member
                 try {
-                    $notify_type   = 'profile_picture_view';
-                    $id            = null;
-                    $notify_by     = $auth_user->id;
-                    $info_id       = $view_profile_picture->id;
-                    $message       = $auth_user->first_name . ' ' . $auth_user->last_name . ' ' . translate(' wants to see your profile picture.');
-                    $route         = 'profile-picture-view-request.index';
+                    $notify_type = 'profile_picture_view';
+                    $id = null;
+                    $notify_by = $auth_user->id;
+                    $info_id = $view_profile_picture->id;
+                    $message = $auth_user->first_name.' '.$auth_user->last_name.' '.translate(' wants to see your profile picture.');
+                    $route = 'profile-picture-view-request.index';
 
-                    // fcm 
+                    // fcm
                     if (get_setting('firebase_push_notification') == 1) {
                         self::sendFirebaseNotification($notify_user->fcm_token, $notify_user, $notify_type, $message, $notify_by);
                     }
@@ -103,10 +103,10 @@ class ProfileImageController extends Controller
                 $id = null;
                 $notify_by = $auth_user->id;
                 $info_id = $view_profile_picture->id;
-                $message = $auth_user->first_name . ' ' . $auth_user->last_name . ' ' . translate(' has accepted your profile picture view request.');
-                $route = route("member_profile", $auth_user->id);
+                $message = $auth_user->first_name.' '.$auth_user->last_name.' '.translate(' has accepted your profile picture view request.');
+                $route = route('member_profile', $auth_user->id);
 
-                // fcm 
+                // fcm
                 if (get_setting('firebase_push_notification') == 1) {
                     self::sendFirebaseNotification($notify_user->fcm_token, $notify_user, $notify_type, $message, $notify_by);
                 }
@@ -142,10 +142,10 @@ class ProfileImageController extends Controller
                 $id = null;
                 $notify_by = auth()->id();
                 $info_id = $profile_pic_view_request->id;
-                $message = $auth_user->first_name . ' ' . $auth_user->last_name . ' ' . translate(' has rejected your profile picture view request.');
+                $message = $auth_user->first_name.' '.$auth_user->last_name.' '.translate(' has rejected your profile picture view request.');
                 $route = route('member.listing');
 
-                // fcm 
+                // fcm
                 if (get_setting('firebase_push_notification') == 1) {
                     self::sendFirebaseNotification($notify_user->fcm_token, $notify_user, $notify_type, $message, $notify_by);
                 }
@@ -162,11 +162,11 @@ class ProfileImageController extends Controller
         }
     }
 
-    public static function sendFirebaseNotification($fcmTokens = null, $notify_user, $notify_type, $message, $notify_by = null)
+    public static function sendFirebaseNotification($fcmTokens, $notify_user, $notify_type, $message, $notify_by = null)
     {
         // send firebase notification for mobile app
         if ($notify_user->fcm_token != null) {
-            $data = (object)[];
+            $data = (object) [];
             $data->fcm_token = $notify_user->fcm_token;
             $data->title = $notify_type;
             $data->text = $message;
@@ -175,7 +175,7 @@ class ProfileImageController extends Controller
         }
         // end of  firebase notification
 
-        Larafirebase::withTitle(str_replace("_", " ", $notify_type))
+        Larafirebase::withTitle(str_replace('_', ' ', $notify_type))
             ->withBody($message)
             ->sendMessage($fcmTokens);
     }

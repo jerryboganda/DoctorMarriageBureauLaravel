@@ -2,8 +2,10 @@
 
 namespace App\Http\Resources;
 
-use App\Utility\MemberUtility;
 use App\Models\ExpressInterest;
+use App\Utility\MemberUtility;
+use Illuminate\Contracts\Support\Arrayable;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class MyInterestResource extends JsonResource
@@ -11,8 +13,8 @@ class MyInterestResource extends JsonResource
     /**
      * Transform the resource into an array.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return array|\Illuminate\Contracts\Support\Arrayable|\JsonSerializable
+     * @param  Request  $request
+     * @return array|Arrayable|\JsonSerializable
      */
     public function toArray($request)
     {
@@ -30,19 +32,19 @@ class MyInterestResource extends JsonResource
         $profile_picture_show = show_profile_picture($user);
 
         return [
-            'id'                   => $interest->id,
-            'user_id'              => $interest->user_id,
+            'id' => $interest->id,
+            'user_id' => $interest->user_id,
             'package_update_alert' => $package_update_alert,
-            'photo'                => $profile_picture_show ? uploaded_asset($user->photo) : static_asset($avatar_image),
-            'name'                 => MemberUtility::member_display_name($interest->user_id, $user->first_name, $user->last_name),
-            'age'                  => MemberUtility::member_age($interest->user_id),
-            'religion'             => MemberUtility::member_religion($interest->user_id),
-            'country'              => MemberUtility::member_country($interest->user_id),
-            'mothere_tongue'       => MemberUtility::member_mothere_tongue($interest->user_id),
-            'status'               => $interest->status == 1 ? 'Approved' : 'Pending',
-            'proposal_status'      => $interest->status == 1 ? 'sent_accepted' : 'sent_pending',
-            'proposal_updated_at'  => optional($interest->updated_at)->toIso8601String(),
-            'is_verified'          => ($user->approved == 1 && !empty($user->verification_info)),
+            'photo' => $profile_picture_show ? uploaded_asset($user->photo) : static_asset($avatar_image),
+            'name' => MemberUtility::member_display_name($interest->user_id, $user->first_name, $user->last_name),
+            'age' => MemberUtility::member_age($interest->user_id),
+            'religion' => MemberUtility::member_religion($interest->user_id),
+            'country' => MemberUtility::member_country($interest->user_id),
+            'mothere_tongue' => MemberUtility::member_mothere_tongue($interest->user_id),
+            'status' => $interest->status == 1 ? 'Approved' : 'Pending',
+            'proposal_status' => $interest->status == 1 ? 'sent_accepted' : 'sent_pending',
+            'proposal_updated_at' => optional($interest->updated_at)->toIso8601String(),
+            'is_verified' => ($user->approved == 1 && ! empty($user->verification_info)),
         ];
     }
 }

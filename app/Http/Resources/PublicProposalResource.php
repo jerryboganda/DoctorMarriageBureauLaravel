@@ -25,25 +25,25 @@ class PublicProposalResource extends JsonResource
         $age = MemberUtility::member_age($this->id);
 
         return [
-            'id'           => $this->id,
-            'code'         => $this->code,
-            'first_name'   => $this->first_name,
-            'last_name'    => mb_substr($this->last_name ?? '', 0, 1) . '.',
-            'gender'       => $this->member->gender,            // 1 = Male, 2 = Female
-            'age'          => $age,
-            'photo'        => $photo,
-            'location'     => MemberUtility::member_country($this->id),
-            'religion'     => MemberUtility::member_religion($this->id),
-            'mother_tongue'=> MemberUtility::member_mothere_tongue($this->id),
-            'marital_status'=> optional($this->member->marital_status)->name,
-            'height'       => optional($this->physical_attributes)->height,
-            'specialty'    => $this->career->first()?->designation
+            'id' => $this->id,
+            'code' => $this->code,
+            'first_name' => $this->first_name,
+            'last_name' => mb_substr($this->last_name ?? '', 0, 1).'.',
+            'gender' => $this->member->gender,            // 1 = Male, 2 = Female
+            'age' => $age,
+            'photo' => $photo,
+            'location' => MemberUtility::member_country($this->id),
+            'religion' => MemberUtility::member_religion($this->id),
+            'mother_tongue' => MemberUtility::member_mothere_tongue($this->id),
+            'marital_status' => optional($this->member->marital_status)->name,
+            'height' => optional($this->physical_attributes)->height,
+            'specialty' => $this->career->first()?->designation
                               ?? $this->member->specialization
                               ?? 'Medical Professional',
-            'education'    => $this->education->count() > 0
+            'education' => $this->education->count() > 0
                 ? ($this->education->first()->degree ?? null)
                 : null,
-            'is_verified'  => ($this->approved == 1) && !empty($this->verification_info),
+            'is_verified' => ($this->approved == 1) && ! empty($this->verification_info),
         ];
     }
 }

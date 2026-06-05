@@ -2,13 +2,11 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\Family;
-use App\Models\FamilyGuardian;
-use App\Models\FamilyPhoto;
-use Illuminate\Support\Facades\Storage;
 use App\Events\FamilyUpdated;
+use App\Http\Controllers\Controller;
+use App\Models\Family;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class FamilyPortalController extends Controller
 {
@@ -25,7 +23,7 @@ class FamilyPortalController extends Controller
 
         return response()->json([
             'result' => true,
-            'data' => $family
+            'data' => $family,
         ]);
     }
 
@@ -38,11 +36,11 @@ class FamilyPortalController extends Controller
         $family = Family::where('user_id', $user->id)->firstOrFail();
 
         $family->update($request->only([
-            'father', 'mother', 'sibling', 
+            'father', 'mother', 'sibling',
             'father_occupation', 'mother_occupation',
             'about_parents', 'about_siblings', 'about_relatives',
-            'about_description', 'location_city', 'location_country', 
-            'tradition_level', 'affluence_level', 'interests'
+            'about_description', 'location_city', 'location_country',
+            'tradition_level', 'affluence_level', 'interests',
         ]));
 
         broadcast(new FamilyUpdated($user->id, $family));
@@ -120,11 +118,11 @@ class FamilyPortalController extends Controller
 
         if ($request->hasFile('photo')) {
             $path = $request->file('photo')->store('uploads/family_photos', 'public');
-            
+
             $photo = $family->photos()->create([
                 'photo_path' => $path,
                 'caption' => $request->caption,
-                'sort_order' => $family->photos()->count()
+                'sort_order' => $family->photos()->count(),
             ]);
 
             $family->load(['guardians', 'photos', 'approvals.targetUser']);

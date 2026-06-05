@@ -2,11 +2,41 @@
 
 namespace App\Http;
 
-use App\Http\Middleware\AppLanguage;
-use Illuminate\Foundation\Http\Kernel as HttpKernel;
-use App\Http\Middleware\IsAdmin;
-use App\Http\Middleware\IsMember;
+use App\Http\Middleware\ApiIsAdmin;
 use App\Http\Middleware\ApiMessagingEntitlement;
+use App\Http\Middleware\AppLanguage;
+use App\Http\Middleware\Authenticate;
+use App\Http\Middleware\CheckForMaintenanceMode;
+use App\Http\Middleware\EmailVerifiedApi;
+use App\Http\Middleware\HttpsProtocol;
+use App\Http\Middleware\IsAdmin;
+use App\Http\Middleware\IsApiMember;
+use App\Http\Middleware\IsMember;
+use App\Http\Middleware\RedirectIfAuthenticated;
+use App\Http\Middleware\RequirePasswordChangeApi;
+use App\Http\Middleware\TrimStrings;
+use App\Http\Middleware\TrustProxies;
+use App\Http\Middleware\VerifyCsrfToken;
+use Illuminate\Auth\Middleware\AuthenticateWithBasicAuth;
+use Illuminate\Auth\Middleware\Authorize;
+use Illuminate\Auth\Middleware\EnsureEmailIsVerified;
+use Illuminate\Auth\Middleware\RequirePassword;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Foundation\Http\Kernel as HttpKernel;
+use Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull;
+use Illuminate\Foundation\Http\Middleware\ValidatePostSize;
+use Illuminate\Http\Middleware\HandleCors;
+use Illuminate\Http\Middleware\SetCacheHeaders;
+use Illuminate\Routing\Middleware\SubstituteBindings;
+use Illuminate\Routing\Middleware\ThrottleRequests;
+use Illuminate\Routing\Middleware\ValidateSignature;
+use Illuminate\Session\Middleware\AuthenticateSession;
+use Illuminate\Session\Middleware\StartSession;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
+use Spatie\Permission\Middlewares\PermissionMiddleware;
+use Spatie\Permission\Middlewares\RoleMiddleware;
+use Spatie\Permission\Middlewares\RoleOrPermissionMiddleware;
 
 class Kernel extends HttpKernel
 {
@@ -18,11 +48,11 @@ class Kernel extends HttpKernel
      * @var array
      */
     protected $middleware = [
-        \App\Http\Middleware\TrustProxies::class,
-        \Illuminate\Http\Middleware\HandleCors::class,
-        \Illuminate\Foundation\Http\Middleware\ValidatePostSize::class,
-        \App\Http\Middleware\TrimStrings::class,
-        \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
+        TrustProxies::class,
+        HandleCors::class,
+        ValidatePostSize::class,
+        TrimStrings::class,
+        ConvertEmptyStringsToNull::class,
     ];
 
     /**
@@ -32,22 +62,22 @@ class Kernel extends HttpKernel
      */
     protected $middlewareGroups = [
         'web' => [
-            //\App\Http\Middleware\EncryptCookies::class,
-            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
-            \Illuminate\Session\Middleware\StartSession::class,
+            // \App\Http\Middleware\EncryptCookies::class,
+            AddQueuedCookiesToResponse::class,
+            StartSession::class,
             // \Illuminate\Session\Middleware\AuthenticateSession::class,
-            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
-            \App\Http\Middleware\VerifyCsrfToken::class,
-            \Illuminate\Routing\Middleware\SubstituteBindings::class,
-            //\App\Http\Middleware\LastUserActivity::class,
-            \App\Http\Middleware\HttpsProtocol::class,
-            \App\Http\Middleware\CheckForMaintenanceMode::class
+            ShareErrorsFromSession::class,
+            VerifyCsrfToken::class,
+            SubstituteBindings::class,
+            // \App\Http\Middleware\LastUserActivity::class,
+            HttpsProtocol::class,
+            CheckForMaintenanceMode::class,
         ],
 
-        'api' => [        
-            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+        'api' => [
+            EnsureFrontendRequestsAreStateful::class,
             'throttle:api',
-            \Illuminate\Routing\Middleware\SubstituteBindings::class,   
+            SubstituteBindings::class,
             // 'throttle:600,1',
             // 'bindings',
         ],
@@ -61,27 +91,27 @@ class Kernel extends HttpKernel
      * @var array
      */
     protected $routeMiddleware = [
-        'admin' => \App\Http\Middleware\IsAdmin::class,
-        'api_admin' => \App\Http\Middleware\ApiIsAdmin::class,
-        'member' => \App\Http\Middleware\IsMember::class,
-        'api_member' => \App\Http\Middleware\IsApiMember::class,
-        'api_email_verified' => \App\Http\Middleware\EmailVerifiedApi::class,
-        'auth' => \App\Http\Middleware\Authenticate::class,
-        'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
-        'bindings' => \Illuminate\Routing\Middleware\SubstituteBindings::class,
-        'cache.headers' => \Illuminate\Http\Middleware\SetCacheHeaders::class,
-        'can' => \Illuminate\Auth\Middleware\Authorize::class,
-        'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
-        'password.confirm' => \Illuminate\Auth\Middleware\RequirePassword::class,
-        'signed' => \Illuminate\Routing\Middleware\ValidateSignature::class,
-        'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
-        'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
-        'role' => \Spatie\Permission\Middlewares\RoleMiddleware::class,
-        'permission' => \Spatie\Permission\Middlewares\PermissionMiddleware::class,
-        'role_or_permission' => \Spatie\Permission\Middlewares\RoleOrPermissionMiddleware::class,
+        'admin' => IsAdmin::class,
+        'api_admin' => ApiIsAdmin::class,
+        'member' => IsMember::class,
+        'api_member' => IsApiMember::class,
+        'api_email_verified' => EmailVerifiedApi::class,
+        'auth' => Authenticate::class,
+        'auth.basic' => AuthenticateWithBasicAuth::class,
+        'bindings' => SubstituteBindings::class,
+        'cache.headers' => SetCacheHeaders::class,
+        'can' => Authorize::class,
+        'guest' => RedirectIfAuthenticated::class,
+        'password.confirm' => RequirePassword::class,
+        'signed' => ValidateSignature::class,
+        'throttle' => ThrottleRequests::class,
+        'verified' => EnsureEmailIsVerified::class,
+        'role' => RoleMiddleware::class,
+        'permission' => PermissionMiddleware::class,
+        'role_or_permission' => RoleOrPermissionMiddleware::class,
         'app_language' => AppLanguage::class,
         'api_premium_messaging' => ApiMessagingEntitlement::class,
-        'api_require_password_change' => \App\Http\Middleware\RequirePasswordChangeApi::class,
+        'api_require_password_change' => RequirePasswordChangeApi::class,
     ];
 
     /**
@@ -92,11 +122,11 @@ class Kernel extends HttpKernel
      * @var array
      */
     protected $middlewarePriority = [
-        \Illuminate\Session\Middleware\StartSession::class,
-        \Illuminate\View\Middleware\ShareErrorsFromSession::class,
-        \App\Http\Middleware\Authenticate::class,
-        \Illuminate\Session\Middleware\AuthenticateSession::class,
-        \Illuminate\Routing\Middleware\SubstituteBindings::class,
-        \Illuminate\Auth\Middleware\Authorize::class,
+        StartSession::class,
+        ShareErrorsFromSession::class,
+        Authenticate::class,
+        AuthenticateSession::class,
+        SubstituteBindings::class,
+        Authorize::class,
     ];
 }

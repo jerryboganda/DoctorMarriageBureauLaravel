@@ -4,8 +4,9 @@ use App\Http\Controllers\AdditionalAttributeController;
 use App\Http\Controllers\AddonController;
 use App\Http\Controllers\AizUploadController;
 use App\Http\Controllers\AnnualSalaryRangeyController;
-use App\Http\Controllers\BlogController;
 use App\Http\Controllers\BlogCategoryController;
+use App\Http\Controllers\BlogController;
+use App\Http\Controllers\BulkNotificationController;
 use App\Http\Controllers\CasteController;
 use App\Http\Controllers\CityController;
 use App\Http\Controllers\ContactUsController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\FamilyStatusController;
 use App\Http\Controllers\FamilyValueController;
 use App\Http\Controllers\HappyStoryController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\JobTitleController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\ManualPaymentMethodController;
 use App\Http\Controllers\MaritalStatusController;
@@ -27,21 +29,19 @@ use App\Http\Controllers\OnBehalfController;
 use App\Http\Controllers\PackageController;
 use App\Http\Controllers\PackagePaymentController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\ProfileCompletionReminderController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ProfileOptionValueController;
 use App\Http\Controllers\ReligionController;
 use App\Http\Controllers\ReportedUserController;
-use App\Http\Controllers\SectController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\SectController;
 use App\Http\Controllers\SettingController;
+use App\Http\Controllers\SpecialityController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\StateController;
 use App\Http\Controllers\SubCasteController;
 use App\Http\Controllers\UpdateController;
-use App\Http\Controllers\ProfileOptionValueController;
-use App\Http\Controllers\JobTitleController;
-use App\Http\Controllers\SpecialityController;
-use App\Http\Controllers\ProfileCompletionReminderController;
-use App\Http\Controllers\BulkNotificationController;
 use App\Http\Controllers\WalletController;
 
 /*
@@ -63,9 +63,8 @@ Route::controller(UpdateController::class)->group(function () {
     Route::post('/purchase_code', 'purchase_code')->name('update.code');
 });
 
-
 Route::group(['prefix' => 'admin'], function () {
-    Route::get('/', [HomeController::class,'admin_login'])->name('admin');
+    Route::get('/', [HomeController::class, 'admin_login'])->name('admin');
 });
 
 Route::get('/admin/login', [HomeController::class, 'admin_login'])->name('admin.login');
@@ -108,7 +107,6 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin']], function 
         Route::get('/member/show-verification-info/{id}', 'show_verification_info')->name('member.show_verification_info');
         Route::get('/member/approve-verification/{id}', 'approve_verification')->name('member.approve_verification');
         Route::get('/member/reject-verification/{id}', 'reject_verification')->name('member.reject_verification');
-
 
         // member's package manage
         Route::post('/members/package_info', 'package_info')->name('members.package_info');
@@ -158,9 +156,9 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin']], function 
     });
 
     Route::resource('/happy-story', HappyStoryController::class);
-    Route::post('/happy-story/update-story-status',[HappyStoryController::class, 'approval_status'])->name('happy_story_approval.status');
+    Route::post('/happy-story/update-story-status', [HappyStoryController::class, 'approval_status'])->name('happy_story_approval.status');
 
-    //Blog Section
+    // Blog Section
     Route::resource('blog-category', BlogCategoryController::class)->names([
         'destroy' => 'blog-category.resource.destroy',
     ]);
@@ -226,12 +224,11 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin']], function 
         Route::get('/countries/destroy/{id}', 'destroy')->name('countries.destroy');
     });
 
-
     // State
     Route::resource('/states', StateController::class)->names([
         'destroy' => 'states.resource.destroy',
     ]);
-    Route::get('/states/destroy/{id}', [StateController::class,'destroy'])->name('states.destroy');
+    Route::get('/states/destroy/{id}', [StateController::class, 'destroy'])->name('states.destroy');
 
     // City
     Route::resource('/cities', CityController::class)->names([
@@ -360,7 +357,6 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin']], function 
         Route::get('/verification/form', 'member_verification_form')->name('member_verification_form.index');
         Route::post('/verification/form/update', 'member_verification_form_update')->name('member_verification_form.update');
 
-
     });
 
     Route::resource('/additional-attributes', AdditionalAttributeController::class)->names([
@@ -415,7 +411,7 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin']], function 
     Route::resource('/uploaded-files', AizUploadController::class)->names([
         'destroy' => 'uploaded-files.resource.destroy',
     ]);
-    Route::controller(AizUploadController::class)->group(function() {
+    Route::controller(AizUploadController::class)->group(function () {
         Route::any('/uploaded-files/file-info', 'file_info')->name('uploaded-files.info');
         Route::get('/uploaded-files/destroy/{id}', 'destroy')->name('uploaded-files.destroy');
         Route::post('/bulk-uploaded-files-delete', 'bulk_uploaded_files_delete')->name('bulk-uploaded-files-delete');

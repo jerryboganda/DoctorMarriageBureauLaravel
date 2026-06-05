@@ -2,19 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Coupon;
 use App\Models\ManualPaymentMethod;
 use App\Models\Member;
 use App\Models\Package;
 use App\Models\PackagePayment;
 use App\Models\User;
-use App\Models\Wallet;
 use App\Notifications\DbStoreNotification;
-use App\Services\FirbaseNotification;
 use App\Services\CouponService;
+use App\Services\FirbaseNotification;
 use App\Services\ReferralService;
 use App\Utility\EmailUtility;
 use Auth;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Kutia\Larafirebase\Facades\Larafirebase;
 use Notification;
 use Session;
@@ -31,19 +32,20 @@ class PackagePaymentController extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index()
     {
         $per_page = 10;
         $package_payments = PackagePayment::latest()->paginate($per_page);
+
         return view('admin.package_payments.index', compact('package_payments', 'per_page'));
     }
 
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create()
     {
@@ -53,57 +55,65 @@ class PackagePaymentController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(Request $request)
     {
         // dd($request->all());
 
         $user = Auth::user();
-        $data['amount']         = $request->amount;
-        $data['package_id']     = $request->package_id;
+        $data['amount'] = $request->amount;
+        $data['package_id'] = $request->package_id;
         $data['payment_method'] = $request->payment_option;
 
         $request->session()->put('payment_type', 'package_payment');
         $request->session()->put('payment_data', $data);
 
         if ($request->payment_option == 'paypal') {
-            $paypal = new PaypalController();
+            $paypal = new PaypalController;
+
             return $paypal->pay();
         } elseif ($request->payment_option == 'instamojo') {
-            if (auth::user()->email) {
-                $instamojo = new InstamojoController();
+            if (Auth::user()->email) {
+                $instamojo = new InstamojoController;
+
                 return $instamojo->pay($request);
             } else {
                 return redirect()->back()->with('error', 'Please add an email in your profile to continue with Instamojo.');
             }
         } elseif ($request->payment_option == 'stripe') {
-            $stripe = new StripeController();
+            $stripe = new StripeController;
+
             return $stripe->pay();
         } elseif ($request->payment_option == 'razorpay') {
-            $razorpay = new RazorpayController();
+            $razorpay = new RazorpayController;
+
             return $razorpay->pay($request);
         } elseif ($request->payment_option == 'paystack') {
-            $paystack = new PaystackController();
+            $paystack = new PaystackController;
+
             return $paystack->redirectToGateway($request);
         } elseif ($request->payment_option == 'paytm') {
-            $paytm = new PaytmController();
+            $paytm = new PaytmController;
+
             return $paytm->index($request);
         } elseif ($request->payment_option == 'phonepe') {
-            $phonepe = new PhonepeController();
+            $phonepe = new PhonepeController;
+
             return $phonepe->pay($request);
         } elseif ($request->payment_option == 'wallet') {
             if ($user->balance < $request->amount) {
                 flash(translate('You do not have enough balance.'))->error();
+
                 return back();
             } else {
                 $user->balance = $user->balance - $request->amount;
                 $user->save();
+
                 return $this->package_payment_done($request->session()->get('payment_data'), null);
             }
         } elseif ($request->payment_option == 'manual_payment') {
-            $package_payment = new PackagePayment();
+            $package_payment = new PackagePayment;
             $package_payment->payment_code = date('ymd-His');
             $package_payment->user_id = $user->id;
             $package_payment->package_id = $request->package_id;
@@ -113,8 +123,9 @@ class PackagePaymentController extends Controller
             $package_payment->payment_details = '';
             $package_payment->offline_payment = 1;
             $manualPaymentMethod = ManualPaymentMethod::find($request->manual_payment_id);
-            if (!$manualPaymentMethod) {
+            if (! $manualPaymentMethod) {
                 flash(translate('Please select a valid manual payment method.'))->error();
+
                 return back();
             }
 
@@ -130,7 +141,7 @@ class PackagePaymentController extends Controller
                 $id = null;
                 $notify_by = $user->id;
                 $info_id = $package_payment->id;
-                $message = $user->first_name . ' ' . $user->last_name . translate('has been purchased a new package. Payment Code: ') . $package_payment->payment_code;
+                $message = $user->first_name.' '.$user->last_name.translate('has been purchased a new package. Payment Code: ').$package_payment->payment_code;
                 $route = route('package-payments.index');
 
                 // fcm
@@ -139,7 +150,7 @@ class PackagePaymentController extends Controller
                         ->whereNotNull('fcm_token')
                         ->pluck('fcm_token')
                         ->toArray();
-                    Larafirebase::withTitle(str_replace("_", " ", $notify_type))
+                    Larafirebase::withTitle(str_replace('_', ' ', $notify_type))
                         ->withBody($message)
                         ->sendMessage($fcmTokens);
                 }
@@ -159,6 +170,7 @@ class PackagePaymentController extends Controller
             Session::forget('payment_type');
 
             flash(translate('Payment completed'))->success();
+
             return redirect()->route('package_payment.invoice', $package_payment->id);
         }
     }
@@ -167,7 +179,7 @@ class PackagePaymentController extends Controller
     {
         $user = auth()->user();
 
-        $package_payment = new PackagePayment();
+        $package_payment = new PackagePayment;
         $package_payment->payment_code = date('ymd-His');
         $package_payment->user_id = $user->id;
         $package_payment->package_id = $payment_data['package_id'];
@@ -181,15 +193,15 @@ class PackagePaymentController extends Controller
         $member = Member::where('user_id', $user->id)->first();
         $package = Package::where('id', $payment_data['package_id'])->first();
 
-        $member->current_package_id             = $package->id;
-        $member->remaining_interest             = $member->remaining_interest + $package->express_interest;
-        $member->remaining_photo_gallery        = $member->remaining_photo_gallery + $package->photo_gallery;
-        $member->remaining_contact_view         = $member->remaining_contact_view + $package->contact;
-        $member->remaining_profile_viewer_view  = $member->remaining_profile_viewer_view + $package->profile_viewers_view;
-        $member->remaining_profile_image_view   = $member->remaining_profile_image_view + $package->profile_image_view;
-        $member->remaining_gallery_image_view   = $member->remaining_gallery_image_view + $package->gallery_image_view;
-        $member->auto_profile_match             = $package->auto_profile_match;
-        $member->package_validity               = date('Y-m-d', strtotime($member->package_validity . ' +' . $package->validity . 'days'));
+        $member->current_package_id = $package->id;
+        $member->remaining_interest = $member->remaining_interest + $package->express_interest;
+        $member->remaining_photo_gallery = $member->remaining_photo_gallery + $package->photo_gallery;
+        $member->remaining_contact_view = $member->remaining_contact_view + $package->contact;
+        $member->remaining_profile_viewer_view = $member->remaining_profile_viewer_view + $package->profile_viewers_view;
+        $member->remaining_profile_image_view = $member->remaining_profile_image_view + $package->profile_image_view;
+        $member->remaining_gallery_image_view = $member->remaining_gallery_image_view + $package->gallery_image_view;
+        $member->auto_profile_match = $package->auto_profile_match;
+        $member->package_validity = date('Y-m-d', strtotime($member->package_validity.' +'.$package->validity.'days'));
 
         if ($member->save()) {
             $user->membership = 2;
@@ -197,11 +209,11 @@ class PackagePaymentController extends Controller
 
             if (addon_activation('referral_system')) {
                 try {
-                    $referralService = new ReferralService();
+                    $referralService = new ReferralService;
                     $referralService->applyReferralCommissionIfEligible($user);
                     $referralService->checkAndQualifyReferral($user->id);
                 } catch (\Exception $e) {
-                    \Log::error('Referral post-purchase processing failed: ' . $e->getMessage(), ['user_id' => $user->id]);
+                    \Log::error('Referral post-purchase processing failed: '.$e->getMessage(), ['user_id' => $user->id]);
                 }
             }
 
@@ -211,7 +223,7 @@ class PackagePaymentController extends Controller
                 $id = null;
                 $notify_by = $user->id;
                 $info_id = $package_payment->id;
-                $message = $user->first_name . ' ' . $user->last_name . translate('has been purchased a new package. Payment Code: ') . $package_payment->payment_code;
+                $message = $user->first_name.' '.$user->last_name.translate('has been purchased a new package. Payment Code: ').$package_payment->payment_code;
                 $route = route('package-payments.index');
 
                 // fcm
@@ -220,7 +232,7 @@ class PackagePaymentController extends Controller
                         ->whereNotNull('fcm_token')
                         ->pluck('fcm_token')
                         ->toArray();
-                    Larafirebase::withTitle(str_replace("_", " ", $notify_type))
+                    Larafirebase::withTitle(str_replace('_', ' ', $notify_type))
                         ->withBody($message)
                         ->sendMessage($fcmTokens);
                 }
@@ -241,13 +253,14 @@ class PackagePaymentController extends Controller
         Session::forget('payment_type');
 
         flash(translate('Payment completed'))->success();
+
         return redirect()->route('package_payment.invoice', $package_payment->id);
     }
 
     public function package_purchase_history(Request $request)
     {
         $query = PackagePayment::latest();
-        
+
         // Filter by payment status
         if ($request->has('status') && $request->status != '') {
             if ($request->status == 'Paid') {
@@ -256,21 +269,23 @@ class PackagePaymentController extends Controller
                 $query->where('payment_status', 'Unpaid');
             }
         }
-        
+
         $package_payments = $query->paginate(5);
-        
+
         return view('frontend.member.package_payment_history', compact('package_payments'));
     }
 
     public function package_payment_invoice($id)
     {
         $payment = PackagePayment::where('user_id', auth()->id())->findOrFail($id);
+
         return view('frontend.member.payment_invoice', compact('payment'));
     }
 
     public function package_payment_invoice_admin($id)
     {
         $payment = PackagePayment::findOrFail($id);
+
         return view('admin.package_payments.payment_invoice', compact('payment'));
     }
 
@@ -278,11 +293,12 @@ class PackagePaymentController extends Controller
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function show($id)
     {
         $package_payment = PackagePayment::findOrFail($id);
+
         return view('admin.package_payments.payment_details', compact('package_payment'));
     }
 
@@ -290,7 +306,7 @@ class PackagePaymentController extends Controller
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function edit($id)
     {
@@ -299,20 +315,20 @@ class PackagePaymentController extends Controller
 
     public function manual_payment_accept($id)
     {
-        $package_payment    = PackagePayment::findOrFail($id);
-        $user               = User::where('id', $package_payment->user_id)->first();
-        $member             = Member::where('user_id', $user->id)->first();
-        $package            = Package::where('id', $package_payment->package_id)->first();
+        $package_payment = PackagePayment::findOrFail($id);
+        $user = User::where('id', $package_payment->user_id)->first();
+        $member = Member::where('user_id', $user->id)->first();
+        $package = Package::where('id', $package_payment->package_id)->first();
 
-        $member->current_package_id             = $package->id;
-        $member->remaining_interest             = $member->remaining_interest + $package->express_interest;
-        $member->remaining_photo_gallery        = $member->remaining_photo_gallery + $package->photo_gallery;
-        $member->remaining_contact_view         = $member->remaining_contact_view + $package->contact;
-        $member->remaining_profile_viewer_view  = $member->remaining_profile_viewer_view + $package->profile_viewers_view;
-        $member->remaining_profile_image_view   = $member->remaining_profile_image_view + $package->profile_image_view;
-        $member->remaining_gallery_image_view   = $member->remaining_gallery_image_view + $package->gallery_image_view;
-        $member->auto_profile_match             = $package->auto_profile_match;
-        $member->package_validity               = date('Y-m-d', strtotime($member->package_validity . ' +' . $package->validity . 'days'));
+        $member->current_package_id = $package->id;
+        $member->remaining_interest = $member->remaining_interest + $package->express_interest;
+        $member->remaining_photo_gallery = $member->remaining_photo_gallery + $package->photo_gallery;
+        $member->remaining_contact_view = $member->remaining_contact_view + $package->contact;
+        $member->remaining_profile_viewer_view = $member->remaining_profile_viewer_view + $package->profile_viewers_view;
+        $member->remaining_profile_image_view = $member->remaining_profile_image_view + $package->profile_image_view;
+        $member->remaining_gallery_image_view = $member->remaining_gallery_image_view + $package->gallery_image_view;
+        $member->auto_profile_match = $package->auto_profile_match;
+        $member->package_validity = date('Y-m-d', strtotime($member->package_validity.' +'.$package->validity.'days'));
 
         if ($member->save()) {
             $package_payment->payment_status = 'Paid';
@@ -321,9 +337,9 @@ class PackagePaymentController extends Controller
             $user->membership = 2;
             $user->save();
 
-            if (!empty($package_payment->coupon_id)) {
-                $couponService = new CouponService();
-                $coupon = \App\Models\Coupon::find($package_payment->coupon_id);
+            if (! empty($package_payment->coupon_id)) {
+                $couponService = new CouponService;
+                $coupon = Coupon::find($package_payment->coupon_id);
                 if ($coupon) {
                     $originalAmount = $package_payment->original_amount ?? $package_payment->amount;
                     $discountAmount = $package_payment->discount_amount ?? 0;
@@ -344,11 +360,11 @@ class PackagePaymentController extends Controller
 
             if (addon_activation('referral_system')) {
                 try {
-                    $referralService = new ReferralService();
+                    $referralService = new ReferralService;
                     $referralService->applyReferralCommissionIfEligible($user);
                     $referralService->checkAndQualifyReferral($user->id);
                 } catch (\Exception $e) {
-                    \Log::error('Referral post-purchase processing failed during manual acceptance: ' . $e->getMessage(), ['user_id' => $user->id]);
+                    \Log::error('Referral post-purchase processing failed during manual acceptance: '.$e->getMessage(), ['user_id' => $user->id]);
                 }
             }
 
@@ -358,7 +374,7 @@ class PackagePaymentController extends Controller
                 $id = null;
                 $notify_by = $user->id;
                 $info_id = $package_payment->id;
-                $message = translate('Your payment for package ') . $package_payment->package->name . translate(' has been approved. Payment Id: ') . $package_payment->payment_code;
+                $message = translate('Your payment for package ').$package_payment->package->name.translate(' has been approved. Payment Id: ').$package_payment->payment_code;
                 $route = route('package_purchase_history');
 
                 // fcm
@@ -385,15 +401,15 @@ class PackagePaymentController extends Controller
         }
 
         flash(translate('Payemnt accepted successfully.'))->success();
+
         return back();
     }
 
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function update(Request $request, $id)
     {
@@ -404,18 +420,18 @@ class PackagePaymentController extends Controller
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function destroy($id)
     {
         //
     }
 
-    public static function sendFirebaseNotification($fcmTokens = null, $notify_user, $notify_type, $message, $notify_by = null)
+    public static function sendFirebaseNotification($fcmTokens, $notify_user, $notify_type, $message, $notify_by = null)
     {
         // send firebase notification for mobile app
         if ($notify_user->fcm_token != null) {
-            $data = (object)[];
+            $data = (object) [];
             $data->fcm_token = $notify_user->fcm_token;
             $data->title = $notify_type;
             $data->text = $message;
@@ -424,7 +440,7 @@ class PackagePaymentController extends Controller
         }
         // end of  firebase notification
 
-        Larafirebase::withTitle(str_replace("_", " ", $notify_type))
+        Larafirebase::withTitle(str_replace('_', ' ', $notify_type))
             ->withBody($message)
             ->sendMessage($fcmTokens);
     }

@@ -1,7 +1,7 @@
 <?php
 
-use Illuminate\Database\Seeder;
 use App\Models\User;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
 
@@ -28,19 +28,19 @@ class AlternativeAdminSeeder extends Seeder
 
         // Check if admin user already exists
         $existingAdmin = User::where('email', $adminData['email'])->first();
-        
-        if (!$existingAdmin) {
+
+        if (! $existingAdmin) {
             // Create admin user
             $admin = User::create($adminData);
 
             // Check if Super Admin role exists, if not create it
             $superAdminRole = Role::firstOrCreate(['name' => 'Super Admin']);
-            
+
             // Assign Super Admin role
             $admin->assignRole('Super Admin');
 
             $this->command->info('Alternative admin user created successfully!');
-            $this->command->info('Email: ' . $adminData['email']);
+            $this->command->info('Email: '.$adminData['email']);
             $this->command->info('Password: welcome123');
         } else {
             $this->command->info('Admin user with this email already exists!');

@@ -38,18 +38,21 @@ class ReferralController extends BaseAdminController
     public function rules(Request $request)
     {
         $query = ReferralRule::query()->orderByDesc('id');
+
         return $this->ok($this->paginateQuery($request, $query));
     }
 
     public function storeRule(Request $request)
     {
         $rule = ReferralRule::create($request->all());
+
         return $this->ok($rule, 'Rule created');
     }
 
     public function showRule($id)
     {
         $rule = ReferralRule::findOrFail($id);
+
         return $this->ok($rule);
     }
 
@@ -73,6 +76,7 @@ class ReferralController extends BaseAdminController
     public function referrals(Request $request)
     {
         $query = Referral::with(['referrer', 'referred', 'rule'])->orderByDesc('id');
+
         return $this->ok($this->paginateQuery($request, $query));
     }
 
@@ -88,6 +92,7 @@ class ReferralController extends BaseAdminController
     public function rewards(Request $request)
     {
         $query = ReferralReward::with(['user', 'rule'])->orderByDesc('id');
+
         return $this->ok($this->paginateQuery($request, $query));
     }
 
@@ -102,6 +107,7 @@ class ReferralController extends BaseAdminController
     public function auditLogs(Request $request)
     {
         $query = ReferralAuditLog::query()->orderByDesc('id');
+
         return $this->ok($this->paginateQuery($request, $query));
     }
 

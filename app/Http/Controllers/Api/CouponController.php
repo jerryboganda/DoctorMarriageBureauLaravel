@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Api\Controller;
 use App\Services\CouponService;
 use Illuminate\Http\Request;
 
@@ -18,10 +17,10 @@ class CouponController extends Controller
         $amount = $request->has('amount') ? (float) $request->amount : null;
         $purchaseType = $request->purchase_type ?? 'any';
 
-        $couponService = new CouponService();
+        $couponService = new CouponService;
         $result = $couponService->validateCode($request->code, $user, $amount, $purchaseType);
 
-        if (!$result['valid']) {
+        if (! $result['valid']) {
             return $this->failure_message($result['message']);
         }
 

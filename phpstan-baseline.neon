@@ -1,0 +1,3206 @@
+parameters:
+	ignoreErrors:
+		-
+			message: "#^Variable \\$percentage on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 1
+			path: app/Console/Commands/SendProfileCompletionReminders.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\AdditionalAttributeController\\:\\:\\$messages\\.$#"
+			count: 2
+			path: app/Http/Controllers/AdditionalAttributeController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\AdditionalAttributeController\\:\\:\\$rules\\.$#"
+			count: 2
+			path: app/Http/Controllers/AdditionalAttributeController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\AdditionalAttributeController\\:\\:create\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/AdditionalAttributeController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\AdditionalAttributeController\\:\\:destroy\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/AdditionalAttributeController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\AdditionalAttributeController\\:\\:edit\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/AdditionalAttributeController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\AdditionalAttributeController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/AdditionalAttributeController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\AdditionalMemberInfoController\\:\\:create\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/AdditionalMemberInfoController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\AdditionalMemberInfoController\\:\\:destroy\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/AdditionalMemberInfoController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\AdditionalMemberInfoController\\:\\:edit\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/AdditionalMemberInfoController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\AdditionalMemberInfoController\\:\\:index\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/AdditionalMemberInfoController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\AdditionalMemberInfoController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/AdditionalMemberInfoController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\AdditionalMemberInfoController\\:\\:store\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/AdditionalMemberInfoController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\AddonController\\:\\:edit\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/AddonController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\AddonController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/AddonController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\AddonController\\:\\:store\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/AddonController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\AddonController\\:\\:update\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/AddonController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\AddressController\\:\\:\\$messages\\.$#"
+			count: 3
+			path: app/Http/Controllers/AddressController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\AddressController\\:\\:\\$rules\\.$#"
+			count: 3
+			path: app/Http/Controllers/AddressController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\AddressController\\:\\:create\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/AddressController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\AddressController\\:\\:destroy\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/AddressController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\AddressController\\:\\:edit\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/AddressController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\AddressController\\:\\:index\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/AddressController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\AddressController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/AddressController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\AddressController\\:\\:store\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/AddressController.php
+
+		-
+			message: "#^Call to static method disableForeignKeyConstraints\\(\\) on an unknown class App\\\\Http\\\\Controllers\\\\Schema\\.$#"
+			count: 1
+			path: app/Http/Controllers/AizUploadController.php
+
+		-
+			message: "#^Call to static method drop\\(\\) on an unknown class App\\\\Http\\\\Controllers\\\\Schema\\.$#"
+			count: 1
+			path: app/Http/Controllers/AizUploadController.php
+
+		-
+			message: "#^Call to static method select\\(\\) on an unknown class App\\\\Http\\\\Controllers\\\\DB\\.$#"
+			count: 1
+			path: app/Http/Controllers/AizUploadController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\AnnualSalaryRangeyController\\:\\:\\$annual_salary_range_messages\\.$#"
+			count: 3
+			path: app/Http/Controllers/AnnualSalaryRangeyController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\AnnualSalaryRangeyController\\:\\:\\$annual_salary_range_rules\\.$#"
+			count: 3
+			path: app/Http/Controllers/AnnualSalaryRangeyController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\AnnualSalaryRangeyController\\:\\:create\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/AnnualSalaryRangeyController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\AnnualSalaryRangeyController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/AnnualSalaryRangeyController.php
+
+		-
+			message: "#^Relation 'addon' is not found in App\\\\Models\\\\AddonPurchase model\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/AddonPurchaseController.php
+
+		-
+			message: "#^Relation 'user' is not found in App\\\\Models\\\\HappyStory model\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/Admin/AdminDashboardController.php
+
+		-
+			message: "#^Relation 'addresses' is not found in App\\\\Models\\\\User model\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/Admin/MemberController.php
+
+		-
+			message: "#^Relation 'member' is not found in App\\\\Models\\\\User model\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/Admin/MemberController.php
+
+		-
+			message: "#^Relation 'reportedBy' is not found in App\\\\Models\\\\ReportedUser model\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/Admin/MemberController.php
+
+		-
+			message: "#^Relation 'user' is not found in App\\\\Models\\\\ReportedUser model\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/Admin/MemberController.php
+
+		-
+			message: "#^Relation 'package' is not found in App\\\\Models\\\\PackagePayment model\\.$#"
+			count: 3
+			path: app/Http/Controllers/Api/Admin/PackagePaymentController.php
+
+		-
+			message: "#^Relation 'user' is not found in App\\\\Models\\\\PackagePayment model\\.$#"
+			count: 3
+			path: app/Http/Controllers/Api/Admin/PackagePaymentController.php
+
+		-
+			message: "#^Relation 'referred' is not found in App\\\\Models\\\\Referral model\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/Admin/ReferralController.php
+
+		-
+			message: "#^Relation 'referrer' is not found in App\\\\Models\\\\Referral model\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/Admin/ReferralController.php
+
+		-
+			message: "#^Relation 'rule' is not found in App\\\\Models\\\\Referral model\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/Admin/ReferralController.php
+
+		-
+			message: "#^Relation 'rule' is not found in App\\\\Models\\\\ReferralReward model\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/Admin/ReferralController.php
+
+		-
+			message: "#^Relation 'user' is not found in App\\\\Models\\\\ReferralReward model\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/Admin/ReferralController.php
+
+		-
+			message: "#^Function upload_api_file invoked with 2 parameters, 1 required\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/Admin/UploadedFileController.php
+
+		-
+			message: "#^Relation 'user' is not found in App\\\\Models\\\\Upload model\\.$#"
+			count: 2
+			path: app/Http/Controllers/Api/Admin/UploadedFileController.php
+
+		-
+			message: "#^Relation 'package' is not found in App\\\\Models\\\\PackagePayment model\\.$#"
+			count: 2
+			path: app/Http/Controllers/Api/Admin/WalletController.php
+
+		-
+			message: "#^Relation 'user' is not found in App\\\\Models\\\\PackagePayment model\\.$#"
+			count: 2
+			path: app/Http/Controllers/Api/Admin/WalletController.php
+
+		-
+			message: "#^Call to an undefined static method App\\\\Models\\\\Notification\\:\\:send\\(\\)\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/AuthController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\Api\\\\CareerController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/CareerController.php
+
+		-
+			message: "#^Relation 'chats' is not found in App\\\\Models\\\\ChatThread model\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/ChatController.php
+
+		-
+			message: "#^Relation 'latestChat' is not found in App\\\\Models\\\\ChatThread model\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/ChatController.php
+
+		-
+			message: "#^Relation 'receiver' is not found in App\\\\Models\\\\ChatThread model\\.$#"
+			count: 2
+			path: app/Http/Controllers/Api/ChatController.php
+
+		-
+			message: "#^Relation 'sender' is not found in App\\\\Models\\\\ChatThread model\\.$#"
+			count: 2
+			path: app/Http/Controllers/Api/ChatController.php
+
+		-
+			message: "#^Relation 'memberships' is not found in App\\\\Models\\\\Community model\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/CommunityController.php
+
+		-
+			message: "#^Relation 'member' is not found in App\\\\Models\\\\User model\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/DiscoveryController.php
+
+		-
+			message: "#^Relation 'shortlist' is not found in App\\\\Models\\\\User model\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/DiscoveryController.php
+
+		-
+			message: "#^Relation 'spiritual_backgrounds' is not found in App\\\\Models\\\\User model\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/DiscoveryController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\Api\\\\EducationController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/EducationController.php
+
+		-
+			message: "#^Relation 'approvals' is not found in App\\\\Models\\\\Family model\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/FamilyPortalController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\Api\\\\GalleryImageController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/GalleryImageController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\Api\\\\GalleryImageController\\:\\:update\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/GalleryImageController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\Api\\\\HappyStoryController\\:\\:destroy\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/HappyStoryController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\Api\\\\HappyStoryController\\:\\:index\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/HappyStoryController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\Api\\\\HappyStoryController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/HappyStoryController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\Api\\\\HappyStoryController\\:\\:update\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/HappyStoryController.php
+
+		-
+			message: "#^Variable \\$photos might not be defined\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/HappyStoryController.php
+
+		-
+			message: "#^Relation 'member' is not found in App\\\\Models\\\\User model\\.$#"
+			count: 2
+			path: app/Http/Controllers/Api/HomeController.php
+
+		-
+			message: "#^Variable \\$how_it_works_steps_icons might not be defined\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/HomeController.php
+
+		-
+			message: "#^Variable \\$how_it_works_steps_sub_titles might not be defined\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/HomeController.php
+
+		-
+			message: "#^Variable \\$how_it_works_steps_titles might not be defined\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/HomeController.php
+
+		-
+			message: "#^Variable \\$new_array might not be defined\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/HomeController.php
+
+		-
+			message: "#^Variable \\$steps might not be defined\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/HomeController.php
+
+		-
+			message: "#^Relation 'interestedby' is not found in App\\\\Models\\\\ExpressInterest model\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/InterestController.php
+
+		-
+			message: "#^Relation 'user' is not found in App\\\\Models\\\\ExpressInterest model\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/InterestController.php
+
+		-
+			message: "#^Relation 'member' is not found in App\\\\Models\\\\User model\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/MatchIntelligenceController.php
+
+		-
+			message: "#^Relation 'addresses' is not found in App\\\\Models\\\\User model\\.$#"
+			count: 3
+			path: app/Http/Controllers/Api/MemberController.php
+
+		-
+			message: "#^Relation 'career' is not found in App\\\\Models\\\\User model\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/MemberController.php
+
+		-
+			message: "#^Relation 'member' is not found in App\\\\Models\\\\User model\\.$#"
+			count: 8
+			path: app/Http/Controllers/Api/MemberController.php
+
+		-
+			message: "#^Relation 'physical_attributes' is not found in App\\\\Models\\\\User model\\.$#"
+			count: 2
+			path: app/Http/Controllers/Api/MemberController.php
+
+		-
+			message: "#^Relation 'spiritual_backgrounds' is not found in App\\\\Models\\\\User model\\.$#"
+			count: 3
+			path: app/Http/Controllers/Api/MemberController.php
+
+		-
+			message: "#^Relation 'chatThread' is not found in App\\\\Models\\\\Chat model\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/NotificationCenterController.php
+
+		-
+			message: "#^Class App\\\\Http\\\\Controllers\\\\Api\\\\WalletController referenced with incorrect case\\: App\\\\Http\\\\Controllers\\\\APi\\\\WalletController\\.$#"
+			count: 2
+			path: app/Http/Controllers/Api/Payment/InstamojoController.php
+
+		-
+			message: "#^Variable \\$package might not be defined\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/Payment/PaypalController.php
+
+		-
+			message: "#^Variable \\$credentials might not be defined\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/Payment/PhonepeController.php
+
+		-
+			message: "#^Variable \\$merchantTransactionId might not be defined\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/Payment/PhonepeController.php
+
+		-
+			message: "#^Variable \\$memberData in empty\\(\\) always exists and is not falsy\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/ProfileCenterController.php
+
+		-
+			message: "#^Variable \\$updateData in empty\\(\\) always exists and is not falsy\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/ProfileCenterController.php
+
+		-
+			message: "#^Relation 'user' is not found in App\\\\Models\\\\MemberProgression model\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/ProgressionController.php
+
+		-
+			message: "#^Relation 'referred' is not found in App\\\\Models\\\\Referral model\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/ReferralController.php
+
+		-
+			message: "#^Call to static method findOrFail\\(\\) on an unknown class App\\\\Models\\\\SupportTicket\\.$#"
+			count: 2
+			path: app/Http/Controllers/Api/SupportTicketController.php
+
+		-
+			message: "#^Call to static method where\\(\\) on an unknown class App\\\\Models\\\\SupportTicket\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/SupportTicketController.php
+
+		-
+			message: "#^Call to static method where\\(\\) on an unknown class App\\\\Models\\\\SupportTicketReply\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/SupportTicketController.php
+
+		-
+			message: "#^Instantiated class App\\\\Models\\\\SupportTicket not found\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/SupportTicketController.php
+
+		-
+			message: "#^Instantiated class App\\\\Models\\\\SupportTicketReply not found\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/SupportTicketController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\Api\\\\SupportTicketController\\:\\:destroy\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/SupportTicketController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\Api\\\\SupportTicketController\\:\\:index\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/SupportTicketController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\Api\\\\SupportTicketController\\:\\:update\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/Api/SupportTicketController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\AstrologyController\\:\\:\\$messages\\.$#"
+			count: 1
+			path: app/Http/Controllers/AstrologyController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\AstrologyController\\:\\:\\$rules\\.$#"
+			count: 1
+			path: app/Http/Controllers/AstrologyController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\AstrologyController\\:\\:create\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/AstrologyController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\AstrologyController\\:\\:destroy\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/AstrologyController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\AstrologyController\\:\\:edit\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/AstrologyController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\AstrologyController\\:\\:index\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/AstrologyController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\AstrologyController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/AstrologyController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\AstrologyController\\:\\:store\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/AstrologyController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\AttitudeController\\:\\:\\$messages\\.$#"
+			count: 1
+			path: app/Http/Controllers/AttitudeController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\AttitudeController\\:\\:\\$rules\\.$#"
+			count: 1
+			path: app/Http/Controllers/AttitudeController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\AttitudeController\\:\\:create\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/AttitudeController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\AttitudeController\\:\\:destroy\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/AttitudeController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\AttitudeController\\:\\:edit\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/AttitudeController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\AttitudeController\\:\\:index\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/AttitudeController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\AttitudeController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/AttitudeController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\AttitudeController\\:\\:store\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/AttitudeController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\BlogCategoryController\\:\\:create\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/BlogCategoryController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\BlogCategoryController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/BlogCategoryController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\BlogController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/BlogController.php
+
+		-
+			message: "#^Relation 'addresses' is not found in App\\\\Models\\\\User model\\.$#"
+			count: 3
+			path: app/Http/Controllers/BulkNotificationController.php
+
+		-
+			message: "#^Relation 'member' is not found in App\\\\Models\\\\User model\\.$#"
+			count: 7
+			path: app/Http/Controllers/BulkNotificationController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\CareerController\\:\\:\\$rules\\.$#"
+			count: 3
+			path: app/Http/Controllers/CareerController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\CareerController\\:\\:index\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/CareerController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\CareerController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/CareerController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\CasteController\\:\\:\\$messages\\.$#"
+			count: 3
+			path: app/Http/Controllers/CasteController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\CasteController\\:\\:\\$rules\\.$#"
+			count: 3
+			path: app/Http/Controllers/CasteController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\CasteController\\:\\:create\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/CasteController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\CasteController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/CasteController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\CityController\\:\\:\\$city_messages\\.$#"
+			count: 3
+			path: app/Http/Controllers/CityController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\CityController\\:\\:\\$city_rules\\.$#"
+			count: 3
+			path: app/Http/Controllers/CityController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\CityController\\:\\:create\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/CityController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\CityController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/CityController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ContactUsController\\:\\:create\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ContactUsController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ContactUsController\\:\\:edit\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ContactUsController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\CountryController\\:\\:create\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/CountryController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\CountryController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/CountryController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\CurrencyController\\:\\:\\$currency_rules\\.$#"
+			count: 3
+			path: app/Http/Controllers/CurrencyController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\CurrencyController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/CurrencyController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\EducationController\\:\\:\\$rules\\.$#"
+			count: 3
+			path: app/Http/Controllers/EducationController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\EducationController\\:\\:index\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/EducationController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\EducationController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/EducationController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\EmailTemplateController\\:\\:create\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/EmailTemplateController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\EmailTemplateController\\:\\:destroy\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/EmailTemplateController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\EmailTemplateController\\:\\:edit\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/EmailTemplateController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\EmailTemplateController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/EmailTemplateController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\EmailTemplateController\\:\\:store\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/EmailTemplateController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ExpressInterestController\\:\\:create\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ExpressInterestController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ExpressInterestController\\:\\:destroy\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ExpressInterestController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ExpressInterestController\\:\\:edit\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ExpressInterestController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ExpressInterestController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ExpressInterestController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ExpressInterestController\\:\\:update\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ExpressInterestController.php
+
+		-
+			message: "#^Relation 'user' is not found in App\\\\Models\\\\ExpressInterest model\\.$#"
+			count: 4
+			path: app/Http/Controllers/ExpressInterestController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\FamilyController\\:\\:\\$messages\\.$#"
+			count: 1
+			path: app/Http/Controllers/FamilyController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\FamilyController\\:\\:\\$rules\\.$#"
+			count: 1
+			path: app/Http/Controllers/FamilyController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\FamilyController\\:\\:create\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/FamilyController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\FamilyController\\:\\:destroy\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/FamilyController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\FamilyController\\:\\:edit\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/FamilyController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\FamilyController\\:\\:index\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/FamilyController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\FamilyController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/FamilyController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\FamilyController\\:\\:store\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/FamilyController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\FamilyStatusController\\:\\:\\$family_status_messages\\.$#"
+			count: 3
+			path: app/Http/Controllers/FamilyStatusController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\FamilyStatusController\\:\\:\\$family_status_rules\\.$#"
+			count: 3
+			path: app/Http/Controllers/FamilyStatusController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\FamilyStatusController\\:\\:create\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/FamilyStatusController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\FamilyStatusController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/FamilyStatusController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\FamilyValueController\\:\\:\\$family_value_messages\\.$#"
+			count: 3
+			path: app/Http/Controllers/FamilyValueController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\FamilyValueController\\:\\:\\$family_value_rules\\.$#"
+			count: 3
+			path: app/Http/Controllers/FamilyValueController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\FamilyValueController\\:\\:create\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/FamilyValueController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\FamilyValueController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/FamilyValueController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\GalleryImageController\\:\\:edit\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/GalleryImageController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\GalleryImageController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/GalleryImageController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\GalleryImageController\\:\\:update\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/GalleryImageController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\HappyStoryController\\:\\:\\$messages\\.$#"
+			count: 3
+			path: app/Http/Controllers/HappyStoryController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\HappyStoryController\\:\\:\\$rules\\.$#"
+			count: 3
+			path: app/Http/Controllers/HappyStoryController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\HappyStoryController\\:\\:destroy\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/HappyStoryController.php
+
+		-
+			message: "#^Relation 'user' is not found in App\\\\Models\\\\HappyStory model\\.$#"
+			count: 1
+			path: app/Http/Controllers/HappyStoryController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\HobbyController\\:\\:create\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/HobbyController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\HobbyController\\:\\:destroy\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/HobbyController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\HobbyController\\:\\:edit\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/HobbyController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\HobbyController\\:\\:index\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/HobbyController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\HobbyController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/HobbyController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\HobbyController\\:\\:store\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/HobbyController.php
+
+		-
+			message: "#^Relation 'addresses' is not found in App\\\\Models\\\\User model\\.$#"
+			count: 4
+			path: app/Http/Controllers/HomeController.php
+
+		-
+			message: "#^Relation 'chats' is not found in App\\\\Models\\\\ChatThread model\\.$#"
+			count: 1
+			path: app/Http/Controllers/HomeController.php
+
+		-
+			message: "#^Relation 'interestedby' is not found in App\\\\Models\\\\ExpressInterest model\\.$#"
+			count: 16
+			path: app/Http/Controllers/HomeController.php
+
+		-
+			message: "#^Relation 'member' is not found in App\\\\Models\\\\User model\\.$#"
+			count: 2
+			path: app/Http/Controllers/HomeController.php
+
+		-
+			message: "#^Relation 'profileViewer' is not found in App\\\\Models\\\\ProfileViewer model\\.$#"
+			count: 8
+			path: app/Http/Controllers/HomeController.php
+
+		-
+			message: "#^Relation 'receiver' is not found in App\\\\Models\\\\ChatThread model\\.$#"
+			count: 1
+			path: app/Http/Controllers/HomeController.php
+
+		-
+			message: "#^Relation 'sender' is not found in App\\\\Models\\\\ChatThread model\\.$#"
+			count: 1
+			path: app/Http/Controllers/HomeController.php
+
+		-
+			message: "#^Relation 'user' is not found in App\\\\Models\\\\HappyStory model\\.$#"
+			count: 2
+			path: app/Http/Controllers/HomeController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\IgnoredUserController\\:\\:create\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/IgnoredUserController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\IgnoredUserController\\:\\:destroy\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/IgnoredUserController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\IgnoredUserController\\:\\:edit\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/IgnoredUserController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\IgnoredUserController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/IgnoredUserController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\IgnoredUserController\\:\\:store\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/IgnoredUserController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\IgnoredUserController\\:\\:update\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/IgnoredUserController.php
+
+		-
+			message: "#^Caught class App\\\\Http\\\\Controllers\\\\Exception not found\\.$#"
+			count: 1
+			path: app/Http/Controllers/InstamojoController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\JobTitleController\\:\\:\\$messages\\.$#"
+			count: 3
+			path: app/Http/Controllers/JobTitleController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\JobTitleController\\:\\:\\$rules\\.$#"
+			count: 3
+			path: app/Http/Controllers/JobTitleController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\LanguageController\\:\\:create\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/LanguageController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\LifestyleController\\:\\:\\$messages\\.$#"
+			count: 1
+			path: app/Http/Controllers/LifestyleController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\LifestyleController\\:\\:\\$rules\\.$#"
+			count: 1
+			path: app/Http/Controllers/LifestyleController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\LifestyleController\\:\\:create\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/LifestyleController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\LifestyleController\\:\\:destroy\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/LifestyleController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\LifestyleController\\:\\:edit\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/LifestyleController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\LifestyleController\\:\\:index\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/LifestyleController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\LifestyleController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/LifestyleController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\LifestyleController\\:\\:store\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/LifestyleController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ManualPaymentMethodController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ManualPaymentMethodController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\MaritalStatusController\\:\\:\\$messages\\.$#"
+			count: 3
+			path: app/Http/Controllers/MaritalStatusController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\MaritalStatusController\\:\\:\\$rules\\.$#"
+			count: 3
+			path: app/Http/Controllers/MaritalStatusController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\MaritalStatusController\\:\\:create\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/MaritalStatusController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\MaritalStatusController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/MaritalStatusController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\MemberController\\:\\:\\$messages\\.$#"
+			count: 3
+			path: app/Http/Controllers/MemberController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\MemberController\\:\\:\\$rules\\.$#"
+			count: 3
+			path: app/Http/Controllers/MemberController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\MemberController\\:\\:update\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/MemberController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\MemberLanguageController\\:\\:\\$language_messages\\.$#"
+			count: 3
+			path: app/Http/Controllers/MemberLanguageController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\MemberLanguageController\\:\\:\\$language_rules\\.$#"
+			count: 3
+			path: app/Http/Controllers/MemberLanguageController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\MemberLanguageController\\:\\:create\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/MemberLanguageController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\MemberLanguageController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/MemberLanguageController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\OnBehalfController\\:\\:\\$on_behalf_messages\\.$#"
+			count: 3
+			path: app/Http/Controllers/OnBehalfController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\OnBehalfController\\:\\:\\$on_behalf_rules\\.$#"
+			count: 3
+			path: app/Http/Controllers/OnBehalfController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\OnBehalfController\\:\\:create\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/OnBehalfController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\OnBehalfController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/OnBehalfController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\PackageController\\:\\:\\$package_messages\\.$#"
+			count: 3
+			path: app/Http/Controllers/PackageController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\PackageController\\:\\:\\$package_rules\\.$#"
+			count: 3
+			path: app/Http/Controllers/PackageController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PackageController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/PackageController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PackagePaymentController\\:\\:create\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/PackagePaymentController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PackagePaymentController\\:\\:destroy\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/PackagePaymentController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PackagePaymentController\\:\\:edit\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/PackagePaymentController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PackagePaymentController\\:\\:store\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/PackagePaymentController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PackagePaymentController\\:\\:update\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/PackagePaymentController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PageController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/PageController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\PartnerExpectationController\\:\\:\\$messages\\.$#"
+			count: 1
+			path: app/Http/Controllers/PartnerExpectationController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\PartnerExpectationController\\:\\:\\$rules\\.$#"
+			count: 1
+			path: app/Http/Controllers/PartnerExpectationController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PartnerExpectationController\\:\\:create\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/PartnerExpectationController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PartnerExpectationController\\:\\:destroy\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/PartnerExpectationController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PartnerExpectationController\\:\\:edit\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/PartnerExpectationController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PartnerExpectationController\\:\\:index\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/PartnerExpectationController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PartnerExpectationController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/PartnerExpectationController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PartnerExpectationController\\:\\:store\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/PartnerExpectationController.php
+
+		-
+			message: "#^Caught class App\\\\Http\\\\Controllers\\\\HttpException not found\\.$#"
+			count: 2
+			path: app/Http/Controllers/PaypalController.php
+
+		-
+			message: "#^Variable \\$amount might not be defined\\.$#"
+			count: 1
+			path: app/Http/Controllers/PaypalController.php
+
+		-
+			message: "#^Variable \\$merchantTransactionId might not be defined\\.$#"
+			count: 3
+			path: app/Http/Controllers/PhonepeController.php
+
+		-
+			message: "#^Variable \\$payment_type might not be defined\\.$#"
+			count: 2
+			path: app/Http/Controllers/PhonepeController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\PhysicalAttributeController\\:\\:\\$messages\\.$#"
+			count: 1
+			path: app/Http/Controllers/PhysicalAttributeController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\PhysicalAttributeController\\:\\:\\$rules\\.$#"
+			count: 1
+			path: app/Http/Controllers/PhysicalAttributeController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PhysicalAttributeController\\:\\:create\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/PhysicalAttributeController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PhysicalAttributeController\\:\\:destroy\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/PhysicalAttributeController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PhysicalAttributeController\\:\\:edit\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/PhysicalAttributeController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PhysicalAttributeController\\:\\:index\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/PhysicalAttributeController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PhysicalAttributeController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/PhysicalAttributeController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\PhysicalAttributeController\\:\\:store\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/PhysicalAttributeController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ProfileController\\:\\:create\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ProfileController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ProfileController\\:\\:destroy\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ProfileController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ProfileController\\:\\:edit\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ProfileController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ProfileController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ProfileController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ProfileController\\:\\:store\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ProfileController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ProfileMatchController\\:\\:create\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ProfileMatchController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ProfileMatchController\\:\\:destroy\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ProfileMatchController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ProfileMatchController\\:\\:edit\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ProfileMatchController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ProfileMatchController\\:\\:index\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ProfileMatchController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ProfileMatchController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ProfileMatchController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ProfileMatchController\\:\\:store\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ProfileMatchController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ProfileMatchController\\:\\:update\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ProfileMatchController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\ProfileOptionValueController\\:\\:\\$messages\\.$#"
+			count: 3
+			path: app/Http/Controllers/ProfileOptionValueController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\ProfileOptionValueController\\:\\:\\$rules\\.$#"
+			count: 3
+			path: app/Http/Controllers/ProfileOptionValueController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ProfileViewerController\\:\\:create\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ProfileViewerController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ProfileViewerController\\:\\:destroy\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ProfileViewerController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ProfileViewerController\\:\\:edit\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ProfileViewerController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ProfileViewerController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ProfileViewerController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ProfileViewerController\\:\\:store\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ProfileViewerController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ProfileViewerController\\:\\:update\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ProfileViewerController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\RecidencyController\\:\\:\\$messages\\.$#"
+			count: 1
+			path: app/Http/Controllers/RecidencyController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\RecidencyController\\:\\:\\$rules\\.$#"
+			count: 1
+			path: app/Http/Controllers/RecidencyController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\RecidencyController\\:\\:create\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/RecidencyController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\RecidencyController\\:\\:destroy\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/RecidencyController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\RecidencyController\\:\\:edit\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/RecidencyController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\RecidencyController\\:\\:index\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/RecidencyController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\RecidencyController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/RecidencyController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\RecidencyController\\:\\:store\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/RecidencyController.php
+
+		-
+			message: "#^Relation 'referralCode' is not found in App\\\\Models\\\\Referral model\\.$#"
+			count: 1
+			path: app/Http/Controllers/ReferralController.php
+
+		-
+			message: "#^Relation 'referred' is not found in App\\\\Models\\\\Referral model\\.$#"
+			count: 3
+			path: app/Http/Controllers/ReferralController.php
+
+		-
+			message: "#^Relation 'referrer' is not found in App\\\\Models\\\\Referral model\\.$#"
+			count: 3
+			path: app/Http/Controllers/ReferralController.php
+
+		-
+			message: "#^Relation 'rule' is not found in App\\\\Models\\\\ReferralReward model\\.$#"
+			count: 1
+			path: app/Http/Controllers/ReferralController.php
+
+		-
+			message: "#^Relation 'user' is not found in App\\\\Models\\\\ReferralReward model\\.$#"
+			count: 1
+			path: app/Http/Controllers/ReferralController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\ReligionController\\:\\:\\$messages\\.$#"
+			count: 3
+			path: app/Http/Controllers/ReligionController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\ReligionController\\:\\:\\$rules\\.$#"
+			count: 3
+			path: app/Http/Controllers/ReligionController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ReligionController\\:\\:create\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ReligionController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ReligionController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ReligionController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ReportedUserController\\:\\:create\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ReportedUserController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ReportedUserController\\:\\:edit\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ReportedUserController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ReportedUserController\\:\\:index\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ReportedUserController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ReportedUserController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ReportedUserController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ReportedUserController\\:\\:update\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ReportedUserController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\RoleController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/RoleController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\SectController\\:\\:\\$messages\\.$#"
+			count: 3
+			path: app/Http/Controllers/SectController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\SectController\\:\\:\\$rules\\.$#"
+			count: 3
+			path: app/Http/Controllers/SectController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\SettingController\\:\\:create\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/SettingController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\SettingController\\:\\:destroy\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/SettingController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\SettingController\\:\\:edit\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/SettingController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\SettingController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/SettingController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\SettingController\\:\\:store\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/SettingController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ShortlistController\\:\\:destroy\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ShortlistController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ShortlistController\\:\\:edit\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ShortlistController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ShortlistController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ShortlistController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ShortlistController\\:\\:store\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ShortlistController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ShortlistController\\:\\:update\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ShortlistController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\SpecialityController\\:\\:\\$messages\\.$#"
+			count: 3
+			path: app/Http/Controllers/SpecialityController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\SpecialityController\\:\\:\\$rules\\.$#"
+			count: 3
+			path: app/Http/Controllers/SpecialityController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\SpiritualBackgroundController\\:\\:\\$messages\\.$#"
+			count: 1
+			path: app/Http/Controllers/SpiritualBackgroundController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\SpiritualBackgroundController\\:\\:\\$rules\\.$#"
+			count: 1
+			path: app/Http/Controllers/SpiritualBackgroundController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\SpiritualBackgroundController\\:\\:create\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/SpiritualBackgroundController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\SpiritualBackgroundController\\:\\:destroy\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/SpiritualBackgroundController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\SpiritualBackgroundController\\:\\:edit\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/SpiritualBackgroundController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\SpiritualBackgroundController\\:\\:index\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/SpiritualBackgroundController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\SpiritualBackgroundController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/SpiritualBackgroundController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\SpiritualBackgroundController\\:\\:store\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/SpiritualBackgroundController.php
+
+		-
+			message: "#^Undefined variable\\: \\$order$#"
+			count: 1
+			path: app/Http/Controllers/SslcommerzController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\StaffController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/StaffController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\StateController\\:\\:\\$state_messages\\.$#"
+			count: 3
+			path: app/Http/Controllers/StateController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\StateController\\:\\:\\$state_rules\\.$#"
+			count: 3
+			path: app/Http/Controllers/StateController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\StateController\\:\\:create\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/StateController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\StateController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/StateController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\SubCasteController\\:\\:\\$subcaste_messages\\.$#"
+			count: 3
+			path: app/Http/Controllers/SubCasteController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Controllers\\\\SubCasteController\\:\\:\\$subcaste_rules\\.$#"
+			count: 3
+			path: app/Http/Controllers/SubCasteController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\SubCasteController\\:\\:create\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/SubCasteController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\SubCasteController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/SubCasteController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ViewContactController\\:\\:create\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ViewContactController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ViewContactController\\:\\:destroy\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ViewContactController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ViewContactController\\:\\:edit\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ViewContactController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ViewContactController\\:\\:index\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ViewContactController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ViewContactController\\:\\:show\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ViewContactController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Controllers\\\\ViewContactController\\:\\:update\\(\\) should return Illuminate\\\\Http\\\\Response but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Controllers/ViewContactController.php
+
+		-
+			message: "#^Calling the helper function 'with\\(\\)' with only one argument simply returns the value itself\\. If you want to chain methods on a construct, use '\\(new ClassName\\(\\)\\)\\-\\>foo\\(\\)' instead$#"
+			count: 1
+			path: app/Http/Controllers/WalletController.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ActiveUserResource\\:\\:\\$approved\\.$#"
+			count: 1
+			path: app/Http/Resources/ActiveUserResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ActiveUserResource\\:\\:\\$career\\.$#"
+			count: 10
+			path: app/Http/Resources/ActiveUserResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ActiveUserResource\\:\\:\\$code\\.$#"
+			count: 1
+			path: app/Http/Resources/ActiveUserResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ActiveUserResource\\:\\:\\$education\\.$#"
+			count: 4
+			path: app/Http/Resources/ActiveUserResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ActiveUserResource\\:\\:\\$first_name\\.$#"
+			count: 1
+			path: app/Http/Resources/ActiveUserResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ActiveUserResource\\:\\:\\$id\\.$#"
+			count: 14
+			path: app/Http/Resources/ActiveUserResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ActiveUserResource\\:\\:\\$last_name\\.$#"
+			count: 1
+			path: app/Http/Resources/ActiveUserResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ActiveUserResource\\:\\:\\$member\\.$#"
+			count: 10
+			path: app/Http/Resources/ActiveUserResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ActiveUserResource\\:\\:\\$membership\\.$#"
+			count: 1
+			path: app/Http/Resources/ActiveUserResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ActiveUserResource\\:\\:\\$photo\\.$#"
+			count: 1
+			path: app/Http/Resources/ActiveUserResource.php
+
+		-
+			message: "#^Call to an undefined method App\\\\Http\\\\Resources\\\\AdditionalAttributeResource\\:\\:additional_member_info\\(\\)\\.$#"
+			count: 1
+			path: app/Http/Resources/AdditionalAttributeResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\AddonProductResource\\:\\:\\$badge\\.$#"
+			count: 1
+			path: app/Http/Resources/AddonProductResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\AddonProductResource\\:\\:\\$description\\.$#"
+			count: 1
+			path: app/Http/Resources/AddonProductResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\AddonProductResource\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Resources/AddonProductResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\AddonProductResource\\:\\:\\$name\\.$#"
+			count: 1
+			path: app/Http/Resources/AddonProductResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\AddonProductResource\\:\\:\\$price\\.$#"
+			count: 2
+			path: app/Http/Resources/AddonProductResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\AddonProductResource\\:\\:\\$slug\\.$#"
+			count: 1
+			path: app/Http/Resources/AddonProductResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\AddonPurchaseResource\\:\\:\\$addon\\.$#"
+			count: 1
+			path: app/Http/Resources/AddonPurchaseResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\AddonPurchaseResource\\:\\:\\$amount\\.$#"
+			count: 1
+			path: app/Http/Resources/AddonPurchaseResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\AddonPurchaseResource\\:\\:\\$created_at\\.$#"
+			count: 1
+			path: app/Http/Resources/AddonPurchaseResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\AddonPurchaseResource\\:\\:\\$custom_payment_name\\.$#"
+			count: 1
+			path: app/Http/Resources/AddonPurchaseResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\AddonPurchaseResource\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Resources/AddonPurchaseResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\AddonPurchaseResource\\:\\:\\$payment_code\\.$#"
+			count: 1
+			path: app/Http/Resources/AddonPurchaseResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\AddonPurchaseResource\\:\\:\\$payment_method\\.$#"
+			count: 2
+			path: app/Http/Resources/AddonPurchaseResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\AddonPurchaseResource\\:\\:\\$payment_status\\.$#"
+			count: 1
+			path: app/Http/Resources/AddonPurchaseResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\BlogResource\\:\\:\\$banner\\.$#"
+			count: 1
+			path: app/Http/Resources/BlogResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\BlogResource\\:\\:\\$category\\.$#"
+			count: 1
+			path: app/Http/Resources/BlogResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\BlogResource\\:\\:\\$description\\.$#"
+			count: 1
+			path: app/Http/Resources/BlogResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\BlogResource\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Resources/BlogResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\BlogResource\\:\\:\\$short_description\\.$#"
+			count: 1
+			path: app/Http/Resources/BlogResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\BlogResource\\:\\:\\$slug\\.$#"
+			count: 1
+			path: app/Http/Resources/BlogResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\BlogResource\\:\\:\\$title\\.$#"
+			count: 1
+			path: app/Http/Resources/BlogResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\CareerResource\\:\\:\\$company\\.$#"
+			count: 1
+			path: app/Http/Resources/CareerResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\CareerResource\\:\\:\\$designation\\.$#"
+			count: 1
+			path: app/Http/Resources/CareerResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\CareerResource\\:\\:\\$end\\.$#"
+			count: 1
+			path: app/Http/Resources/CareerResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\CareerResource\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Resources/CareerResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\CareerResource\\:\\:\\$present\\.$#"
+			count: 1
+			path: app/Http/Resources/CareerResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\CareerResource\\:\\:\\$start\\.$#"
+			count: 1
+			path: app/Http/Resources/CareerResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Chat\\\\ChatViewResource\\:\\:\\$attachment\\.$#"
+			count: 1
+			path: app/Http/Resources/Chat/ChatViewResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Chat\\\\ChatViewResource\\:\\:\\$chat_thread_id\\.$#"
+			count: 1
+			path: app/Http/Resources/Chat/ChatViewResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Chat\\\\ChatViewResource\\:\\:\\$created_at\\.$#"
+			count: 2
+			path: app/Http/Resources/Chat/ChatViewResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Chat\\\\ChatViewResource\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Resources/Chat/ChatViewResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Chat\\\\ChatViewResource\\:\\:\\$message\\.$#"
+			count: 1
+			path: app/Http/Resources/Chat/ChatViewResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Chat\\\\ChatViewResource\\:\\:\\$seen\\.$#"
+			count: 1
+			path: app/Http/Resources/Chat/ChatViewResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Chat\\\\ChatViewResource\\:\\:\\$sender_user_id\\.$#"
+			count: 1
+			path: app/Http/Resources/Chat/ChatViewResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ChatResource\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Resources/ChatResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ChatResource\\:\\:\\$receiver\\.$#"
+			count: 5
+			path: app/Http/Resources/ChatResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ChatResource\\:\\:\\$sender\\.$#"
+			count: 2
+			path: app/Http/Resources/ChatResource.php
+
+		-
+			message: "#^Call to an undefined method App\\\\Http\\\\Resources\\\\ChatResource\\:\\:chats\\(\\)\\.$#"
+			count: 1
+			path: app/Http/Resources/ChatResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ChatThreadResource\\:\\:\\$blocked_by_user\\.$#"
+			count: 1
+			path: app/Http/Resources/ChatThreadResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ChatThreadResource\\:\\:\\$chats\\.$#"
+			count: 4
+			path: app/Http/Resources/ChatThreadResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ChatThreadResource\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Resources/ChatThreadResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ChatThreadResource\\:\\:\\$latestChat\\.$#"
+			count: 1
+			path: app/Http/Resources/ChatThreadResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ChatThreadResource\\:\\:\\$receiver\\.$#"
+			count: 10
+			path: app/Http/Resources/ChatThreadResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ChatThreadResource\\:\\:\\$sender\\.$#"
+			count: 10
+			path: app/Http/Resources/ChatThreadResource.php
+
+		-
+			message: "#^Call to an undefined method App\\\\Http\\\\Resources\\\\ChatThreadResource\\:\\:relationLoaded\\(\\)\\.$#"
+			count: 5
+			path: app/Http/Resources/ChatThreadResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\EducationResource\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Resources/EducationResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\EducationResource\\:\\:\\$present\\.$#"
+			count: 1
+			path: app/Http/Resources/EducationResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ExpressInterestResource\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Resources/ExpressInterestResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ExpressInterestResource\\:\\:\\$interested_by\\.$#"
+			count: 6
+			path: app/Http/Resources/ExpressInterestResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ExpressInterestResource\\:\\:\\$interestedby\\.$#"
+			count: 1
+			path: app/Http/Resources/ExpressInterestResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ExpressInterestResource\\:\\:\\$status\\.$#"
+			count: 2
+			path: app/Http/Resources/ExpressInterestResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ExpressInterestResource\\:\\:\\$updated_at\\.$#"
+			count: 1
+			path: app/Http/Resources/ExpressInterestResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\GalleryImage\\\\RequestedGalleryImage\\:\\:\\$created_at\\.$#"
+			count: 1
+			path: app/Http/Resources/GalleryImage/RequestedGalleryImage.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\GalleryImage\\\\RequestedGalleryImage\\:\\:\\$id\\.$#"
+			count: 2
+			path: app/Http/Resources/GalleryImage/RequestedGalleryImage.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\GalleryImageRequest\\:\\:\\$id\\.$#"
+			count: 2
+			path: app/Http/Resources/GalleryImageRequest.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Resources\\\\GalleryImageRequest\\:\\:toArray\\(\\) should return array\\|Illuminate\\\\Contracts\\\\Support\\\\Arrayable\\|JsonSerializable but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Resources/GalleryImageRequest.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\GalleryImageResource\\:\\:\\$created_at\\.$#"
+			count: 1
+			path: app/Http/Resources/GalleryImageResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\GalleryImageResource\\:\\:\\$id\\.$#"
+			count: 2
+			path: app/Http/Resources/GalleryImageResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\GalleryImageResource\\:\\:\\$image\\.$#"
+			count: 1
+			path: app/Http/Resources/GalleryImageResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\HappyStoryResource\\:\\:\\$created_at\\.$#"
+			count: 1
+			path: app/Http/Resources/HappyStoryResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\HappyStoryResource\\:\\:\\$details\\.$#"
+			count: 1
+			path: app/Http/Resources/HappyStoryResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\HappyStoryResource\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Resources/HappyStoryResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\HappyStoryResource\\:\\:\\$partner_name\\.$#"
+			count: 1
+			path: app/Http/Resources/HappyStoryResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\HappyStoryResource\\:\\:\\$photos\\.$#"
+			count: 1
+			path: app/Http/Resources/HappyStoryResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\HappyStoryResource\\:\\:\\$title\\.$#"
+			count: 1
+			path: app/Http/Resources/HappyStoryResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\HappyStoryResource\\:\\:\\$user\\.$#"
+			count: 2
+			path: app/Http/Resources/HappyStoryResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\HappyStoryResource\\:\\:\\$user_id\\.$#"
+			count: 1
+			path: app/Http/Resources/HappyStoryResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\HappyStoryResource\\:\\:\\$video_link\\.$#"
+			count: 1
+			path: app/Http/Resources/HappyStoryResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\HappyStoryResource\\:\\:\\$video_provider\\.$#"
+			count: 1
+			path: app/Http/Resources/HappyStoryResource.php
+
+		-
+			message: "#^Variable \\$photos on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 1
+			path: app/Http/Resources/HappyStoryResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\IgnoredUserResource\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Resources/IgnoredUserResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\IgnoredUserResource\\:\\:\\$user\\.$#"
+			count: 7
+			path: app/Http/Resources/IgnoredUserResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\IgnoredUserResource\\:\\:\\$user_id\\.$#"
+			count: 10
+			path: app/Http/Resources/IgnoredUserResource.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Resources\\\\IgnoredUserResource\\:\\:toArray\\(\\) should return array\\|Illuminate\\\\Contracts\\\\Support\\\\Arrayable\\|JsonSerializable but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Resources/IgnoredUserResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\MatchedProfileResource\\:\\:\\$id\\.$#"
+			count: 6
+			path: app/Http/Resources/MatchedProfileResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\MatchedProfileResource\\:\\:\\$match_id\\.$#"
+			count: 3
+			path: app/Http/Resources/MatchedProfileResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\MatchedProfileResource\\:\\:\\$user\\.$#"
+			count: 1
+			path: app/Http/Resources/MatchedProfileResource.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Resources\\\\MatchedProfileResource\\:\\:toArray\\(\\) should return array\\|Illuminate\\\\Contracts\\\\Support\\\\Arrayable\\|JsonSerializable but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Resources/MatchedProfileResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Media\\\\UploadResource\\:\\:\\$extension\\.$#"
+			count: 1
+			path: app/Http/Resources/Media/UploadResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Media\\\\UploadResource\\:\\:\\$file_original_name\\.$#"
+			count: 1
+			path: app/Http/Resources/Media/UploadResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Media\\\\UploadResource\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Resources/Media/UploadResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Media\\\\UploadResource\\:\\:\\$type\\.$#"
+			count: 1
+			path: app/Http/Resources/Media/UploadResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\MemberResource\\:\\:\\$code\\.$#"
+			count: 1
+			path: app/Http/Resources/MemberResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\MemberResource\\:\\:\\$first_name\\.$#"
+			count: 1
+			path: app/Http/Resources/MemberResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\MemberResource\\:\\:\\$id\\.$#"
+			count: 15
+			path: app/Http/Resources/MemberResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\MemberResource\\:\\:\\$last_name\\.$#"
+			count: 1
+			path: app/Http/Resources/MemberResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\MemberResource\\:\\:\\$member\\.$#"
+			count: 1
+			path: app/Http/Resources/MemberResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\MemberResource\\:\\:\\$membership\\.$#"
+			count: 1
+			path: app/Http/Resources/MemberResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\MemberResource\\:\\:\\$photo\\.$#"
+			count: 1
+			path: app/Http/Resources/MemberResource.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Resources\\\\MemberResource\\:\\:toArray\\(\\) should return array\\|Illuminate\\\\Contracts\\\\Support\\\\Arrayable\\|JsonSerializable but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Resources/MemberResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\MyInterestResource\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Resources/MyInterestResource.php
+
+		-
+			message: "#^Relation 'user' is not found in App\\\\Models\\\\ExpressInterest model\\.$#"
+			count: 1
+			path: app/Http/Resources/MyInterestResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\MyProfileViewerResource\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Resources/MyProfileViewerResource.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Resources\\\\MyProfileViewerResource\\:\\:toArray\\(\\) should return array\\|Illuminate\\\\Contracts\\\\Support\\\\Arrayable\\|JsonSerializable but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Resources/MyProfileViewerResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\NotificationResource\\:\\:\\$created_at\\.$#"
+			count: 2
+			path: app/Http/Resources/NotificationResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\NotificationResource\\:\\:\\$data\\.$#"
+			count: 1
+			path: app/Http/Resources/NotificationResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\NotificationResource\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Resources/NotificationResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\NotificationResource\\:\\:\\$read_at\\.$#"
+			count: 1
+			path: app/Http/Resources/NotificationResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PackagePaymentInvoiceResource\\:\\:\\$amount\\.$#"
+			count: 2
+			path: app/Http/Resources/PackagePaymentInvoiceResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PackagePaymentInvoiceResource\\:\\:\\$created_at\\.$#"
+			count: 1
+			path: app/Http/Resources/PackagePaymentInvoiceResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PackagePaymentInvoiceResource\\:\\:\\$custom_payment_name\\.$#"
+			count: 1
+			path: app/Http/Resources/PackagePaymentInvoiceResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PackagePaymentInvoiceResource\\:\\:\\$package\\.$#"
+			count: 1
+			path: app/Http/Resources/PackagePaymentInvoiceResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PackagePaymentInvoiceResource\\:\\:\\$payment_code\\.$#"
+			count: 1
+			path: app/Http/Resources/PackagePaymentInvoiceResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PackagePaymentInvoiceResource\\:\\:\\$payment_method\\.$#"
+			count: 2
+			path: app/Http/Resources/PackagePaymentInvoiceResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PackagePaymentInvoiceResource\\:\\:\\$payment_status\\.$#"
+			count: 1
+			path: app/Http/Resources/PackagePaymentInvoiceResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PackagePaymentInvoiceResource\\:\\:\\$user\\.$#"
+			count: 4
+			path: app/Http/Resources/PackagePaymentInvoiceResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PackagePaymentResource\\:\\:\\$amount\\.$#"
+			count: 1
+			path: app/Http/Resources/PackagePaymentResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PackagePaymentResource\\:\\:\\$created_at\\.$#"
+			count: 1
+			path: app/Http/Resources/PackagePaymentResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PackagePaymentResource\\:\\:\\$custom_payment_name\\.$#"
+			count: 1
+			path: app/Http/Resources/PackagePaymentResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PackagePaymentResource\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Resources/PackagePaymentResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PackagePaymentResource\\:\\:\\$package\\.$#"
+			count: 1
+			path: app/Http/Resources/PackagePaymentResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PackagePaymentResource\\:\\:\\$payment_code\\.$#"
+			count: 1
+			path: app/Http/Resources/PackagePaymentResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PackagePaymentResource\\:\\:\\$payment_method\\.$#"
+			count: 2
+			path: app/Http/Resources/PackagePaymentResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PackagePaymentResource\\:\\:\\$payment_status\\.$#"
+			count: 1
+			path: app/Http/Resources/PackagePaymentResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PackageResource\\:\\:\\$auto_profile_match\\.$#"
+			count: 1
+			path: app/Http/Resources/PackageResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PackageResource\\:\\:\\$contact\\.$#"
+			count: 1
+			path: app/Http/Resources/PackageResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PackageResource\\:\\:\\$express_interest\\.$#"
+			count: 1
+			path: app/Http/Resources/PackageResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PackageResource\\:\\:\\$gallery_image_view\\.$#"
+			count: 1
+			path: app/Http/Resources/PackageResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PackageResource\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Resources/PackageResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PackageResource\\:\\:\\$image\\.$#"
+			count: 1
+			path: app/Http/Resources/PackageResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PackageResource\\:\\:\\$name\\.$#"
+			count: 1
+			path: app/Http/Resources/PackageResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PackageResource\\:\\:\\$photo_gallery\\.$#"
+			count: 1
+			path: app/Http/Resources/PackageResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PackageResource\\:\\:\\$price\\.$#"
+			count: 2
+			path: app/Http/Resources/PackageResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PackageResource\\:\\:\\$profile_image_view\\.$#"
+			count: 1
+			path: app/Http/Resources/PackageResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PackageResource\\:\\:\\$profile_viewers_view\\.$#"
+			count: 1
+			path: app/Http/Resources/PackageResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PackageResource\\:\\:\\$validity\\.$#"
+			count: 1
+			path: app/Http/Resources/PackageResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Page\\\\PageResource\\:\\:\\$content\\.$#"
+			count: 1
+			path: app/Http/Resources/Page/PageResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Page\\\\PageResource\\:\\:\\$title\\.$#"
+			count: 1
+			path: app/Http/Resources/Page/PageResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Profile\\\\CasteResource\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Resources/Profile/CasteResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Profile\\\\CasteResource\\:\\:\\$name\\.$#"
+			count: 1
+			path: app/Http/Resources/Profile/CasteResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Profile\\\\CasteResource\\:\\:\\$religion_id\\.$#"
+			count: 1
+			path: app/Http/Resources/Profile/CasteResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Profile\\\\CityResource\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Resources/Profile/CityResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Profile\\\\CityResource\\:\\:\\$name\\.$#"
+			count: 1
+			path: app/Http/Resources/Profile/CityResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Profile\\\\CountryResource\\:\\:\\$code\\.$#"
+			count: 1
+			path: app/Http/Resources/Profile/CountryResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Profile\\\\CountryResource\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Resources/Profile/CountryResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Profile\\\\CountryResource\\:\\:\\$name\\.$#"
+			count: 1
+			path: app/Http/Resources/Profile/CountryResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Profile\\\\FamilyValuesResource\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Resources/Profile/FamilyValuesResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Profile\\\\FamilyValuesResource\\:\\:\\$name\\.$#"
+			count: 1
+			path: app/Http/Resources/Profile/FamilyValuesResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Profile\\\\LanguageResource\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Resources/Profile/LanguageResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Profile\\\\LanguageResource\\:\\:\\$name\\.$#"
+			count: 1
+			path: app/Http/Resources/Profile/LanguageResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Profile\\\\OnBehalfResource\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Resources/Profile/OnBehalfResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Profile\\\\OnBehalfResource\\:\\:\\$name\\.$#"
+			count: 1
+			path: app/Http/Resources/Profile/OnBehalfResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Profile\\\\ReligionResource\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Resources/Profile/ReligionResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Profile\\\\ReligionResource\\:\\:\\$name\\.$#"
+			count: 1
+			path: app/Http/Resources/Profile/ReligionResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Profile\\\\SectResource\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Resources/Profile/SectResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Profile\\\\SectResource\\:\\:\\$name\\.$#"
+			count: 1
+			path: app/Http/Resources/Profile/SectResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Profile\\\\StateResource\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Resources/Profile/StateResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Profile\\\\StateResource\\:\\:\\$name\\.$#"
+			count: 1
+			path: app/Http/Resources/Profile/StateResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Profile\\\\SubCasteResource\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Resources/Profile/SubCasteResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Profile\\\\SubCasteResource\\:\\:\\$name\\.$#"
+			count: 1
+			path: app/Http/Resources/Profile/SubCasteResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ProfileImageRequest\\:\\:\\$id\\.$#"
+			count: 2
+			path: app/Http/Resources/ProfileImageRequest.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Resources\\\\ProfileImageRequest\\:\\:toArray\\(\\) should return array\\|Illuminate\\\\Contracts\\\\Support\\\\Arrayable\\|JsonSerializable but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Resources/ProfileImageRequest.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\AboutUser\\:\\:\\$member\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/AboutUser.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\AddressResource\\:\\:\\$city_id\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/AddressResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\AddressResource\\:\\:\\$country_id\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/AddressResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\AddressResource\\:\\:\\$postal_code\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/AddressResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\AddressResource\\:\\:\\$state_id\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/AddressResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\AstronomicInformation\\:\\:\\$city_of_birth\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/AstronomicInformation.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\AstronomicInformation\\:\\:\\$moon_sign\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/AstronomicInformation.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\AstronomicInformation\\:\\:\\$sun_sign\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/AstronomicInformation.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\AstronomicInformation\\:\\:\\$time_of_birth\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/AstronomicInformation.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\AttitudesBehaviors\\:\\:\\$affection\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/AttitudesBehaviors.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\AttitudesBehaviors\\:\\:\\$humor\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/AttitudesBehaviors.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\AttitudesBehaviors\\:\\:\\$political_views\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/AttitudesBehaviors.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\AttitudesBehaviors\\:\\:\\$religious_service\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/AttitudesBehaviors.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\BasicInformation\\:\\:\\$code\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/BasicInformation.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\BasicInformation\\:\\:\\$first_name\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/BasicInformation.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\BasicInformation\\:\\:\\$id\\.$#"
+			count: 6
+			path: app/Http/Resources/PublicProfile/BasicInformation.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\BasicInformation\\:\\:\\$last_name\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/BasicInformation.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\BasicInformation\\:\\:\\$member\\.$#"
+			count: 7
+			path: app/Http/Resources/PublicProfile/BasicInformation.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\BasicInformation\\:\\:\\$photo\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/BasicInformation.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\FamilyInformation\\:\\:\\$father\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/FamilyInformation.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\FamilyInformation\\:\\:\\$mother\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/FamilyInformation.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\FamilyInformation\\:\\:\\$sibling\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/FamilyInformation.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\HobbiesInterests\\:\\:\\$books\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/HobbiesInterests.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\HobbiesInterests\\:\\:\\$cuisines\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/HobbiesInterests.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\HobbiesInterests\\:\\:\\$dress_styles\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/HobbiesInterests.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\HobbiesInterests\\:\\:\\$fitness_activities\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/HobbiesInterests.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\HobbiesInterests\\:\\:\\$hobbies\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/HobbiesInterests.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\HobbiesInterests\\:\\:\\$interests\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/HobbiesInterests.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\HobbiesInterests\\:\\:\\$movies\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/HobbiesInterests.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\HobbiesInterests\\:\\:\\$music\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/HobbiesInterests.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\HobbiesInterests\\:\\:\\$sports\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/HobbiesInterests.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\HobbiesInterests\\:\\:\\$tv_shows\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/HobbiesInterests.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\LifeStyleResource\\:\\:\\$diet\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/LifeStyleResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\LifeStyleResource\\:\\:\\$drink\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/LifeStyleResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\LifeStyleResource\\:\\:\\$living_with\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/LifeStyleResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\LifeStyleResource\\:\\:\\$smoke\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/LifeStyleResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\PartnerExpectationResource\\:\\:\\$body_type\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/PartnerExpectationResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\PartnerExpectationResource\\:\\:\\$caste_id\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/PartnerExpectationResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\PartnerExpectationResource\\:\\:\\$children_acceptable\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/PartnerExpectationResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\PartnerExpectationResource\\:\\:\\$complexion\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/PartnerExpectationResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\PartnerExpectationResource\\:\\:\\$diet\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/PartnerExpectationResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\PartnerExpectationResource\\:\\:\\$drinking_acceptable\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/PartnerExpectationResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\PartnerExpectationResource\\:\\:\\$education\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/PartnerExpectationResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\PartnerExpectationResource\\:\\:\\$family_value_id\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/PartnerExpectationResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\PartnerExpectationResource\\:\\:\\$general\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/PartnerExpectationResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\PartnerExpectationResource\\:\\:\\$height\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/PartnerExpectationResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\PartnerExpectationResource\\:\\:\\$language_id\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/PartnerExpectationResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\PartnerExpectationResource\\:\\:\\$manglik\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/PartnerExpectationResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\PartnerExpectationResource\\:\\:\\$marital_status_id\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/PartnerExpectationResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\PartnerExpectationResource\\:\\:\\$personal_value\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/PartnerExpectationResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\PartnerExpectationResource\\:\\:\\$preferred_country_id\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/PartnerExpectationResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\PartnerExpectationResource\\:\\:\\$preferred_state_id\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/PartnerExpectationResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\PartnerExpectationResource\\:\\:\\$profession\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/PartnerExpectationResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\PartnerExpectationResource\\:\\:\\$religion_id\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/PartnerExpectationResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\PartnerExpectationResource\\:\\:\\$residence_country_id\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/PartnerExpectationResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\PartnerExpectationResource\\:\\:\\$smoking_acceptable\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/PartnerExpectationResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\PartnerExpectationResource\\:\\:\\$sub_caste_id\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/PartnerExpectationResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\PartnerExpectationResource\\:\\:\\$weight\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/PartnerExpectationResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\PhysicalAttributes\\:\\:\\$blood_group\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/PhysicalAttributes.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\PhysicalAttributes\\:\\:\\$body_art\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/PhysicalAttributes.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\PhysicalAttributes\\:\\:\\$body_type\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/PhysicalAttributes.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\PhysicalAttributes\\:\\:\\$complexion\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/PhysicalAttributes.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\PhysicalAttributes\\:\\:\\$disability\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/PhysicalAttributes.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\PhysicalAttributes\\:\\:\\$eye_color\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/PhysicalAttributes.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\PhysicalAttributes\\:\\:\\$hair_color\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/PhysicalAttributes.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\PhysicalAttributes\\:\\:\\$height\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/PhysicalAttributes.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\PhysicalAttributes\\:\\:\\$weight\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/PhysicalAttributes.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\PresentAddress\\:\\:\\$city_id\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/PresentAddress.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\PresentAddress\\:\\:\\$country_id\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/PresentAddress.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\PresentAddress\\:\\:\\$postal_code\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/PresentAddress.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\PresentAddress\\:\\:\\$state_id\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/PresentAddress.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\ResidenceInformation\\:\\:\\$birth_country_id\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/ResidenceInformation.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\ResidenceInformation\\:\\:\\$growup_country_id\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/ResidenceInformation.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\ResidenceInformation\\:\\:\\$immigration_status\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/ResidenceInformation.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\ResidenceInformation\\:\\:\\$recidency_country_id\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/ResidenceInformation.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\SpiritualSocialBackground\\:\\:\\$caste_id\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/SpiritualSocialBackground.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\SpiritualSocialBackground\\:\\:\\$community_value\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/SpiritualSocialBackground.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\SpiritualSocialBackground\\:\\:\\$ethnicity\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/SpiritualSocialBackground.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\SpiritualSocialBackground\\:\\:\\$family_value_id\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/SpiritualSocialBackground.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\SpiritualSocialBackground\\:\\:\\$personal_value\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/SpiritualSocialBackground.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\SpiritualSocialBackground\\:\\:\\$religion_id\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/SpiritualSocialBackground.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\SpiritualSocialBackground\\:\\:\\$sub_caste_id\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProfile/SpiritualSocialBackground.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProposalResource\\:\\:\\$approved\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProposalResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProposalResource\\:\\:\\$career\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProposalResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProposalResource\\:\\:\\$code\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProposalResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProposalResource\\:\\:\\$education\\.$#"
+			count: 2
+			path: app/Http/Resources/PublicProposalResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProposalResource\\:\\:\\$first_name\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProposalResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProposalResource\\:\\:\\$id\\.$#"
+			count: 5
+			path: app/Http/Resources/PublicProposalResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProposalResource\\:\\:\\$member\\.$#"
+			count: 3
+			path: app/Http/Resources/PublicProposalResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProposalResource\\:\\:\\$photo\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProposalResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProposalResource\\:\\:\\$physical_attributes\\.$#"
+			count: 1
+			path: app/Http/Resources/PublicProposalResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ReferralEarningsResource\\:\\:\\$amount\\.$#"
+			count: 1
+			path: app/Http/Resources/ReferralEarningsResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ReferralEarningsResource\\:\\:\\$created_at\\.$#"
+			count: 1
+			path: app/Http/Resources/ReferralEarningsResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ReferralEarningsResource\\:\\:\\$referral_user\\.$#"
+			count: 1
+			path: app/Http/Resources/ReferralEarningsResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ShortlistResource\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Resources/ShortlistResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ShortlistResource\\:\\:\\$user\\.$#"
+			count: 6
+			path: app/Http/Resources/ShortlistResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ShortlistResource\\:\\:\\$user_id\\.$#"
+			count: 15
+			path: app/Http/Resources/ShortlistResource.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Resources\\\\ShortlistResource\\:\\:toArray\\(\\) should return array\\|Illuminate\\\\Contracts\\\\Support\\\\Arrayable\\|JsonSerializable but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Resources/ShortlistResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\SupportTicket\\\\SupportTicketCategoryResource\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Resources/SupportTicket/SupportTicketCategoryResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\SupportTicket\\\\SupportTicketCategoryResource\\:\\:\\$name\\.$#"
+			count: 1
+			path: app/Http/Resources/SupportTicket/SupportTicketCategoryResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\SupportTicket\\\\SupportTicketReply\\:\\:\\$attachments\\.$#"
+			count: 1
+			path: app/Http/Resources/SupportTicket/SupportTicketReply.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\SupportTicket\\\\SupportTicketReply\\:\\:\\$created_at\\.$#"
+			count: 1
+			path: app/Http/Resources/SupportTicket/SupportTicketReply.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\SupportTicket\\\\SupportTicketReply\\:\\:\\$replied_user_id\\.$#"
+			count: 1
+			path: app/Http/Resources/SupportTicket/SupportTicketReply.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\SupportTicket\\\\SupportTicketReply\\:\\:\\$reply\\.$#"
+			count: 1
+			path: app/Http/Resources/SupportTicket/SupportTicketReply.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\SupportTicketResource\\:\\:\\$attachments\\.$#"
+			count: 1
+			path: app/Http/Resources/SupportTicketResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\SupportTicketResource\\:\\:\\$created_at\\.$#"
+			count: 1
+			path: app/Http/Resources/SupportTicketResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\SupportTicketResource\\:\\:\\$description\\.$#"
+			count: 1
+			path: app/Http/Resources/SupportTicketResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\SupportTicketResource\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Resources/SupportTicketResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\SupportTicketResource\\:\\:\\$status\\.$#"
+			count: 2
+			path: app/Http/Resources/SupportTicketResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\SupportTicketResource\\:\\:\\$subject\\.$#"
+			count: 1
+			path: app/Http/Resources/SupportTicketResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\SupportTicketResource\\:\\:\\$supportTicketReplies\\.$#"
+			count: 3
+			path: app/Http/Resources/SupportTicketResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\SupportTicketResource\\:\\:\\$ticket_id\\.$#"
+			count: 1
+			path: app/Http/Resources/SupportTicketResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\SupportTicketResource\\:\\:\\$updated_at\\.$#"
+			count: 1
+			path: app/Http/Resources/SupportTicketResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\WalletResource\\:\\:\\$amount\\.$#"
+			count: 1
+			path: app/Http/Resources/WalletResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\WalletResource\\:\\:\\$approval\\.$#"
+			count: 1
+			path: app/Http/Resources/WalletResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\WalletResource\\:\\:\\$created_at\\.$#"
+			count: 1
+			path: app/Http/Resources/WalletResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\WalletResource\\:\\:\\$offline_payment\\.$#"
+			count: 1
+			path: app/Http/Resources/WalletResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\WalletResource\\:\\:\\$payment_method\\.$#"
+			count: 1
+			path: app/Http/Resources/WalletResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\WalletWithdrawRequestResource\\:\\:\\$amount\\.$#"
+			count: 1
+			path: app/Http/Resources/WalletWithdrawRequestResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\WalletWithdrawRequestResource\\:\\:\\$created_at\\.$#"
+			count: 1
+			path: app/Http/Resources/WalletWithdrawRequestResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\WalletWithdrawRequestResource\\:\\:\\$details\\.$#"
+			count: 1
+			path: app/Http/Resources/WalletWithdrawRequestResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\WalletWithdrawRequestResource\\:\\:\\$status\\.$#"
+			count: 1
+			path: app/Http/Resources/WalletWithdrawRequestResource.php
+
+		-
+			message: "#^Class App\\\\Models\\\\AccountRecoveryRequest not found\\.$#"
+			count: 1
+			path: app/Models/TrustedContact.php
+
+		-
+			message: "#^Class App\\\\Models\\\\ProfileView not found\\.$#"
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Notifications\\\\DbStoreNotification\\:\\:\\$info_id\\.$#"
+			count: 2
+			path: app/Notifications/DbStoreNotification.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Notifications\\\\DbStoreNotification\\:\\:\\$message\\.$#"
+			count: 2
+			path: app/Notifications/DbStoreNotification.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Notifications\\\\DbStoreNotification\\:\\:\\$notify_by\\.$#"
+			count: 2
+			path: app/Notifications/DbStoreNotification.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Notifications\\\\DbStoreNotification\\:\\:\\$notify_id\\.$#"
+			count: 2
+			path: app/Notifications/DbStoreNotification.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Notifications\\\\DbStoreNotification\\:\\:\\$notify_type\\.$#"
+			count: 2
+			path: app/Notifications/DbStoreNotification.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Notifications\\\\DbStoreNotification\\:\\:\\$route\\.$#"
+			count: 2
+			path: app/Notifications/DbStoreNotification.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Notifications\\\\DbStoreNotification\\:\\:\\$title\\.$#"
+			count: 2
+			path: app/Notifications/DbStoreNotification.php
+
+		-
+			message: "#^Method App\\\\Notifications\\\\DbStoreNotification\\:\\:toMail\\(\\) should return Illuminate\\\\Notifications\\\\Messages\\\\MailMessage but return statement is missing\\.$#"
+			count: 1
+			path: app/Notifications/DbStoreNotification.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Notifications\\\\EmailNotification\\:\\:\\$email_body\\.$#"
+			count: 2
+			path: app/Notifications/EmailNotification.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Notifications\\\\EmailNotification\\:\\:\\$subject\\.$#"
+			count: 2
+			path: app/Notifications/EmailNotification.php
+
+		-
+			message: "#^Relation 'referralCode' is not found in App\\\\Models\\\\User model\\.$#"
+			count: 1
+			path: app/Services/ReferralService.php
+
+		-
+			message: "#^Relation 'referred' is not found in App\\\\Models\\\\Referral model\\.$#"
+			count: 1
+			path: app/Services/ReferralService.php
+
+		-
+			message: "#^Relation 'spiritual_backgrounds' is not found in App\\\\Models\\\\User model\\.$#"
+			count: 1
+			path: app/Utility/MemberUtility.php
+
+		-
+			message: "#^Variable \\$pre_define_key in empty\\(\\) always exists and is not falsy\\.$#"
+			count: 1
+			path: app/Utility/SSLCommerz.php
+
+		-
+			message: "#^Relation 'addresses' is not found in App\\\\Models\\\\User model\\.$#"
+			count: 1
+			path: routes/api.php
+
+		-
+			message: "#^Relation 'chats' is not found in App\\\\Models\\\\ChatThread model\\.$#"
+			count: 1
+			path: routes/api.php
+
+		-
+			message: "#^Relation 'interestedby' is not found in App\\\\Models\\\\ExpressInterest model\\.$#"
+			count: 4
+			path: routes/api.php
+
+		-
+			message: "#^Relation 'profileViewer' is not found in App\\\\Models\\\\ProfileViewer model\\.$#"
+			count: 2
+			path: routes/api.php
+
+		-
+			message: "#^Relation 'receiver' is not found in App\\\\Models\\\\ChatThread model\\.$#"
+			count: 1
+			path: routes/api.php
+
+		-
+			message: "#^Relation 'sender' is not found in App\\\\Models\\\\ChatThread model\\.$#"
+			count: 1
+			path: routes/api.php
+
+		-
+			message: "#^Relation 'user' is not found in App\\\\Models\\\\HappyStory model\\.$#"
+			count: 1
+			path: routes/api.php

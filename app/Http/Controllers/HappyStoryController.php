@@ -2,15 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\HappyStory;
+use Auth;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Redirect;
 use Validator;
-use Auth;
 
 class HappyStoryController extends Controller
 {
-
     public function __construct()
     {
         $this->middleware(['permission:show_happy_stories'])->only('index');
@@ -18,43 +19,45 @@ class HappyStoryController extends Controller
         $this->middleware(['permission:view_details_happy_story'])->only('show');
 
         $this->rules = [
-            'title'         => ['required','max:255'],
-            'details'       => ['required'],
-            'partner_name'  => ['required','max:255'],
-            'photos'        => ['required'],
+            'title' => ['required', 'max:255'],
+            'details' => ['required'],
+            'partner_name' => ['required', 'max:255'],
+            'photos' => ['required'],
         ];
 
         $this->messages = [
-            'title.required'              => translate('Story Title is required'),
-            'title.max'                   => translate('Max 255 characters'),
-            'details.required'            => translate('Story Details is required'),
-            'partner_name.required'       => translate('Partner Name is required'),
-            'partner_name.max'            => translate('Max 100 characters'),
+            'title.required' => translate('Story Title is required'),
+            'title.max' => translate('Max 255 characters'),
+            'details.required' => translate('Story Details is required'),
+            'partner_name.required' => translate('Partner Name is required'),
+            'partner_name.max' => translate('Max 100 characters'),
 
         ];
     }
+
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
-     public function index(Request $request)
-     {
-         $sort_search  = null;
-         $happy_stories  = HappyStory::latest();
+    public function index(Request $request)
+    {
+        $sort_search = null;
+        $happy_stories = HappyStory::latest();
 
-         if ($request->has('search')){
-             $sort_search     = $request->search;
-             // $happy_stories   = $happy_stories->where('name', 'like', '%'.$sort_search.'%');
-         }
-         $happy_stories = $happy_stories->paginate(18);
-         return view('admin.happy_stories.index', compact('happy_stories','sort_search'));
-     }
+        if ($request->has('search')) {
+            $sort_search = $request->search;
+            // $happy_stories   = $happy_stories->where('name', 'like', '%'.$sort_search.'%');
+        }
+        $happy_stories = $happy_stories->paginate(18);
+
+        return view('admin.happy_stories.index', compact('happy_stories', 'sort_search'));
+    }
 
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create()
     {
@@ -64,99 +67,107 @@ class HappyStoryController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(Request $request)
     {
-      $rules      = $this->rules;
-      $messages   = $this->messages;
-      $validator  = Validator::make($request->all(), $rules, $messages);
-      if ($validator->fails()) {
-          flash(translate('Sorry! Something went wrong'))->error();
-          return Redirect::back()->withErrors($validator);
-      }
+        $rules = $this->rules;
+        $messages = $this->messages;
+        $validator = Validator::make($request->all(), $rules, $messages);
+        if ($validator->fails()) {
+            flash(translate('Sorry! Something went wrong'))->error();
 
-      $story                  = new HappyStory;
-      $story->user_id         = Auth::user()->id;
-      $story->title           = $request->title;
-      $story->details         = $request->details;
-      $story->partner_name    = $request->partner_name;
-      $story->photos          = $request->photos;
-      $story->video_provider  = $request->video_provider;
-      $story->video_link      = $request->video_link;
-      if($story->save()){
-          flash(translate('Story uploaded successfully'))->success();
-          return redirect()->route('happy_story.member');
-      } else {
-          flash(translate('Sorry! Something went wrong.'))->error();
-          return back();
-      }
+            return Redirect::back()->withErrors($validator);
+        }
+
+        $story = new HappyStory;
+        $story->user_id = Auth::user()->id;
+        $story->title = $request->title;
+        $story->details = $request->details;
+        $story->partner_name = $request->partner_name;
+        $story->photos = $request->photos;
+        $story->video_provider = $request->video_provider;
+        $story->video_link = $request->video_link;
+        if ($story->save()) {
+            flash(translate('Story uploaded successfully'))->success();
+
+            return redirect()->route('happy_story.member');
+        } else {
+            flash(translate('Sorry! Something went wrong.'))->error();
+
+            return back();
+        }
     }
 
     /**
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function show($id)
     {
-      $happy_story   = HappyStory::findOrFail(decrypt($id));
-      return view('admin.happy_stories.view', compact('happy_story'));
+        $happy_story = HappyStory::findOrFail(decrypt($id));
+
+        return view('admin.happy_stories.view', compact('happy_story'));
     }
 
     /**
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function edit($id)
     {
-      $happy_story   = HappyStory::findOrFail(decrypt($id));
-      return view('admin.happy_stories.edit', compact('happy_story'));
+        $happy_story = HappyStory::findOrFail(decrypt($id));
+
+        return view('admin.happy_stories.edit', compact('happy_story'));
     }
 
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function update(Request $request, $id)
     {
-        $rules      = $this->rules;
-        $messages   = $this->messages;
-        $validator  = Validator::make($request->all(), $rules, $messages);
+        $rules = $this->rules;
+        $messages = $this->messages;
+        $validator = Validator::make($request->all(), $rules, $messages);
         if ($validator->fails()) {
             flash(translate('Sorry! Something went wrong'))->error();
+
             return Redirect::back()->withErrors($validator);
         }
 
-        $story                  = HappyStory::findOrFail($id);
-        $story->title           = $request->title;
-        $story->details         = $request->details;
-        $story->partner_name    = $request->partner_name;
-        $story->photos          = $request->photos;
-        $story->video_provider  = $request->video_provider;
-        $story->video_link      = $request->video_link;
-        if($story->save()){
+        $story = HappyStory::findOrFail($id);
+        $story->title = $request->title;
+        $story->details = $request->details;
+        $story->partner_name = $request->partner_name;
+        $story->photos = $request->photos;
+        $story->video_provider = $request->video_provider;
+        $story->video_link = $request->video_link;
+        if ($story->save()) {
             flash(translate('Story updated successfully'))->success();
+
             return back();
         } else {
             flash(translate('Sorry! Something went wrong.'))->error();
+
             return back();
         }
     }
 
-    public function approval_status(Request $request){
+    public function approval_status(Request $request)
+    {
         $happy_story = HappyStory::findOrFail($request->id);
         $happy_story->approved = $request->status;
-        if($happy_story->save()){
+        if ($happy_story->save()) {
             return 1;
         }
+
         return 0;
     }
 
@@ -164,13 +175,13 @@ class HappyStoryController extends Controller
      * Display story details for frontend
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function story_details($id)
     {
         try {
             $happy_story = HappyStory::with('user')->findOrFail($id);
-            
+
             // Check if story is approved or user owns it
             if ($happy_story->approved != 1) {
                 // If not approved, only allow owner to view
@@ -181,12 +192,12 @@ class HappyStoryController extends Controller
                     abort(404, 'Story not found or not approved');
                 }
             }
-            
+
             return view('frontend.happy_stories.story_details', compact('happy_story'));
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        } catch (ModelNotFoundException $e) {
             abort(404, 'Story not found');
         } catch (\Exception $e) {
-            \Log::error('Error loading story details: ' . $e->getMessage());
+            \Log::error('Error loading story details: '.$e->getMessage());
             abort(500, 'An error occurred while loading the story');
         }
     }
@@ -195,7 +206,7 @@ class HappyStoryController extends Controller
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function destroy($id)
     {

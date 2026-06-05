@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Utility\PhoneUtility;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ProfileRequest extends FormRequest
 {
@@ -25,18 +26,18 @@ class ProfileRequest extends FormRequest
     public function rules()
     {
         return [
-            'first_name'    => [ 'required','max:255'],
-            'last_name'     => [ 'required','max:255'],
-            'gender'        => [ 'required'],
-            'date_of_birth' => [ 'required'],
-            'on_behalf'     => [ 'required'],
-            'phone'         => [ 
-                'required', 
-                \Illuminate\Validation\Rule::unique('users')->ignore(auth()->id())->whereNull('deleted_at')
+            'first_name' => ['required', 'max:255'],
+            'last_name' => ['required', 'max:255'],
+            'gender' => ['required'],
+            'date_of_birth' => ['required'],
+            'on_behalf' => ['required'],
+            'phone' => [
+                'required',
+                Rule::unique('users')->ignore(auth()->id())->whereNull('deleted_at'),
             ],
-            'children'      => [ 'required'],
-            'photo'         => [ 'sometimes','mimes:jpeg,jpg,png,gif,webp','image'],
-            'marital_status'=> [ 'required'],
+            'children' => ['required'],
+            'photo' => ['sometimes', 'mimes:jpeg,jpg,png,gif,webp', 'image'],
+            'marital_status' => ['required'],
         ];
     }
 
@@ -44,12 +45,12 @@ class ProfileRequest extends FormRequest
     {
         if ($this->has('phone')) {
             $this->merge([
-                'phone' => PhoneUtility::normalize($this->phone)
+                'phone' => PhoneUtility::normalize($this->phone),
             ]);
         }
     }
 
-        /**
+    /**
      * Get the validation messages of rules that apply to the request.
      *
      * @return array
@@ -57,17 +58,17 @@ class ProfileRequest extends FormRequest
     public function messages()
     {
         return [
-            'first_name.required'             => translate('First Name is required'),
-            'first_name.max'                  => translate('Max 255 characters'),
-            'last_name.required'              => translate('First Name is required'),
-            'last_name.max'                   => translate('Max 255 characters'),
-            'gender.required'                 => translate('Gender is required'),
-            'date_of_birth.required'          => translate('Date Of Birth is required'),
-            'on_behalf.required'              => translate('On Behalf is required'),
-            'marital_status.required'         => translate('Marital Status is required'),
-            'phone.required'         => translate('Marital Status is required'),
-            'children.required'         => translate('Marital Status is required'),
-            'photo.required'         => translate('Marital Status is required'),
+            'first_name.required' => translate('First Name is required'),
+            'first_name.max' => translate('Max 255 characters'),
+            'last_name.required' => translate('First Name is required'),
+            'last_name.max' => translate('Max 255 characters'),
+            'gender.required' => translate('Gender is required'),
+            'date_of_birth.required' => translate('Date Of Birth is required'),
+            'on_behalf.required' => translate('On Behalf is required'),
+            'marital_status.required' => translate('Marital Status is required'),
+            'phone.required' => translate('Marital Status is required'),
+            'children.required' => translate('Marital Status is required'),
+            'photo.required' => translate('Marital Status is required'),
         ];
     }
 }

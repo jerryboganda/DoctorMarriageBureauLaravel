@@ -5,9 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Setting;
 use App\Models\Translation;
 use App\Models\Upload;
-use Illuminate\Http\Request;
-use DB;
+use App\Utility\MemberUtility;
 use Artisan;
+use DB;
+use Illuminate\Http\Request;
 use ZipArchive;
 
 class UpdateController extends Controller
@@ -16,40 +17,44 @@ class UpdateController extends Controller
     {
         if (env('DEMO_MODE') == 'On') {
             flash(translate('This action is disabled in demo mode'))->error();
+
             return back();
         }
 
         $current_version = get_setting('current_version');
         if ($current_version < 4.4) {
             flash(translate('Could not update. Please check the compatible version'))->error();
+
             return back();
         }
-
 
         if ($request->has('update_zip')) {
             if (class_exists('ZipArchive')) {
                 // Create update directory.
                 $dir = 'updates';
-                if (!is_dir($dir))
+                if (! is_dir($dir)) {
                     mkdir($dir, 0777, true);
+                }
 
                 $path = Upload::findOrFail($request->update_zip)->file_name;
 
-                //Unzip uploaded update file and remove zip file.
+                // Unzip uploaded update file and remove zip file.
                 $zip = new ZipArchive;
-                $res = $zip->open(base_path('public/' . $path));
+                $res = $zip->open(base_path('public/'.$path));
 
                 if ($res === true) {
                     $res = $zip->extractTo(base_path());
                     $zip->close();
                 } else {
                     flash(translate('Could not open the updates zip file.'))->error();
+
                     return back();
                 }
 
                 if ($_SERVER['SERVER_NAME'] == 'localhost' || $_SERVER['SERVER_NAME'] == '127.0.0.1') {
                     return redirect()->route('update.step2');
                 }
+
                 return redirect()->route('update.step1');
             } else {
                 flash(translate('Please enable ZipArchive extension.'))->error();
@@ -66,8 +71,9 @@ class UpdateController extends Controller
 
     public function purchase_code(Request $request)
     {
-        if (\App\Utility\MemberUtility::create_initial_member($request->purchase_code) == false) {
-            flash("Sorry! The purchase code you have provided is not valid.")->error();
+        if (MemberUtility::create_initial_member($request->purchase_code) == false) {
+            flash('Sorry! The purchase code you have provided is not valid.')->error();
+
             return back();
         }
         // if ($request->system_key == null) {
@@ -86,7 +92,7 @@ class UpdateController extends Controller
             $business_settings->save();
         }
 
-        //$this->writeEnvironmentFile('SYSTEM_KEY', $request->system_key);
+        // $this->writeEnvironmentFile('SYSTEM_KEY', $request->system_key);
 
         return redirect()->route('update.step2');
     }
@@ -120,7 +126,7 @@ class UpdateController extends Controller
         $current_version = (get_setting('current_version') != null) ? get_setting('current_version') : '3.3';
 
         // Validate current version
-        if (!in_array($current_version, $keys)) {
+        if (! in_array($current_version, $keys)) {
             Artisan::call('view:clear');
             Artisan::call('cache:clear');
 
@@ -130,13 +136,14 @@ class UpdateController extends Controller
             );
 
             flash(translate('Could not update. Please check the compatible version'))->error();
+
             return redirect('/');
         }
 
         $initial_index = array_search($current_version, $keys) + 1;
 
         for ($i = $initial_index; $i < count($keys); $i++) {
-            $sql_path = base_path('sqlupdates/' . $versions[$keys[$i]]);
+            $sql_path = base_path('sqlupdates/'.$versions[$keys[$i]]);
             DB::unprepared(file_get_contents($sql_path));
         }
 
@@ -149,7 +156,7 @@ class UpdateController extends Controller
         Artisan::call('view:clear');
         Artisan::call('cache:clear');
         $previousRouteServiceProvier = base_path('app/Providers/RouteServiceProvider.php');
-        $newRouteServiceProvier      = base_path('app/Providers/RouteServiceProvider.txt');
+        $newRouteServiceProvier = base_path('app/Providers/RouteServiceProvider.txt');
         copy($newRouteServiceProvier, $previousRouteServiceProvier);
 
         return view('update.done');

@@ -3,13 +3,13 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 class VerificationCode extends Notification
 {
     use Queueable;
+
     private $user;
 
     /**
@@ -32,17 +32,18 @@ class VerificationCode extends Notification
     {
         return ['mail'];
     }
+
     /**
      * Get the mail representation of the notification.
      *
      * @param  mixed  $notifiable
-     * @return \Illuminate\Notifications\Messages\MailMessage
+     * @return MailMessage
      */
     public function toMail($notifiable)
     {
         return (new MailMessage)
-                    ->greeting('Hello '.$this->user->first_name.' '.$this->user->last_name .'!')
-                    ->line('Your Verification Code is: '.$this->user->verification_code);
+            ->greeting('Hello '.$this->user->first_name.' '.$this->user->last_name.'!')
+            ->line('Your Verification Code is: '.$this->user->verification_code);
     }
 
     /**

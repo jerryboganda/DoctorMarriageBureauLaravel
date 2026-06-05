@@ -1,13 +1,15 @@
 <?php
+
 require 'vendor/autoload.php';
 $app = require_once 'bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+$kernel = $app->make(Kernel::class);
 $kernel->bootstrap();
 
 use App\Models\ProfileOptionValue;
+use Illuminate\Contracts\Console\Kernel;
 
 $groups = ProfileOptionValue::distinct()->pluck('group');
-echo "Groups found: " . implode(', ', $groups->toArray()) . "\n";
+echo 'Groups found: '.implode(', ', $groups->toArray())."\n";
 
 foreach ($groups as $group) {
     $count = ProfileOptionValue::where('group', $group)->count();

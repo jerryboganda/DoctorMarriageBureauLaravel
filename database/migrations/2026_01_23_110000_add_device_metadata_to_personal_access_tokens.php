@@ -29,7 +29,7 @@ return new class extends Migration
             $table->text('user_agent')->nullable()->after('longitude');
             $table->boolean('is_current')->default(false)->after('user_agent');
             $table->timestamp('logged_in_at')->nullable()->after('is_current');
-            
+
             // Index for quick lookup with custom short name
             $table->index(['tokenable_id', 'last_used_at'], 'pat_tokenable_last_used_idx');
         });
@@ -46,7 +46,7 @@ return new class extends Migration
                 'device_name', 'device_type', 'browser', 'browser_version',
                 'os', 'os_version', 'ip_address', 'location_city', 'location_region',
                 'location_country', 'location_country_code', 'latitude', 'longitude',
-                'user_agent', 'is_current', 'logged_in_at'
+                'user_agent', 'is_current', 'logged_in_at',
             ]);
         });
     }

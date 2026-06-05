@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Api\Controller;
 use App\Http\Resources\GalleryImageRequest;
 use App\Http\Resources\GalleryImageResource;
 use App\Models\GalleryImage;
@@ -14,105 +13,108 @@ use App\Services\FirbaseNotification;
 use App\Utility\EmailUtility;
 use DB;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Kutia\Larafirebase\Facades\Larafirebase;
 use Notification;
-
 
 class GalleryImageController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
-
     public function index()
     {
         $gallery_image_id = GalleryImage::where('user_id', request()->user()->id)->latest()->get();
+
         return GalleryImageResource::collection($gallery_image_id)->additional([
-            'result' => true
+            'result' => true,
         ]);
     }
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(Request $request)
     {
         try {
             // Validate file exists
-            if (!$request->hasFile('gallery_image')) {
+            if (! $request->hasFile('gallery_image')) {
                 \Log::error('Gallery upload failed: No file received', [
                     'user_id' => auth()->id(),
                     'files' => $request->allFiles(),
-                    'all' => $request->all()
+                    'all' => $request->all(),
                 ]);
+
                 return $this->failure_message('No image file received. Please select an image to upload.');
             }
-            
+
             $file = $request->file('gallery_image');
-            if (!$file->isValid()) {
+            if (! $file->isValid()) {
                 \Log::error('Gallery upload failed: Invalid file', [
                     'user_id' => auth()->id(),
-                    'error' => $file->getErrorMessage()
+                    'error' => $file->getErrorMessage(),
                 ]);
-                return $this->failure_message('Invalid file upload: ' . $file->getErrorMessage());
+
+                return $this->failure_message('Invalid file upload: '.$file->getErrorMessage());
             }
-            
+
             $userId = auth()->user()->id;
-            
+
             // Check package validity
-            if (!package_validity($userId)) {
+            if (! package_validity($userId)) {
                 return $this->failure_message('Your package has expired. Please update your package.');
             }
-            
+
             // Check remaining uploads
             $remaining = get_remaining_package_value($userId, 'remaining_photo_gallery');
             if ($remaining <= 0) {
                 return $this->failure_message('You have 0 remaining gallery photo uploads. Please update your package.');
             }
-            
+
             // Upload the image
             $photo = upload_api_file($file);
-            
-            if (!$photo) {
+
+            if (! $photo) {
                 \Log::error('Gallery upload failed: upload_api_file returned null', [
                     'user_id' => $userId,
-                    'file_name' => $file->getClientOriginalName()
+                    'file_name' => $file->getClientOriginalName(),
                 ]);
+
                 return $this->failure_message('Failed to process image. Please try again.');
             }
-            
+
             // Create gallery image record
             $galleryImage = GalleryImage::create([
                 'user_id' => $userId,
-                'image'   => $photo,
-                'privacy_level' => $request->privacy_level ?? 'public'
+                'image' => $photo,
+                'privacy_level' => $request->privacy_level ?? 'public',
             ]);
-            
+
             // Decrement remaining count
             $member = Member::where('user_id', $userId)->first();
             $member->remaining_photo_gallery = max(0, $member->remaining_photo_gallery - 1);
             $member->save();
-            
+
             \Log::info('Gallery image uploaded successfully', [
                 'user_id' => $userId,
                 'gallery_image_id' => $galleryImage->id,
-                'upload_id' => $photo
+                'upload_id' => $photo,
             ]);
-            
+
             return $this->success_message('Gallery image uploaded successfully.');
-            
+
         } catch (\Exception $e) {
             \Log::error('Gallery upload exception', [
                 'user_id' => auth()->id(),
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
-            return $this->failure_message('Upload failed: ' . $e->getMessage());
+
+            return $this->failure_message('Upload failed: '.$e->getMessage());
         }
     }
 
@@ -120,7 +122,7 @@ class GalleryImageController extends Controller
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function show($id)
     {
@@ -130,9 +132,8 @@ class GalleryImageController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function update(Request $request, $id)
     {
@@ -143,13 +144,14 @@ class GalleryImageController extends Controller
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function destroy($id)
     {
         if (GalleryImage::destroy($id)) {
             return $this->success_message('Image deleted successfully.');
         }
+
         return $this->failure_message('Sorry! Something went wrong.');
     }
 
@@ -157,20 +159,20 @@ class GalleryImageController extends Controller
      * Set a gallery image as primary/main photo
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function set_primary($id)
     {
         $user_id = auth()->id();
         $image = GalleryImage::where('id', $id)->where('user_id', $user_id)->first();
-        
-        if (!$image) {
+
+        if (! $image) {
             return $this->failure_message('Image not found.');
         }
 
         // Reset all images to non-primary first
         GalleryImage::where('user_id', $user_id)->update(['is_main_photo' => false]);
-        
+
         // Set selected image as primary
         $image->is_main_photo = true;
         $image->save();
@@ -182,14 +184,14 @@ class GalleryImageController extends Controller
      * Toggle privacy level of a gallery image
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function toggle_private($id)
     {
         $user_id = auth()->id();
         $image = GalleryImage::where('id', $id)->where('user_id', $user_id)->first();
-        
-        if (!$image) {
+
+        if (! $image) {
             return $this->failure_message('Image not found.');
         }
 
@@ -202,7 +204,7 @@ class GalleryImageController extends Controller
             'result' => true,
             'message' => 'Privacy updated successfully.',
             'privacy_level' => $image->privacy_level,
-            'is_private' => in_array($image->privacy_level, ['private', 'vault'])
+            'is_private' => in_array($image->privacy_level, ['private', 'vault']),
         ]);
     }
 
@@ -211,14 +213,14 @@ class GalleryImageController extends Controller
      * Also sets it as the main gallery photo
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function set_as_avatar($id)
     {
         $user_id = auth()->id();
         $image = GalleryImage::where('id', $id)->where('user_id', $user_id)->first();
-        
-        if (!$image) {
+
+        if (! $image) {
             return $this->failure_message('Image not found.');
         }
 
@@ -237,7 +239,7 @@ class GalleryImageController extends Controller
         return response()->json([
             'result' => true,
             'message' => 'Photo set as profile picture successfully.',
-            'photo_url' => uploaded_asset($image->image)
+            'photo_url' => uploaded_asset($image->image),
         ]);
     }
 
@@ -250,17 +252,19 @@ class GalleryImageController extends Controller
             ->select('view_gallery_images.id')
             ->distinct()
             ->paginate(10);
+
         return GalleryImageRequest::collection($my_gallery_image_view_requests);
         // return $this->response_data($my_gallery_image_view_requests);
     }
+
     public function store_image_view_request(Request $request)
     {
         $auth_user = auth()->user();
         $exist_check = ViewGalleryImage::where('user_id', $request->id)->where('requested_by', $auth_user->id)->first();
-        if (!$exist_check) {
-            $view_gallert_image                = new ViewGalleryImage();
-            $view_gallert_image->user_id       = $request->id;
-            $view_gallert_image->requested_by  = $auth_user->id;
+        if (! $exist_check) {
+            $view_gallert_image = new ViewGalleryImage;
+            $view_gallert_image->user_id = $request->id;
+            $view_gallert_image->requested_by = $auth_user->id;
             if ($view_gallert_image->save()) {
                 $member = Member::where('user_id', $auth_user->id)->first();
                 $member->remaining_gallery_image_view = $member->remaining_gallery_image_view - 1;
@@ -270,19 +274,18 @@ class GalleryImageController extends Controller
 
                 // View Profile Picture Store Notification for member
                 try {
-                    $notify_type   = 'gallery_image_view';
-                    $id            = null;
-                    $notify_by     = $auth_user->id;
-                    $info_id       = $view_gallert_image->id;
-                    $message       = $auth_user->first_name . ' ' . $auth_user->last_name . ' ' . translate(' wants to see your gallery images.');
-                    $route         = 'gallery-image-view-request.index';
+                    $notify_type = 'gallery_image_view';
+                    $id = null;
+                    $notify_by = $auth_user->id;
+                    $info_id = $view_gallert_image->id;
+                    $message = $auth_user->first_name.' '.$auth_user->last_name.' '.translate(' wants to see your gallery images.');
+                    $route = 'gallery-image-view-request.index';
 
-                    // fcm 
+                    // fcm
                     if (get_setting('firebase_push_notification') == 1) {
                         self::sendFirebaseNotification($notify_user->fcm_token, $notify_user, $notify_type, $message, $notify_by);
                     }
                     // end of fcm
-
 
                     Notification::send($notify_user, new DbStoreNotification($notify_type, $id, $notify_by, $info_id, $message, $route));
                 } catch (\Exception $e) {
@@ -304,6 +307,7 @@ class GalleryImageController extends Controller
             return $this->failure_message('Already requested');
         }
     }
+
     public function accept_image_view_request(Request $request)
     {
         $auth_user = auth()->user();
@@ -321,10 +325,10 @@ class GalleryImageController extends Controller
                 $id = null;
                 $notify_by = $auth_user->id;
                 $info_id = $view_gallery_image->id;
-                $message = $auth_user->first_name . ' ' . $auth_user->last_name . ' ' . translate(' has accepted your gallery image view request.');
-                $route = route("member_profile", $auth_user->id);
+                $message = $auth_user->first_name.' '.$auth_user->last_name.' '.translate(' has accepted your gallery image view request.');
+                $route = route('member_profile', $auth_user->id);
 
-                // fcm 
+                // fcm
                 if (get_setting('firebase_push_notification') == 1) {
                     self::sendFirebaseNotification($notify_user->fcm_token, $notify_user, $notify_type, $message, $notify_by);
                 }
@@ -347,6 +351,7 @@ class GalleryImageController extends Controller
             return $this->failure_message('Sorry! Did not find any request.');
         }
     }
+
     public function reject_image_view_request(Request $request)
     {
         $auth_user = auth()->user();
@@ -360,10 +365,10 @@ class GalleryImageController extends Controller
                 $id = null;
                 $notify_by = auth()->id();
                 $info_id = $gallery_view_request->id;
-                $message = $auth_user->first_name . ' ' . $auth_user->last_name . ' ' . translate(' has rejected your gallery image view request.');
-                $route = route("member_profile", $auth_user->id);
+                $message = $auth_user->first_name.' '.$auth_user->last_name.' '.translate(' has rejected your gallery image view request.');
+                $route = route('member_profile', $auth_user->id);
 
-                // fcm 
+                // fcm
                 if (get_setting('firebase_push_notification') == 1) {
                     self::sendFirebaseNotification($notify_user->fcm_token, $notify_user, $notify_type, $message, $notify_by);
                 }
@@ -380,11 +385,11 @@ class GalleryImageController extends Controller
         }
     }
 
-    public static function sendFirebaseNotification($fcmTokens = null, $notify_user, $notify_type, $message, $notify_by = null)
+    public static function sendFirebaseNotification($fcmTokens, $notify_user, $notify_type, $message, $notify_by = null)
     {
         // send firebase notification for mobile app
         if ($notify_user->fcm_token != null) {
-            $data = (object)[];
+            $data = (object) [];
             $data->fcm_token = $notify_user->fcm_token;
             $data->title = $notify_type;
             $data->text = $message;
@@ -393,7 +398,7 @@ class GalleryImageController extends Controller
         }
         // end of  firebase notification
 
-        Larafirebase::withTitle(str_replace("_", " ", $notify_type))
+        Larafirebase::withTitle(str_replace('_', ' ', $notify_type))
             ->withBody($message)
             ->sendMessage($fcmTokens);
     }

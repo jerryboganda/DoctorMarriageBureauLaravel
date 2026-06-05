@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\FieldVisibilitySetting;
+use App\Utility\MemberUtility;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -19,12 +20,12 @@ class DiscoverySettingsController extends Controller
         $currentIncognito = FieldVisibilitySetting::where('user_id', $user->id)
             ->where('field_name', 'incognito')
             ->value('is_visible');
-        $newIncognito = !filter_var($currentIncognito, FILTER_VALIDATE_BOOLEAN);
+        $newIncognito = ! filter_var($currentIncognito, FILTER_VALIDATE_BOOLEAN);
 
         FieldVisibilitySetting::setVisibility($user->id, 'incognito', $newIncognito);
-        \App\Utility\MemberUtility::resetCaches();
+        MemberUtility::resetCaches();
 
-        $snapshot = \App\Utility\MemberUtility::member_visibility_snapshot($user->id);
+        $snapshot = MemberUtility::member_visibility_snapshot($user->id);
 
         return response()->json([
             'success' => true,
@@ -44,7 +45,7 @@ class DiscoverySettingsController extends Controller
         $incognito = FieldVisibilitySetting::where('user_id', $user->id)
             ->where('field_name', 'incognito')
             ->value('is_visible');
-        $snapshot = \App\Utility\MemberUtility::member_visibility_snapshot($user->id);
+        $snapshot = MemberUtility::member_visibility_snapshot($user->id);
 
         return response()->json([
             'success' => true,
@@ -74,7 +75,7 @@ class DiscoverySettingsController extends Controller
 
         $member = $request->user()->member;
 
-        if (!$member) {
+        if (! $member) {
             return response()->json(['success' => false, 'message' => 'Member profile not found.'], 404);
         }
 
@@ -100,7 +101,7 @@ class DiscoverySettingsController extends Controller
     {
         $member = $request->user()->member;
 
-        if (!$member) {
+        if (! $member) {
             return response()->json(['success' => false, 'message' => 'Member profile not found.'], 404);
         }
 

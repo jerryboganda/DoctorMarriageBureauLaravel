@@ -10,6 +10,7 @@ class SupportTicketController extends BaseAdminController
     public function active(Request $request)
     {
         $query = DB::table('support_tickets')->where('status', 0)->orderByDesc('id');
+
         return $this->ok($this->paginateQuery($request, $query));
     }
 
@@ -25,13 +26,14 @@ class SupportTicketController extends BaseAdminController
     public function solved(Request $request)
     {
         $query = DB::table('support_tickets')->where('status', 1)->orderByDesc('id');
+
         return $this->ok($this->paginateQuery($request, $query));
     }
 
     public function reply(Request $request, $id)
     {
         $ticket = DB::table('support_tickets')->where('id', $id)->first();
-        if (!$ticket) {
+        if (! $ticket) {
             return $this->fail('Ticket not found', 404);
         }
 

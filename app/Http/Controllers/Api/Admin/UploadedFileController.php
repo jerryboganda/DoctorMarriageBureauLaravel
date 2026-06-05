@@ -11,7 +11,7 @@ class UploadedFileController extends BaseAdminController
     {
         $query = Upload::query()->with('user')->orderByDesc('id');
         if ($search = $request->get('search')) {
-            $query->where('file_original_name', 'like', '%' . $search . '%');
+            $query->where('file_original_name', 'like', '%'.$search.'%');
         }
 
         return $this->ok($this->paginateQuery($request, $query));
@@ -32,6 +32,7 @@ class UploadedFileController extends BaseAdminController
     public function info($id)
     {
         $upload = Upload::with('user')->findOrFail($id);
+
         return $this->ok($upload);
     }
 
@@ -46,11 +47,12 @@ class UploadedFileController extends BaseAdminController
     public function bulkDelete(Request $request)
     {
         $ids = $request->get('ids', []);
-        if (!is_array($ids) || empty($ids)) {
+        if (! is_array($ids) || empty($ids)) {
             return $this->fail('No ids provided', 422);
         }
 
         Upload::whereIn('id', $ids)->delete();
+
         return $this->ok(null, 'Files deleted successfully');
     }
 }

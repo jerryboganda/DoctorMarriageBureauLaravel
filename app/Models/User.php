@@ -1,51 +1,28 @@
 <?php
 
 namespace App\Models;
-use App\Models\Member;
-use App\Models\Address;
-use App\Models\Education;
-use App\Models\Career;
-use App\Models\PhysicalAttribute;
-use App\Models\Hobby;
-use App\Models\Attitude;
-use App\Models\Recidency;
-use App\Models\Lifestyle;
-use App\Models\Astrology;
-use App\Models\Family;
-use App\Models\PartnerExpectation;
-use App\Models\SpiritualBackground;
-use App\Models\PackagePayment;
-use App\Models\HappyStory;
-use App\Models\Shortlist;
-use App\Models\IgnoredUser;
-use App\Models\ReportedUser;
-use App\Models\Staff;
-use App\Models\GalleryImage;
-use App\Models\ExpressInterest;
-use App\Models\ProfileMatch;
-use App\Models\VerificationCode;
 
+use App\Notifications\EmailVerificationNotification;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Spatie\Permission\Traits\HasRoles;
-use App\Notifications\EmailVerificationNotification;
 use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
     use HasApiTokens;
-    use SoftDeletes;
-    use Notifiable;
     use HasRoles;
+    use Notifiable;
+    use SoftDeletes;
 
     public function sendEmailVerificationNotification()
     {
         try {
-            $this->notify(new EmailVerificationNotification());
+            $this->notify(new EmailVerificationNotification);
         } catch (\Exception $e) {
-            \Log::error('Email verification notification failed: ' . $e->getMessage());
+            \Log::error('Email verification notification failed: '.$e->getMessage());
             // Don't throw the exception to prevent breaking the flow
         }
     }
@@ -56,7 +33,7 @@ class User extends Authenticatable implements MustVerifyEmail
      * @var array
      */
     protected $fillable = [
-        'first_name', 'last_name', 'email', 'password', 'code', 'phone','membership','approved', 'verification_code','fcm_token','referred_by','email_verified_at','user_type'
+        'first_name', 'last_name', 'email', 'password', 'code', 'phone', 'membership', 'approved', 'verification_code', 'fcm_token', 'referred_by', 'email_verified_at', 'user_type',
     ];
 
     /**
@@ -82,7 +59,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function hasUsablePassword(): bool
     {
-        return !empty($this->password) && strlen((string) $this->password) >= 40;
+        return ! empty($this->password) && strlen((string) $this->password) >= 40;
     }
 
     public function member()
@@ -189,15 +166,19 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasmany(ExpressInterest::class);
     }
+
     public function profile_match()
     {
         return $this->hasmany(ProfileMatch::class);
     }
-    public function uploads(){
+
+    public function uploads()
+    {
         return $this->hasMany(Upload::class);
     }
 
-    public function profile_views(){
+    public function profile_views()
+    {
         return $this->hasMany(ProfileView::class);
     }
 
@@ -205,22 +186,22 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function referralCode()
     {
-        return $this->hasOne(\App\Models\ReferralCode::class);
+        return $this->hasOne(ReferralCode::class);
     }
 
     public function referralsMade()
     {
-        return $this->hasMany(\App\Models\Referral::class, 'referrer_user_id');
+        return $this->hasMany(Referral::class, 'referrer_user_id');
     }
 
     public function referralReceived()
     {
-        return $this->hasOne(\App\Models\Referral::class, 'referred_user_id');
+        return $this->hasOne(Referral::class, 'referred_user_id');
     }
 
     public function referralRewards()
     {
-        return $this->hasMany(\App\Models\ReferralReward::class);
+        return $this->hasMany(ReferralReward::class);
     }
 
     public function referrer()

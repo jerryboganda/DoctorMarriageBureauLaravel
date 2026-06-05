@@ -2,24 +2,21 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\AccountUpdated;
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Validation\ValidationException;
+use App\Models\StepUpAuthToken;
+use App\Models\TrustedContact;
 use App\Models\User;
 use App\Models\UserTwoFactorSetting;
-use App\Models\TrustedContact;
-use App\Models\StepUpAuthToken;
-use App\Events\AccountUpdated;
-use Laravel\Sanctum\PersonalAccessToken;
-use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use BaconQrCode\Writer;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class AccountSecurityController extends Controller
 {
@@ -48,6 +45,7 @@ class AccountSecurityController extends Controller
     protected function getCredentialStatus(User $user): array
     {
         $member = $user->member;
+
         return [
             'email' => [
                 'value' => $this->maskEmail($user->email),
@@ -67,7 +65,7 @@ class AccountSecurityController extends Controller
 
         // The schema uses a single provider_id column
         // Check if user has a linked social account
-        if (!empty($user->provider_id)) {
+        if (! empty($user->provider_id)) {
             // Since we only store provider_id without provider name,
             // we can indicate there's a linked social account
             $logins[] = [
@@ -132,7 +130,7 @@ class AccountSecurityController extends Controller
     protected function getTrustedContacts(User $user): array
     {
         return TrustedContact::getForUser($user->id)
-            ->map(fn($c) => $c->toApiResponse())
+            ->map(fn ($c) => $c->toApiResponse())
             ->toArray();
     }
 
@@ -175,7 +173,7 @@ class AccountSecurityController extends Controller
             ->where('id', $tokenId)
             ->first();
 
-        if (!$token) {
+        if (! $token) {
             return response()->json([
                 'success' => false,
                 'message' => 'Device session not found.',
@@ -255,13 +253,13 @@ class AccountSecurityController extends Controller
             // Generate QR code SVG
             $renderer = new ImageRenderer(
                 new RendererStyle(200),
-                new SvgImageBackEnd()
+                new SvgImageBackEnd
             );
             $writer = new Writer($renderer);
             $qrCodeSvg = $writer->writeString($qrCodeUri);
 
             $response['secret'] = $secret;
-            $response['qr_code'] = 'data:image/svg+xml;base64,' . base64_encode($qrCodeSvg);
+            $response['qr_code'] = 'data:image/svg+xml;base64,'.base64_encode($qrCodeSvg);
             $response['manual_entry_key'] = chunk_split($secret, 4, ' ');
         }
 
@@ -287,7 +285,7 @@ class AccountSecurityController extends Controller
             'code' => 'required|string|size:6',
         ]);
 
-        if (!$settings->verifyCode($request->code)) {
+        if (! $settings->verifyCode($request->code)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid verification code.',
@@ -318,7 +316,7 @@ class AccountSecurityController extends Controller
         $user = Auth::user();
         $settings = UserTwoFactorSetting::getOrCreate($user->id);
 
-        if (!$settings->is_enabled) {
+        if (! $settings->is_enabled) {
             return response()->json([
                 'success' => false,
                 'message' => 'Two-factor authentication is not enabled.',
@@ -331,7 +329,7 @@ class AccountSecurityController extends Controller
 
         // Verify step-up authentication
         $stepUp = StepUpAuthToken::getByToken($request->step_up_token);
-        if (!$stepUp || !$stepUp->isComplete() || $stepUp->user_id !== $user->id) {
+        if (! $stepUp || ! $stepUp->isComplete() || $stepUp->user_id !== $user->id) {
             return response()->json([
                 'success' => false,
                 'message' => 'Step-up authentication required.',
@@ -357,7 +355,7 @@ class AccountSecurityController extends Controller
         $user = Auth::user();
         $settings = UserTwoFactorSetting::getOrCreate($user->id);
 
-        if (!$settings->is_enabled) {
+        if (! $settings->is_enabled) {
             return response()->json([
                 'success' => false,
                 'message' => 'Two-factor authentication is not enabled.',
@@ -368,7 +366,7 @@ class AccountSecurityController extends Controller
             'code' => 'required|string|size:6',
         ]);
 
-        if (!$settings->verifyCode($request->code)) {
+        if (! $settings->verifyCode($request->code)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid verification code.',
@@ -398,7 +396,7 @@ class AccountSecurityController extends Controller
             ->where('two_factor_token_expires_at', '>', now())
             ->first();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid or expired session.',
@@ -411,11 +409,11 @@ class AccountSecurityController extends Controller
         $verified = $settings->verifyCode($request->code);
 
         // If not, try recovery code
-        if (!$verified && strlen($request->code) > 6) {
+        if (! $verified && strlen($request->code) > 6) {
             $verified = $settings->useRecoveryCode($request->code);
         }
 
-        if (!$verified) {
+        if (! $verified) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid verification code.',
@@ -454,14 +452,14 @@ class AccountSecurityController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:255',
-            'relationship' => 'required|in:' . implode(',', TrustedContact::RELATIONSHIPS),
+            'relationship' => 'required|in:'.implode(',', TrustedContact::RELATIONSHIPS),
             'email' => 'nullable|email|max:255',
             'phone' => 'nullable|string|max:20',
             'can_recover_account' => 'sometimes|boolean',
             'notify_on_login' => 'sometimes|boolean',
         ]);
 
-        if (!$request->email && !$request->phone) {
+        if (! $request->email && ! $request->phone) {
             return response()->json([
                 'success' => false,
                 'message' => 'Either email or phone is required.',
@@ -500,7 +498,7 @@ class AccountSecurityController extends Controller
             ->where('user_id', $user->id)
             ->first();
 
-        if (!$contact) {
+        if (! $contact) {
             return response()->json([
                 'success' => false,
                 'message' => 'Trusted contact not found.',
@@ -531,7 +529,7 @@ class AccountSecurityController extends Controller
             ->where('is_verified', false)
             ->first();
 
-        if (!$contact) {
+        if (! $contact) {
             return response()->json([
                 'success' => false,
                 'message' => 'Trusted contact not found or already verified.',
@@ -556,7 +554,7 @@ class AccountSecurityController extends Controller
         $user = Auth::user();
 
         $request->validate([
-            'purpose' => 'required|in:' . implode(',', StepUpAuthToken::PURPOSES),
+            'purpose' => 'required|in:'.implode(',', StepUpAuthToken::PURPOSES),
         ]);
 
         $stepUp = StepUpAuthToken::createSession(
@@ -582,7 +580,7 @@ class AccountSecurityController extends Controller
         ]);
 
         $stepUp = StepUpAuthToken::getByToken($request->token);
-        if (!$stepUp) {
+        if (! $stepUp) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid or expired session.',
@@ -596,7 +594,7 @@ class AccountSecurityController extends Controller
             ], 403);
         }
 
-        if (!$stepUp->verifyPassword($request->password)) {
+        if (! $stepUp->verifyPassword($request->password)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid password.',
@@ -609,12 +607,12 @@ class AccountSecurityController extends Controller
         $user = auth()->user();
         if ($user && $user->email) {
             try {
-                Mail::raw('Your Doctor Marriage Bureau verification code is ' . $otp, function ($message) use ($user) {
+                Mail::raw('Your Doctor Marriage Bureau verification code is '.$otp, function ($message) use ($user) {
                     $message->to($user->email)
                         ->subject('Security verification code');
                 });
             } catch (\Throwable $e) {
-                \Log::error('Step-up OTP email failed: ' . $e->getMessage());
+                \Log::error('Step-up OTP email failed: '.$e->getMessage());
 
                 return response()->json([
                     'success' => false,
@@ -641,7 +639,7 @@ class AccountSecurityController extends Controller
         ]);
 
         $stepUp = StepUpAuthToken::getByToken($request->token);
-        if (!$stepUp) {
+        if (! $stepUp) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid or expired session.',
@@ -655,7 +653,7 @@ class AccountSecurityController extends Controller
             ], 403);
         }
 
-        if (!$stepUp->verifyOtp($request->otp)) {
+        if (! $stepUp->verifyOtp($request->otp)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid OTP.',
@@ -696,85 +694,108 @@ class AccountSecurityController extends Controller
 
     protected function parseDeviceName(?string $userAgent): string
     {
-        if (!$userAgent)
+        if (! $userAgent) {
             return 'Unknown Device';
+        }
 
-        if (stripos($userAgent, 'iPhone') !== false)
+        if (stripos($userAgent, 'iPhone') !== false) {
             return 'iPhone';
-        if (stripos($userAgent, 'iPad') !== false)
+        }
+        if (stripos($userAgent, 'iPad') !== false) {
             return 'iPad';
+        }
         if (stripos($userAgent, 'Android') !== false) {
             if (preg_match('/Android.*?;\s*([^)]+)\)/', $userAgent, $matches)) {
                 return trim(explode('Build', $matches[1])[0]);
             }
+
             return 'Android Device';
         }
-        if (stripos($userAgent, 'Macintosh') !== false)
+        if (stripos($userAgent, 'Macintosh') !== false) {
             return 'MacBook/iMac';
-        if (stripos($userAgent, 'Windows') !== false)
+        }
+        if (stripos($userAgent, 'Windows') !== false) {
             return 'Windows PC';
-        if (stripos($userAgent, 'Linux') !== false)
+        }
+        if (stripos($userAgent, 'Linux') !== false) {
             return 'Linux PC';
+        }
 
         return 'Unknown Device';
     }
 
     protected function parseDeviceType(?string $userAgent): string
     {
-        if (!$userAgent)
+        if (! $userAgent) {
             return 'unknown';
+        }
 
-        if (preg_match('/Mobile|Android.*Mobile|iPhone|iPod/', $userAgent))
+        if (preg_match('/Mobile|Android.*Mobile|iPhone|iPod/', $userAgent)) {
             return 'mobile';
-        if (preg_match('/iPad|Android(?!.*Mobile)|Tablet/', $userAgent))
+        }
+        if (preg_match('/iPad|Android(?!.*Mobile)|Tablet/', $userAgent)) {
             return 'tablet';
+        }
 
         return 'desktop';
     }
 
     protected function parseBrowser(?string $userAgent): string
     {
-        if (!$userAgent)
+        if (! $userAgent) {
             return 'Unknown';
+        }
 
-        if (stripos($userAgent, 'Edg') !== false)
+        if (stripos($userAgent, 'Edg') !== false) {
             return 'Microsoft Edge';
-        if (stripos($userAgent, 'Chrome') !== false)
+        }
+        if (stripos($userAgent, 'Chrome') !== false) {
             return 'Chrome';
-        if (stripos($userAgent, 'Safari') !== false && stripos($userAgent, 'Chrome') === false)
+        }
+        if (stripos($userAgent, 'Safari') !== false && stripos($userAgent, 'Chrome') === false) {
             return 'Safari';
-        if (stripos($userAgent, 'Firefox') !== false)
+        }
+        if (stripos($userAgent, 'Firefox') !== false) {
             return 'Firefox';
-        if (stripos($userAgent, 'Opera') !== false || stripos($userAgent, 'OPR') !== false)
+        }
+        if (stripos($userAgent, 'Opera') !== false || stripos($userAgent, 'OPR') !== false) {
             return 'Opera';
+        }
 
         return 'Unknown';
     }
 
     protected function parseOS(?string $userAgent): string
     {
-        if (!$userAgent)
+        if (! $userAgent) {
             return 'Unknown';
+        }
 
-        if (stripos($userAgent, 'Windows NT 10') !== false)
+        if (stripos($userAgent, 'Windows NT 10') !== false) {
             return 'Windows 10/11';
-        if (stripos($userAgent, 'Windows') !== false)
+        }
+        if (stripos($userAgent, 'Windows') !== false) {
             return 'Windows';
-        if (stripos($userAgent, 'Mac OS X') !== false)
+        }
+        if (stripos($userAgent, 'Mac OS X') !== false) {
             return 'macOS';
-        if (stripos($userAgent, 'iPhone') !== false || stripos($userAgent, 'iPad') !== false)
+        }
+        if (stripos($userAgent, 'iPhone') !== false || stripos($userAgent, 'iPad') !== false) {
             return 'iOS';
-        if (stripos($userAgent, 'Android') !== false)
+        }
+        if (stripos($userAgent, 'Android') !== false) {
             return 'Android';
-        if (stripos($userAgent, 'Linux') !== false)
+        }
+        if (stripos($userAgent, 'Linux') !== false) {
             return 'Linux';
+        }
 
         return 'Unknown';
     }
 
     protected function getLocationFromIp(?string $ip): array
     {
-        if (!$ip || $ip === '127.0.0.1' || $ip === '::1') {
+        if (! $ip || $ip === '127.0.0.1' || $ip === '::1') {
             return ['city' => 'Local', 'country' => 'Development'];
         }
 
@@ -795,41 +816,46 @@ class AccountSecurityController extends Controller
 
     protected function maskEmail(?string $email): ?string
     {
-        if (!$email)
+        if (! $email) {
             return null;
+        }
 
         $parts = explode('@', $email);
-        if (count($parts) !== 2)
+        if (count($parts) !== 2) {
             return '***@***';
+        }
 
         $local = $parts[0];
         $domain = $parts[1];
 
-        $maskedLocal = substr($local, 0, 2) . str_repeat('*', max(0, strlen($local) - 2));
+        $maskedLocal = substr($local, 0, 2).str_repeat('*', max(0, strlen($local) - 2));
 
-        return $maskedLocal . '@' . $domain;
+        return $maskedLocal.'@'.$domain;
     }
 
     protected function maskPhone(?string $phone): ?string
     {
-        if (!$phone)
+        if (! $phone) {
             return null;
+        }
 
         $len = strlen($phone);
-        if ($len <= 4)
+        if ($len <= 4) {
             return str_repeat('*', $len);
+        }
 
-        return '+XX XXXXX ' . substr($phone, -5);
+        return '+XX XXXXX '.substr($phone, -5);
     }
 
     protected function maskIp(?string $ip): ?string
     {
-        if (!$ip)
+        if (! $ip) {
             return null;
+        }
 
         $parts = explode('.', $ip);
         if (count($parts) === 4) {
-            return $parts[0] . '.' . $parts[1] . '.***.' . $parts[3];
+            return $parts[0].'.'.$parts[1].'.***.'.$parts[3];
         }
 
         return $ip;

@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Speciality;
+use Illuminate\Http\Request;
 use Redirect;
 use Validator;
 
@@ -21,7 +21,7 @@ class SpecialityController extends Controller
 
         $this->messages = [
             'name.required' => translate('Name is required'),
-            'name.max'      => translate('Max 255 characters'),
+            'name.max' => translate('Max 255 characters'),
         ];
     }
 
@@ -30,13 +30,14 @@ class SpecialityController extends Controller
      */
     public function index(Request $request)
     {
-        $sort_search  = null;
+        $sort_search = null;
         $specialities = Speciality::latest();
         if ($request->has('search')) {
-            $sort_search  = $request->search;
-            $specialities = $specialities->where('name', 'like', '%' . $sort_search . '%');
+            $sort_search = $request->search;
+            $specialities = $specialities->where('name', 'like', '%'.$sort_search.'%');
         }
         $specialities = $specialities->paginate(10);
+
         return view('admin.member_profile_attributes.specialities.index', compact('specialities', 'sort_search'));
     }
 
@@ -45,22 +46,25 @@ class SpecialityController extends Controller
      */
     public function store(Request $request)
     {
-        $rules     = $this->rules;
-        $messages  = $this->messages;
+        $rules = $this->rules;
+        $messages = $this->messages;
         $validator = Validator::make($request->all(), $rules, $messages);
 
         if ($validator->fails()) {
             flash(translate('Sorry! Something went wrong'))->error();
+
             return Redirect::back()->withErrors($validator);
         }
 
-        $speciality       = new Speciality;
+        $speciality = new Speciality;
         $speciality->name = $request->name;
         if ($speciality->save()) {
             flash(translate('New Speciality has been added successfully'))->success();
+
             return redirect()->route('specialities.index');
         } else {
             flash(translate('Sorry! Something went wrong.'))->error();
+
             return back();
         }
     }
@@ -71,6 +75,7 @@ class SpecialityController extends Controller
     public function edit($id)
     {
         $speciality = Speciality::findOrFail(decrypt($id));
+
         return view('admin.member_profile_attributes.specialities.edit', compact('speciality'));
     }
 
@@ -79,22 +84,25 @@ class SpecialityController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $rules     = $this->rules;
-        $messages  = $this->messages;
+        $rules = $this->rules;
+        $messages = $this->messages;
         $validator = Validator::make($request->all(), $rules, $messages);
 
         if ($validator->fails()) {
             flash(translate('Sorry! Something went wrong'))->error();
+
             return Redirect::back()->withErrors($validator);
         }
 
-        $speciality       = Speciality::findOrFail($id);
+        $speciality = Speciality::findOrFail($id);
         $speciality->name = $request->name;
         if ($speciality->save()) {
             flash(translate('Speciality has been updated successfully'))->success();
+
             return redirect()->route('specialities.index');
         } else {
             flash(translate('Sorry! Something went wrong.'))->error();
+
             return back();
         }
     }
@@ -107,6 +115,7 @@ class SpecialityController extends Controller
         $speciality = Speciality::findOrFail($id);
         $speciality->delete();
         flash(translate('Speciality has been deleted successfully'))->success();
+
         return redirect()->route('specialities.index');
     }
 
@@ -120,6 +129,7 @@ class SpecialityController extends Controller
                 $this->destroy($speciality_id);
             }
         }
+
         return 1;
     }
 }

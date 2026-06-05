@@ -2,11 +2,9 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Api\Controller;
 use App\Models\Community;
 use App\Models\CommunityMembership;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class CommunityController extends Controller
 {
@@ -18,7 +16,7 @@ class CommunityController extends Controller
 
         $query = Community::where('is_active', 1);
         if ($search !== '') {
-            $query->where('name', 'like', '%' . $search . '%');
+            $query->where('name', 'like', '%'.$search.'%');
         }
 
         $communities = $query
@@ -51,6 +49,7 @@ class CommunityController extends Controller
                 if ($filter === 'pending') {
                     return $community['status'] === 'pending';
                 }
+
                 return true;
             })
             ->values();
@@ -65,7 +64,7 @@ class CommunityController extends Controller
             ->where('is_active', 1)
             ->first();
 
-        if (!$community) {
+        if (! $community) {
             return $this->failure_message('Community not found.');
         }
 
@@ -99,7 +98,7 @@ class CommunityController extends Controller
             ->where('user_id', $user->id)
             ->first();
 
-        if (!$membership) {
+        if (! $membership) {
             return $this->failure_message('Membership not found.');
         }
 
@@ -111,13 +110,13 @@ class CommunityController extends Controller
     public function store(Request $request)
     {
         $user = auth()->user();
-        
+
         // Check if user is verified or premium
         $member = $user->member;
         $isVerified = $user->approved ?? false;
         $isPremium = $member && $member->membership == 2;
-        
-        if (!$isVerified && !$isPremium) {
+
+        if (! $isVerified && ! $isPremium) {
             return $this->failure_message('Only verified or premium members can create communities.');
         }
 

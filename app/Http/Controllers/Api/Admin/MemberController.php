@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Models\Member;
+use App\Models\MembersImport;
 use App\Models\Package;
 use App\Models\ReportedUser;
 use App\Models\User;
@@ -11,7 +12,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Maatwebsite\Excel\Facades\Excel;
-use App\Models\MembersImport;
 
 class MemberController extends BaseAdminController
 {
@@ -23,11 +23,11 @@ class MemberController extends BaseAdminController
 
         if ($search = $request->get('search')) {
             $query->where(function ($q) use ($search) {
-                $q->where('first_name', 'like', '%' . $search . '%')
-                    ->orWhere('last_name', 'like', '%' . $search . '%')
-                    ->orWhere('email', 'like', '%' . $search . '%')
-                    ->orWhere('phone', 'like', '%' . $search . '%')
-                    ->orWhere('code', 'like', '%' . $search . '%');
+                $q->where('first_name', 'like', '%'.$search.'%')
+                    ->orWhere('last_name', 'like', '%'.$search.'%')
+                    ->orWhere('email', 'like', '%'.$search.'%')
+                    ->orWhere('phone', 'like', '%'.$search.'%')
+                    ->orWhere('code', 'like', '%'.$search.'%');
             });
         }
 
@@ -150,9 +150,9 @@ class MemberController extends BaseAdminController
         $query = User::onlyTrashed()->where('user_type', 'member');
         if ($search = $request->get('search')) {
             $query->where(function ($q) use ($search) {
-                $q->where('first_name', 'like', '%' . $search . '%')
-                    ->orWhere('last_name', 'like', '%' . $search . '%')
-                    ->orWhere('email', 'like', '%' . $search . '%');
+                $q->where('first_name', 'like', '%'.$search.'%')
+                    ->orWhere('last_name', 'like', '%'.$search.'%')
+                    ->orWhere('email', 'like', '%'.$search.'%');
             });
         }
 
@@ -178,7 +178,7 @@ class MemberController extends BaseAdminController
     public function block(Request $request, $id)
     {
         $user = User::where('user_type', 'member')->findOrFail($id);
-        $user->blocked = (int) $request->get('blocked', !$user->blocked);
+        $user->blocked = (int) $request->get('blocked', ! $user->blocked);
         if ($request->filled('blocking_reason')) {
             $user->blocking_reason = $request->blocking_reason;
         }
@@ -190,7 +190,7 @@ class MemberController extends BaseAdminController
     public function toggleActivation($id)
     {
         $user = User::where('user_type', 'member')->findOrFail($id);
-        $user->deactivated = (int) !$user->deactivated;
+        $user->deactivated = (int) ! $user->deactivated;
         $user->save();
 
         return $this->ok($user, 'Member activation status updated');
@@ -223,6 +223,7 @@ class MemberController extends BaseAdminController
     public function verificationRequests(Request $request)
     {
         $query = User::query()->where('user_type', 'member')->where('approved', 0);
+
         return $this->ok($this->paginateQuery($request, $query->orderByDesc('id')));
     }
 
@@ -247,6 +248,7 @@ class MemberController extends BaseAdminController
     public function unapprovedPictures(Request $request)
     {
         $query = User::query()->where('user_type', 'member')->where('photo_approved', 0);
+
         return $this->ok($this->paginateQuery($request, $query->orderByDesc('id')));
     }
 
@@ -267,7 +269,7 @@ class MemberController extends BaseAdminController
 
         $user = User::where('user_type', 'member')->findOrFail($id);
         $member = $user->member;
-        if (!$member) {
+        if (! $member) {
             return $this->fail('Member profile not found', 404);
         }
 
@@ -341,6 +343,7 @@ class MemberController extends BaseAdminController
     public function reported(Request $request)
     {
         $query = ReportedUser::query()->with(['user', 'reportedBy'])->orderByDesc('id');
+
         return $this->ok($this->paginateQuery($request, $query));
     }
 
@@ -358,7 +361,7 @@ class MemberController extends BaseAdminController
             'bulk_file' => 'required|file|mimes:csv,txt,xlsx,xls',
         ]);
 
-        Excel::import(new MembersImport(), $request->file('bulk_file'));
+        Excel::import(new MembersImport, $request->file('bulk_file'));
 
         return $this->ok(null, 'Members imported successfully');
     }

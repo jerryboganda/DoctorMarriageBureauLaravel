@@ -12,7 +12,7 @@ class ChatService
     public function store(array $data, $attachments = [])
     {
         $attachmentJson = null;
-        if (!empty($attachments)) {
+        if (! empty($attachments)) {
             $attachmentJson = json_encode(array_values($attachments));
         }
 

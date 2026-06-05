@@ -5,6 +5,25 @@ executors:
     docker:
       - image: php:8.3-cli-bullseye
     resource_class: small
+  php_cli_mysql:
+    docker:
+      - image: php:8.3-cli-bullseye
+        environment:
+          APP_ENV: testing
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: dmb_test
+          DB_USERNAME: root
+          DB_PASSWORD: root
+          CACHE_DRIVER: array
+          QUEUE_CONNECTION: sync
+          SESSION_DRIVER: array
+      - image: cimg/mysql:8.0
+        environment:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: dmb_test
+    resource_class: small
   node_lts:
     docker:
       - image: cimg/node:22.14
@@ -20,9 +39,9 @@ commands:
             apt-get install -y --no-install-recommends \
               git unzip zip curl \
               libicu-dev libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
-              libonig-dev libxml2-dev libzip-dev sqlite3
+              libonig-dev libxml2-dev libzip-dev libsqlite3-dev sqlite3
             docker-php-ext-configure gd --with-freetype --with-jpeg
-            docker-php-ext-install -j"$(nproc)" bcmath exif gd intl mbstring pdo_mysql xml zip
+            docker-php-ext-install -j"$(nproc)" bcmath exif gd intl mbstring pdo_mysql pdo_sqlite xml zip
             rm -rf /var/lib/apt/lists/*
       - run:
           name: Install Composer
@@ -86,33 +105,38 @@ jobs:
       - run:
           name: Install Composer dependencies
           command: composer install --no-interaction --prefer-dist --no-progress
-      - run:
-          name: Install CI quality tools
-          command: composer require --dev laravel/pint phpstan/phpstan nunomaduro/larastan --with-dependencies --no-interaction --no-progress
       - save_cache:
           key: composer-v1-{{ checksum "composer.lock" }}
           paths:
             - vendor
       - run:
-          name: Validate Composer metadata
-          command: composer validate --strict
+          name: Backend CI
+          command: composer ci:backend
+
+  backend_mysql_smoke:
+    executor: php_cli_mysql
+    steps:
+      - checkout
+      - install_php_system_deps
+      - restore_cache:
+          keys:
+            - composer-v1-{{ checksum "composer.lock" }}
       - run:
-          name: PHP syntax lint
+          name: Install Composer dependencies
+          command: composer install --no-interaction --prefer-dist --no-progress
+      - run:
+          name: Wait for MySQL
           command: |
-            git ls-files '*.php' \
-              ':!:vendor/*' \
-              ':!:storage/*' \
-              ':!:bootstrap/cache/*' \
-              | xargs -r -n 1 php -l
+            for i in $(seq 1 60); do
+              php -r 'new PDO("mysql:host=127.0.0.1;port=3306;dbname=dmb_test", "root", "root");' && exit 0
+              sleep 2
+            done
+            exit 1
       - run:
-          name: Laravel Pint check
-          command: vendor/bin/pint --test
-      - run:
-          name: PHPStan analysis
-          command: vendor/bin/phpstan analyse --memory-limit=1G
-      - run:
-          name: PHPUnit
-          command: php artisan test
+          name: Migration-backed API smoke
+          command: |
+            php artisan migrate --force
+            php artisan test --testsuite=Feature --filter=BackendApiRegressionTest
 
   admin_frontend_quality:
     executor: node_lts
@@ -196,6 +220,7 @@ workflows:
   quality_and_deploy:
     jobs:
       - backend_quality
+      - backend_mysql_smoke
       - admin_frontend_quality
       - user_frontend_quality
       - mobile_web_quality
@@ -203,6 +228,7 @@ workflows:
       - deploy_production:
           requires:
             - backend_quality
+            - backend_mysql_smoke
             - admin_frontend_quality
             - user_frontend_quality
             - mobile_web_quality

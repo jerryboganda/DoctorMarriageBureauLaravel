@@ -35,7 +35,7 @@ return new class extends Migration
             $table->timestamp('invited_at')->nullable();
             $table->timestamp('accepted_at')->nullable();
             $table->timestamps();
-            
+
             $table->index(['member_id', 'is_active']);
             $table->index('invitation_token');
             $table->index('manager_user_id');
@@ -48,7 +48,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('profile_managers');
-        
+
         Schema::table('members', function (Blueprint $table) {
             $table->dropForeign(['primary_manager_id']);
             $table->dropColumn(['management_mode', 'primary_manager_id']);

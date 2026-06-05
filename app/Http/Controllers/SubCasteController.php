@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\Religion;
 use App\Models\Caste;
+use App\Models\Religion;
 use App\Models\SubCaste;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Redirect;
 use Validator;
 
@@ -18,42 +19,43 @@ class SubCasteController extends Controller
         $this->middleware(['permission:delete_sub_caste'])->only('destroy');
 
         $this->subcaste_rules = [
-            'name'     => [ 'required','max:255'],
-            'caste_id' => [ 'required'],
+            'name' => ['required', 'max:255'],
+            'caste_id' => ['required'],
         ];
 
         $this->subcaste_messages = [
-            'name.required'             => translate('Sub Caste name is required'),
-            'name.max'                  => translate('Max 255 characters'),
-            'caste_id.required'         => translate('Caste is required'),
+            'name.required' => translate('Sub Caste name is required'),
+            'name.max' => translate('Max 255 characters'),
+            'caste_id.required' => translate('Caste is required'),
         ];
     }
 
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index(Request $request)
     {
-        $sort_search   = null;
-        $sub_castes    = SubCaste::latest();
-        $religions     = Religion::all();
-        $castes        = Caste::all();
+        $sort_search = null;
+        $sub_castes = SubCaste::latest();
+        $religions = Religion::all();
+        $castes = Caste::all();
 
-        if ($request->has('search')){
-            $sort_search  = $request->search;
-            $sub_castes   = $sub_castes->where('name', 'like', '%'.$sort_search.'%');
+        if ($request->has('search')) {
+            $sort_search = $request->search;
+            $sub_castes = $sub_castes->where('name', 'like', '%'.$sort_search.'%');
         }
         $sub_castes = $sub_castes->paginate(10);
-        return view('admin.member_profile_attributes.sub_castes.index', compact('religions','castes','sub_castes','sort_search'));
+
+        return view('admin.member_profile_attributes.sub_castes.index', compact('religions', 'castes', 'sub_castes', 'sort_search'));
 
     }
 
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create()
     {
@@ -63,30 +65,30 @@ class SubCasteController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(Request $request)
     {
-        $rules      = $this->subcaste_rules;
-        $messages   = $this->subcaste_messages;
-        $validator  = Validator::make($request->all(), $rules, $messages);
+        $rules = $this->subcaste_rules;
+        $messages = $this->subcaste_messages;
+        $validator = Validator::make($request->all(), $rules, $messages);
 
         if ($validator->fails()) {
             flash(translate('Sorry! Something went wrong'))->error();
+
             return Redirect::back()->withErrors($validator);
         }
 
-        $sub_caste              = new SubCaste;
-        $sub_caste->name        = $request->name;
-        $sub_caste->caste_id    = $request->caste_id;
-        if($sub_caste->save())
-        {
+        $sub_caste = new SubCaste;
+        $sub_caste->name = $request->name;
+        $sub_caste->caste_id = $request->caste_id;
+        if ($sub_caste->save()) {
             flash(translate('New Sub Caste has been added successfully'))->success();
+
             return redirect()->route('sub-castes.index');
-        }
-        else {
+        } else {
             flash(translate('Sorry! Something went wrong.'))->error();
+
             return back();
         }
     }
@@ -95,7 +97,7 @@ class SubCasteController extends Controller
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function show($id)
     {
@@ -106,43 +108,44 @@ class SubCasteController extends Controller
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function edit($id)
     {
-        $sub_caste        = SubCaste::findOrFail(decrypt($id));
-        $religions        = Religion::all();
-        return view('admin.member_profile_attributes.sub_castes.edit', compact('sub_caste','religions'));
+        $sub_caste = SubCaste::findOrFail(decrypt($id));
+        $religions = Religion::all();
+
+        return view('admin.member_profile_attributes.sub_castes.edit', compact('sub_caste', 'religions'));
     }
 
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function update(Request $request, $id)
     {
-        $rules      = $this->subcaste_rules;
-        $messages   = $this->subcaste_messages;
-        $validator  = Validator::make($request->all(), $rules, $messages);
+        $rules = $this->subcaste_rules;
+        $messages = $this->subcaste_messages;
+        $validator = Validator::make($request->all(), $rules, $messages);
 
         if ($validator->fails()) {
             flash(translate('Sorry! Something went wrong'))->error();
+
             return Redirect::back()->withErrors($validator);
         }
 
-        $sub_caste              = SubCaste::findOrFail($id);
-        $sub_caste->name        = $request->name;
-        $sub_caste->caste_id    = $request->caste_id;
-        if($sub_caste->save())
-        {
+        $sub_caste = SubCaste::findOrFail($id);
+        $sub_caste->name = $request->name;
+        $sub_caste->caste_id = $request->caste_id;
+        if ($sub_caste->save()) {
             flash(translate('Sub Caste info has been updated successfully'))->success();
+
             return redirect()->route('sub-castes.index');
-        }
-        else {
+        } else {
             flash(translate('Sorry! Something went wrong.'))->error();
+
             return back();
         }
 
@@ -154,6 +157,7 @@ class SubCasteController extends Controller
             foreach ($request->id as $id) {
                 $this->destroy($id);
             }
+
             return 1;
         } else {
             return 0;
@@ -164,16 +168,18 @@ class SubCasteController extends Controller
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function destroy($id)
     {
         $sub_caste = SubCaste::findOrFail($id);
         if (SubCaste::destroy($id)) {
             flash(translate('Sub Caste info has been deleted successfully'))->success();
+
             return redirect()->route('sub-castes.index');
         } else {
             flash(translate('Sorry! Something went wrong.'))->error();
+
             return back();
         }
     }
@@ -182,7 +188,7 @@ class SubCasteController extends Controller
     public function get_sub_castes_by_religion(Request $request)
     {
         $sub_castes = SubCaste::where('caste_id', $request->caste_id)->get();
+
         return $sub_castes;
     }
-
 }

@@ -50,7 +50,7 @@ class CommunitySeeder extends Seeder
         }
 
         $user = User::where('user_type', 'member')->first();
-        if (!$user) {
+        if (! $user) {
             return;
         }
 

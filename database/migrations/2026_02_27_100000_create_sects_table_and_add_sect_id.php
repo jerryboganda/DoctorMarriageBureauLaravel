@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -24,7 +24,7 @@ return new class extends Migration
             ['name' => 'Shia',    'created_at' => $now, 'updated_at' => $now],
             ['name' => 'Ahmadi',  'created_at' => $now, 'updated_at' => $now],
             ['name' => 'Sufi',    'created_at' => $now, 'updated_at' => $now],
-            ['name' => 'Deobandi','created_at' => $now, 'updated_at' => $now],
+            ['name' => 'Deobandi', 'created_at' => $now, 'updated_at' => $now],
             ['name' => 'Barelvi', 'created_at' => $now, 'updated_at' => $now],
             ['name' => 'Ahl-e-Hadith', 'created_at' => $now, 'updated_at' => $now],
             ['name' => 'Ismaili', 'created_at' => $now, 'updated_at' => $now],
@@ -53,7 +53,7 @@ return new class extends Migration
         $permissions = ['show_sects', 'add_sect', 'edit_sect', 'delete_sect'];
         foreach ($permissions as $perm) {
             DB::table('permissions')->insertOrIgnore([
-                'name'       => $perm,
+                'name' => $perm,
                 'guard_name' => $guardName,
                 'created_at' => $permNow,
                 'updated_at' => $permNow,
@@ -67,7 +67,7 @@ return new class extends Migration
         foreach ($permIds as $pid) {
             DB::table('role_has_permissions')->insertOrIgnore([
                 'permission_id' => $pid,
-                'role_id'       => 1,
+                'role_id' => 1,
             ]);
         }
     }

@@ -30,11 +30,17 @@ class ProfileAuditLog extends Model
      * Valid sections for audit logging
      */
     public const SECTION_BASICS = 'basics';
+
     public const SECTION_LIFESTYLE = 'lifestyle';
+
     public const SECTION_CAREER = 'career';
+
     public const SECTION_FAMILY = 'family';
+
     public const SECTION_PREFERENCES = 'preferences';
+
     public const SECTION_MEDIA = 'media';
+
     public const SECTION_VISIBILITY = 'visibility';
 
     /**
@@ -62,7 +68,7 @@ class ProfileAuditLog extends Model
         $newEncoded = is_array($newValue) || is_object($newValue) ? json_encode($newValue) : (string) $newValue;
 
         if ($oldEncoded === $newEncoded) {
-            return new self(); // Return empty model, don't save
+            return new self; // Return empty model, don't save
         }
 
         return self::create([
@@ -89,10 +95,10 @@ class ProfileAuditLog extends Model
         ?string $userAgent = null
     ): array {
         $logs = [];
-        
+
         foreach ($newData as $fieldName => $newValue) {
             $oldValue = $oldData[$fieldName] ?? null;
-            
+
             if ($oldValue !== $newValue) {
                 $logs[] = self::logChange(
                     $userId,
@@ -150,7 +156,7 @@ class ProfileAuditLog extends Model
         $grouped = [];
         foreach ($logs as $log) {
             $date = $log->changed_at->format('Y-m-d');
-            if (!isset($grouped[$date])) {
+            if (! isset($grouped[$date])) {
                 $grouped[$date] = [
                     'date' => $date,
                     'formatted_date' => $log->changed_at->format('M j, Y'),

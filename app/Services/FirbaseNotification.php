@@ -8,26 +8,26 @@ class FirbaseNotification
     {
         $url = 'https://fcm.googleapis.com/fcm/send';
 
-        $fields = array(
+        $fields = [
             'to' => $data->fcm_token,
             'notification' => [
                 'body' => $data->text,
-                'title' => str_replace("_", " ", $data->title),
-                'sound' => 'default' /*Default sound*/
+                'title' => str_replace('_', ' ', $data->title),
+                'sound' => 'default', /* Default sound */
             ],
             'data' => [
                 'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
                 'route' => $data->title,
-                'notify_by' => $data->notify_by
+                'notify_by' => $data->notify_by,
 
-            ]
-        );
+            ],
+        ];
 
-        //$fields = json_encode($arrayToSend);
-        $headers = array(
-            'Authorization: key=' . env('FIREBASE_SERVER_KEY'),
-            'Content-Type: application/json'
-        );
+        // $fields = json_encode($arrayToSend);
+        $headers = [
+            'Authorization: key='.env('FIREBASE_SERVER_KEY'),
+            'Content-Type: application/json',
+        ];
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);

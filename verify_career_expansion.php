@@ -1,12 +1,16 @@
 <?php
+
+use App\Models\User;
+use Illuminate\Contracts\Console\Kernel;
+
 require 'vendor/autoload.php';
 $app = require_once 'bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+$kernel = $app->make(Kernel::class);
 $kernel->bootstrap();
 
-$user = App\Models\User::where('first_name', 'LIKE', '%Faisal%')->first();
-if (!$user) {
-    echo "User not found." . PHP_EOL;
+$user = User::where('first_name', 'LIKE', '%Faisal%')->first();
+if (! $user) {
+    echo 'User not found.'.PHP_EOL;
     exit;
 }
 
@@ -22,7 +26,7 @@ $careerData = [
     'careerStart' => '2024',
     'careerEnd' => null,
     'careerPresent' => true,
-    'workLocationType' => 'remote'
+    'workLocationType' => 'remote',
 ];
 
 DB::table('careers')->updateOrInsert(
@@ -33,7 +37,7 @@ DB::table('careers')->updateOrInsert(
         'work_location_type' => $careerData['workLocationType'] ?? null,
         'start' => (int) $careerData['careerStart'],
         'end' => $careerData['careerEnd'] ? (int) $careerData['careerEnd'] : null,
-        'present' => !empty($careerData['careerPresent']) ? 1 : 0,
+        'present' => ! empty($careerData['careerPresent']) ? 1 : 0,
         'updated_at' => now(),
     ]
 );
@@ -45,14 +49,14 @@ DB::table('education')->updateOrInsert(
         'institution' => $careerData['institution'] ?? null,
         'start' => (int) $careerData['educationStart'],
         'end' => (int) $careerData['educationEnd'],
-        'is_highest_degree' => !empty($careerData['isHighestDegree']) ? 1 : 0,
+        'is_highest_degree' => ! empty($careerData['isHighestDegree']) ? 1 : 0,
         'updated_at' => now(),
     ]
 );
 
-echo "Persistence check completed for User ID: " . $user->id . PHP_EOL;
+echo 'Persistence check completed for User ID: '.$user->id.PHP_EOL;
 $edu = DB::table('education')->where('user_id', $user->id)->first();
 $car = DB::table('careers')->where('user_id', $user->id)->first();
 
-echo "Education Goal: PhD, University: " . ($edu->institution ?? 'N/A') . PHP_EOL;
-echo "Career Goal: Researcher, Company: " . ($car->company ?? 'N/A') . PHP_EOL;
+echo 'Education Goal: PhD, University: '.($edu->institution ?? 'N/A').PHP_EOL;
+echo 'Career Goal: Researcher, Company: '.($car->company ?? 'N/A').PHP_EOL;

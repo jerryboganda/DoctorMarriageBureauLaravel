@@ -5,15 +5,16 @@ namespace App\Http\Controllers\Api;
 use App\Events\ProfileUpdated;
 use App\Http\Controllers\Controller;
 use App\Models\FieldVisibilitySetting;
+use App\Models\Member;
 use App\Models\PartnerPreferencePriority;
 use App\Models\ProfileAuditLog;
-use App\Models\Member;
 use App\Models\User;
+use App\Utility\MemberUtility;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Validator;
 
 class ProfileCenterController extends Controller
 {
@@ -63,7 +64,7 @@ class ProfileCenterController extends Controller
      */
     public function getFullProfile(Request $request): JsonResponse
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth()->user();
 
         $profile = $this->aggregateProfileData($user);
@@ -87,21 +88,21 @@ class ProfileCenterController extends Controller
      */
     public function updateSection(Request $request, string $section): JsonResponse
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth()->user();
 
         $validSections = ['basics', 'lifestyle', 'career', 'family', 'preferences', 'media'];
-        if (!in_array($section, $validSections)) {
+        if (! in_array($section, $validSections)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid section: ' . $section,
+                'message' => 'Invalid section: '.$section,
             ], 400);
         }
 
         try {
             DB::beginTransaction();
 
-            $method = 'update' . ucfirst($section);
+            $method = 'update'.ucfirst($section);
             $oldData = $this->getSectionData($user, $section);
             $updatedData = $this->$method($request, $user);
 
@@ -123,15 +124,16 @@ class ProfileCenterController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => ucfirst($section) . ' updated successfully',
+                'message' => ucfirst($section).' updated successfully',
                 'data' => $updatedData,
                 'quality_score' => $qualityScore,
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
+
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to update ' . $section . ': ' . $e->getMessage(),
+                'message' => 'Failed to update '.$section.': '.$e->getMessage(),
             ], 500);
         }
     }
@@ -141,7 +143,7 @@ class ProfileCenterController extends Controller
      */
     public function toggleVisibility(Request $request): JsonResponse
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth()->user();
 
         // Get all known visibility setting keys
@@ -209,7 +211,7 @@ class ProfileCenterController extends Controller
 
             if ($photoPublic) {
                 $photoMembers = true;
-            } elseif (!$photoMembers) {
+            } elseif (! $photoMembers) {
                 $photoPublic = false;
                 $photoMembers = false;
             } else {
@@ -258,13 +260,13 @@ class ProfileCenterController extends Controller
         try {
             broadcast(new ProfileUpdated($user->id, 'visibility', [
                 'type' => count($updates) > 1 ? 'bulk_update' : 'single_update',
-                'updates' => $updatedSettings
+                'updates' => $updatedSettings,
             ]))->toOthers();
         } catch (\Throwable $e) {
-            \Log::warning('Visibility broadcast failed: ' . $e->getMessage());
+            \Log::warning('Visibility broadcast failed: '.$e->getMessage());
         }
 
-        \App\Utility\MemberUtility::resetCaches();
+        MemberUtility::resetCaches();
         $snapshot = $this->buildVisibilitySnapshot($user->fresh(['member']));
 
         return response()->json([
@@ -281,7 +283,7 @@ class ProfileCenterController extends Controller
      */
     public function getVisibilitySettings(Request $request): JsonResponse
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth()->user();
 
         return response()->json([
@@ -299,7 +301,7 @@ class ProfileCenterController extends Controller
             'voice_file' => 'required|file|mimes:mp3,wav,m4a,webm,ogg|max:5120', // 5MB max
         ]);
 
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth()->user();
 
         // Delete old file if exists
@@ -310,7 +312,7 @@ class ProfileCenterController extends Controller
 
         // Store new file
         $file = $request->file('voice_file');
-        $filename = 'voice_' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+        $filename = 'voice_'.$user->id.'_'.time().'.'.$file->getClientOriginalExtension();
         $path = $file->storeAs('uploads/voice_intros', $filename, 'public');
 
         // Update member record
@@ -351,7 +353,7 @@ class ProfileCenterController extends Controller
      */
     public function deleteVoiceIntro(Request $request): JsonResponse
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth()->user();
         $member = $user->member;
 
@@ -393,7 +395,7 @@ class ProfileCenterController extends Controller
             'video_file' => 'required|file|mimes:mp4,mov,webm|max:51200', // 50MB max
         ]);
 
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth()->user();
 
         // Delete old file if exists
@@ -404,7 +406,7 @@ class ProfileCenterController extends Controller
 
         // Store new file
         $file = $request->file('video_file');
-        $filename = 'video_' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+        $filename = 'video_'.$user->id.'_'.time().'.'.$file->getClientOriginalExtension();
         $path = $file->storeAs('uploads/intro_videos', $filename, 'public');
 
         // Update member record
@@ -445,7 +447,7 @@ class ProfileCenterController extends Controller
      */
     public function deleteIntroVideo(Request $request): JsonResponse
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth()->user();
         $member = $user->member;
 
@@ -483,7 +485,7 @@ class ProfileCenterController extends Controller
      */
     public function getQualityScore(Request $request): JsonResponse
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth()->user();
         $qualityScore = $this->calculateQualityScore($user);
 
@@ -498,7 +500,7 @@ class ProfileCenterController extends Controller
      */
     public function getHistory(Request $request): JsonResponse
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth()->user();
 
         $section = $request->query('section');
@@ -510,9 +512,9 @@ class ProfileCenterController extends Controller
         // Filter by section if provided
         if ($section) {
             foreach ($history as &$day) {
-                $day['changes'] = array_filter($day['changes'], fn($c) => $c['section'] === $section);
+                $day['changes'] = array_filter($day['changes'], fn ($c) => $c['section'] === $section);
             }
-            $history = array_filter($history, fn($d) => !empty($d['changes']));
+            $history = array_filter($history, fn ($d) => ! empty($d['changes']));
         }
 
         return response()->json([
@@ -534,7 +536,7 @@ class ProfileCenterController extends Controller
             'priorities.*' => 'in:dealbreaker,must_have,nice_to_have,flexible',
         ]);
 
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth()->user();
 
         $oldPriorities = PartnerPreferencePriority::getForUser($user->id);
@@ -588,7 +590,7 @@ class ProfileCenterController extends Controller
         $knownLanguages = [];
         if ($member && $member->known_languages) {
             $languageIds = json_decode($member->known_languages, true) ?? [];
-            if (!empty($languageIds)) {
+            if (! empty($languageIds)) {
                 $knownLanguages = DB::table('languages')
                     ->whereIn('id', $languageIds)
                     ->pluck('name')
@@ -607,7 +609,7 @@ class ProfileCenterController extends Controller
 
         return [
             'basics' => [
-                'full_name' => trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')),
+                'full_name' => trim(($user->first_name ?? '').' '.($user->last_name ?? '')),
                 'first_name' => $user->first_name,
                 'last_name' => $user->last_name,
                 'email' => $user->email,
@@ -654,7 +656,7 @@ class ProfileCenterController extends Controller
                 'political_views' => $attitudes?->political_views,
             ],
             'career' => [
-                'education' => $education->map(fn($e) => [
+                'education' => $education->map(fn ($e) => [
                     'id' => $e->id,
                     'degree' => $e->degree,
                     'institution' => $e->institution,
@@ -663,7 +665,7 @@ class ProfileCenterController extends Controller
                     'present' => (bool) $e->present,
                     'is_highest' => (bool) ($e->is_highest_degree ?? false),
                 ])->toArray(),
-                'careers' => $careers->map(fn($c) => [
+                'careers' => $careers->map(fn ($c) => [
                     'id' => $c->id,
                     'designation' => $c->designation,
                     'company' => $c->company,
@@ -719,7 +721,7 @@ class ProfileCenterController extends Controller
             ],
             'media' => [
                 'main_photo' => $user->photo ? uploaded_asset($user->photo) : null,
-                'gallery' => $galleryImages->map(fn($img) => [
+                'gallery' => $galleryImages->map(fn ($img) => [
                     'id' => $img->id,
                     'url' => uploaded_asset($img->image),
                     'privacy_level' => $img->privacy_level ?? 'public',
@@ -765,19 +767,59 @@ class ProfileCenterController extends Controller
         $basicsScore = 0;
         $basicsTotal = 10;
         $basicsMissing = [];
-        if ($user->first_name) $basicsScore++; else $basicsMissing[] = 'Add your first name';
-        if ($user->last_name) $basicsScore++; else $basicsMissing[] = 'Add your last name';
-        if ($member?->birthday) $basicsScore++; else $basicsMissing[] = 'Add your date of birth';
-        if ($member?->gender) $basicsScore++; else $basicsMissing[] = 'Select your gender';
-        if (DB::table('physical_attributes')->where('user_id', $user->id)->whereNotNull('height')->exists()) $basicsScore++; else $basicsMissing[] = 'Set your height';
-        if ($member?->known_languages && json_decode($member->known_languages)) $basicsScore++; else $basicsMissing[] = 'Add languages you speak';
-        if (DB::table('recidencies')->where('user_id', $user->id)->whereNotNull('immigration_status')->exists()) $basicsScore++; else $basicsMissing[] = 'Add immigration status';
-        if (DB::table('addresses')->where('user_id', $user->id)->where('type', 'present')->exists()) $basicsScore++; else $basicsMissing[] = 'Add your current residency';
-        if ($member?->marriage_timeline) $basicsScore++; else $basicsMissing[] = 'Set your marriage timeline';
-        if ($member?->relocation_willingness) $basicsScore++; else $basicsMissing[] = 'Set relocation willingness';
+        if ($user->first_name) {
+            $basicsScore++;
+        } else {
+            $basicsMissing[] = 'Add your first name';
+        }
+        if ($user->last_name) {
+            $basicsScore++;
+        } else {
+            $basicsMissing[] = 'Add your last name';
+        }
+        if ($member?->birthday) {
+            $basicsScore++;
+        } else {
+            $basicsMissing[] = 'Add your date of birth';
+        }
+        if ($member?->gender) {
+            $basicsScore++;
+        } else {
+            $basicsMissing[] = 'Select your gender';
+        }
+        if (DB::table('physical_attributes')->where('user_id', $user->id)->whereNotNull('height')->exists()) {
+            $basicsScore++;
+        } else {
+            $basicsMissing[] = 'Set your height';
+        }
+        if ($member?->known_languages && json_decode($member->known_languages)) {
+            $basicsScore++;
+        } else {
+            $basicsMissing[] = 'Add languages you speak';
+        }
+        if (DB::table('recidencies')->where('user_id', $user->id)->whereNotNull('immigration_status')->exists()) {
+            $basicsScore++;
+        } else {
+            $basicsMissing[] = 'Add immigration status';
+        }
+        if (DB::table('addresses')->where('user_id', $user->id)->where('type', 'present')->exists()) {
+            $basicsScore++;
+        } else {
+            $basicsMissing[] = 'Add your current residency';
+        }
+        if ($member?->marriage_timeline) {
+            $basicsScore++;
+        } else {
+            $basicsMissing[] = 'Set your marriage timeline';
+        }
+        if ($member?->relocation_willingness) {
+            $basicsScore++;
+        } else {
+            $basicsMissing[] = 'Set relocation willingness';
+        }
 
         $scores['basics'] = ($basicsScore / $basicsTotal) * self::QUALITY_WEIGHTS['basics'];
-        if (!empty($basicsMissing)) {
+        if (! empty($basicsMissing)) {
             $pointsPerItem = round(self::QUALITY_WEIGHTS['basics'] / $basicsTotal);
             foreach ($basicsMissing as $msg) {
                 $improvements[] = ['action' => $msg, 'points' => $pointsPerItem, 'section' => 'basics'];
@@ -788,14 +830,18 @@ class ProfileCenterController extends Controller
         $photosScore = 0;
         $photosTotal = 5;
         $photoCount = DB::table('gallery_images')->where('user_id', $user->id)->count();
-        if ($user->photo) $photosScore += 2; else $improvements[] = ['action' => 'Upload a profile photo', 'points' => 8, 'section' => 'media'];
+        if ($user->photo) {
+            $photosScore += 2;
+        } else {
+            $improvements[] = ['action' => 'Upload a profile photo', 'points' => 8, 'section' => 'media'];
+        }
         $photosScore += min($photoCount, 3);
 
         $scores['photos'] = ($photosScore / $photosTotal) * self::QUALITY_WEIGHTS['photos'];
 
         if ($photoCount < 3) {
             $needed = 3 - $photoCount;
-            $improvements[] = ['action' => "Add {$needed} more gallery photo" . ($needed > 1 ? 's' : ''), 'points' => $needed * 4, 'section' => 'media'];
+            $improvements[] = ['action' => "Add {$needed} more gallery photo".($needed > 1 ? 's' : ''), 'points' => $needed * 4, 'section' => 'media'];
         }
 
         // LIFESTYLE (15%)
@@ -804,15 +850,39 @@ class ProfileCenterController extends Controller
         $lifestyle = DB::table('lifestyles')->where('user_id', $user->id)->first();
         $hobbies = DB::table('hobbies')->where('user_id', $user->id)->first();
         $lifestyleMissing = [];
-        if ($lifestyle?->diet) $lifestyleScore++; else $lifestyleMissing[] = 'Select your diet preference';
-        if ($lifestyle?->drink) $lifestyleScore++; else $lifestyleMissing[] = 'Select drinking habit';
-        if ($lifestyle?->smoke) $lifestyleScore++; else $lifestyleMissing[] = 'Select smoking habit';
-        if ($lifestyle?->sleep_schedule) $lifestyleScore++; else $lifestyleMissing[] = 'Set your sleep schedule';
-        if ($hobbies?->hobbies) $lifestyleScore++; else $lifestyleMissing[] = 'Add your hobbies';
-        if ($hobbies?->interests) $lifestyleScore++; else $lifestyleMissing[] = 'Add your interests';
+        if ($lifestyle?->diet) {
+            $lifestyleScore++;
+        } else {
+            $lifestyleMissing[] = 'Select your diet preference';
+        }
+        if ($lifestyle?->drink) {
+            $lifestyleScore++;
+        } else {
+            $lifestyleMissing[] = 'Select drinking habit';
+        }
+        if ($lifestyle?->smoke) {
+            $lifestyleScore++;
+        } else {
+            $lifestyleMissing[] = 'Select smoking habit';
+        }
+        if ($lifestyle?->sleep_schedule) {
+            $lifestyleScore++;
+        } else {
+            $lifestyleMissing[] = 'Set your sleep schedule';
+        }
+        if ($hobbies?->hobbies) {
+            $lifestyleScore++;
+        } else {
+            $lifestyleMissing[] = 'Add your hobbies';
+        }
+        if ($hobbies?->interests) {
+            $lifestyleScore++;
+        } else {
+            $lifestyleMissing[] = 'Add your interests';
+        }
 
         $scores['lifestyle'] = ($lifestyleScore / $lifestyleTotal) * self::QUALITY_WEIGHTS['lifestyle'];
-        if (!empty($lifestyleMissing)) {
+        if (! empty($lifestyleMissing)) {
             $pointsPerItem = round(self::QUALITY_WEIGHTS['lifestyle'] / $lifestyleTotal);
             foreach ($lifestyleMissing as $msg) {
                 $improvements[] = ['action' => $msg, 'points' => $pointsPerItem, 'section' => 'lifestyle'];
@@ -824,8 +894,16 @@ class ProfileCenterController extends Controller
         $careerTotal = 4;
         $hasEducation = DB::table('education')->where('user_id', $user->id)->exists();
         $hasCareer = DB::table('careers')->where('user_id', $user->id)->exists();
-        if ($hasEducation) $careerScore += 2; else $improvements[] = ['action' => 'Add your education details', 'points' => 8, 'section' => 'career'];
-        if ($hasCareer) $careerScore += 2; else $improvements[] = ['action' => 'Add your career details', 'points' => 8, 'section' => 'career'];
+        if ($hasEducation) {
+            $careerScore += 2;
+        } else {
+            $improvements[] = ['action' => 'Add your education details', 'points' => 8, 'section' => 'career'];
+        }
+        if ($hasCareer) {
+            $careerScore += 2;
+        } else {
+            $improvements[] = ['action' => 'Add your career details', 'points' => 8, 'section' => 'career'];
+        }
 
         $scores['career'] = ($careerScore / $careerTotal) * self::QUALITY_WEIGHTS['career'];
 
@@ -835,14 +913,34 @@ class ProfileCenterController extends Controller
         $family = DB::table('families')->where('user_id', $user->id)->first();
         $spiritual = DB::table('spiritual_backgrounds')->where('user_id', $user->id)->first();
         $familyMissing = [];
-        if ($family?->father_occupation) $familyScore++; else $familyMissing[] = "Add father's occupation";
-        if ($family?->mother_occupation) $familyScore++; else $familyMissing[] = "Add mother's occupation";
-        if ($family?->family_type) $familyScore++; else $familyMissing[] = 'Select family type';
-        if ($spiritual?->religion_id) $familyScore++; else $familyMissing[] = 'Select your religion';
-        if ($spiritual?->caste_id) $familyScore++; else $familyMissing[] = 'Select your caste';
+        if ($family?->father_occupation) {
+            $familyScore++;
+        } else {
+            $familyMissing[] = "Add father's occupation";
+        }
+        if ($family?->mother_occupation) {
+            $familyScore++;
+        } else {
+            $familyMissing[] = "Add mother's occupation";
+        }
+        if ($family?->family_type) {
+            $familyScore++;
+        } else {
+            $familyMissing[] = 'Select family type';
+        }
+        if ($spiritual?->religion_id) {
+            $familyScore++;
+        } else {
+            $familyMissing[] = 'Select your religion';
+        }
+        if ($spiritual?->caste_id) {
+            $familyScore++;
+        } else {
+            $familyMissing[] = 'Select your caste';
+        }
 
         $scores['family'] = ($familyScore / $familyTotal) * self::QUALITY_WEIGHTS['family'];
-        if (!empty($familyMissing)) {
+        if (! empty($familyMissing)) {
             $pointsPerItem = round(self::QUALITY_WEIGHTS['family'] / $familyTotal);
             foreach ($familyMissing as $msg) {
                 $improvements[] = ['action' => $msg, 'points' => $pointsPerItem, 'section' => 'family'];
@@ -854,14 +952,34 @@ class ProfileCenterController extends Controller
         $prefsTotal = 5;
         $prefs = DB::table('partner_expectations')->where('user_id', $user->id)->first();
         $prefsMissing = [];
-        if ($prefs?->min_age && $prefs?->max_age) $prefsScore++; else $prefsMissing[] = 'Set preferred age range';
-        if ($prefs?->height) $prefsScore++; else $prefsMissing[] = 'Set preferred height';
-        if ($prefs?->religion_id) $prefsScore++; else $prefsMissing[] = 'Set preferred religion';
-        if ($prefs?->profession) $prefsScore++; else $prefsMissing[] = 'Set preferred profession';
-        if ($prefs?->preferred_country_id) $prefsScore++; else $prefsMissing[] = 'Set preferred country';
+        if ($prefs?->min_age && $prefs?->max_age) {
+            $prefsScore++;
+        } else {
+            $prefsMissing[] = 'Set preferred age range';
+        }
+        if ($prefs?->height) {
+            $prefsScore++;
+        } else {
+            $prefsMissing[] = 'Set preferred height';
+        }
+        if ($prefs?->religion_id) {
+            $prefsScore++;
+        } else {
+            $prefsMissing[] = 'Set preferred religion';
+        }
+        if ($prefs?->profession) {
+            $prefsScore++;
+        } else {
+            $prefsMissing[] = 'Set preferred profession';
+        }
+        if ($prefs?->preferred_country_id) {
+            $prefsScore++;
+        } else {
+            $prefsMissing[] = 'Set preferred country';
+        }
 
         $scores['preferences'] = ($prefsScore / $prefsTotal) * self::QUALITY_WEIGHTS['preferences'];
-        if (!empty($prefsMissing)) {
+        if (! empty($prefsMissing)) {
             $pointsPerItem = round(self::QUALITY_WEIGHTS['preferences'] / $prefsTotal);
             foreach ($prefsMissing as $msg) {
                 $improvements[] = ['action' => $msg, 'points' => $pointsPerItem, 'section' => 'preferences'];
@@ -871,8 +989,16 @@ class ProfileCenterController extends Controller
         // MEDIA (10%)
         $mediaScore = 0;
         $mediaTotal = 2;
-        if ($member?->voice_intro_path) $mediaScore++; else $improvements[] = ['action' => 'Record a voice introduction', 'points' => 5, 'section' => 'media'];
-        if ($member?->intro_video_path) $mediaScore++; else $improvements[] = ['action' => 'Upload an intro video', 'points' => 5, 'section' => 'media'];
+        if ($member?->voice_intro_path) {
+            $mediaScore++;
+        } else {
+            $improvements[] = ['action' => 'Record a voice introduction', 'points' => 5, 'section' => 'media'];
+        }
+        if ($member?->intro_video_path) {
+            $mediaScore++;
+        } else {
+            $improvements[] = ['action' => 'Upload an intro video', 'points' => 5, 'section' => 'media'];
+        }
 
         $scores['media'] = ($mediaScore / $mediaTotal) * self::QUALITY_WEIGHTS['media'];
 
@@ -885,12 +1011,12 @@ class ProfileCenterController extends Controller
         };
 
         // Sort improvements by points descending (highest impact first)
-        usort($improvements, fn($a, $b) => $b['points'] - $a['points']);
+        usort($improvements, fn ($a, $b) => $b['points'] - $a['points']);
 
         return [
             'total' => $totalScore,
             'level' => $level,
-            'breakdown' => array_map(fn($s) => round($s, 1), $scores),
+            'breakdown' => array_map(fn ($s) => round($s, 1), $scores),
             'improvements' => array_slice($improvements, 0, 8),
         ];
     }
@@ -927,13 +1053,13 @@ class ProfileCenterController extends Controller
                 'message' => 'Date of Birth is required.',
             ], 422);
         }
-        $birthday = \Carbon\Carbon::parse($birthday)->format('Y-m-d');
+        $birthday = Carbon::parse($birthday)->format('Y-m-d');
 
         // Update user table
         $user->update(array_filter([
             'first_name' => $data['first_name'] ?? null,
             'last_name' => $data['last_name'] ?? null,
-        ], fn($v) => $v !== null));
+        ], fn ($v) => $v !== null));
 
         // Update member table
         $member = $user->member;
@@ -946,9 +1072,9 @@ class ProfileCenterController extends Controller
                 'marriage_timeline' => $data['marriage_timeline'] ?? null,
                 'relocation_willingness' => $data['relocation_willingness'] ?? null,
                 'seriousness_level' => $data['seriousness_level'] ?? 'marriage',
-            ], fn($v) => $v !== null);
+            ], fn ($v) => $v !== null);
 
-            if (!empty($memberData)) {
+            if (! empty($memberData)) {
                 $member->update($memberData);
             }
         }
@@ -961,7 +1087,7 @@ class ProfileCenterController extends Controller
                     'height' => $data['height'] ?? null,
                     'weight' => $data['weight'] ?? null,
                     'updated_at' => now(),
-                ], fn($v) => $v !== null)
+                ], fn ($v) => $v !== null)
             );
         }
 
@@ -982,7 +1108,7 @@ class ProfileCenterController extends Controller
                     'state_id' => $data['state_id'] ?? null,
                     'city_id' => $data['city_id'] ?? null,
                     'updated_at' => now(),
-                ], fn($v) => $v !== null)
+                ], fn ($v) => $v !== null)
             );
         }
 
@@ -1018,9 +1144,9 @@ class ProfileCenterController extends Controller
             'living_with' => $data['living_with'] ?? null,
             'sleep_schedule' => $data['sleep_schedule'] ?? null,
             'personality_tags' => isset($data['personality_tags']) ? json_encode($data['personality_tags']) : null,
-        ], fn($v) => $v !== null);
+        ], fn ($v) => $v !== null);
 
-        if (!empty($lifestyleData)) {
+        if (! empty($lifestyleData)) {
             DB::table('lifestyles')->updateOrInsert(
                 ['user_id' => $user->id],
                 array_merge($lifestyleData, ['updated_at' => now()])
@@ -1036,9 +1162,9 @@ class ProfileCenterController extends Controller
             'movies' => $data['movies'] ?? null,
             'sports' => $data['sports'] ?? null,
             'fitness_activities' => $data['fitness_activities'] ?? null,
-        ], fn($v) => $v !== null);
+        ], fn ($v) => $v !== null);
 
-        if (!empty($hobbiesData)) {
+        if (! empty($hobbiesData)) {
             DB::table('hobbies')->updateOrInsert(
                 ['user_id' => $user->id],
                 array_merge($hobbiesData, ['updated_at' => now()])
@@ -1050,9 +1176,9 @@ class ProfileCenterController extends Controller
             'affection' => $data['affection'] ?? null,
             'humor' => $data['humor'] ?? null,
             'political_views' => $data['political_views'] ?? null,
-        ], fn($v) => $v !== null);
+        ], fn ($v) => $v !== null);
 
-        if (!empty($attitudesData)) {
+        if (! empty($attitudesData)) {
             DB::table('attitudes')->updateOrInsert(
                 ['user_id' => $user->id],
                 array_merge($attitudesData, ['updated_at' => now()])
@@ -1195,9 +1321,9 @@ class ProfileCenterController extends Controller
             'about_siblings' => $data['about_siblings'] ?? null,
             'location_city' => $data['family_location_city'] ?? null,
             'location_country' => $data['family_location_country'] ?? null,
-        ], fn($v) => $v !== null);
+        ], fn ($v) => $v !== null);
 
-        if (!empty($familyData)) {
+        if (! empty($familyData)) {
             DB::table('families')->updateOrInsert(
                 ['user_id' => $user->id],
                 array_merge($familyData, ['updated_at' => now()])
@@ -1213,9 +1339,9 @@ class ProfileCenterController extends Controller
             'ethnicity' => $data['ethnicity'] ?? null,
             'personal_value' => $data['personal_value'] ?? null,
             'family_value_id' => $data['family_value_id'] ?? null,
-        ], fn($v) => $v !== null);
+        ], fn ($v) => $v !== null);
 
-        if (!empty($spiritualData)) {
+        if (! empty($spiritualData)) {
             DB::table('spiritual_backgrounds')->updateOrInsert(
                 ['user_id' => $user->id],
                 array_merge($spiritualData, ['updated_at' => now()])
@@ -1266,9 +1392,9 @@ class ProfileCenterController extends Controller
             'complexion' => $data['complexion'] ?? null,
             'preferred_country_id' => $data['preferred_country_id'] ?? null,
             'preferred_state_id' => $data['preferred_state_id'] ?? null,
-        ], fn($v) => $v !== null);
+        ], fn ($v) => $v !== null);
 
-        if (!empty($prefsData)) {
+        if (! empty($prefsData)) {
             DB::table('partner_expectations')->updateOrInsert(
                 ['user_id' => $user->id],
                 array_merge($prefsData, ['updated_at' => now()])
@@ -1302,9 +1428,9 @@ class ProfileCenterController extends Controller
                     'is_main_photo' => $img['is_main'] ?? null,
                     'sort_order' => $img['sort_order'] ?? null,
                     'updated_at' => now(),
-                ], fn($v) => $v !== null);
+                ], fn ($v) => $v !== null);
 
-                if (!empty($updateData)) {
+                if (! empty($updateData)) {
                     DB::table('gallery_images')
                         ->where('id', $img['id'])
                         ->where('user_id', $user->id)
@@ -1312,7 +1438,7 @@ class ProfileCenterController extends Controller
                 }
 
                 // If marked as main, unset others
-                if (!empty($img['is_main'])) {
+                if (! empty($img['is_main'])) {
                     DB::table('gallery_images')
                         ->where('user_id', $user->id)
                         ->where('id', '!=', $img['id'])

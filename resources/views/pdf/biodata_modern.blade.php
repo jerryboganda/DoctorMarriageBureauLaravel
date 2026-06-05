@@ -316,7 +316,7 @@
         $spiritual = $user->spiritual_backgrounds;
         $lifestyle = $user->lifestyles;
         $physical = $user->physical_attributes;
-        $partner = $user->partner_expectations;
+        $partner = $user->partner_expectations ?? null;
 
         $primaryEducation = $education->sortByDesc('end')->first();
         $primaryCareer = $career->sortByDesc('present')->sortByDesc('end')->first();
@@ -441,9 +441,9 @@
                         @if($education && $education->count() > 0)
                             @foreach($education->sortByDesc('end')->take(2) as $edu)
                                 <div class="list-item">
-                                    <div class="list-title">{{ $edu->degree }}</div>
-                                    @if($edu->institution)
-                                        <div class="list-sub">{{ $edu->institution }}</div>
+                                    <div class="list-title">{{ data_get($edu, 'degree', 'N/A') }}</div>
+                                    @if(data_get($edu, 'institution'))
+                                        <div class="list-sub">{{ data_get($edu, 'institution') }}</div>
                                     @endif
                                 </div>
                             @endforeach
@@ -455,9 +455,9 @@
                         @if($career && $career->count() > 0)
                             @foreach($career->sortByDesc('present')->sortByDesc('end')->take(2) as $job)
                                 <div class="list-item list-item-career">
-                                    <div class="list-title">{{ $job->designation }}</div>
-                                    @if($job->company)
-                                        <div class="list-sub">{{ $job->company }}</div>
+                                    <div class="list-title">{{ data_get($job, 'designation', 'N/A') }}</div>
+                                    @if(data_get($job, 'company'))
+                                        <div class="list-sub">{{ data_get($job, 'company') }}</div>
                                     @endif
                                 </div>
                             @endforeach
@@ -513,24 +513,24 @@
                         <div class="section-title"><span class="icon">&#9889;</span> Physical & Lifestyle</div>
                         <table class="field-grid" cellspacing="0" cellpadding="0">
                             <tr>
-                                <td width="33.33%"><div class="field"><div class="field-label">Height</div><div class="field-value">{{ $heightStr ?: 'N/A' }}</div></div></td>
-                                <td width="33.33%"><div class="field"><div class="field-label">Weight</div><div class="field-value">{{ $physical?->weight ? $physical->weight . ' kg' : 'N/A' }}</div></div></td>
-                                <td width="33.33%"><div class="field"><div class="field-label">Complexion</div><div class="field-value">{{ $fmt($physical?->complexion ?? null) }}</div></div></td>
+                                <td width="33.33%"><div class="field"><div class="field-label">Height</div><div class="field-value">{!! $heightStr ?: 'N/A' !!}</div></div></td>
+                                <td width="33.33%"><div class="field"><div class="field-label">Weight</div><div class="field-value">{{ data_get($physical, 'weight') ? data_get($physical, 'weight') . ' kg' : 'N/A' }}</div></div></td>
+                                <td width="33.33%"><div class="field"><div class="field-label">Complexion</div><div class="field-value">{{ $fmt(data_get($physical, 'complexion')) }}</div></div></td>
                             </tr>
                             <tr>
-                                <td><div class="field"><div class="field-label">Body Type</div><div class="field-value">{{ $fmt($physical?->body_type ?? null) }}</div></div></td>
-                                <td><div class="field"><div class="field-label">Eye Color</div><div class="field-value">{{ $fmt($physical?->eye_color ?? null) }}</div></div></td>
-                                <td><div class="field"><div class="field-label">Hair Color</div><div class="field-value">{{ $fmt($physical?->hair_color ?? null) }}</div></div></td>
+                                <td><div class="field"><div class="field-label">Body Type</div><div class="field-value">{{ $fmt(data_get($physical, 'body_type')) }}</div></div></td>
+                                <td><div class="field"><div class="field-label">Eye Color</div><div class="field-value">{{ $fmt(data_get($physical, 'eye_color')) }}</div></div></td>
+                                <td><div class="field"><div class="field-label">Hair Color</div><div class="field-value">{{ $fmt(data_get($physical, 'hair_color')) }}</div></div></td>
                             </tr>
                             <tr>
-                                <td><div class="field"><div class="field-label">Diet</div><div class="field-value">{{ $fmt($lifestyle?->diet ?? null) }}</div></div></td>
-                                <td><div class="field"><div class="field-label">Living With</div><div class="field-value">{{ $fmt($lifestyle?->living_with ?? null) }}</div></div></td>
-                                <td><div class="field"><div class="field-label">Smoke</div><div class="field-value">{{ $fmt($lifestyle?->smoke ?? null) }}</div></div></td>
+                                <td><div class="field"><div class="field-label">Diet</div><div class="field-value">{{ $fmt(data_get($lifestyle, 'diet')) }}</div></div></td>
+                                <td><div class="field"><div class="field-label">Living With</div><div class="field-value">{{ $fmt(data_get($lifestyle, 'living_with')) }}</div></div></td>
+                                <td><div class="field"><div class="field-label">Smoke</div><div class="field-value">{{ data_get($lifestyle, 'smoke') && strtolower((string) data_get($lifestyle, 'smoke')) !== 'never' ? 'Smokes '.$fmt(data_get($lifestyle, 'smoke')) : $fmt(data_get($lifestyle, 'smoke')) }}</div></div></td>
                             </tr>
                             <tr>
-                                <td><div class="field"><div class="field-label">Drink</div><div class="field-value">{{ $fmt($lifestyle?->drink ?? null) }}</div></div></td>
-                                <td><div class="field"><div class="field-label">Sleep Schedule</div><div class="field-value">{{ $fmt($lifestyle?->sleep_schedule ?? null) }}</div></div></td>
-                                <td><div class="field"><div class="field-label">Property / House</div><div class="field-value">{{ $fmt($lifestyle?->property ?? null) }}</div></div></td>
+                                <td><div class="field"><div class="field-label">Drink</div><div class="field-value">{{ data_get($lifestyle, 'drink') && strtolower((string) data_get($lifestyle, 'drink')) !== 'never' ? 'Drinks '.$fmt(data_get($lifestyle, 'drink')) : $fmt(data_get($lifestyle, 'drink')) }}</div></div></td>
+                                <td><div class="field"><div class="field-label">Sleep Schedule</div><div class="field-value">{{ $fmt(data_get($lifestyle, 'sleep_schedule')) }}</div></div></td>
+                                <td><div class="field"><div class="field-label">Property / House</div><div class="field-value">{{ $fmt(data_get($lifestyle, 'property')) }}</div></div></td>
                             </tr>
                         </table>
                     </div>

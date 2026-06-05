@@ -13,7 +13,7 @@ return new class extends Migration
     public function up(): void
     {
         $muslimReligionId = DB::table('religions')->where('name', 'Muslim')->value('id');
-        if (!$muslimReligionId) {
+        if (! $muslimReligionId) {
             return; // safety check
         }
 
@@ -21,11 +21,11 @@ return new class extends Migration
         // 1. Nullify caste_id for users who selected Sunni or Shia
         // ─────────────────────────────────────────────────────────
         $sunniId = DB::table('castes')->where('name', 'Sunni')->where('religion_id', $muslimReligionId)->value('id');
-        $shiaId  = DB::table('castes')->where('name', 'Shia')->where('religion_id', $muslimReligionId)->value('id');
+        $shiaId = DB::table('castes')->where('name', 'Shia')->where('religion_id', $muslimReligionId)->value('id');
 
         $removeIds = array_filter([$sunniId, $shiaId]);
 
-        if (!empty($removeIds)) {
+        if (! empty($removeIds)) {
             // Clear from spiritual_backgrounds
             DB::table('spiritual_backgrounds')
                 ->whereIn('caste_id', $removeIds)
@@ -150,23 +150,23 @@ return new class extends Migration
             ->where('religion_id', $muslimReligionId)
             ->whereNull('deleted_at')
             ->pluck('name')
-            ->map(fn($n) => strtolower($n))
+            ->map(fn ($n) => strtolower($n))
             ->toArray();
 
         $toInsert = [];
         $now = now();
         foreach ($newCastes as $name) {
-            if (!in_array(strtolower($name), $existing)) {
+            if (! in_array(strtolower($name), $existing)) {
                 $toInsert[] = [
-                    'name'        => $name,
+                    'name' => $name,
                     'religion_id' => $muslimReligionId,
-                    'created_at'  => $now,
-                    'updated_at'  => $now,
+                    'created_at' => $now,
+                    'updated_at' => $now,
                 ];
             }
         }
 
-        if (!empty($toInsert)) {
+        if (! empty($toInsert)) {
             // Insert in chunks to avoid exceeding packet sizes
             foreach (array_chunk($toInsert, 50) as $chunk) {
                 DB::table('castes')->insert($chunk);
@@ -177,7 +177,7 @@ return new class extends Migration
     public function down(): void
     {
         $muslimReligionId = DB::table('religions')->where('name', 'Muslim')->value('id');
-        if (!$muslimReligionId) {
+        if (! $muslimReligionId) {
             return;
         }
 

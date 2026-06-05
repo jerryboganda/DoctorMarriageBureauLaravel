@@ -2,14 +2,10 @@
 
 namespace Tests\Feature\Api;
 
-use App\Models\Career;
 use App\Models\Member;
-use App\Models\PartnerExpectation;
-use App\Models\SpiritualBackground;
 use App\Models\User;
 use App\Utility\MemberUtility;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Laravel\Sanctum\Sanctum;
@@ -157,7 +153,7 @@ class OnboardingControllerTest extends TestCase
         $user = User::create([
             'first_name' => 'Test',
             'last_name' => 'User',
-            'email' => 'test-' . uniqid() . '@example.com',
+            'email' => 'test-'.uniqid().'@example.com',
             'password' => Hash::make('password'),
             'approved' => 1,
             'user_type' => 'member',

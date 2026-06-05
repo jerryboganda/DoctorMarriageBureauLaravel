@@ -5,17 +5,17 @@ namespace App\Http\Resources\PublicProfile;
 use App\Http\Resources\Profile\OnBehalfResource;
 use App\Models\OnBehalf;
 use App\Utility\MemberUtility;
+use Illuminate\Contracts\Support\Arrayable;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-
-
 
 class BasicInformation extends JsonResource
 {
     /**
      * Transform the resource into an array.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return array|\Illuminate\Contracts\Support\Arrayable|\JsonSerializable
+     * @param  Request  $request
+     * @return array|Arrayable|\JsonSerializable
      */
     public function toArray($request)
     {
@@ -38,9 +38,9 @@ class BasicInformation extends JsonResource
             'date_of_birth' => $dateOfBirth,
             'onbehalf' => $onBehalf ? new OnBehalfResource($onBehalf) : null,
             'no_of_children' => $this->member->children ?? '',
-            'gender' => $this->member->gender == 1 ? "Male" : "Female",
-            'phone' => $this->phone ?? "",
-            'maritial_status' =>  $this->member->marital_status ? $this->member->marital_status->name : '',
+            'gender' => $this->member->gender == 1 ? 'Male' : 'Female',
+            'phone' => $this->phone ?? '',
+            'maritial_status' => $this->member->marital_status ? $this->member->marital_status->name : '',
             'photo' => show_profile_picture($this) ? (uploaded_asset($this->photo) ?? gender_avatar($this->member)) : gender_avatar($this->member),
             'profile_photo_blur' => $profilePhotoBlur,
             'profile_photo_request_state' => $photoRequestInfo['profile_photo_request_state'],

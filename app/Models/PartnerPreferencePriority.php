@@ -44,8 +44,11 @@ class PartnerPreferencePriority extends Model
      * Priority types
      */
     public const PRIORITY_DEALBREAKER = 'dealbreaker';
+
     public const PRIORITY_MUST_HAVE = 'must_have';
+
     public const PRIORITY_NICE_TO_HAVE = 'nice_to_have';
+
     public const PRIORITY_FLEXIBLE = 'flexible';
 
     /**

@@ -5,6 +5,8 @@ namespace App\Http\Resources\PublicProfile;
 use App\Models\City;
 use App\Models\Country;
 use App\Models\State;
+use Illuminate\Contracts\Support\Arrayable;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class AddressResource extends JsonResource
@@ -12,8 +14,8 @@ class AddressResource extends JsonResource
     /**
      * Transform the resource into an array.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return array|\Illuminate\Contracts\Support\Arrayable|\JsonSerializable
+     * @param  Request  $request
+     * @return array|Arrayable|\JsonSerializable
      */
     public function toArray($request)
     {

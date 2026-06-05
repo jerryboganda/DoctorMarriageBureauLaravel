@@ -2,27 +2,28 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Education;
-use Validator;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Redirect;
+use Validator;
 
 class EducationController extends Controller
 {
     public function __construct()
     {
         $this->rules = [
-            'degree'          => [ 'required','max:255'],
-            'institution'     => [ 'required','max:255'],
-            'education_start' => [ 'required','numeric'],
-            'education_end'   => [ 'numeric', 'nullable'],
+            'degree' => ['required', 'max:255'],
+            'institution' => ['required', 'max:255'],
+            'education_start' => ['required', 'numeric'],
+            'education_end' => ['numeric', 'nullable'],
         ];
     }
 
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index()
     {
@@ -32,20 +33,19 @@ class EducationController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
-
     public function create(Request $request)
     {
         $member_id = $request->id;
+
         return view('frontend.member.profile.education.create', compact('member_id'));
     }
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(Request $request)
     {
@@ -54,22 +54,24 @@ class EducationController extends Controller
 
         if ($validator->fails()) {
             flash(translate('Something went wrong'))->error();
+
             return Redirect::back();
         }
 
-        $education              = new Education;
-        $education->user_id     = $request->user_id;
-        $education->degree      = $request->degree;
+        $education = new Education;
+        $education->user_id = $request->user_id;
+        $education->degree = $request->degree;
         $education->institution = $request->institution;
-        $education->start       = $request->education_start;
-        $education->end         = $request->education_end;
+        $education->start = $request->education_start;
+        $education->end = $request->education_end;
 
-        if($education->save()){
+        if ($education->save()) {
             flash(translate('Education Info has been added successfully'))->success();
+
             return back();
-        }
-        else {
+        } else {
             flash(translate('Sorry! Something went wrong.'))->error();
+
             return back();
         }
     }
@@ -78,7 +80,7 @@ class EducationController extends Controller
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function show($id)
     {
@@ -89,20 +91,20 @@ class EducationController extends Controller
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
+    public function edit(Request $request)
+    {
+        $education = Education::findOrFail($request->id);
 
-     public function edit(Request $request)
-     {
-         $education = Education::findOrFail($request->id);
-         return view('frontend.member.profile.education.edit', compact('education'));
-     }
+        return view('frontend.member.profile.education.edit', compact('education'));
+    }
+
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function update(Request $request, $id)
     {
@@ -111,21 +113,23 @@ class EducationController extends Controller
 
         if ($validator->fails()) {
             flash(translate('Something went wrong'))->error();
+
             return Redirect::back();
         }
 
-        $education              = Education::findOrFail($id);
-        $education->degree      = $request->degree;
+        $education = Education::findOrFail($id);
+        $education->degree = $request->degree;
         $education->institution = $request->institution;
-        $education->start       = $request->education_start;
-        $education->end         = $request->education_end;
+        $education->start = $request->education_start;
+        $education->end = $request->education_end;
 
-        if($education->save()){
+        if ($education->save()) {
             flash(translate('Education Info has been updated successfully'))->success();
+
             return back();
-        }
-        else {
+        } else {
             flash(translate('Sorry! Something went wrong.'))->error();
+
             return back();
         }
     }
@@ -137,22 +141,27 @@ class EducationController extends Controller
         if ($education->save()) {
             $msg = $education->present == 1 ? translate('Enabled') : translate('Disabled');
             flash(translate($msg))->success();
+
             return 1;
         }
+
         return 0;
     }
 
-    public function updateHighestDegree(Request $request){
+    public function updateHighestDegree(Request $request)
+    {
         $education = Education::findOrFail($request->id);
         $education->is_highest_degree = $request->status;
         if ($education->save()) {
 
             // Only one degree can be highest
-            if(Education::where('is_highest_degree', 1)->count() > 1){
-                Education::where('id','!=', $education->id)->update(['is_highest_degree' => 0]);
+            if (Education::where('is_highest_degree', 1)->count() > 1) {
+                Education::where('id', '!=', $education->id)->update(['is_highest_degree' => 0]);
             }
+
             return 1;
         }
+
         return 0;
     }
 
@@ -160,17 +169,17 @@ class EducationController extends Controller
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function destroy($id)
     {
-        if(Education::destroy($id))
-        {
+        if (Education::destroy($id)) {
             flash(translate('Education info has been deleted successfully'))->success();
+
             return back();
-        }
-        else {
+        } else {
             flash(translate('Sorry! Something went wrong.'))->error();
+
             return back();
         }
     }

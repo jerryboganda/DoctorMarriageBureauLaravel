@@ -5,6 +5,8 @@ namespace App\Http\Resources;
 use App\Models\ExpressInterest;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Contracts\Support\Arrayable;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class NotificationResource extends JsonResource
@@ -23,8 +25,8 @@ class NotificationResource extends JsonResource
     /**
      * Transform the resource into an array.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return array|\Illuminate\Contracts\Support\Arrayable|\JsonSerializable
+     * @param  Request  $request
+     * @return array|Arrayable|\JsonSerializable
      */
     public function toArray($request)
     {
@@ -36,10 +38,10 @@ class NotificationResource extends JsonResource
 
         if ($notifyType === 'express_interest') {
             $interestData = ExpressInterest::find($notifyData['info_id'] ?? null);
-            $check = !empty($interestData);
+            $check = ! empty($interestData);
         }
 
-        $avatarImage = $sender && isset($sender->member) ? str_replace(static_asset(''),'',gender_avatar($sender->member)) : 'assets/img/avatar-place.png';
+        $avatarImage = 'assets/img/avatar-place.png';
         $profilePictureShow = false;
         if ($user) {
             $avatarImage = optional($user->member)->gender == 1
@@ -60,8 +62,10 @@ class NotificationResource extends JsonResource
             'notification_id' => $this->id,
             'type' => $notifyType,
             'notify_by' => $notifyBy,
-            'sender_name' => $user ? trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')) : null,
-            'photo' => $profilePictureShow ? uploaded_asset($user->photo) : static_asset($avatarImage),
+            'sender_name' => $user ? trim(($user->first_name ?? '').' '.($user->last_name ?? '')) : null,
+            'photo' => $profilePictureShow && ! empty($user?->photo)
+                ? uploaded_asset($user->photo)
+                : static_asset($avatarImage),
             'title' => $title,
             'message' => $message !== '' ? $message : 'No details available',
             'body' => $message !== '' ? $message : '',

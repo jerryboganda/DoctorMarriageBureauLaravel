@@ -12,7 +12,7 @@ class ExampleTest extends TestCase
     {
         parent::setUp();
 
-        if (!Schema::hasTable('settings')) {
+        if (! Schema::hasTable('settings')) {
             Schema::create('settings', function (Blueprint $table) {
                 $table->id();
                 $table->string('type')->nullable();
@@ -21,7 +21,7 @@ class ExampleTest extends TestCase
             });
         }
 
-        if (!Schema::hasTable('users')) {
+        if (! Schema::hasTable('users')) {
             Schema::create('users', function (Blueprint $table) {
                 $table->id();
                 $table->string('first_name')->nullable();
@@ -48,7 +48,7 @@ class ExampleTest extends TestCase
      *
      * @return void
      */
-    public function testBasicTest()
+    public function test_basic_test()
     {
         $response = $this->get('/');
 

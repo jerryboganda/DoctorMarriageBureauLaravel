@@ -2,16 +2,18 @@
 
 namespace App\Http\Middleware;
 
-use Closure;
 use Auth;
+use Closure;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class CheckForMaintenanceMode
 {
     /**
      * The application implementation.
      *
-     * @var \Illuminate\Contracts\Foundation\Application
+     * @var Application
      */
     protected $app;
 
@@ -21,13 +23,12 @@ class CheckForMaintenanceMode
      * @var array
      */
     protected $except = [
-        '/admin*','/login','/logout', '/aiz-uploader*'
+        '/admin*', '/login', '/logout', '/aiz-uploader*',
     ];
 
     /**
      * Create a new middleware instance.
      *
-     * @param  \Illuminate\Contracts\Foundation\Application  $app
      * @return void
      */
     public function __construct(Application $app)
@@ -38,19 +39,17 @@ class CheckForMaintenanceMode
     /**
      * Handle an incoming request.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
+     * @param  Request  $request
      * @return mixed
      *
-     * @throws \Symfony\Component\HttpKernel\Exception\HttpException
+     * @throws HttpException
      */
     public function handle($request, Closure $next)
     {
-        if ($this->app->isDownForMaintenance()){
-            if((Auth::check() && Auth::user()->user_type == 'admin') || $this->inExceptArray($request)) {
+        if ($this->app->isDownForMaintenance()) {
+            if ((Auth::check() && Auth::user()->user_type == 'admin') || $this->inExceptArray($request)) {
                 return $next($request);
-            }
-            else {
+            } else {
                 return abort(503);
             }
         }
@@ -61,7 +60,7 @@ class CheckForMaintenanceMode
     /**
      * Determine if the request has a URI that should be accessible in maintenance mode.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  Request  $request
      * @return bool
      */
     protected function inExceptArray($request)

@@ -12,10 +12,11 @@ class ProgressionEvent extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'event_at' => 'datetime'
+        'event_at' => 'datetime',
     ];
 
-    public function memberProgression() {
+    public function memberProgression()
+    {
         return $this->belongsTo(MemberProgression::class);
     }
 }

@@ -6,31 +6,31 @@ namespace App\Http\Middleware;
 // use Illuminate\Http\Request;
 // use Illuminate\Support\Facades\App;
 
-
-use Closure;
 use App;
+use Closure;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class AppLanguage
 {
     /**
      * Handle an incoming request.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure(\Illuminate\Http\Request): (\Illuminate\Http\Response|\Illuminate\Http\RedirectResponse)  $next
-     * @return \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
+     * @param  Request  $request
+     * @param  Closure(Request): (Response|RedirectResponse)  $next
+     * @return Response|RedirectResponse
      */
     public function handle($request, Closure $next)
     {
         // Check header request and determine localizaton
-        if($request->hasHeader('App-Language')){
+        if ($request->hasHeader('App-Language')) {
             $locale = $request->header('App-Language');
-        }
-        elseif(env('DEFAULT_LANGUAGE') != null){
+        } elseif (env('DEFAULT_LANGUAGE') != null) {
             $locale = env('DEFAULT_LANGUAGE');
-        }
-        else{
+        } else {
             $locale = 'en';
-        }    
+        }
 
         // set laravel localization
         App::setLocale($locale);

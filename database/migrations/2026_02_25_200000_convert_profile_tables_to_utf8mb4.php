@@ -4,7 +4,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     /**
      * Tables used by onboarding/profile update that must support utf8mb4 input.
      * Prevents SQL collation errors when users submit modern Unicode characters.

@@ -42,16 +42,16 @@ class ChatThreadResource extends JsonResource
                 ? $this->chats->where('sender_user_id', $this->$user_to_show->id)->count()
                 : 0)) > 0;
 
-            $isRequest = (!$meReplied && $otherSent);
+            $isRequest = (! $meReplied && $otherSent);
 
             return [
                 'id' => $this->id,
                 'user_id' => $this->$user_to_show->id,
-                'active' => Cache::has('user-is-online-' . $this->$user_to_show->id) ? 1 : 0,
+                'active' => Cache::has('user-is-online-'.$this->$user_to_show->id) ? 1 : 0,
                 'blocked_by_user' => $this->blocked_by_user,
                 'unseen_message_count' => $unseenCount,
                 'member_photo' => $this->$user_to_show->photo != null ? uploaded_asset($this->$user_to_show->photo) : gender_avatar($this->$user_to_show?->member),
-                'member_name' => $this->$user_to_show->first_name . ' ' . $this->$user_to_show->last_name,
+                'member_name' => $this->$user_to_show->first_name.' '.$this->$user_to_show->last_name,
                 'last_message_time' => $lastChat != null ? Carbon::parse($lastChat->created_at)->diffForHumans() : '',
                 'last_message' => $lastChat ? $lastChat->message : '',
                 'member_package' => $member_package ? new PackageResource($member_package) : '',

@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\BlogCategory;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class BlogCategoryController extends Controller
 {
@@ -18,26 +18,27 @@ class BlogCategoryController extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index(Request $request)
     {
-        $sort_search =null;
+        $sort_search = null;
         $categories = BlogCategory::orderBy('category_name', 'asc');
 
-        if ($request->has('search')){
+        if ($request->has('search')) {
             $sort_search = $request->search;
             $categories = $categories->where('category_name', 'like', '%'.$sort_search.'%');
         }
 
         $categories = $categories->paginate(15);
+
         return view('admin.blog_system.category.index', compact('categories', 'sort_search'));
     }
 
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create()
     {
@@ -47,8 +48,7 @@ class BlogCategoryController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(Request $request)
     {
@@ -64,8 +64,8 @@ class BlogCategoryController extends Controller
 
         $category->save();
 
-
         flash(translate('Blog category has been created successfully'))->success();
+
         return redirect()->route('blog-category.index');
     }
 
@@ -73,7 +73,7 @@ class BlogCategoryController extends Controller
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function show($id)
     {
@@ -84,22 +84,21 @@ class BlogCategoryController extends Controller
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function edit($id)
     {
         $cateogry = BlogCategory::find($id);
         $all_categories = BlogCategory::all();
 
-        return view('admin.blog_system.category.edit',  compact('cateogry','all_categories'));
+        return view('admin.blog_system.category.edit', compact('cateogry', 'all_categories'));
     }
 
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function update(Request $request, $id)
     {
@@ -114,8 +113,8 @@ class BlogCategoryController extends Controller
 
         $category->save();
 
-
         flash(translate('Blog category has been updated successfully'))->success();
+
         return redirect()->route('blog-category.index');
     }
 
@@ -123,7 +122,7 @@ class BlogCategoryController extends Controller
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function destroy($id)
     {

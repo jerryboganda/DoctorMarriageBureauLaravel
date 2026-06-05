@@ -3,6 +3,8 @@
 namespace App\Http\Resources;
 
 use App\Http\Resources\SupportTicket\SupportTicketReply;
+use Illuminate\Contracts\Support\Arrayable;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class SupportTicketResource extends JsonResource
@@ -10,28 +12,28 @@ class SupportTicketResource extends JsonResource
     /**
      * Transform the resource into an array.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return array|\Illuminate\Contracts\Support\Arrayable|\JsonSerializable
+     * @param  Request  $request
+     * @return array|Arrayable|\JsonSerializable
      */
     public function toArray($request)
     {
         // Map status for display (capitalized for React Panel compatibility)
         $statusMapDisplay = [
             0 => 'Open',
-            1 => 'Resolved', 
-            2 => 'Closed'
+            1 => 'Resolved',
+            2 => 'Closed',
         ];
-        
+
         // Map status for mobile app (lowercase)
         $statusMapMobile = [
             0 => 'open',
-            1 => 'resolved', 
-            2 => 'closed'
+            1 => 'resolved',
+            2 => 'closed',
         ];
-        
+
         // Get last reply date
         $lastReply = $this->supportTicketReplies->last();
-        
+
         return [
             'id' => $this->id,
             'ticket_id' => $this->ticket_id,

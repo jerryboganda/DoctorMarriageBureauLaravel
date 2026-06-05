@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Api\Controller;
 use App\Http\Controllers\ProfileMatchController;
 use App\Http\Requests\AstrologyRequest;
 use App\Http\Requests\PartnerExpectationRequest;
@@ -38,10 +37,12 @@ use App\Models\Education;
 use App\Models\ExpressInterest;
 use App\Models\Family;
 use App\Models\FamilyValue;
+use App\Models\FieldVisibilitySetting;
 use App\Models\GalleryImage;
 use App\Models\HappyStory;
 use App\Models\Hobby;
 use App\Models\IgnoredUser;
+use App\Models\JobTitle;
 use App\Models\Lifestyle;
 use App\Models\MaritalStatus;
 use App\Models\Member;
@@ -50,8 +51,8 @@ use App\Models\OnBehalf;
 use App\Models\PackagePayment;
 use App\Models\PartnerExpectation;
 use App\Models\PhysicalAttribute;
-use App\Models\ProfileOptionValue;
 use App\Models\ProfileMatch;
+use App\Models\ProfileOptionValue;
 use App\Models\ProfileViewer;
 use App\Models\Recidency;
 use App\Models\Religion;
@@ -59,31 +60,26 @@ use App\Models\ReportedUser;
 use App\Models\Sect;
 use App\Models\Setting;
 use App\Models\Shortlist;
+use App\Models\Speciality;
 use App\Models\SpiritualBackground;
 use App\Models\Staff;
 use App\Models\State;
 use App\Models\SubCaste;
-use App\Models\JobTitle;
-use App\Models\Speciality;
-use App\Models\FieldVisibilitySetting;
-use App\Models\ViewContact;
-use App\Models\ViewGalleryImage;
 use App\Models\User;
-use App\Utility\PhoneUtility;
+use App\Models\ViewContact;
+use App\Notifications\DbStoreNotification;
+use App\Services\FirbaseNotification;
 use App\Utility\MemberUtility;
-use Illuminate\Auth\Events\Validated;
+use App\Utility\PhoneUtility;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Cache;
-use PhpOffice\PhpSpreadsheet\Cell\DataType;
-use App\Notifications\DbStoreNotification;
-use App\Services\FirbaseNotification;
 use Kutia\Larafirebase\Facades\Larafirebase;
-use PDF;
 use Notification;
+use PDF;
 
 class ProfileController extends Controller
 {
@@ -120,13 +116,14 @@ class ProfileController extends Controller
     public function get_introduction()
     {
         return (new AboutUser(auth()->user()))->additional([
-            'result' => true
+            'result' => true,
         ]);
     }
 
     public function get_email()
     {
         $data['email'] = auth()->user()->email;
+
         return $this->response_data($data);
     }
 
@@ -135,15 +132,16 @@ class ProfileController extends Controller
         $member = Member::where('user_id', auth()->id())->first();
         $member->introduction = $request->introduction;
         $member->save();
+
         return $this->success_message('Introduction updated successfully!');
     }
 
     public function get_basic_info()
     {
         return (new BasicInformation(auth()->user()))->additional([
-            'result' => true
+            'result' => true,
         ]);
-        ;
+
     }
 
     public function basic_info_update(ProfileRequest $request)
@@ -179,6 +177,7 @@ class ProfileController extends Controller
         $member->marital_status_id = $request->marital_status;
         $member->children = $request->children;
         $member->save();
+
         return $this->success_message('Member basic info  has been updated successfully.');
     }
 
@@ -187,7 +186,7 @@ class ProfileController extends Controller
         $present_address = Address::where('user_id', auth()->id())->where('type', 'present')->first();
         if ($present_address) {
             return (new AddressResource($present_address))->additional([
-                'result' => true
+                'result' => true,
             ]);
         } else {
             return $this->failure_data($present_address);
@@ -195,12 +194,13 @@ class ProfileController extends Controller
             // return $this->failure_message('No information has been added for this section yet.');
         }
     }
+
     public function permanent_address()
     {
         $permanent_address = Address::where('user_id', auth()->id())->where('type', 'permanent')->first();
         if ($permanent_address) {
             return (new AddressResource($permanent_address))->additional([
-                'result' => true
+                'result' => true,
             ]);
         } else {
             // return $this->failure_message('No information has been added for this section yet.');
@@ -218,7 +218,7 @@ class ProfileController extends Controller
         ]);
         $address = Address::where('user_id', auth()->id())->where('type', $request->address_type)->first();
         if (empty($address)) {
-            $address = new Address();
+            $address = new Address;
             $address->user_id = auth()->id();
         }
         $address->country_id = $request->country_id;
@@ -227,6 +227,7 @@ class ProfileController extends Controller
         $address->postal_code = $request->postal_code;
         $address->type = $request->address_type;
         $address->save();
+
         return $this->success_message('Address info has been updated successfully');
     }
 
@@ -234,12 +235,13 @@ class ProfileController extends Controller
     {
         if (auth()->user()->physical_attributes) {
             return (new PhysicalAttributes(auth()->user()->physical_attributes))->additional([
-                'result' => true
+                'result' => true,
             ]);
         } else {
             return $this->failure_message('No information has been added for this section yet.');
         }
     }
+
     public function physical_attributes_update(Request $request)
     {
         $this->validate($request, [
@@ -269,8 +271,10 @@ class ProfileController extends Controller
         $physical_attribute->body_art = $request->body_art;
         $physical_attribute->disability = $request->disability;
         $physical_attribute->save();
+
         return $this->success_message('Physical Attribute Info has been updated successfully');
     }
+
     public function member_language()
     {
         $member_known_languages = null;
@@ -285,6 +289,7 @@ class ProfileController extends Controller
         }
         $data['mother_tongue'] = $member_mother_tongue;
         $data['known_languages'] = $member_known_languages;
+
         return $this->response_data($data);
     }
 
@@ -295,21 +300,24 @@ class ProfileController extends Controller
             $member->mothere_tongue = $request->mothere_tongue;
             $member->known_languages = $request->known_languages;
             $member->save();
+
             return $this->success_message('Member language info has been updated successfully');
         }
 
         return $this->failure_message('You are not authorized');
     }
+
     public function hobbies_interest()
     {
         if (auth()->user()->hobbies) {
             return (new HobbiesInterests(auth()->user()->hobbies))->additional([
-                'result' => true
+                'result' => true,
             ]);
         } else {
             return $this->failure_message('No information has been added for this section yet.');
         }
     }
+
     public function hobbies_interest_update(Request $request)
     {
         $hobbies = Hobby::where('user_id', auth()->id())->first();
@@ -328,18 +336,21 @@ class ProfileController extends Controller
         $hobbies->cuisines = $request->cuisines;
         $hobbies->dress_styles = $request->dress_styles;
         $hobbies->save();
+
         return $this->success_message('Hobby and Interests info has been updated successfully');
     }
+
     public function attitude_behavior()
     {
         if (auth()->user()->attitude) {
             return (new AttitudesBehaviors(auth()->user()->attitude))->additional([
-                'result' => true
+                'result' => true,
             ]);
         } else {
             return $this->failure_message('No information has been added for this section yet.');
         }
     }
+
     public function attitude_behavior_update(Request $request)
     {
         $attitude = Attitude::where('user_id', auth()->id())->first();
@@ -352,18 +363,21 @@ class ProfileController extends Controller
         $attitude->political_views = $request->political_views;
         $attitude->religious_service = $request->religious_service;
         $attitude->save();
+
         return $this->success_message('Personal Attitude and Behavior Info has been updated successfully');
     }
+
     public function residency_info()
     {
         if (auth()->user()->recidency) {
             return (new ResidenceInformation(auth()->user()->recidency))->additional([
-                'result' => true
+                'result' => true,
             ]);
         } else {
             return $this->failure_message('No information has been added for this section yet.');
         }
     }
+
     public function residency_info_update(Request $request)
     {
         $recidencies = Recidency::where('user_id', auth()->id())->first();
@@ -376,13 +390,15 @@ class ProfileController extends Controller
         $recidencies->growup_country_id = $request->growup_country_id;
         $recidencies->immigration_status = $request->immigration_status;
         $recidencies->save();
+
         return $this->success_message('Residency Info has been updated successfully');
     }
+
     public function spiritual_background()
     {
         if (auth()->user()->spiritual_backgrounds) {
             return (new SpiritualSocialBackground(auth()->user()->spiritual_backgrounds))->additional([
-                'result' => true
+                'result' => true,
             ]);
         } else {
             return $this->failure_message('No information has been added for this section yet.');
@@ -404,18 +420,21 @@ class ProfileController extends Controller
         $spiritual_backgrounds->family_value_id = $request->family_value_id;
         $spiritual_backgrounds->community_value = $request->community_value;
         $spiritual_backgrounds->save();
+
         return $this->success_message('Spiritual Background info has been updated successfully');
     }
+
     public function life_style()
     {
         if (auth()->user()->lifestyles) {
             return (new LifeStyleResource(auth()->user()->lifestyles))->additional([
-                'result' => true
+                'result' => true,
             ]);
         } else {
             return $this->failure_message('No information has been added for this section yet.');
         }
     }
+
     public function life_style_update(Request $request)
     {
         $lifestyle = Lifestyle::where('user_id', auth()->id())->first();
@@ -428,13 +447,15 @@ class ProfileController extends Controller
         $lifestyle->smoke = $request->smoke;
         $lifestyle->living_with = $request->living_with;
         $lifestyle->save();
+
         return $this->success_message('Lifestyle info has been updated successfully');
     }
+
     public function astronomic_info()
     {
         if (auth()->user()->astrologies) {
             return (new AstronomicInformation(auth()->user()->astrologies))->additional([
-                'result' => true
+                'result' => true,
             ]);
         } else {
             // return $this->failure_message('No information has been added for this section yet.');
@@ -455,6 +476,7 @@ class ProfileController extends Controller
         $astrologies->city_of_birth = $request->city_of_birth;
 
         $astrologies->save();
+
         return $this->success_message('Astronomic Info has been updated successfully');
     }
 
@@ -462,7 +484,7 @@ class ProfileController extends Controller
     {
         if (auth()->user()->families) {
             return (new FamilyInformation(auth()->user()->families))->additional([
-                'result' => true
+                'result' => true,
             ]);
         } else {
             return $this->failure_message('No information has been added for this section yet.');
@@ -480,6 +502,7 @@ class ProfileController extends Controller
         $family->mother = $request->mother;
         $family->sibling = $request->sibling;
         $family->save();
+
         return $this->success_message('Family Info has been updated successfully');
     }
 
@@ -487,7 +510,7 @@ class ProfileController extends Controller
     {
         if (auth()->user()->partner_expectations) {
             return (new PartnerExpectationResource(auth()->user()->partner_expectations))->additional([
-                'result' => true
+                'result' => true,
             ]);
         } else {
             return $this->failure_message('No information has been added for this section yet.');
@@ -534,6 +557,7 @@ class ProfileController extends Controller
 
         return $this->success_message('Partner Expectations Info has been updated successfully');
     }
+
     /**
      * Verify current password
      * insert new password
@@ -543,7 +567,7 @@ class ProfileController extends Controller
 
         $this->validate($request, [
             'old_password' => ['required'],
-            'password' => ['required', 'string', 'min:8', 'confirmed']
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
         $user = User::findOrFail(auth()->id());
@@ -558,6 +582,7 @@ class ProfileController extends Controller
             } else {
                 $user->tokens()->delete();
             }
+
             return $this->success_message('Passwoed Updated successfully.');
         }
 
@@ -570,7 +595,8 @@ class ProfileController extends Controller
         $user->deactivated = $request->deacticvation_status;
         $user->save();
         $msg = $request->deacticvation_status == 1 ? 'deactivated' : 'reactivated';
-        return $this->success_message(translate('Your account ' . $msg . ' successfully!'));
+
+        return $this->success_message(translate('Your account '.$msg.' successfully!'));
     }
 
     public function public_profile(Request $request, $id)
@@ -581,7 +607,7 @@ class ProfileController extends Controller
             || $request->boolean('non_mutating')
             || $request->boolean('no_track')
             || $request->boolean('preview');
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'result' => false,
                 'message' => 'This profile is not available.',
@@ -589,7 +615,7 @@ class ProfileController extends Controller
         }
 
         $viewerOwnsProfile = $auth_user && (int) $auth_user->id === (int) $user->id;
-        if (!$viewerOwnsProfile && (int) ($user->member?->is_visible ?? 1) !== 1) {
+        if (! $viewerOwnsProfile && (int) ($user->member?->is_visible ?? 1) !== 1) {
             return response()->json([
                 'result' => false,
                 'message' => 'This profile is not available.',
@@ -650,8 +676,8 @@ class ProfileController extends Controller
 
             // Split gallery images: public vs private/vault
             $allGalleryImages = GalleryImage::where('user_id', $user->id)->get();
-            $publicGalleryImages = $allGalleryImages->filter(fn($img) => !in_array($img->privacy_level, ['private', 'vault']));
-            $privateGalleryImages = $allGalleryImages->filter(fn($img) => in_array($img->privacy_level, ['private', 'vault']));
+            $publicGalleryImages = $allGalleryImages->filter(fn ($img) => ! in_array($img->privacy_level, ['private', 'vault']));
+            $privateGalleryImages = $allGalleryImages->filter(fn ($img) => in_array($img->privacy_level, ['private', 'vault']));
 
             $gallery_request_info = MemberUtility::member_gallery_image_request_info($user->id);
             $gallery_image_visibility = MemberUtility::resolve_media_visibility($user->id, 'gallery');
@@ -717,20 +743,20 @@ class ProfileController extends Controller
                 $profile_match = ProfileMatch::where('user_id', $auth_user->id)
                     ->where('match_id', $user->id)
                     ->first();
-                if (!empty($profile_match) && optional($auth_user->member)->auto_profile_match == 1) {
+                if (! empty($profile_match) && optional($auth_user->member)->auto_profile_match == 1) {
                     $data['profile_match'] = $profile_match->match_percentage;
                 }
             }
             $data['view_contact_check'] = $canViewContact;
 
             // Profile view data store
-            if (!$readOnlyProfileView && $auth_user && $user->id != $auth_user->id && !MemberUtility::member_is_incognito($auth_user->id)) {
+            if (! $readOnlyProfileView && $auth_user && $user->id != $auth_user->id && ! MemberUtility::member_is_incognito($auth_user->id)) {
                 $profileViewed = ProfileViewer::where('user_id', $user->id)->where('viewed_by', $auth_user->id)->first();
                 if ($profileViewed == null) {
                     if (package_validity($user->id) && $user->member->remaining_profile_viewer_view > 0) {
                         ProfileViewer::create([
                             'user_id' => $user->id,
-                            'viewed_by' => $auth_user->id
+                            'viewed_by' => $auth_user->id,
                         ]);
                         $usermember = $user->member;
                         $usermember->remaining_profile_viewer_view = $usermember->remaining_profile_viewer_view - 1;
@@ -742,10 +768,10 @@ class ProfileController extends Controller
                             $id = null;
                             $notify_by = $auth_user->id;
                             $info_id = $user->id;
-                            $message = $auth_user->first_name . ' ' . $auth_user->last_name . ' ' . translate(' has viewed your profile.');
+                            $message = $auth_user->first_name.' '.$auth_user->last_name.' '.translate(' has viewed your profile.');
                             $route = route('member_profile', $auth_user->id);
 
-                            // fcm 
+                            // fcm
                             if (get_setting('firebase_push_notification') == 1) {
                                 $fcmTokens = User::where('id', $user->id)->whereNotNull('fcm_token')->pluck('fcm_token')->toArray();
                                 self::sendFirebaseNotification($user, $notify_type, $message, $notify_by, $fcmTokens);
@@ -762,7 +788,7 @@ class ProfileController extends Controller
 
             return $this->response_data($data);
         } else {
-            return $this->failure_message("User Not Found");
+            return $this->failure_message('User Not Found');
         }
     }
 
@@ -779,7 +805,7 @@ class ProfileController extends Controller
         }
         // end of  firebase notification
 
-        Larafirebase::withTitle(str_replace("_", " ", $notify_type))
+        Larafirebase::withTitle(str_replace('_', ' ', $notify_type))
             ->withBody($message)
             ->sendMessage($fcmTokens);
     }
@@ -804,7 +830,7 @@ class ProfileController extends Controller
     public function store_view_contact(Request $request)
     {
         $contact_view_check = ViewContact::where('user_id', $request->id)->where('viewed_by', auth()->id())->first();
-        if (!$contact_view_check) {
+        if (! $contact_view_check) {
             $view_contact_by_user = auth()->user();
             $view_contact_by_member = $view_contact_by_user->member;
 
@@ -819,6 +845,7 @@ class ProfileController extends Controller
                     // Deduct View Contact by user's remaining contact views
                     $view_contact_by_member->remaining_contact_view -= 1;
                     $view_contact_by_member->save();
+
                     return $this->success_message('Request sent successfully!');
                 } else {
                     return $this->failure_message('Request failed to be sent!');
@@ -849,6 +876,7 @@ class ProfileController extends Controller
             }
             $matched_profiles = $matched_profiles->limit(20)->get();
         }
+
         return MatchedProfileResource::collection($matched_profiles);
     }
 
@@ -883,15 +911,17 @@ class ProfileController extends Controller
             $user->tokens()
                 ->where('id', $user->currentAccessToken()->id)
                 ->delete();
+
             return $this->success_message('Your account has deleted successfully!');
         }
+
         return $this->failure_message('Something Went Wrong!');
     }
 
     public function get_full_profile_react()
     {
         $user = auth()->user();
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'result' => false,
                 'message' => 'Your session has expired. Please sign in again.',
@@ -899,7 +929,7 @@ class ProfileController extends Controller
         }
 
         $member = $user->member;
-        if (!$member) {
+        if (! $member) {
             return response()->json([
                 'result' => false,
                 'error_code' => 'profile_incomplete',
@@ -926,22 +956,22 @@ class ProfileController extends Controller
         $currentResidencyState = $presentAddress && $presentAddress->state_id ? State::find($presentAddress->state_id) : null;
         $currentResidencyCity = $presentAddress && $presentAddress->city_id ? City::find($presentAddress->city_id) : null;
         $hobbyList = [];
-        if (!empty($hobbies?->hobbies)) {
+        if (! empty($hobbies?->hobbies)) {
             $hobbyList = array_values(array_filter(array_map('trim', explode(',', $hobbies->hobbies))));
         }
         $interestList = [];
-        if (!empty($hobbies?->interests)) {
+        if (! empty($hobbies?->interests)) {
             $interestList = array_values(array_filter(array_map('trim', explode(',', $hobbies->interests))));
         }
         $personalityTags = [];
-        if (!empty($lifestyle?->personality_tags)) {
+        if (! empty($lifestyle?->personality_tags)) {
             $decodedTags = json_decode($lifestyle->personality_tags, true);
             if (is_array($decodedTags)) {
                 $personalityTags = array_values(array_filter(array_map('trim', $decodedTags)));
             }
         }
         $knownLanguageNames = [];
-        if (!empty($member->known_languages)) {
+        if (! empty($member->known_languages)) {
             $decodedLanguages = json_decode($member->known_languages, true);
             if (is_array($decodedLanguages) && count($decodedLanguages)) {
                 $knownLanguageNames = MemberLanguage::whereIn('id', $decodedLanguages)->pluck('name')->toArray();
@@ -974,25 +1004,28 @@ class ProfileController extends Controller
             if ($numericValue >= 1000000) {
                 $millions = $numericValue / 1000000;
                 $formatted = rtrim(rtrim(number_format($millions, 1, '.', ''), '0'), '.');
-                return $formatted . 'M';
+
+                return $formatted.'M';
             }
+
             return number_format($numericValue);
         };
         $incomeLabel = '';
-        if (!empty($member->annual_salary_range_id)) {
+        if (! empty($member->annual_salary_range_id)) {
             $salaryRange = AnnualSalaryRange::find($member->annual_salary_range_id);
             if ($salaryRange) {
                 $minSalary = $salaryRange->min_salary;
                 $maxSalary = $salaryRange->max_salary;
                 if ($minSalary !== null && $maxSalary !== null) {
-                    $incomeLabel = 'Rs. ' . $formatSalary($minSalary) . ' - ' . $formatSalary($maxSalary);
+                    $incomeLabel = 'Rs. '.$formatSalary($minSalary).' - '.$formatSalary($maxSalary);
                 } elseif ($minSalary !== null) {
-                    $incomeLabel = 'Rs. ' . $formatSalary($minSalary) . '+';
+                    $incomeLabel = 'Rs. '.$formatSalary($minSalary).'+';
                 }
             }
         }
         $salaryRanges = AnnualSalaryRange::orderBy('min_salary')->get()->map(function ($range) use ($formatSalary) {
-            $label = 'Rs. ' . $formatSalary($range->min_salary) . ' - ' . $formatSalary($range->max_salary);
+            $label = 'Rs. '.$formatSalary($range->min_salary).' - '.$formatSalary($range->max_salary);
+
             return [
                 'id' => $range->id,
                 'min' => $range->min_salary,
@@ -1001,7 +1034,7 @@ class ProfileController extends Controller
             ];
         });
 
-        $visibility = \App\Models\FieldVisibilitySetting::getForUser($user->id);
+        $visibility = FieldVisibilitySetting::getForUser($user->id);
 
         // Server truth for gate:
         // onboarding must be explicitly completed and required onboarding data must be present.
@@ -1043,7 +1076,7 @@ class ProfileController extends Controller
                 'relocationWillingness' => $member->relocation_willingness ?? '',
                 'seriousnessLevel' => $member->seriousness_level ?? '',
                 'avatarUrl' => $user->photo ? ((strpos($user->photo, 'http') === 0) ? $user->photo : uploaded_asset($user->photo)) : 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80',
-                'hasProfilePhoto' => !empty($user->photo),
+                'hasProfilePhoto' => ! empty($user->photo),
                 'height' => $physicalHeightCm ?? '',
                 'weight' => $physical_attributes->weight ?? '',
                 'complexion' => $physical_attributes->complexion ?? '',
@@ -1111,7 +1144,7 @@ class ProfileController extends Controller
                 'motherOccupation' => $family->mother_occupation ?? '',
                 'familyLocation' => trim(implode(', ', array_filter([
                     $family->location_city ?? '',
-                    $family->location_country ?? ''
+                    $family->location_country ?? '',
                 ]))),
                 'familyType' => $family->family_type ?? '',
                 'brothers' => $family->no_of_brothers ?? 0,
@@ -1166,7 +1199,7 @@ class ProfileController extends Controller
     public function update_full_profile_react(Request $request)
     {
         $user = auth()->user();
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'result' => false,
                 'message' => 'Your session has expired. Please sign in again.',
@@ -1174,690 +1207,703 @@ class ProfileController extends Controller
         }
 
         $member = $user->member;
-        if (!$member) {
+        if (! $member) {
             return response()->json(['result' => false, 'message' => 'Member profile not found'], 404);
         }
 
         try {
 
-        $normalizeStringList = function ($value) {
-            if (is_array($value)) {
-                $items = array_map(function ($item) {
-                    return trim((string) $item);
-                }, $value);
-                return array_values(array_filter($items, 'strlen'));
-            }
-            if (is_string($value)) {
-                $items = array_map('trim', explode(',', $value));
-                return array_values(array_filter($items, 'strlen'));
-            }
-            return [];
-        };
+            $normalizeStringList = function ($value) {
+                if (is_array($value)) {
+                    $items = array_map(function ($item) {
+                        return trim((string) $item);
+                    }, $value);
 
-        $normalizeFloat = function ($value) {
-            if ($value === null || $value === '') {
-                return null;
-            }
-            if (is_numeric($value)) {
-                return (float) $value;
-            }
-            $clean = preg_replace('/[^0-9\\.]/', '', (string) $value);
-            return ($clean !== '' && is_numeric($clean)) ? (float) $clean : null;
-        };
-
-        $normalizeInt = function ($value) {
-            if ($value === null || $value === '') {
-                return null;
-            }
-            if (is_numeric($value)) {
-                return (int) $value;
-            }
-            $clean = preg_replace('/[^0-9]/', '', (string) $value);
-            return $clean !== '' ? (int) $clean : null;
-        };
-
-        $normalizeSiblingCount = function ($value) use ($normalizeInt) {
-            if ($value === null || $value === '') {
-                return 0;
-            }
-            if (is_string($value) && strpos($value, '+') !== false) {
-                $value = str_replace('+', '', $value);
-            }
-            $count = $normalizeInt($value);
-            return $count ?? 0;
-        };
-
-        $parseHeightToFeet = function ($value) use ($normalizeFloat) {
-            if ($value === null || $value === '') {
-                return null;
-            }
-            if (is_numeric($value)) {
-                $height = (float) $value;
-                return $height > 20 ? round($height / 30.48, 2) : round($height, 2);
-            }
-            $text = trim((string) $value);
-            if ($text === '') {
-                return null;
-            }
-            if (strpos($text, "'") !== false || stripos($text, 'ft') !== false) {
-                if (preg_match("/(\\d+)\\s*(?:ft|')\\s*(\\d+)?/i", $text, $matches)) {
-                    $feet = (int) $matches[1];
-                    $inches = isset($matches[2]) ? (int) $matches[2] : 0;
-                    return round($feet + ($inches / 12), 2);
+                    return array_values(array_filter($items, 'strlen'));
                 }
-            }
-            if (preg_match('/^(\\d+(?:\\.\\d+)?)\\s*cm$/i', $text, $matches)) {
-                $cm = (float) $matches[1];
-                return round($cm / 30.48, 2);
-            }
-            $numeric = preg_replace('/[^0-9\\.]/', '', $text);
-            if ($numeric !== '' && is_numeric($numeric)) {
-                $height = (float) $numeric;
-                return $height > 20 ? round($height / 30.48, 2) : round($height, 2);
-            }
-            return null;
-        };
+                if (is_string($value)) {
+                    $items = array_map('trim', explode(',', $value));
 
-        if ($request->has('basics')) {
-            $basics = $request->input('basics', []);
-            $optionSets = $this->getMarriageIntentOptionSets();
-            $timelineValues = array_column($optionSets['marriageTimeline'], 'value');
-            $relocationValues = array_column($optionSets['relocationWillingness'], 'value');
-            $seriousnessValues = array_column($optionSets['seriousnessLevel'], 'value');
-            $requiresBirthday = empty($member->birthday) || $request->boolean('onboardingCompleted');
-            $birthdayProvided = array_key_exists('dateOfBirth', $basics) || array_key_exists('birthday', $basics);
-            $birthdayInput = $basics['dateOfBirth'] ?? $basics['birthday'] ?? null;
-
-            if ($requiresBirthday || $birthdayProvided) {
-                if (trim((string) $birthdayInput) === '') {
-                    return response()->json([
-                        'result' => false,
-                        'message' => 'Date of Birth is required.',
-                    ], 422);
+                    return array_values(array_filter($items, 'strlen'));
                 }
 
-                try {
-                    $member->birthday = \Carbon\Carbon::parse($birthdayInput)->format('Y-m-d');
-                } catch (\Throwable $e) {
-                    return response()->json([
-                        'result' => false,
-                        'message' => 'Date of Birth is required.',
-                    ], 422);
-                }
-            }
+                return [];
+            };
 
-            if (array_key_exists('firstName', $basics)) {
-                $firstName = trim((string) $basics['firstName']);
-                if ($firstName === '') {
-                    return response()->json([
-                        'result' => false,
-                        'message' => 'First Name is required.',
-                    ], 422);
+            $normalizeFloat = function ($value) {
+                if ($value === null || $value === '') {
+                    return null;
                 }
-                $user->first_name = $firstName;
-            }
-            if (array_key_exists('lastName', $basics)) {
-                $user->last_name = $basics['lastName'];
-            }
-            if (array_key_exists('phone', $basics)) {
-                $user->phone = $basics['phone'];
-            }
-            if (array_key_exists('email', $basics)) {
-                $requestedEmail = trim((string) $basics['email']);
-                if ($requestedEmail !== '' && strcasecmp($requestedEmail, (string) $user->email) !== 0) {
-                    return response()->json([
-                        'result' => false,
-                        'message' => 'Email changes require verification before they can be saved.',
-                    ], 422);
+                if (is_numeric($value)) {
+                    return (float) $value;
                 }
-            }
+                $clean = preg_replace('/[^0-9\\.]/', '', (string) $value);
 
-            if (array_key_exists('gender', $basics)) {
-                $member->gender = ($basics['gender'] == 'Female') ? 2 : 1;
-            }
-            if (array_key_exists('maritalStatusId', $basics)) {
-                $member->marital_status_id = $basics['maritalStatusId'] ?: null;
-            }
-            if (array_key_exists('onBehalfId', $basics)) {
-                $member->on_behalves_id = $basics['onBehalfId'] ?: null;
-            }
-            if (array_key_exists('nationality', $basics)) {
-                $member->nationality = $basics['nationality'];
-            }
-            if (array_key_exists('introduction', $basics)) {
-                $member->introduction = $basics['introduction'];
-            }
-            if (array_key_exists('immigrationStatus', $basics)) {
-                Recidency::updateOrCreate(
-                    ['user_id' => $user->id],
-                    ['immigration_status' => $basics['immigrationStatus'] ?: null]
-                );
-            }
-            $currentCountryId = $normalizeInt($basics['currentResidencyCountryId'] ?? null);
-            $currentStateId = $normalizeInt($basics['currentResidencyStateId'] ?? null);
-            $currentCityId = $normalizeInt($basics['currentResidencyCityId'] ?? null);
-            if ($currentCountryId || $currentStateId || $currentCityId) {
-                Address::updateOrCreate(
-                    ['user_id' => $user->id, 'type' => 'present'],
-                    [
-                        'country_id' => $currentCountryId,
-                        'state_id' => $currentStateId,
-                        'city_id' => $currentCityId,
-                    ]
-                );
-            }
-            if (array_key_exists('marriageTimeline', $basics)) {
-                $timelineValue = $basics['marriageTimeline'] ?: null;
-                if (in_array($timelineValue, $timelineValues, true)) {
-                    $member->marriage_timeline = $timelineValue;
-                } elseif ($timelineValue === null) {
-                    $member->marriage_timeline = null;
-                }
-            }
-            if (array_key_exists('relocationWillingness', $basics)) {
-                $relocationValue = $basics['relocationWillingness'] ?: null;
-                if (in_array($relocationValue, $relocationValues, true)) {
-                    $member->relocation_willingness = $relocationValue;
-                } elseif ($relocationValue === null) {
-                    $member->relocation_willingness = null;
-                }
-            }
-            if (array_key_exists('seriousnessLevel', $basics)) {
-                $seriousnessValue = $basics['seriousnessLevel'] ?: null;
-                if (in_array($seriousnessValue, $seriousnessValues, true)) {
-                    $member->seriousness_level = $seriousnessValue;
-                } elseif ($seriousnessValue === null) {
-                    // Default to 'marriage' instead of null if it's being set to empty/null
-                    $member->seriousness_level = 'marriage';
-                }
-            }
+                return ($clean !== '' && is_numeric($clean)) ? (float) $clean : null;
+            };
 
-            if (array_key_exists('languages', $basics) || array_key_exists('language', $basics)) {
-                $languageNames = $normalizeStringList($basics['languages'] ?? $basics['language'] ?? null);
-                $languageIds = [];
-                if (!empty($languageNames)) {
-                    $existingLanguages = MemberLanguage::select('id', 'name')->get();
-                    $languageMap = [];
-                    foreach ($existingLanguages as $language) {
-                        $languageMap[strtolower($language->name)] = $language->id;
+            $normalizeInt = function ($value) {
+                if ($value === null || $value === '') {
+                    return null;
+                }
+                if (is_numeric($value)) {
+                    return (int) $value;
+                }
+                $clean = preg_replace('/[^0-9]/', '', (string) $value);
+
+                return $clean !== '' ? (int) $clean : null;
+            };
+
+            $normalizeSiblingCount = function ($value) use ($normalizeInt) {
+                if ($value === null || $value === '') {
+                    return 0;
+                }
+                if (is_string($value) && strpos($value, '+') !== false) {
+                    $value = str_replace('+', '', $value);
+                }
+                $count = $normalizeInt($value);
+
+                return $count ?? 0;
+            };
+
+            $parseHeightToFeet = function ($value) {
+                if ($value === null || $value === '') {
+                    return null;
+                }
+                if (is_numeric($value)) {
+                    $height = (float) $value;
+
+                    return $height > 20 ? round($height / 30.48, 2) : round($height, 2);
+                }
+                $text = trim((string) $value);
+                if ($text === '') {
+                    return null;
+                }
+                if (strpos($text, "'") !== false || stripos($text, 'ft') !== false) {
+                    if (preg_match("/(\\d+)\\s*(?:ft|')\\s*(\\d+)?/i", $text, $matches)) {
+                        $feet = (int) $matches[1];
+                        $inches = isset($matches[2]) ? (int) $matches[2] : 0;
+
+                        return round($feet + ($inches / 12), 2);
                     }
-                    foreach ($languageNames as $languageName) {
-                        $key = strtolower($languageName);
-                        if ($key === '') {
-                            continue;
+                }
+                if (preg_match('/^(\\d+(?:\\.\\d+)?)\\s*cm$/i', $text, $matches)) {
+                    $cm = (float) $matches[1];
+
+                    return round($cm / 30.48, 2);
+                }
+                $numeric = preg_replace('/[^0-9\\.]/', '', $text);
+                if ($numeric !== '' && is_numeric($numeric)) {
+                    $height = (float) $numeric;
+
+                    return $height > 20 ? round($height / 30.48, 2) : round($height, 2);
+                }
+
+                return null;
+            };
+
+            if ($request->has('basics')) {
+                $basics = $request->input('basics', []);
+                $optionSets = $this->getMarriageIntentOptionSets();
+                $timelineValues = array_column($optionSets['marriageTimeline'], 'value');
+                $relocationValues = array_column($optionSets['relocationWillingness'], 'value');
+                $seriousnessValues = array_column($optionSets['seriousnessLevel'], 'value');
+                $requiresBirthday = empty($member->birthday) || $request->boolean('onboardingCompleted');
+                $birthdayProvided = array_key_exists('dateOfBirth', $basics) || array_key_exists('birthday', $basics);
+                $birthdayInput = $basics['dateOfBirth'] ?? $basics['birthday'] ?? null;
+
+                if ($requiresBirthday || $birthdayProvided) {
+                    if (trim((string) $birthdayInput) === '') {
+                        return response()->json([
+                            'result' => false,
+                            'message' => 'Date of Birth is required.',
+                        ], 422);
+                    }
+
+                    try {
+                        $member->birthday = Carbon::parse($birthdayInput)->format('Y-m-d');
+                    } catch (\Throwable $e) {
+                        return response()->json([
+                            'result' => false,
+                            'message' => 'Date of Birth is required.',
+                        ], 422);
+                    }
+                }
+
+                if (array_key_exists('firstName', $basics)) {
+                    $firstName = trim((string) $basics['firstName']);
+                    if ($firstName === '') {
+                        return response()->json([
+                            'result' => false,
+                            'message' => 'First Name is required.',
+                        ], 422);
+                    }
+                    $user->first_name = $firstName;
+                }
+                if (array_key_exists('lastName', $basics)) {
+                    $user->last_name = $basics['lastName'];
+                }
+                if (array_key_exists('phone', $basics)) {
+                    $user->phone = $basics['phone'];
+                }
+                if (array_key_exists('email', $basics)) {
+                    $requestedEmail = trim((string) $basics['email']);
+                    if ($requestedEmail !== '' && strcasecmp($requestedEmail, (string) $user->email) !== 0) {
+                        return response()->json([
+                            'result' => false,
+                            'message' => 'Email changes require verification before they can be saved.',
+                        ], 422);
+                    }
+                }
+
+                if (array_key_exists('gender', $basics)) {
+                    $member->gender = ($basics['gender'] == 'Female') ? 2 : 1;
+                }
+                if (array_key_exists('maritalStatusId', $basics)) {
+                    $member->marital_status_id = $basics['maritalStatusId'] ?: null;
+                }
+                if (array_key_exists('onBehalfId', $basics)) {
+                    $member->on_behalves_id = $basics['onBehalfId'] ?: null;
+                }
+                if (array_key_exists('nationality', $basics)) {
+                    $member->nationality = $basics['nationality'];
+                }
+                if (array_key_exists('introduction', $basics)) {
+                    $member->introduction = $basics['introduction'];
+                }
+                if (array_key_exists('immigrationStatus', $basics)) {
+                    Recidency::updateOrCreate(
+                        ['user_id' => $user->id],
+                        ['immigration_status' => $basics['immigrationStatus'] ?: null]
+                    );
+                }
+                $currentCountryId = $normalizeInt($basics['currentResidencyCountryId'] ?? null);
+                $currentStateId = $normalizeInt($basics['currentResidencyStateId'] ?? null);
+                $currentCityId = $normalizeInt($basics['currentResidencyCityId'] ?? null);
+                if ($currentCountryId || $currentStateId || $currentCityId) {
+                    Address::updateOrCreate(
+                        ['user_id' => $user->id, 'type' => 'present'],
+                        [
+                            'country_id' => $currentCountryId,
+                            'state_id' => $currentStateId,
+                            'city_id' => $currentCityId,
+                        ]
+                    );
+                }
+                if (array_key_exists('marriageTimeline', $basics)) {
+                    $timelineValue = $basics['marriageTimeline'] ?: null;
+                    if (in_array($timelineValue, $timelineValues, true)) {
+                        $member->marriage_timeline = $timelineValue;
+                    } elseif ($timelineValue === null) {
+                        $member->marriage_timeline = null;
+                    }
+                }
+                if (array_key_exists('relocationWillingness', $basics)) {
+                    $relocationValue = $basics['relocationWillingness'] ?: null;
+                    if (in_array($relocationValue, $relocationValues, true)) {
+                        $member->relocation_willingness = $relocationValue;
+                    } elseif ($relocationValue === null) {
+                        $member->relocation_willingness = null;
+                    }
+                }
+                if (array_key_exists('seriousnessLevel', $basics)) {
+                    $seriousnessValue = $basics['seriousnessLevel'] ?: null;
+                    if (in_array($seriousnessValue, $seriousnessValues, true)) {
+                        $member->seriousness_level = $seriousnessValue;
+                    } elseif ($seriousnessValue === null) {
+                        // Default to 'marriage' instead of null if it's being set to empty/null
+                        $member->seriousness_level = 'marriage';
+                    }
+                }
+
+                if (array_key_exists('languages', $basics) || array_key_exists('language', $basics)) {
+                    $languageNames = $normalizeStringList($basics['languages'] ?? $basics['language'] ?? null);
+                    $languageIds = [];
+                    if (! empty($languageNames)) {
+                        $existingLanguages = MemberLanguage::select('id', 'name')->get();
+                        $languageMap = [];
+                        foreach ($existingLanguages as $language) {
+                            $languageMap[strtolower($language->name)] = $language->id;
                         }
-                        if (!isset($languageMap[$key])) {
-                            $newLanguage = new MemberLanguage();
-                            $newLanguage->name = $languageName;
-                            $newLanguage->save();
-                            $languageMap[$key] = $newLanguage->id;
-                        }
-                        $languageIds[] = $languageMap[$key];
-                    }
-                }
-                $member->known_languages = $languageIds ? json_encode(array_values(array_unique($languageIds))) : null;
-            }
-
-            $physicalUpdates = [];
-            if (array_key_exists('height', $basics)) {
-                $physicalUpdates['height'] = $parseHeightToFeet($basics['height']);
-            }
-            if (array_key_exists('weight', $basics)) {
-                $physicalUpdates['weight'] = $normalizeFloat($basics['weight']);
-            }
-            if (array_key_exists('complexion', $basics)) {
-                $physicalUpdates['complexion'] = $basics['complexion'];
-            }
-            if (!empty($physicalUpdates)) {
-                PhysicalAttribute::updateOrCreate(
-                    ['user_id' => $user->id],
-                    $physicalUpdates
-                );
-            }
-        }
-
-        if ($request->has('lifestyle')) {
-            $lifestyleData = $request->input('lifestyle', []);
-            $lifestylePayload = [
-                'diet' => $lifestyleData['diet'] ?? null,
-                'drink' => $lifestyleData['drink'] ?? null,
-                'smoke' => $lifestyleData['smoke'] ?? null,
-                'property' => $lifestyleData['property'] ?? null,
-                'property_details' => $lifestyleData['propertyDetails'] ?? null,
-                'living_with' => $lifestyleData['livingWith'] ?? null,
-                'sleep_schedule' => $lifestyleData['sleepSchedule'] ?? null,
-            ];
-            if (array_key_exists('personalityTags', $lifestyleData)) {
-                $tags = $normalizeStringList($lifestyleData['personalityTags']);
-                $lifestylePayload['personality_tags'] = $tags ? json_encode($tags) : null;
-            }
-            Lifestyle::updateOrCreate(
-                ['user_id' => $user->id],
-                $lifestylePayload
-            );
-
-            if (array_key_exists('hobbies', $lifestyleData) || array_key_exists('interests', $lifestyleData)) {
-                $hobbyItems = $normalizeStringList($lifestyleData['hobbies'] ?? null);
-                $interestItems = $normalizeStringList($lifestyleData['interests'] ?? null);
-                Hobby::updateOrCreate(
-                    ['user_id' => $user->id],
-                    [
-                        'hobbies' => $hobbyItems ? implode(', ', $hobbyItems) : null,
-                        'interests' => $interestItems ? implode(', ', $interestItems) : null,
-                    ]
-                );
-            }
-
-            if (
-                array_key_exists('personalValue', $lifestyleData) ||
-                array_key_exists('communityValue', $lifestyleData) ||
-                array_key_exists('familyValueId', $lifestyleData)
-            ) {
-                SpiritualBackground::updateOrCreate(
-                    ['user_id' => $user->id],
-                    [
-                        'personal_value' => $lifestyleData['personalValue'] ?? null,
-                        'community_value' => $lifestyleData['communityValue'] ?? null,
-                        'family_value_id' => $normalizeInt($lifestyleData['familyValueId'] ?? null),
-                    ]
-                );
-            }
-        }
-
-        if ($request->has('career')) {
-            $careerData = $request->input('career', []);
-
-            // === Handle multiple education entries ===
-            if (array_key_exists('educations', $careerData) && is_array($careerData['educations'])) {
-                $incomingEducationIds = [];
-                foreach ($careerData['educations'] as $eduEntry) {
-                    $eduPayload = [
-                        'user_id' => $user->id,
-                        'degree' => $eduEntry['degree'] ?? null,
-                        'institution' => $eduEntry['institution'] ?? null,
-                        'start' => $normalizeInt($eduEntry['start'] ?? null),
-                        'end' => $normalizeInt($eduEntry['end'] ?? null),
-                        'is_highest_degree' => !empty($eduEntry['isHighestDegree']) ? 1 : 0,
-                        'updated_at' => now(),
-                    ];
-                    if (!empty($eduEntry['id'])) {
-                        // Update existing
-                        DB::table('education')->where('id', $eduEntry['id'])->where('user_id', $user->id)->update($eduPayload);
-                        $incomingEducationIds[] = $eduEntry['id'];
-                    } else {
-                        // Insert new
-                        $eduPayload['created_at'] = now();
-                        $newId = DB::table('education')->insertGetId($eduPayload);
-                        $incomingEducationIds[] = $newId;
-                    }
-                }
-                // Soft-delete entries that were removed by the user
-                if (!empty($incomingEducationIds)) {
-                    DB::table('education')
-                        ->where('user_id', $user->id)
-                        ->whereNull('deleted_at')
-                        ->whereNotIn('id', $incomingEducationIds)
-                        ->update(['deleted_at' => now()]);
-                }
-            } else {
-                // Legacy single-entry fallback
-                $existingEducation = DB::table('education')
-                    ->where('user_id', $user->id)
-                    ->whereNull('deleted_at')
-                    ->orderByDesc('is_highest_degree')
-                    ->orderByDesc('updated_at')
-                    ->first();
-
-                $educationPayload = [
-                    'user_id' => $user->id,
-                    'degree' => $careerData['education'] ?? null,
-                    'institution' => $careerData['institution'] ?? null,
-                    'start' => $normalizeInt($careerData['educationStart'] ?? null),
-                    'end' => $normalizeInt($careerData['educationEnd'] ?? null),
-                    'is_highest_degree' => !empty($careerData['isHighestDegree']) ? 1 : 0,
-                    'updated_at' => now(),
-                ];
-
-                if ($existingEducation) {
-                    DB::table('education')->where('id', $existingEducation->id)->update($educationPayload);
-                } else {
-                    $educationPayload['created_at'] = now();
-                    DB::table('education')->insert($educationPayload);
-                }
-            }
-
-            // === Handle multiple career entries ===
-            if (array_key_exists('careers', $careerData) && is_array($careerData['careers'])) {
-                $incomingCareerIds = [];
-                foreach ($careerData['careers'] as $carEntry) {
-                    $carPayload = [
-                        'user_id' => $user->id,
-                        'designation' => $carEntry['designation'] ?? null,
-                        'company' => $carEntry['company'] ?? null,
-                        'work_location_type' => $carEntry['workLocationType'] ?? null,
-                        'job_title_id' => $normalizeInt($carEntry['jobTitleId'] ?? null) ?: null,
-                        'speciality_id' => $normalizeInt($carEntry['specialityId'] ?? null) ?: null,
-                        'start' => $normalizeInt($carEntry['start'] ?? null),
-                        'end' => $normalizeInt($carEntry['end'] ?? null),
-                        'present' => !empty($carEntry['present']) ? 1 : 0,
-                        'updated_at' => now(),
-                    ];
-                    if (!empty($carEntry['id'])) {
-                        DB::table('careers')->where('id', $carEntry['id'])->where('user_id', $user->id)->update($carPayload);
-                        $incomingCareerIds[] = $carEntry['id'];
-                    } else {
-                        $carPayload['created_at'] = now();
-                        $newId = DB::table('careers')->insertGetId($carPayload);
-                        $incomingCareerIds[] = $newId;
-                    }
-                }
-                // Soft-delete entries that were removed by the user
-                if (!empty($incomingCareerIds)) {
-                    DB::table('careers')
-                        ->where('user_id', $user->id)
-                        ->whereNull('deleted_at')
-                        ->whereNotIn('id', $incomingCareerIds)
-                        ->update(['deleted_at' => now()]);
-                }
-            } else {
-                // Legacy single-entry fallback
-                $existingCareer = DB::table('careers')
-                    ->where('user_id', $user->id)
-                    ->whereNull('deleted_at')
-                    ->orderByDesc('present')
-                    ->orderByDesc('updated_at')
-                    ->first();
-
-                $careerPayload = [
-                    'user_id' => $user->id,
-                    'designation' => $careerData['designation'] ?? null,
-                    'company' => $careerData['company'] ?? null,
-                    'work_location_type' => $careerData['workLocationType'] ?? null,
-                    'job_title_id' => $normalizeInt($careerData['jobTitleId'] ?? null) ?: null,
-                    'speciality_id' => $normalizeInt($careerData['specialityId'] ?? null) ?: null,
-                    'start' => $normalizeInt($careerData['careerStart'] ?? null),
-                    'end' => $normalizeInt($careerData['careerEnd'] ?? null),
-                    'present' => !empty($careerData['careerPresent']) ? 1 : 0,
-                    'updated_at' => now(),
-                ];
-
-                if ($existingCareer) {
-                    DB::table('careers')->where('id', $existingCareer->id)->update($careerPayload);
-                } else {
-                    $careerPayload['created_at'] = now();
-                    DB::table('careers')->insert($careerPayload);
-                }
-            }
-
-            // Update member specialization from the primary (first) career entry
-            $primaryCareer = DB::table('careers')->where('user_id', $user->id)->whereNull('deleted_at')->orderByDesc('present')->orderByDesc('updated_at')->first();
-            if ($primaryCareer) {
-                $member->specialization = $primaryCareer->designation;
-            }
-
-            if (array_key_exists('incomeRangeId', $careerData)) {
-                $rangeId = $normalizeInt($careerData['incomeRangeId']);
-                $member->annual_salary_range_id = $rangeId ?: null;
-            } elseif (array_key_exists('income', $careerData)) {
-                $incomeValue = trim((string) ($careerData['income'] ?? ''));
-                if ($incomeValue !== '') {
-                    $ranges = AnnualSalaryRange::orderBy('min_salary', 'asc')->get();
-                    if ($ranges->isNotEmpty()) {
-                        $rangeId = null;
-                        if (is_numeric($incomeValue)) {
-                            $numericValue = (float) $incomeValue;
-                            foreach ($ranges as $range) {
-                                if ($numericValue >= $range->min_salary && $numericValue <= $range->max_salary) {
-                                    $rangeId = $range->id;
-                                    break;
-                                }
+                        foreach ($languageNames as $languageName) {
+                            $key = strtolower($languageName);
+                            if ($key === '') {
+                                continue;
                             }
+                            if (! isset($languageMap[$key])) {
+                                $newLanguage = new MemberLanguage;
+                                $newLanguage->name = $languageName;
+                                $newLanguage->save();
+                                $languageMap[$key] = $newLanguage->id;
+                            }
+                            $languageIds[] = $languageMap[$key];
+                        }
+                    }
+                    $member->known_languages = $languageIds ? json_encode(array_values(array_unique($languageIds))) : null;
+                }
+
+                $physicalUpdates = [];
+                if (array_key_exists('height', $basics)) {
+                    $physicalUpdates['height'] = $parseHeightToFeet($basics['height']);
+                }
+                if (array_key_exists('weight', $basics)) {
+                    $physicalUpdates['weight'] = $normalizeFloat($basics['weight']);
+                }
+                if (array_key_exists('complexion', $basics)) {
+                    $physicalUpdates['complexion'] = $basics['complexion'];
+                }
+                if (! empty($physicalUpdates)) {
+                    PhysicalAttribute::updateOrCreate(
+                        ['user_id' => $user->id],
+                        $physicalUpdates
+                    );
+                }
+            }
+
+            if ($request->has('lifestyle')) {
+                $lifestyleData = $request->input('lifestyle', []);
+                $lifestylePayload = [
+                    'diet' => $lifestyleData['diet'] ?? null,
+                    'drink' => $lifestyleData['drink'] ?? null,
+                    'smoke' => $lifestyleData['smoke'] ?? null,
+                    'property' => $lifestyleData['property'] ?? null,
+                    'property_details' => $lifestyleData['propertyDetails'] ?? null,
+                    'living_with' => $lifestyleData['livingWith'] ?? null,
+                    'sleep_schedule' => $lifestyleData['sleepSchedule'] ?? null,
+                ];
+                if (array_key_exists('personalityTags', $lifestyleData)) {
+                    $tags = $normalizeStringList($lifestyleData['personalityTags']);
+                    $lifestylePayload['personality_tags'] = $tags ? json_encode($tags) : null;
+                }
+                Lifestyle::updateOrCreate(
+                    ['user_id' => $user->id],
+                    $lifestylePayload
+                );
+
+                if (array_key_exists('hobbies', $lifestyleData) || array_key_exists('interests', $lifestyleData)) {
+                    $hobbyItems = $normalizeStringList($lifestyleData['hobbies'] ?? null);
+                    $interestItems = $normalizeStringList($lifestyleData['interests'] ?? null);
+                    Hobby::updateOrCreate(
+                        ['user_id' => $user->id],
+                        [
+                            'hobbies' => $hobbyItems ? implode(', ', $hobbyItems) : null,
+                            'interests' => $interestItems ? implode(', ', $interestItems) : null,
+                        ]
+                    );
+                }
+
+                if (
+                    array_key_exists('personalValue', $lifestyleData) ||
+                    array_key_exists('communityValue', $lifestyleData) ||
+                    array_key_exists('familyValueId', $lifestyleData)
+                ) {
+                    SpiritualBackground::updateOrCreate(
+                        ['user_id' => $user->id],
+                        [
+                            'personal_value' => $lifestyleData['personalValue'] ?? null,
+                            'community_value' => $lifestyleData['communityValue'] ?? null,
+                            'family_value_id' => $normalizeInt($lifestyleData['familyValueId'] ?? null),
+                        ]
+                    );
+                }
+            }
+
+            if ($request->has('career')) {
+                $careerData = $request->input('career', []);
+
+                // === Handle multiple education entries ===
+                if (array_key_exists('educations', $careerData) && is_array($careerData['educations'])) {
+                    $incomingEducationIds = [];
+                    foreach ($careerData['educations'] as $eduEntry) {
+                        $eduPayload = [
+                            'user_id' => $user->id,
+                            'degree' => $eduEntry['degree'] ?? null,
+                            'institution' => $eduEntry['institution'] ?? null,
+                            'start' => $normalizeInt($eduEntry['start'] ?? null),
+                            'end' => $normalizeInt($eduEntry['end'] ?? null),
+                            'is_highest_degree' => ! empty($eduEntry['isHighestDegree']) ? 1 : 0,
+                            'updated_at' => now(),
+                        ];
+                        if (! empty($eduEntry['id'])) {
+                            // Update existing
+                            DB::table('education')->where('id', $eduEntry['id'])->where('user_id', $user->id)->update($eduPayload);
+                            $incomingEducationIds[] = $eduEntry['id'];
                         } else {
-                            if (preg_match('/([0-9\\.]+)\\s*M\\s*-\\s*([0-9\\.]+)\\s*M/i', $incomeValue, $match)) {
-                                $minValue = (float) $match[1] * 1000000;
-                                $maxValue = (float) $match[2] * 1000000;
-                                foreach ($ranges as $range) {
-                                    if ($minValue == $range->min_salary && $maxValue == $range->max_salary) {
-                                        $rangeId = $range->id;
-                                        break;
-                                    }
-                                }
-                            }
-                            if (preg_match('/([0-9\\.]+)\\s*M/i', $incomeValue, $match)) {
-                                $numericValue = (float) $match[1] * 1000000;
+                            // Insert new
+                            $eduPayload['created_at'] = now();
+                            $newId = DB::table('education')->insertGetId($eduPayload);
+                            $incomingEducationIds[] = $newId;
+                        }
+                    }
+                    // Soft-delete entries that were removed by the user
+                    if (! empty($incomingEducationIds)) {
+                        DB::table('education')
+                            ->where('user_id', $user->id)
+                            ->whereNull('deleted_at')
+                            ->whereNotIn('id', $incomingEducationIds)
+                            ->update(['deleted_at' => now()]);
+                    }
+                } else {
+                    // Legacy single-entry fallback
+                    $existingEducation = DB::table('education')
+                        ->where('user_id', $user->id)
+                        ->whereNull('deleted_at')
+                        ->orderByDesc('is_highest_degree')
+                        ->orderByDesc('updated_at')
+                        ->first();
+
+                    $educationPayload = [
+                        'user_id' => $user->id,
+                        'degree' => $careerData['education'] ?? null,
+                        'institution' => $careerData['institution'] ?? null,
+                        'start' => $normalizeInt($careerData['educationStart'] ?? null),
+                        'end' => $normalizeInt($careerData['educationEnd'] ?? null),
+                        'is_highest_degree' => ! empty($careerData['isHighestDegree']) ? 1 : 0,
+                        'updated_at' => now(),
+                    ];
+
+                    if ($existingEducation) {
+                        DB::table('education')->where('id', $existingEducation->id)->update($educationPayload);
+                    } else {
+                        $educationPayload['created_at'] = now();
+                        DB::table('education')->insert($educationPayload);
+                    }
+                }
+
+                // === Handle multiple career entries ===
+                if (array_key_exists('careers', $careerData) && is_array($careerData['careers'])) {
+                    $incomingCareerIds = [];
+                    foreach ($careerData['careers'] as $carEntry) {
+                        $carPayload = [
+                            'user_id' => $user->id,
+                            'designation' => $carEntry['designation'] ?? null,
+                            'company' => $carEntry['company'] ?? null,
+                            'work_location_type' => $carEntry['workLocationType'] ?? null,
+                            'job_title_id' => $normalizeInt($carEntry['jobTitleId'] ?? null) ?: null,
+                            'speciality_id' => $normalizeInt($carEntry['specialityId'] ?? null) ?: null,
+                            'start' => $normalizeInt($carEntry['start'] ?? null),
+                            'end' => $normalizeInt($carEntry['end'] ?? null),
+                            'present' => ! empty($carEntry['present']) ? 1 : 0,
+                            'updated_at' => now(),
+                        ];
+                        if (! empty($carEntry['id'])) {
+                            DB::table('careers')->where('id', $carEntry['id'])->where('user_id', $user->id)->update($carPayload);
+                            $incomingCareerIds[] = $carEntry['id'];
+                        } else {
+                            $carPayload['created_at'] = now();
+                            $newId = DB::table('careers')->insertGetId($carPayload);
+                            $incomingCareerIds[] = $newId;
+                        }
+                    }
+                    // Soft-delete entries that were removed by the user
+                    if (! empty($incomingCareerIds)) {
+                        DB::table('careers')
+                            ->where('user_id', $user->id)
+                            ->whereNull('deleted_at')
+                            ->whereNotIn('id', $incomingCareerIds)
+                            ->update(['deleted_at' => now()]);
+                    }
+                } else {
+                    // Legacy single-entry fallback
+                    $existingCareer = DB::table('careers')
+                        ->where('user_id', $user->id)
+                        ->whereNull('deleted_at')
+                        ->orderByDesc('present')
+                        ->orderByDesc('updated_at')
+                        ->first();
+
+                    $careerPayload = [
+                        'user_id' => $user->id,
+                        'designation' => $careerData['designation'] ?? null,
+                        'company' => $careerData['company'] ?? null,
+                        'work_location_type' => $careerData['workLocationType'] ?? null,
+                        'job_title_id' => $normalizeInt($careerData['jobTitleId'] ?? null) ?: null,
+                        'speciality_id' => $normalizeInt($careerData['specialityId'] ?? null) ?: null,
+                        'start' => $normalizeInt($careerData['careerStart'] ?? null),
+                        'end' => $normalizeInt($careerData['careerEnd'] ?? null),
+                        'present' => ! empty($careerData['careerPresent']) ? 1 : 0,
+                        'updated_at' => now(),
+                    ];
+
+                    if ($existingCareer) {
+                        DB::table('careers')->where('id', $existingCareer->id)->update($careerPayload);
+                    } else {
+                        $careerPayload['created_at'] = now();
+                        DB::table('careers')->insert($careerPayload);
+                    }
+                }
+
+                // Update member specialization from the primary (first) career entry
+                $primaryCareer = DB::table('careers')->where('user_id', $user->id)->whereNull('deleted_at')->orderByDesc('present')->orderByDesc('updated_at')->first();
+                if ($primaryCareer) {
+                    $member->specialization = $primaryCareer->designation;
+                }
+
+                if (array_key_exists('incomeRangeId', $careerData)) {
+                    $rangeId = $normalizeInt($careerData['incomeRangeId']);
+                    $member->annual_salary_range_id = $rangeId ?: null;
+                } elseif (array_key_exists('income', $careerData)) {
+                    $incomeValue = trim((string) ($careerData['income'] ?? ''));
+                    if ($incomeValue !== '') {
+                        $ranges = AnnualSalaryRange::orderBy('min_salary', 'asc')->get();
+                        if ($ranges->isNotEmpty()) {
+                            $rangeId = null;
+                            if (is_numeric($incomeValue)) {
+                                $numericValue = (float) $incomeValue;
                                 foreach ($ranges as $range) {
                                     if ($numericValue >= $range->min_salary && $numericValue <= $range->max_salary) {
                                         $rangeId = $range->id;
                                         break;
                                     }
                                 }
+                            } else {
+                                if (preg_match('/([0-9\\.]+)\\s*M\\s*-\\s*([0-9\\.]+)\\s*M/i', $incomeValue, $match)) {
+                                    $minValue = (float) $match[1] * 1000000;
+                                    $maxValue = (float) $match[2] * 1000000;
+                                    foreach ($ranges as $range) {
+                                        if ($minValue == $range->min_salary && $maxValue == $range->max_salary) {
+                                            $rangeId = $range->id;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (preg_match('/([0-9\\.]+)\\s*M/i', $incomeValue, $match)) {
+                                    $numericValue = (float) $match[1] * 1000000;
+                                    foreach ($ranges as $range) {
+                                        if ($numericValue >= $range->min_salary && $numericValue <= $range->max_salary) {
+                                            $rangeId = $range->id;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            if ($rangeId) {
+                                $member->annual_salary_range_id = $rangeId;
                             }
                         }
-                        if ($rangeId) {
-                            $member->annual_salary_range_id = $rangeId;
+                    } else {
+                        $member->annual_salary_range_id = null;
+                    }
+                }
+            }
+
+            if ($request->has('family')) {
+                $familyData = $request->input('family', []);
+                $locationCity = null;
+                $locationCountry = null;
+                if (! empty($familyData['familyLocation'])) {
+                    $parts = array_map('trim', explode(',', $familyData['familyLocation'], 2));
+                    $locationCity = $parts[0] ?? null;
+                    $locationCountry = $parts[1] ?? null;
+                }
+                DB::table('families')->updateOrInsert(
+                    ['user_id' => $user->id],
+                    [
+                        'father_occupation' => $familyData['fatherOccupation'] ?? null,
+                        'mother_occupation' => $familyData['motherOccupation'] ?? null,
+                        'location_city' => $locationCity,
+                        'location_country' => $locationCountry,
+                        'family_type' => $familyData['familyType'] ?? null,
+                        'no_of_brothers' => $normalizeSiblingCount($familyData['brothers'] ?? 0),
+                        'no_of_sisters' => $normalizeSiblingCount($familyData['sisters'] ?? 0),
+                        'updated_at' => now(),
+                    ]
+                );
+
+                // Update spiritual background (religion, caste, sect)
+                $religionId = $normalizeInt($familyData['religionId'] ?? null);
+                $religionName = trim((string) ($familyData['religion'] ?? ''));
+                if (! $religionId && $religionName !== '') {
+                    $religion = Religion::whereRaw('LOWER(name) = ?', [strtolower($religionName)])->first();
+                    if (! $religion) {
+                        $religion = new Religion;
+                        $religion->name = $religionName;
+                        $religion->save();
+                    }
+                    $religionId = $religion->id;
+                }
+
+                $casteId = $normalizeInt($familyData['casteId'] ?? null);
+                $casteName = trim((string) ($familyData['caste'] ?? ''));
+                if (! $casteId && $casteName !== '' && $religionId) {
+                    $caste = Caste::where('religion_id', $religionId)
+                        ->whereRaw('LOWER(name) = ?', [strtolower($casteName)])
+                        ->first();
+                    if (! $caste) {
+                        $caste = new Caste;
+                        $caste->name = $casteName;
+                        $caste->religion_id = $religionId;
+                        $caste->save();
+                    }
+                    $casteId = $caste->id;
+                }
+
+                SpiritualBackground::updateOrCreate(
+                    ['user_id' => $user->id],
+                    [
+                        'religion_id' => $religionId,
+                        'caste_id' => $casteId,
+                        'sect_id' => $normalizeInt($familyData['sectId'] ?? null),
+                        'ethnicity' => $familyData['sect'] ?? null,
+                    ]
+                );
+            }
+
+            if ($request->has('expectations')) {
+                $expData = $request->input('expectations', []);
+
+                $minAge = $normalizeInt($expData['min_age'] ?? null);
+                $maxAge = $normalizeInt($expData['max_age'] ?? null);
+                $minHeightFeet = $parseHeightToFeet($expData['min_height'] ?? null);
+
+                $maritalStatusId = $normalizeInt($expData['maritalStatusId'] ?? null);
+                $maritalStatusName = trim((string) ($expData['marital_status'] ?? ''));
+                if (! $maritalStatusId && $maritalStatusName !== '' && strtolower($maritalStatusName) !== 'any') {
+                    $maritalStatus = MaritalStatus::whereRaw('LOWER(name) = ?', [strtolower($maritalStatusName)])->first();
+                    if ($maritalStatus) {
+                        $maritalStatusId = $maritalStatus->id;
+                    }
+                }
+
+                $religionId = $normalizeInt($expData['religionId'] ?? null);
+                $religionName = trim((string) ($expData['religion'] ?? ''));
+                if (! $religionId && $religionName !== '' && strtolower($religionName) !== 'any') {
+                    $religion = Religion::whereRaw('LOWER(name) = ?', [strtolower($religionName)])->first();
+                    if (! $religion) {
+                        $religion = new Religion;
+                        $religion->name = $religionName;
+                        $religion->save();
+                    }
+                    $religionId = $religion->id;
+                }
+
+                $languageId = $normalizeInt($expData['languageId'] ?? null);
+                $languageName = '';
+                if (! $languageId && array_key_exists('language', $expData)) {
+                    $languageCandidates = $normalizeStringList($expData['language']);
+                    $languageName = $languageCandidates[0] ?? '';
+                }
+                if (! $languageId && $languageName !== '' && strtolower($languageName) !== 'any') {
+                    $language = MemberLanguage::whereRaw('LOWER(name) = ?', [strtolower($languageName)])->first();
+                    if (! $language) {
+                        $language = new MemberLanguage;
+                        $language->name = $languageName;
+                        $language->save();
+                    }
+                    $languageId = $language->id;
+                }
+
+                $residenceCountryId = $normalizeInt($expData['residenceCountryId'] ?? null);
+                $residenceValue = trim((string) ($expData['residence'] ?? ''));
+                if (! $residenceCountryId && $residenceValue !== '' && strtolower($residenceValue) !== 'any') {
+                    if (is_numeric($residenceValue)) {
+                        $residenceCountryId = (int) $residenceValue;
+                    } else {
+                        $country = Country::whereRaw('LOWER(name) = ?', [strtolower($residenceValue)])->first();
+                        if ($country) {
+                            $residenceCountryId = $country->id;
                         }
                     }
-                } else {
-                    $member->annual_salary_range_id = null;
                 }
-            }
-        }
 
-        if ($request->has('family')) {
-            $familyData = $request->input('family', []);
-            $locationCity = null;
-            $locationCountry = null;
-            if (!empty($familyData['familyLocation'])) {
-                $parts = array_map('trim', explode(',', $familyData['familyLocation'], 2));
-                $locationCity = $parts[0] ?? null;
-                $locationCountry = $parts[1] ?? null;
-            }
-            DB::table('families')->updateOrInsert(
-                ['user_id' => $user->id],
-                [
-                    'father_occupation' => $familyData['fatherOccupation'] ?? null,
-                    'mother_occupation' => $familyData['motherOccupation'] ?? null,
-                    'location_city' => $locationCity,
-                    'location_country' => $locationCountry,
-                    'family_type' => $familyData['familyType'] ?? null,
-                    'no_of_brothers' => $normalizeSiblingCount($familyData['brothers'] ?? 0),
-                    'no_of_sisters' => $normalizeSiblingCount($familyData['sisters'] ?? 0),
-                    'updated_at' => now(),
-                ]
-            );
+                $familyValueId = $normalizeInt($expData['familyValueId'] ?? null);
 
-            // Update spiritual background (religion, caste, sect)
-            $religionId = $normalizeInt($familyData['religionId'] ?? null);
-            $religionName = trim((string) ($familyData['religion'] ?? ''));
-            if (!$religionId && $religionName !== '') {
-                $religion = Religion::whereRaw('LOWER(name) = ?', [strtolower($religionName)])->first();
-                if (!$religion) {
-                    $religion = new Religion();
-                    $religion->name = $religionName;
-                    $religion->save();
-                }
-                $religionId = $religion->id;
+                PartnerExpectation::updateOrCreate(
+                    ['user_id' => $user->id],
+                    [
+                        'general' => $expData['general'] ?? null,
+                        'residence_country_id' => $residenceCountryId,
+                        'min_age' => $minAge,
+                        'max_age' => $maxAge,
+                        'height' => $minHeightFeet,
+                        'marital_status_id' => $maritalStatusId,
+                        'religion_id' => $religionId,
+                        'language_id' => $languageId,
+                        'family_value_id' => $familyValueId,
+                        'age_importance' => $expData['age_importance'] ?? 'Dealbreaker',
+                        'height_importance' => $expData['height_importance'] ?? 'Nice to have',
+                        'marital_status_importance' => $expData['marital_status_importance'] ?? 'Dealbreaker',
+                        'religion_importance' => $expData['religion_importance'] ?? 'Must have',
+                        'language_importance' => $expData['language_importance'] ?? 'Nice to have',
+                        'residence_importance' => $expData['residence_importance'] ?? 'Nice to have',
+                    ]
+                );
             }
 
-            $casteId = $normalizeInt($familyData['casteId'] ?? null);
-            $casteName = trim((string) ($familyData['caste'] ?? ''));
-            if (!$casteId && $casteName !== '' && $religionId) {
-                $caste = Caste::where('religion_id', $religionId)
-                    ->whereRaw('LOWER(name) = ?', [strtolower($casteName)])
-                    ->first();
-                if (!$caste) {
-                    $caste = new Caste();
-                    $caste->name = $casteName;
-                    $caste->religion_id = $religionId;
-                    $caste->save();
-                }
-                $casteId = $caste->id;
-            }
+            if ($request->has('onboardingCompleted') && $request->input('onboardingCompleted')) {
+                // Reload user and member from DB to get latest state (e.g. photo just uploaded)
+                $user = $user->fresh();
+                $member = $user->member;
 
-            SpiritualBackground::updateOrCreate(
-                ['user_id' => $user->id],
-                [
-                    'religion_id' => $religionId,
-                    'caste_id' => $casteId,
-                    'sect_id' => $normalizeInt($familyData['sectId'] ?? null),
-                    'ethnicity' => $familyData['sect'] ?? null,
-                ]
-            );
-        }
-
-        if ($request->has('expectations')) {
-            $expData = $request->input('expectations', []);
-
-            $minAge = $normalizeInt($expData['min_age'] ?? null);
-            $maxAge = $normalizeInt($expData['max_age'] ?? null);
-            $minHeightFeet = $parseHeightToFeet($expData['min_height'] ?? null);
-
-            $maritalStatusId = $normalizeInt($expData['maritalStatusId'] ?? null);
-            $maritalStatusName = trim((string) ($expData['marital_status'] ?? ''));
-            if (!$maritalStatusId && $maritalStatusName !== '' && strtolower($maritalStatusName) !== 'any') {
-                $maritalStatus = MaritalStatus::whereRaw('LOWER(name) = ?', [strtolower($maritalStatusName)])->first();
-                if ($maritalStatus) {
-                    $maritalStatusId = $maritalStatus->id;
-                }
-            }
-
-            $religionId = $normalizeInt($expData['religionId'] ?? null);
-            $religionName = trim((string) ($expData['religion'] ?? ''));
-            if (!$religionId && $religionName !== '' && strtolower($religionName) !== 'any') {
-                $religion = Religion::whereRaw('LOWER(name) = ?', [strtolower($religionName)])->first();
-                if (!$religion) {
-                    $religion = new Religion();
-                    $religion->name = $religionName;
-                    $religion->save();
-                }
-                $religionId = $religion->id;
-            }
-
-            $languageId = $normalizeInt($expData['languageId'] ?? null);
-            $languageName = '';
-            if (!$languageId && array_key_exists('language', $expData)) {
-                $languageCandidates = $normalizeStringList($expData['language']);
-                $languageName = $languageCandidates[0] ?? '';
-            }
-            if (!$languageId && $languageName !== '' && strtolower($languageName) !== 'any') {
-                $language = MemberLanguage::whereRaw('LOWER(name) = ?', [strtolower($languageName)])->first();
-                if (!$language) {
-                    $language = new MemberLanguage();
-                    $language->name = $languageName;
-                    $language->save();
-                }
-                $languageId = $language->id;
-            }
-
-            $residenceCountryId = $normalizeInt($expData['residenceCountryId'] ?? null);
-            $residenceValue = trim((string) ($expData['residence'] ?? ''));
-            if (!$residenceCountryId && $residenceValue !== '' && strtolower($residenceValue) !== 'any') {
-                if (is_numeric($residenceValue)) {
-                    $residenceCountryId = (int) $residenceValue;
-                } else {
-                    $country = Country::whereRaw('LOWER(name) = ?', [strtolower($residenceValue)])->first();
-                    if ($country) {
-                        $residenceCountryId = $country->id;
-                    }
-                }
-            }
-
-            $familyValueId = $normalizeInt($expData['familyValueId'] ?? null);
-
-            PartnerExpectation::updateOrCreate(
-                ['user_id' => $user->id],
-                [
-                    'general' => $expData['general'] ?? null,
-                    'residence_country_id' => $residenceCountryId,
-                    'min_age' => $minAge,
-                    'max_age' => $maxAge,
-                    'height' => $minHeightFeet,
-                    'marital_status_id' => $maritalStatusId,
-                    'religion_id' => $religionId,
-                    'language_id' => $languageId,
-                    'family_value_id' => $familyValueId,
-                    'age_importance' => $expData['age_importance'] ?? 'Dealbreaker',
-                    'height_importance' => $expData['height_importance'] ?? 'Nice to have',
-                    'marital_status_importance' => $expData['marital_status_importance'] ?? 'Dealbreaker',
-                    'religion_importance' => $expData['religion_importance'] ?? 'Must have',
-                    'language_importance' => $expData['language_importance'] ?? 'Nice to have',
-                    'residence_importance' => $expData['residence_importance'] ?? 'Nice to have',
-                ]
-            );
-        }
-
-        if ($request->has('onboardingCompleted') && $request->input('onboardingCompleted')) {
-            // Reload user and member from DB to get latest state (e.g. photo just uploaded)
-            $user = $user->fresh();
-            $member = $user->member;
-
-            // Backward-compatible fallback for users who uploaded to gallery
-            // but still have an empty primary profile photo.
-            if (empty($user->photo)) {
-                $candidatePhoto = GalleryImage::where('user_id', $user->id)
-                    ->where('is_main_photo', true)
-                    ->orderByDesc('id')
-                    ->value('image');
-
-                if (empty($candidatePhoto)) {
+                // Backward-compatible fallback for users who uploaded to gallery
+                // but still have an empty primary profile photo.
+                if (empty($user->photo)) {
                     $candidatePhoto = GalleryImage::where('user_id', $user->id)
+                        ->where('is_main_photo', true)
                         ->orderByDesc('id')
                         ->value('image');
-                }
 
-                if (!empty($candidatePhoto)) {
-                    $user->photo = $candidatePhoto;
-                    if (get_setting('profile_picture_approval_by_admin') && $user->user_type == 'member') {
-                        $user->photo_approved = 0;
-                    } else {
-                        $user->photo_approved = 1;
+                    if (empty($candidatePhoto)) {
+                        $candidatePhoto = GalleryImage::where('user_id', $user->id)
+                            ->orderByDesc('id')
+                            ->value('image');
                     }
-                    $user->save();
-                    $user = $user->fresh();
+
+                    if (! empty($candidatePhoto)) {
+                        $user->photo = $candidatePhoto;
+                        if (get_setting('profile_picture_approval_by_admin') && $user->user_type == 'member') {
+                            $user->photo_approved = 0;
+                        } else {
+                            $user->photo_approved = 1;
+                        }
+                        $user->save();
+                        $user = $user->fresh();
+                    }
                 }
+
+                $missingFields = $this->getOnboardingMissingFields($user, $member);
+                if (! empty($missingFields)) {
+                    $warningKey = 'onboarding_warning:'.$user->id;
+                    if (Cache::add($warningKey, true, now()->addHours(6))) {
+                        \Log::warning('Onboarding incomplete for user '.$user->id, ['missing' => $missingFields]);
+                    }
+
+                    return response()->json([
+                        'result' => false,
+                        'message' => 'Missing: '.implode(', ', $missingFields),
+                        'missingFields' => $missingFields,
+                    ], 422);
+                }
+                $member->onboarding_completed = 1;
             }
 
-            $missingFields = $this->getOnboardingMissingFields($user, $member);
-            if (!empty($missingFields)) {
-                $warningKey = 'onboarding_warning:' . $user->id;
-                if (Cache::add($warningKey, true, now()->addHours(6))) {
-                    \Log::warning('Onboarding incomplete for user ' . $user->id, ['missing' => $missingFields]);
-                }
-                return response()->json([
-                    'result' => false,
-                    'message' => 'Missing: ' . implode(', ', $missingFields),
-                    'missingFields' => $missingFields,
-                ], 422);
+            if ($user->isDirty()) {
+                $user->save();
             }
-            $member->onboarding_completed = 1;
-        }
+            if ($member->isDirty()) {
+                $member->save();
+            }
 
-        if ($user->isDirty()) {
-            $user->save();
-        }
-        if ($member->isDirty()) {
-            $member->save();
-        }
+            // Return updated profile completion data after save
+            $user = $user->fresh();
+            $member = $user->member;
+            $profileCompletion = $this->getProfileCompletionData($user, $member);
 
-        // Return updated profile completion data after save
-        $user = $user->fresh();
-        $member = $user->member;
-        $profileCompletion = $this->getProfileCompletionData($user, $member);
-
-        return response()->json([
-            'result' => true,
-            'message' => 'Profile updated successfully',
-            'profileCompletion' => $profileCompletion,
-        ]);
+            return response()->json([
+                'result' => true,
+                'message' => 'Profile updated successfully',
+                'profileCompletion' => $profileCompletion,
+            ]);
 
         } catch (\Exception $e) {
-            \Log::error('update_full_profile_react failed for user ' . ($user->id ?? '?'), [
+            \Log::error('update_full_profile_react failed for user '.($user->id ?? '?'), [
                 'error' => $e->getMessage(),
-                'file' => $e->getFile() . ':' . $e->getLine(),
+                'file' => $e->getFile().':'.$e->getLine(),
             ]);
+
             return response()->json([
                 'result' => false,
-                'message' => 'Failed to save profile: ' . $e->getMessage(),
+                'message' => 'Failed to save profile: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -1887,36 +1933,76 @@ class ProfileController extends Controller
         $physical = PhysicalAttribute::where('user_id', $user->id)->first();
 
         // Step 1: Personal
-        if (trim((string) $user->first_name) === '') $missing[] = 'First Name';
-        if (trim((string) $user->last_name) === '') $missing[] = 'Last Name';
-        if (empty($member->gender)) $missing[] = 'Gender';
-        if (empty($member->birthday)) $missing[] = 'Date of Birth';
-        if (empty($member->marital_status_id)) $missing[] = 'Marital Status';
+        if (trim((string) $user->first_name) === '') {
+            $missing[] = 'First Name';
+        }
+        if (trim((string) $user->last_name) === '') {
+            $missing[] = 'Last Name';
+        }
+        if (empty($member->gender)) {
+            $missing[] = 'Gender';
+        }
+        if (empty($member->birthday)) {
+            $missing[] = 'Date of Birth';
+        }
+        if (empty($member->marital_status_id)) {
+            $missing[] = 'Marital Status';
+        }
 
         // Step 2: Location & Religion
-        if (!$presentAddress || empty($presentAddress->country_id)) $missing[] = 'Country';
-        if (!$presentAddress || empty($presentAddress->state_id)) $missing[] = 'State';
-        if (!$presentAddress || empty($presentAddress->city_id)) $missing[] = 'City';
-        if (!$spiritual || empty($spiritual->religion_id)) $missing[] = 'Religion';
-        if (!$spiritual || empty($spiritual->caste_id)) $missing[] = 'Caste';
+        if (! $presentAddress || empty($presentAddress->country_id)) {
+            $missing[] = 'Country';
+        }
+        if (! $presentAddress || empty($presentAddress->state_id)) {
+            $missing[] = 'State';
+        }
+        if (! $presentAddress || empty($presentAddress->city_id)) {
+            $missing[] = 'City';
+        }
+        if (! $spiritual || empty($spiritual->religion_id)) {
+            $missing[] = 'Religion';
+        }
+        if (! $spiritual || empty($spiritual->caste_id)) {
+            $missing[] = 'Caste';
+        }
 
         // Step 3: Career & Education
-        if (!$career || trim((string) ($career->designation ?? '')) === '') $missing[] = 'Designation';
-        if (!$career || trim((string) ($career->company ?? '')) === '') $missing[] = 'Hospital/Company';
-        if (!$education || trim((string) ($education->degree ?? '')) === '') $missing[] = 'Degree';
-        if (!$education || trim((string) ($education->institution ?? '')) === '') $missing[] = 'Institution';
-        if (empty($member->annual_salary_range_id)) $missing[] = 'Income Range';
+        if (! $career || trim((string) ($career->designation ?? '')) === '') {
+            $missing[] = 'Designation';
+        }
+        if (! $career || trim((string) ($career->company ?? '')) === '') {
+            $missing[] = 'Hospital/Company';
+        }
+        if (! $education || trim((string) ($education->degree ?? '')) === '') {
+            $missing[] = 'Degree';
+        }
+        if (! $education || trim((string) ($education->institution ?? '')) === '') {
+            $missing[] = 'Institution';
+        }
+        if (empty($member->annual_salary_range_id)) {
+            $missing[] = 'Income Range';
+        }
 
         // Step 4: Appearance
-        if (!$physical || $physical->height === null || $physical->height === '') $missing[] = 'Height';
-        if (!$physical || $physical->weight === null || $physical->weight === '') $missing[] = 'Weight';
-        if (!$physical || trim((string) ($physical->complexion ?? '')) === '') $missing[] = 'Complexion';
+        if (! $physical || $physical->height === null || $physical->height === '') {
+            $missing[] = 'Height';
+        }
+        if (! $physical || $physical->weight === null || $physical->weight === '') {
+            $missing[] = 'Weight';
+        }
+        if (! $physical || trim((string) ($physical->complexion ?? '')) === '') {
+            $missing[] = 'Complexion';
+        }
 
         // Step 5: About Me
-        if (trim((string) ($member->introduction ?? '')) === '') $missing[] = 'Introduction';
+        if (trim((string) ($member->introduction ?? '')) === '') {
+            $missing[] = 'Introduction';
+        }
 
         // Step 6: Photo
-        if (empty($user->photo)) $missing[] = 'Profile Photo';
+        if (empty($user->photo)) {
+            $missing[] = 'Profile Photo';
+        }
 
         return $missing;
     }
@@ -1956,18 +2042,18 @@ class ProfileController extends Controller
         $step1Fields = [
             'firstName' => trim((string) $user->first_name) !== '',
             'lastName' => trim((string) $user->last_name) !== '',
-            'gender' => !empty($member->gender),
-            'dateOfBirth' => !empty($member->birthday),
-            'maritalStatus' => !empty($member->marital_status_id),
+            'gender' => ! empty($member->gender),
+            'dateOfBirth' => ! empty($member->birthday),
+            'maritalStatus' => ! empty($member->marital_status_id),
         ];
 
         // Step 2: Location & Religion (5 fields)
         $step2Fields = [
-            'country' => $presentAddress && !empty($presentAddress->country_id),
-            'state' => $presentAddress && !empty($presentAddress->state_id),
-            'city' => $presentAddress && !empty($presentAddress->city_id),
-            'religion' => $spiritual && !empty($spiritual->religion_id),
-            'caste' => $spiritual && !empty($spiritual->caste_id),
+            'country' => $presentAddress && ! empty($presentAddress->country_id),
+            'state' => $presentAddress && ! empty($presentAddress->state_id),
+            'city' => $presentAddress && ! empty($presentAddress->city_id),
+            'religion' => $spiritual && ! empty($spiritual->religion_id),
+            'caste' => $spiritual && ! empty($spiritual->caste_id),
         ];
 
         // Step 3: Career & Education (5 fields)
@@ -1976,7 +2062,7 @@ class ProfileController extends Controller
             'company' => $career && trim((string) ($career->company ?? '')) !== '',
             'degree' => $education && trim((string) ($education->degree ?? '')) !== '',
             'institution' => $education && trim((string) ($education->institution ?? '')) !== '',
-            'incomeRange' => !empty($member->annual_salary_range_id),
+            'incomeRange' => ! empty($member->annual_salary_range_id),
         ];
 
         // Step 4: Appearance (3 fields)
@@ -1993,7 +2079,7 @@ class ProfileController extends Controller
 
         // Step 6: Photo (1 field)
         $step6Fields = [
-            'profilePhoto' => !empty($user->photo),
+            'profilePhoto' => ! empty($user->photo),
         ];
 
         $allSteps = [$step1Fields, $step2Fields, $step3Fields, $step4Fields, $step5Fields, $step6Fields];
@@ -2020,7 +2106,7 @@ class ProfileController extends Controller
                 'fields' => $stepFields,
             ];
 
-            if (!$isComplete && $firstIncompleteStep === null) {
+            if (! $isComplete && $firstIncompleteStep === null) {
                 $firstIncompleteStep = $i + 1;
             }
         }
@@ -2040,36 +2126,37 @@ class ProfileController extends Controller
     public function download_biodata(Request $request)
     {
         $user = auth()->user();
-        if (!$user) {
+        if (! $user) {
             abort(401);
         }
 
         try {
             $pdf = PDF::loadView('pdf.biodata_modern', compact('user'), [], [
-                'margin_left'   => 5,
-                'margin_right'  => 5,
-                'margin_top'    => 5,
+                'margin_left' => 5,
+                'margin_right' => 5,
+                'margin_top' => 5,
                 'margin_bottom' => 5,
             ]);
-            $filename = 'Biodata-' . ($user->first_name ?? 'User') . '.pdf';
+            $filename = 'Biodata-'.($user->first_name ?? 'User').'.pdf';
 
             // Use output() instead of download() to avoid mPDF calling exit()
             // which bypasses Laravel middleware (including CORS)
             return response($pdf->output(), 200, [
                 'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                'Content-Disposition' => 'attachment; filename="'.$filename.'"',
                 'Content-Transfer-Encoding' => 'binary',
                 'Cache-Control' => 'public, must-revalidate, max-age=0',
                 'Pragma' => 'public',
             ]);
         } catch (\Exception $e) {
-            \Log::error('Biodata PDF generation failed: ' . $e->getMessage(), [
+            \Log::error('Biodata PDF generation failed: '.$e->getMessage(), [
                 'user_id' => $user->id,
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
+
             return response()->json([
                 'result' => false,
-                'message' => 'Failed to generate biodata PDF. Please try again.'
+                'message' => 'Failed to generate biodata PDF. Please try again.',
             ], 500);
         }
     }
@@ -2077,7 +2164,7 @@ class ProfileController extends Controller
     public function biodata_json(Request $request)
     {
         $user = auth()->user();
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'result' => false,
                 'message' => 'Your session has expired. Please sign in again.',
@@ -2109,12 +2196,12 @@ class ProfileController extends Controller
             'partner_expectations.family_value',
             'partner_expectations.member_language',
             'partner_expectations.marital_status',
-            'hobbies'
+            'hobbies',
         ]);
 
         return response()->json([
             'result' => true,
-            'data' => $user
+            'data' => $user,
         ]);
     }
 

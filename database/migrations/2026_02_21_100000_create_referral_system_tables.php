@@ -99,7 +99,7 @@ return new class extends Migration
         });
 
         // Insert default settings
-        \DB::table('referral_settings')->insert([
+        DB::table('referral_settings')->insert([
             'referral_enabled' => true,
             'code_format' => 'alphanumeric_8',
             'allow_code_regeneration' => false,
@@ -115,7 +115,7 @@ return new class extends Migration
         ]);
 
         // Insert default rule: 3 referrals => Gold Package upgrade
-        \DB::table('referral_rules')->insert([
+        DB::table('referral_rules')->insert([
             'name' => '3 Referrals - Gold Package Upgrade',
             'is_active' => true,
             'trigger_threshold' => 3,
@@ -135,7 +135,7 @@ return new class extends Migration
         ]);
 
         // Update default_rule_id
-        \DB::table('referral_settings')->where('id', 1)->update(['default_rule_id' => 1]);
+        DB::table('referral_settings')->where('id', 1)->update(['default_rule_id' => 1]);
 
         // Add referral permissions
         $permissions = [
@@ -147,7 +147,7 @@ return new class extends Migration
         ];
 
         foreach ($permissions as $perm) {
-            \DB::table('permissions')->insertOrIgnore([
+            DB::table('permissions')->insertOrIgnore([
                 'name' => $perm,
                 'guard_name' => 'web',
                 'created_at' => now(),
@@ -156,15 +156,15 @@ return new class extends Migration
         }
 
         // Assign to admin role
-        $adminRole = \DB::table('roles')->where('name', 'Super Admin')->first();
-        if (!$adminRole) {
-            $adminRole = \DB::table('roles')->first();
+        $adminRole = DB::table('roles')->where('name', 'Super Admin')->first();
+        if (! $adminRole) {
+            $adminRole = DB::table('roles')->first();
         }
         if ($adminRole) {
             foreach ($permissions as $perm) {
-                $permRecord = \DB::table('permissions')->where('name', $perm)->first();
+                $permRecord = DB::table('permissions')->where('name', $perm)->first();
                 if ($permRecord) {
-                    \DB::table('role_has_permissions')->insertOrIgnore([
+                    DB::table('role_has_permissions')->insertOrIgnore([
                         'permission_id' => $permRecord->id,
                         'role_id' => $adminRole->id,
                     ]);
@@ -190,10 +190,10 @@ return new class extends Migration
             'referral_view_analytics',
         ];
         foreach ($permissions as $perm) {
-            $p = \DB::table('permissions')->where('name', $perm)->first();
+            $p = DB::table('permissions')->where('name', $perm)->first();
             if ($p) {
-                \DB::table('role_has_permissions')->where('permission_id', $p->id)->delete();
-                \DB::table('permissions')->where('id', $p->id)->delete();
+                DB::table('role_has_permissions')->where('permission_id', $p->id)->delete();
+                DB::table('permissions')->where('id', $p->id)->delete();
             }
         }
     }

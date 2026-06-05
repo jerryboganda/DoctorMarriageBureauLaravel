@@ -2,23 +2,22 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Models\User;
-use App\Models\Shortlist;
-use Illuminate\Http\Request;
-use App\Http\Controllers\Api\Controller;
 use App\Http\Resources\ShortlistResource;
+use App\Models\Shortlist;
+use App\Models\User;
+use Illuminate\Http\Request;
 
 class ShortlistController extends Controller
 {
     public function index()
     {
         $shortlists = Shortlist::where('shortlisted_by', auth()->user()->id)
-            ->WhereNotIn("user_id", function ($query) {
+            ->WhereNotIn('user_id', function ($query) {
                 $query->select('user_id')
                     ->from('ignored_users')
                     ->where('ignored_by', auth()->user()->id)->orWhere('user_id', auth()->user()->id);
             })
-            ->WhereNotIn("user_id", function ($query) {
+            ->WhereNotIn('user_id', function ($query) {
                 $query->select('ignored_by')
                     ->from('ignored_users')
                     ->where('ignored_by', auth()->user()->id)->orWhere('user_id', auth()->user()->id);
@@ -26,7 +25,7 @@ class ShortlistController extends Controller
             ->latest()->paginate(10);
 
         return ShortlistResource::collection($shortlists)->additional([
-            'result' => true
+            'result' => true,
         ]);
     }
 
@@ -38,12 +37,15 @@ class ShortlistController extends Controller
                 ->first();
             if ($short_list == null) {
                 Shortlist::create($request->only('user_id') + [
-                    'shortlisted_by' => auth()->user()->id
+                    'shortlisted_by' => auth()->user()->id,
                 ]);
+
                 return $this->success_message('You Have Bookmarked This Member');
             }
+
             return $this->failure_message('You Have Already Bookmarked This Member');
         }
+
         return $this->failure_message('Invalid Member to Bookmark.');
     }
 
@@ -52,8 +54,10 @@ class ShortlistController extends Controller
         $shortlist = Shortlist::where('user_id', $request->user_id)->where('shortlisted_by', auth()->user()->id)->first();
         if ($shortlist) {
             Shortlist::destroy($shortlist->id);
+
             return $this->success_message('You Have Removed This Member From Your Bookmarks.');
         }
+
         return $this->success_message('Invalid Information');
     }
 }

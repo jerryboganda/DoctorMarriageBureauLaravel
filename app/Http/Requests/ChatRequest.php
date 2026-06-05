@@ -24,8 +24,8 @@ class ChatRequest extends FormRequest
     public function rules()
     {
         return [
-            'message'       => ['required'],
-            'attachment'    => ['sometimes']
+            'message' => ['required'],
+            'attachment' => ['sometimes'],
         ];
     }
 
@@ -37,8 +37,8 @@ class ChatRequest extends FormRequest
     public function messages()
     {
         return [
-            'message.required'              => translate('message is required'),
-            'attachment.required'           => translate('attachment is required')
+            'message.required' => translate('message is required'),
+            'attachment.required' => translate('attachment is required'),
         ];
     }
 }

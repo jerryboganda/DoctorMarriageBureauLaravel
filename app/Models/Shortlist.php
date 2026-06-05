@@ -3,11 +3,10 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Models\User;
 
 class Shortlist extends Model
 {
-    protected $guarded  = [];
+    protected $guarded = [];
 
     public function user()
     {

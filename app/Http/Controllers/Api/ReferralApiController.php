@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Api\Controller;
 use App\Models\ReferralCode;
 use App\Models\ReferralSetting;
 use App\Services\ReferralService;
@@ -14,7 +13,7 @@ class ReferralApiController extends Controller
 
     public function __construct()
     {
-        $this->referralService = new ReferralService();
+        $this->referralService = new ReferralService;
     }
 
     /**
@@ -25,12 +24,12 @@ class ReferralApiController extends Controller
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['result' => false, 'message' => 'Unauthorized'], 401);
         }
 
         $settings = ReferralSetting::instance();
-        if (!$settings->referral_enabled) {
+        if (! $settings->referral_enabled) {
             return response()->json([
                 'result' => true,
                 'data' => [
@@ -61,7 +60,7 @@ class ReferralApiController extends Controller
         ]);
 
         $settings = ReferralSetting::instance();
-        if (!$settings->referral_enabled) {
+        if (! $settings->referral_enabled) {
             return response()->json([
                 'result' => false,
                 'message' => 'Referral program is currently disabled',
@@ -74,7 +73,7 @@ class ReferralApiController extends Controller
             ->where('status', 'active')
             ->first();
 
-        if (!$referralCode) {
+        if (! $referralCode) {
             return response()->json([
                 'result' => false,
                 'message' => 'Invalid or inactive referral code',
@@ -100,12 +99,12 @@ class ReferralApiController extends Controller
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['result' => false, 'message' => 'Unauthorized'], 401);
         }
 
         $settings = ReferralSetting::instance();
-        if (!$settings->allow_code_regeneration) {
+        if (! $settings->allow_code_regeneration) {
             return response()->json([
                 'result' => false,
                 'message' => 'Code regeneration is not allowed',

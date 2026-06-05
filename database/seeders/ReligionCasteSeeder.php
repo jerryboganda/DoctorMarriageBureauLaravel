@@ -3,10 +3,10 @@
 namespace Database\Seeders;
 
 use App\Models\Caste;
-use App\Models\Religion;
-use App\Models\MaritalStatus;
 use App\Models\FamilyValue;
+use App\Models\MaritalStatus;
 use App\Models\MemberLanguage;
+use App\Models\Religion;
 use Illuminate\Database\Seeder;
 
 class ReligionCasteSeeder extends Seeder

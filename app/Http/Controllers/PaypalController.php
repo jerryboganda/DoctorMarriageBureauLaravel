@@ -2,64 +2,62 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Currency;
 use Illuminate\Http\Request;
+use PayPalCheckoutSdk\Core\PayPalHttpClient;
+use PayPalCheckoutSdk\Core\ProductionEnvironment;
+use PayPalCheckoutSdk\Core\SandboxEnvironment;
+use PayPalCheckoutSdk\Orders\OrdersCaptureRequest;
+use PayPalCheckoutSdk\Orders\OrdersCreateRequest;
 use Redirect;
 use Session;
-use PayPalCheckoutSdk\Core\PayPalHttpClient;
-use PayPalCheckoutSdk\Core\SandboxEnvironment;
-use PayPalCheckoutSdk\Core\ProductionEnvironment;
-use PayPalCheckoutSdk\Orders\OrdersCreateRequest;
-use PayPalCheckoutSdk\Orders\OrdersCaptureRequest;
-use App\Http\Controllers\PackagePaymentController;
 
 class PaypalController extends Controller
 {
-
     public function pay()
     {
-      // dd(Session::get('payment_data')['amount']);
+        // dd(Session::get('payment_data')['amount']);
         // Creating an environment
-        $clientId     = env('PAYPAL_CLIENT_ID');
+        $clientId = env('PAYPAL_CLIENT_ID');
         $clientSecret = env('PAYPAL_CLIENT_SECRET');
 
         if (get_setting('paypal_sandbox') == 1) {
             $environment = new SandboxEnvironment($clientId, $clientSecret);
-        }
-        else {
+        } else {
             $environment = new ProductionEnvironment($clientId, $clientSecret);
         }
-        $client       = new PayPalHttpClient($environment);
+        $client = new PayPalHttpClient($environment);
 
-        if(Session::has('payment_type')){
+        if (Session::has('payment_type')) {
             $amount = Session::get('payment_data')['amount'];
         }
 
-        $request = new OrdersCreateRequest();
+        $request = new OrdersCreateRequest;
         $request->prefer('return=representation');
         $request->body = [
-                     "intent" => "CAPTURE",
-                     "purchase_units" => [[
-                         "reference_id" => rand(000000,999999),
-                         "amount" => [
-                             "value" => $amount,
-                             "currency_code" => \App\Models\Currency::findOrFail(get_setting('system_default_currency'))->code
-                         ]
-                     ]],
-                     "application_context" => [
-                          "cancel_url" => url('paypal/payment/cancel'),
-                          "return_url" => url('paypal/payment/done')
-                     ]
-                 ];
+            'intent' => 'CAPTURE',
+            'purchase_units' => [[
+                'reference_id' => rand(000000, 999999),
+                'amount' => [
+                    'value' => $amount,
+                    'currency_code' => Currency::findOrFail(get_setting('system_default_currency'))->code,
+                ],
+            ]],
+            'application_context' => [
+                'cancel_url' => url('paypal/payment/cancel'),
+                'return_url' => url('paypal/payment/done'),
+            ],
+        ];
         try {
             // Call API with your client and get a response for your call
             $response = $client->execute($request);
+
             // If call returns body in response, you can get the deserialized version from the result attribute of the response
             return Redirect::to($response->result->links[1]->href);
-        }catch (HttpException $ex) {
+        } catch (HttpException $ex) {
 
         }
     }
-
 
     public function getCancel(Request $request)
     {
@@ -67,23 +65,23 @@ class PaypalController extends Controller
         $request->session()->forget('payment_data');
         $request->session()->forget('payment_type');
         flash(translate('Payment cancelled'))->success();
-    	  return redirect()->route('home');
+
+        return redirect()->route('home');
     }
 
     public function getDone(Request $request)
     {
-        //dd($request->all());
+        // dd($request->all());
         // Creating an environment
-        $clientId     = env('PAYPAL_CLIENT_ID');
+        $clientId = env('PAYPAL_CLIENT_ID');
         $clientSecret = env('PAYPAL_CLIENT_SECRET');
 
         if (get_setting('paypal_sandbox') == 1) {
             $environment = new SandboxEnvironment($clientId, $clientSecret);
-        }
-        else {
+        } else {
             $environment = new ProductionEnvironment($clientId, $clientSecret);
         }
-        $client       = new PayPalHttpClient($environment);
+        $client = new PayPalHttpClient($environment);
 
         // $response->result->id gives the orderId of the order created above
 
@@ -94,20 +92,20 @@ class PaypalController extends Controller
             $response = $client->execute($ordersCaptureRequest);
 
             // If call returns body in response, you can get the deserialized version from the result attribute of the response
-            if($request->session()->has('payment_type')){
+            if ($request->session()->has('payment_type')) {
 
                 if ($request->session()->get('payment_type') == 'package_payment') {
                     $packagePaymentController = new PackagePaymentController;
-                    return $packagePaymentController->package_payment_done($request->session()->get('payment_data'), json_encode($response));
-                }
 
-                elseif ($request->session()->get('payment_type') == 'wallet_payment') {
-                  $walletController = new WalletController;
-                  return $walletController->wallet_payment_done($request->session()->get('payment_data'), json_encode($response));
+                    return $packagePaymentController->package_payment_done($request->session()->get('payment_data'), json_encode($response));
+                } elseif ($request->session()->get('payment_type') == 'wallet_payment') {
+                    $walletController = new WalletController;
+
+                    return $walletController->wallet_payment_done($request->session()->get('payment_data'), json_encode($response));
                 }
 
             }
-        }catch (HttpException $ex) {
+        } catch (HttpException $ex) {
 
         }
     }

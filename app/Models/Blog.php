@@ -9,12 +9,13 @@ class Blog extends Model
 {
     use SoftDeletes;
 
-    public function category() {
+    public function category()
+    {
         return $this->belongsTo(BlogCategory::class, 'category_id');
     }
 
-    public function scopeActive($query){
-        return $query->where('status',1);
+    public function scopeActive($query)
+    {
+        return $query->where('status', 1);
     }
-
 }

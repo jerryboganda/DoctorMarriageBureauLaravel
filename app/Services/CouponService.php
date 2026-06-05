@@ -21,7 +21,7 @@ class CouponService
 
         $coupon = Coupon::whereRaw('UPPER(code) = ?', [$normalized])->first();
 
-        if (!$coupon || !$coupon->is_active) {
+        if (! $coupon || ! $coupon->is_active) {
             return [
                 'valid' => false,
                 'message' => 'Coupon not found or inactive.',
@@ -108,11 +108,11 @@ class CouponService
         $query = CouponRedemption::where('coupon_id', $coupon->id)
             ->where('user_id', $user->id);
 
-        if (!empty($context['package_payment_id'])) {
+        if (! empty($context['package_payment_id'])) {
             $query->where('package_payment_id', $context['package_payment_id']);
         }
 
-        if (!empty($context['addon_purchase_id'])) {
+        if (! empty($context['addon_purchase_id'])) {
             $query->where('addon_purchase_id', $context['addon_purchase_id']);
         }
 
@@ -121,7 +121,7 @@ class CouponService
             return $existing;
         }
 
-        $redemption = new CouponRedemption();
+        $redemption = new CouponRedemption;
         $redemption->coupon_id = $coupon->id;
         $redemption->user_id = $user->id;
         $redemption->code = $coupon->code;

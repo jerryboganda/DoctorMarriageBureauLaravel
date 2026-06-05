@@ -1,17 +1,20 @@
 <?php
+
 require 'vendor/autoload.php';
 $app = require_once 'bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+$kernel = $app->make(Kernel::class);
 $kernel->bootstrap();
 
-use App\Models\ProfileOptionValue;
-use App\Models\MaritalStatus;
-use App\Models\Religion;
 use App\Models\Caste;
-use App\Models\MemberLanguage;
 use App\Models\Country;
+use App\Models\MaritalStatus;
+use App\Models\MemberLanguage;
+use App\Models\ProfileOptionValue;
+use App\Models\Religion;
+use Illuminate\Contracts\Console\Kernel;
 
-function optionGroup(string $group): array {
+function optionGroup(string $group): array
+{
     return ProfileOptionValue::where('group', $group)
         ->where('is_active', true)
         ->orderBy('sort_order')
@@ -77,5 +80,5 @@ $optionSets = [
 ];
 
 foreach ($optionSets as $key => $values) {
-    echo "$key: " . count($values) . "\n";
+    echo "$key: ".count($values)."\n";
 }

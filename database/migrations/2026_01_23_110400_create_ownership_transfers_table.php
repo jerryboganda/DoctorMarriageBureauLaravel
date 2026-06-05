@@ -33,7 +33,7 @@ return new class extends Migration
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();
             $table->timestamps();
-            
+
             $table->index(['member_id', 'status']);
             $table->index(['from_user_id', 'status']);
             $table->index('transfer_token');
@@ -56,7 +56,7 @@ return new class extends Migration
             $table->timestamp('completed_at')->nullable();
             $table->string('ip_address', 45)->nullable();
             $table->timestamps();
-            
+
             $table->index(['user_id', 'purpose', 'is_valid']);
             $table->index('token');
         });

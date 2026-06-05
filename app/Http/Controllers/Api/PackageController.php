@@ -2,16 +2,15 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Api\Controller;
 use App\Http\Resources\PackagePaymentInvoiceResource;
 use App\Http\Resources\PackagePaymentResource;
 use App\Http\Resources\PackageResource;
+use App\Models\Coupon;
 use App\Models\ManualPaymentMethod;
 use App\Models\Member;
 use App\Models\Package;
 use App\Models\PackagePayment;
 use App\Models\User;
-use App\Models\Wallet;
 use App\Notifications\DbStoreNotification;
 use App\Services\CouponService;
 use App\Services\ReferralService;
@@ -25,8 +24,9 @@ class PackageController extends Controller
     public function active_packages()
     {
         $packages = Package::where('active', '1')->get();
+
         return PackageResource::collection($packages)->additional([
-            'result' => true
+            'result' => true,
         ]);
     }
 
@@ -35,9 +35,10 @@ class PackageController extends Controller
         $package = Package::find($request->package_id);
         if ($package) {
             return (new PackageResource($package))->additional([
-                'result' => true
+                'result' => true,
             ]);
         }
+
         return $this->failure_message('sorry!!, Invalid Data.');
     }
 
@@ -46,8 +47,9 @@ class PackageController extends Controller
         $package_payments = PackagePayment::latest()
             ->where('user_id', auth()->user()->id)
             ->paginate(10);
+
         return PackagePaymentResource::collection($package_payments)->additional([
-            'result' => true
+            'result' => true,
         ]);
     }
 
@@ -56,9 +58,10 @@ class PackageController extends Controller
         $payment = PackagePayment::where('user_id', auth()->id())->find($request->package_payment_id);
         if ($payment) {
             return (new PackagePaymentInvoiceResource($payment))->additional([
-                'result' => true
+                'result' => true,
             ]);
         }
+
         return $this->failure_message('sorry!!, Invalid Data.');
     }
 
@@ -67,7 +70,7 @@ class PackageController extends Controller
         $user = auth()->user();
         $package = Package::find($request->package_id);
 
-        if (!$package) {
+        if (! $package) {
             return $this->failure_message('Invalid package.');
         }
 
@@ -77,9 +80,9 @@ class PackageController extends Controller
         $coupon = null;
 
         if ($request->coupon_code) {
-            $couponService = new CouponService();
+            $couponService = new CouponService;
             $couponResult = $couponService->validateCode($request->coupon_code, $user, $originalAmount, 'package');
-            if (!$couponResult['valid']) {
+            if (! $couponResult['valid']) {
                 return $this->failure_message($couponResult['message']);
             }
             $coupon = $couponResult['coupon'];
@@ -87,8 +90,8 @@ class PackageController extends Controller
             $finalAmount = $couponResult['final_amount'];
         }
 
-        $payment_type   = 'package_payment';
-        $payment_data = array();
+        $payment_type = 'package_payment';
+        $payment_data = [];
         $payment_data['package_id'] = $package->id;
         $payment_data['amount'] = $finalAmount;
         $payment_data['original_amount'] = $originalAmount;
@@ -104,11 +107,12 @@ class PackageController extends Controller
             } else {
                 $user->balance = $user->balance - $finalAmount;
                 $user->save();
+
                 return $this->package_payment_done($user->id, $payment_data, null);
             }
         } elseif ($request->payment_method == 'manual_payment') {
             $manualPaymentMethod = ManualPaymentMethod::find($request->manual_payment_id);
-            if (!$manualPaymentMethod) {
+            if (! $manualPaymentMethod) {
                 return $this->failure_message('Please select a valid manual payment method.');
             }
 
@@ -116,7 +120,7 @@ class PackageController extends Controller
             if ($request->hasFile('payment_proof')) {
                 $payment_proof = upload_api_file($request->file('payment_proof'));
             }
-            $package_payment = new PackagePayment();
+            $package_payment = new PackagePayment;
             $package_payment->payment_code = date('ymd-His');
             $package_payment->user_id = $user->id;
             $package_payment->package_id = $package->id;
@@ -141,7 +145,7 @@ class PackageController extends Controller
                 $id = null;
                 $notify_by = $user->id;
                 $info_id = $package_payment->id;
-                $message = $user->first_name . ' ' . $user->last_name . translate('has been purchased a new package. Payment Code: ') . $package_payment->payment_code;
+                $message = $user->first_name.' '.$user->last_name.translate('has been purchased a new package. Payment Code: ').$package_payment->payment_code;
                 $route = route('package-payments.index');
 
                 // fcm
@@ -164,7 +168,8 @@ class PackageController extends Controller
             if ($user->email != null && get_email_template('package_purchase_email', 'status')) {
                 EmailUtility::package_purchase_email($user, $package_payment);
             }
-            return response()->json(['result' => true, 'message' => translate("Payment completed")]);
+
+            return response()->json(['result' => true, 'message' => translate('Payment completed')]);
         }
     }
 
@@ -172,32 +177,32 @@ class PackageController extends Controller
     {
         $user = User::where('id', $user_id)->first();
 
-        $package_payment                    = new PackagePayment();
-        $package_payment->payment_code      = date('ymd-His');
-        $package_payment->user_id           = $user->id;
-        $package_payment->package_id        = $payment_data['package_id'];
-        $package_payment->payment_method    = $payment_data['payment_method'];
-        $package_payment->payment_status    = 'Paid';
-        $package_payment->amount            = $payment_data['amount'];
-        $package_payment->original_amount   = $payment_data['original_amount'] ?? $payment_data['amount'];
-        $package_payment->discount_amount   = $payment_data['discount_amount'] ?? 0;
-        $package_payment->coupon_id         = $payment_data['coupon_id'] ?? null;
-        $package_payment->coupon_code       = $payment_data['coupon_code'] ?? null;
-        $package_payment->payment_details   = $payment_details;
-        $package_payment->offline_payment   = 2;
+        $package_payment = new PackagePayment;
+        $package_payment->payment_code = date('ymd-His');
+        $package_payment->user_id = $user->id;
+        $package_payment->package_id = $payment_data['package_id'];
+        $package_payment->payment_method = $payment_data['payment_method'];
+        $package_payment->payment_status = 'Paid';
+        $package_payment->amount = $payment_data['amount'];
+        $package_payment->original_amount = $payment_data['original_amount'] ?? $payment_data['amount'];
+        $package_payment->discount_amount = $payment_data['discount_amount'] ?? 0;
+        $package_payment->coupon_id = $payment_data['coupon_id'] ?? null;
+        $package_payment->coupon_code = $payment_data['coupon_code'] ?? null;
+        $package_payment->payment_details = $payment_details;
+        $package_payment->offline_payment = 2;
         $package_payment->save();
 
         $member = Member::where('user_id', $user->id)->first();
         $package = Package::where('id', $payment_data['package_id'])->first();
-        $member->current_package_id             = $package->id;
-        $member->remaining_interest             = $member->remaining_interest + $package->express_interest;
-        $member->remaining_photo_gallery        = $member->remaining_photo_gallery + $package->photo_gallery;
-        $member->remaining_contact_view         = $member->remaining_contact_view + $package->contact;
-        $member->remaining_profile_viewer_view  = $member->remaining_profile_viewer_view + $package->profile_viewers_view;
-        $member->remaining_profile_image_view   = $member->remaining_profile_image_view + $package->profile_image_view;
-        $member->remaining_gallery_image_view   = $member->remaining_gallery_image_view + $package->gallery_image_view;
-        $member->auto_profile_match             = $package->auto_profile_match;
-        $member->package_validity               = date('Y-m-d', strtotime($member->package_validity . ' +' . $package->validity . 'days'));
+        $member->current_package_id = $package->id;
+        $member->remaining_interest = $member->remaining_interest + $package->express_interest;
+        $member->remaining_photo_gallery = $member->remaining_photo_gallery + $package->photo_gallery;
+        $member->remaining_contact_view = $member->remaining_contact_view + $package->contact;
+        $member->remaining_profile_viewer_view = $member->remaining_profile_viewer_view + $package->profile_viewers_view;
+        $member->remaining_profile_image_view = $member->remaining_profile_image_view + $package->profile_image_view;
+        $member->remaining_gallery_image_view = $member->remaining_gallery_image_view + $package->gallery_image_view;
+        $member->auto_profile_match = $package->auto_profile_match;
+        $member->package_validity = date('Y-m-d', strtotime($member->package_validity.' +'.$package->validity.'days'));
 
         if ($member->save()) {
             $user->membership = 2;
@@ -205,11 +210,11 @@ class PackageController extends Controller
 
             if (addon_activation('referral_system')) {
                 try {
-                    $referralService = new ReferralService();
+                    $referralService = new ReferralService;
                     $referralService->applyReferralCommissionIfEligible($user);
                     $referralService->checkAndQualifyReferral($user->id);
                 } catch (\Exception $e) {
-                    \Log::error('Referral post-purchase processing failed: ' . $e->getMessage(), ['user_id' => $user->id]);
+                    \Log::error('Referral post-purchase processing failed: '.$e->getMessage(), ['user_id' => $user->id]);
                 }
             }
 
@@ -219,7 +224,7 @@ class PackageController extends Controller
                 $id = null;
                 $notify_by = $user->id;
                 $info_id = $package_payment->id;
-                $message = $user->first_name . ' ' . $user->last_name . translate('has been purchased a new package. Payment Code: ') . $package_payment->payment_code;
+                $message = $user->first_name.' '.$user->last_name.translate('has been purchased a new package. Payment Code: ').$package_payment->payment_code;
                 $route = route('package-payments.index');
 
                 // fcm
@@ -245,9 +250,9 @@ class PackageController extends Controller
             }
         }
 
-        if (!empty($payment_data['coupon_id'])) {
-            $couponService = new CouponService();
-            $coupon = \App\Models\Coupon::find($payment_data['coupon_id']);
+        if (! empty($payment_data['coupon_id'])) {
+            $couponService = new CouponService;
+            $coupon = Coupon::find($payment_data['coupon_id']);
             if ($coupon) {
                 $couponService->recordRedemption(
                     $coupon,
@@ -262,6 +267,7 @@ class PackageController extends Controller
                 );
             }
         }
-        return response()->json(['result' => true, 'message' => translate("Payment completed")]);
+
+        return response()->json(['result' => true, 'message' => translate('Payment completed')]);
     }
 }

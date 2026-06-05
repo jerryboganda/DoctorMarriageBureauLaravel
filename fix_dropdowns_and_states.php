@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Fix script to:
  * 1. Remove duplicate profile_option_values (keep only properly-slugged entries)
@@ -9,7 +10,7 @@
 
 // Database connection
 $host = 'db'; // Docker service name
-$db   = 'marriagebureau';
+$db = 'marriagebureau';
 $user = 'root';
 $pass = 'MarriageBureauRootPass123!';
 
@@ -17,7 +18,7 @@ try {
     $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8mb4", $user, $pass);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
-    die("Connection failed: " . $e->getMessage() . "\n");
+    exit('Connection failed: '.$e->getMessage()."\n");
 }
 
 echo "=== STEP 1: Fix duplicate profile_option_values ===\n\n";
@@ -31,7 +32,7 @@ echo "=== STEP 1: Fix duplicate profile_option_values ===\n\n";
 $stmt = $pdo->query("SELECT id FROM profile_option_values WHERE `group` = 'immigration_status' AND value = 'citizen'");
 $citizenSlug = $stmt->fetch();
 
-if (!$citizenSlug) {
+if (! $citizenSlug) {
     echo "Adding 'citizen' slug entry for immigration_status...\n";
     $pdo->exec("INSERT INTO profile_option_values (`group`, value, label, sort_order, is_active) VALUES ('immigration_status', 'citizen', 'Citizen', 0, 1)");
     echo "  → Inserted citizen slug.\n";
@@ -57,7 +58,7 @@ $mapping = [
 ];
 
 foreach ($mapping as $old => $new) {
-    $stmt = $pdo->prepare("UPDATE recidencies SET immigration_status = ? WHERE immigration_status = ?");
+    $stmt = $pdo->prepare('UPDATE recidencies SET immigration_status = ? WHERE immigration_status = ?');
     $stmt->execute([$new, $old]);
     $count = $stmt->rowCount();
     if ($count > 0) {
@@ -67,8 +68,8 @@ foreach ($mapping as $old => $new) {
 
 // Delete old duplicate rows (where value = label, not a slug)
 $oldIds = [38, 39, 40, 41, 42];
-$pdo->exec("DELETE FROM profile_option_values WHERE id IN (" . implode(',', $oldIds) . ")");
-echo "  → Deleted old duplicate immigration_status entries (IDs: " . implode(', ', $oldIds) . ")\n";
+$pdo->exec('DELETE FROM profile_option_values WHERE id IN ('.implode(',', $oldIds).')');
+echo '  → Deleted old duplicate immigration_status entries (IDs: '.implode(', ', $oldIds).")\n";
 
 // ---- COMMUNITY VALUES ----
 // Old: 52 "Traditional Values", 53 "Modern Values", 54 "Mix of both"
@@ -120,7 +121,7 @@ foreach ($possibleTables as $table) {
 }
 
 // Delete old community_values duplicates
-$pdo->exec("DELETE FROM profile_option_values WHERE id IN (52, 53, 54)");
+$pdo->exec('DELETE FROM profile_option_values WHERE id IN (52, 53, 54)');
 echo "  → Deleted old duplicate community_values entries (IDs: 52, 53, 54)\n";
 
 // ---- FAMILY TYPE ----
@@ -140,7 +141,7 @@ foreach ($familyRows as $row) {
 // Update old rows to use proper slug values instead of deleting (since user data may reference them)
 // ID 36: Nuclear → nuclear
 $pdo->exec("UPDATE profile_option_values SET value = 'nuclear', sort_order = 0 WHERE id = 36 AND value = 'Nuclear'");
-// ID 37: Joint → joint  
+// ID 37: Joint → joint
 $pdo->exec("UPDATE profile_option_values SET value = 'joint', sort_order = 1 WHERE id = 37 AND value = 'Joint'");
 $pdo->exec("UPDATE profile_option_values SET sort_order = 2 WHERE id = 55 AND value = 'extended'");
 echo "  → Updated family_type values to proper slugs.\n";
@@ -170,7 +171,7 @@ foreach ($possibleTables as $table) {
 echo "\n=== STEP 2: Fix Pakistan state names ===\n\n";
 
 // Fix Baluchistan → Balochistan
-$stmt = $pdo->prepare("UPDATE states SET name = ? WHERE id = ?");
+$stmt = $pdo->prepare('UPDATE states SET name = ? WHERE id = ?');
 $stmt->execute(['Balochistan', 2723]);
 echo "  → Renamed 'Baluchistan' to 'Balochistan' (ID: 2723)\n";
 
@@ -265,24 +266,24 @@ $stateCities = [
     2727 => $northernAreasCities, // Northern Areas
 ];
 
-$insertStmt = $pdo->prepare("INSERT INTO cities (name, state_id) VALUES (?, ?)");
+$insertStmt = $pdo->prepare('INSERT INTO cities (name, state_id) VALUES (?, ?)');
 
 foreach ($stateCities as $stateId => $cities) {
     // Check which cities already exist
-    $existingStmt = $pdo->prepare("SELECT name FROM cities WHERE state_id = ?");
+    $existingStmt = $pdo->prepare('SELECT name FROM cities WHERE state_id = ?');
     $existingStmt->execute([$stateId]);
     $existing = array_map('strtolower', $existingStmt->fetchAll(PDO::FETCH_COLUMN));
-    
+
     $added = 0;
     foreach ($cities as $city) {
-        if (!in_array(strtolower($city), $existing)) {
+        if (! in_array(strtolower($city), $existing)) {
             $insertStmt->execute([$city, $stateId]);
             $added++;
         }
     }
-    
+
     $stateName = $pdo->query("SELECT name FROM states WHERE id = {$stateId}")->fetchColumn();
-    echo "  → {$stateName} (ID: {$stateId}): Added {$added} cities, " . count($existing) . " already existed.\n";
+    echo "  → {$stateName} (ID: {$stateId}): Added {$added} cities, ".count($existing)." already existed.\n";
 }
 
 echo "\n=== STEP 4: Verify results ===\n\n";
@@ -296,20 +297,20 @@ foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
 
 // Verify Pakistan states
 echo "\nPakistan states:\n";
-$stmt = $pdo->query("SELECT id, name FROM states WHERE country_id = 166 ORDER BY name");
+$stmt = $pdo->query('SELECT id, name FROM states WHERE country_id = 166 ORDER BY name');
 foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
     echo "  ID={$row['id']}, name='{$row['name']}'\n";
 }
 
 // Verify KPK cities
 echo "\nKPK cities:\n";
-$stmt = $pdo->query("SELECT id, name FROM cities WHERE state_id = 2726 ORDER BY name");
+$stmt = $pdo->query('SELECT id, name FROM cities WHERE state_id = 2726 ORDER BY name');
 foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
     echo "  {$row['name']}\n";
 }
 
 // Count all profile_option_values
-$count = $pdo->query("SELECT COUNT(*) FROM profile_option_values")->fetchColumn();
+$count = $pdo->query('SELECT COUNT(*) FROM profile_option_values')->fetchColumn();
 echo "\nTotal profile_option_values: {$count}\n";
 
 echo "\n=== ALL FIXES APPLIED SUCCESSFULLY ===\n";

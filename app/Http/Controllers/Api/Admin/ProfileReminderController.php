@@ -53,6 +53,7 @@ class ProfileReminderController extends BaseAdminController
     public function clearLogs()
     {
         ProfileCompletionReminderLog::query()->delete();
+
         return $this->ok(null, 'Reminder logs cleared');
     }
 }

@@ -2,21 +2,11 @@
 
 namespace Tests\Feature;
 
-use App\Models\Addon;
-use App\Models\Address;
-use App\Models\Country;
 use App\Models\Member;
-use App\Models\MaritalStatus;
-use App\Models\PhysicalAttribute;
-use App\Models\Package;
 use App\Models\Referral;
 use App\Models\ReferralCode;
-use App\Models\ReferralReward;
 use App\Models\ReferralRule;
 use App\Models\ReferralSetting;
-use App\Models\Religion;
-use App\Models\SpiritualBackground;
-use App\Models\Setting;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Services\ReferralService;
@@ -76,6 +66,8 @@ class ReferralSystemTest extends TestCase
             ->assertJsonPath('result', true)
             ->assertJsonPath('data.referrer_name', 'Referrer');
 
+        $this->verifyEmailForSignup('referred@example.com');
+
         $response = $this->postJson('/api/signup', [
             'first_name' => 'Referred',
             'last_name' => 'Candidate',
@@ -128,6 +120,8 @@ class ReferralSystemTest extends TestCase
         ]);
         $deletedUser->delete();
 
+        $this->verifyEmailForSignup('mindreader_420@yahoo.com');
+
         $response = $this->postJson('/api/signup', [
             'first_name' => 'Reborn',
             'last_name' => 'Member',
@@ -148,10 +142,11 @@ class ReferralSystemTest extends TestCase
         $this->assertSame(1, User::onlyTrashed()->where('email', 'mindreader_420@yahoo.com')->count());
     }
 
-
     public function test_api_signup_succeeds_without_date_of_birth_and_creates_member_with_null_birthday(): void
     {
         $this->enableReferralProgram('registration_only');
+
+        $this->verifyEmailForSignup('nodob.member@example.com');
 
         $response = $this->postJson('/api/signup', [
             'first_name' => 'NoDob',
@@ -177,6 +172,8 @@ class ReferralSystemTest extends TestCase
     public function test_api_signup_still_accepts_date_of_birth_when_provided(): void
     {
         $this->enableReferralProgram('registration_only');
+
+        $this->verifyEmailForSignup('withdob.member@example.com');
 
         $response = $this->postJson('/api/signup', [
             'first_name' => 'WithDob',
@@ -213,7 +210,8 @@ class ReferralSystemTest extends TestCase
         ]);
         $referralCode = ReferralCode::getOrCreateForUser($referrer->id);
 
-        $socialUser = new class {
+        $socialUser = new class
+        {
             public function getId()
             {
                 return 'google-social-id';
@@ -408,7 +406,7 @@ class ReferralSystemTest extends TestCase
     protected function createUser(array $attributes = []): User
     {
         $defaults = [
-            'email' => $attributes['email'] ?? ('user.' . uniqid() . '@example.com'),
+            'email' => $attributes['email'] ?? ('user.'.uniqid().'@example.com'),
             'password' => Hash::make('password123'),
             'email_verified_at' => now(),
         ];
@@ -652,6 +650,25 @@ class ReferralSystemTest extends TestCase
             $table->timestamps();
         });
 
+        Schema::create('verification_codes', function (Blueprint $table) {
+            $table->id();
+            $table->string('identifier');
+            $table->string('code', 6);
+            $table->string('type', 20);
+            $table->timestamp('expires_at');
+            $table->boolean('verified')->default(false);
+            $table->timestamps();
+            $table->index(['identifier', 'type']);
+            $table->index('expires_at');
+        });
+
+        Schema::create('email_templates', function (Blueprint $table) {
+            $table->id();
+            $table->string('identifier')->unique();
+            $table->unsignedTinyInteger('status')->default(0);
+            $table->timestamps();
+        });
+
         Schema::create('referral_settings', function (Blueprint $table) {
             $table->id();
             $table->boolean('referral_enabled')->default(false);
@@ -744,5 +761,18 @@ class ReferralSystemTest extends TestCase
             $table->unsignedBigInteger('referral_user')->nullable();
             $table->timestamps();
         });
+    }
+
+    private function verifyEmailForSignup(string $email): void
+    {
+        DB::table('verification_codes')->insert([
+            'identifier' => $email,
+            'code' => '123456',
+            'type' => 'email',
+            'expires_at' => now()->addMinutes(30),
+            'verified' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
 }

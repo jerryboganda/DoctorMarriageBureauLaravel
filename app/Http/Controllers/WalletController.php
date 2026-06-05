@@ -2,9 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\InstamojoController;
-use App\Http\Controllers\PaypalController;
-use App\Http\Controllers\PaystackController;
 use App\Models\ManualPaymentMethod;
 use App\Models\User;
 use App\Models\Wallet;
@@ -22,12 +19,12 @@ class WalletController extends Controller
 
     public function index()
     {
-        \Log::info('Wallet page accessed by user: ' . Auth::user()->id);
-        
+        \Log::info('Wallet page accessed by user: '.Auth::user()->id);
+
         // Check wallet system setting
         $walletSystemEnabled = get_setting('wallet_system');
-        \Log::info('Wallet system setting: ' . ($walletSystemEnabled ? 'Enabled' : 'Disabled'));
-        
+        \Log::info('Wallet system setting: '.($walletSystemEnabled ? 'Enabled' : 'Disabled'));
+
         // Temporarily bypass wallet system check for testing
         // if (!$walletSystemEnabled) {
         //     \Log::info('Wallet system disabled, redirecting back');
@@ -35,20 +32,22 @@ class WalletController extends Controller
         // }
 
         $wallets = Wallet::where('user_id', Auth::user()->id)->latest()->paginate(9);
-        \Log::info('Wallet records found: ' . $wallets->count());
-        
+        \Log::info('Wallet records found: '.$wallets->count());
+
         return view('frontend.member.wallet.index', compact('wallets'));
     }
 
     public function wallet_recharge_methods()
     {
         $manual_payments = ManualPaymentMethod::all();
+
         return view('frontend.member.wallet.recharge_methods', compact('manual_payments'));
     }
 
     public function show($id)
     {
-        $wallet_payment    = Wallet::findOrFail($id);
+        $wallet_payment = Wallet::findOrFail($id);
+
         return view('admin.wallet.wallet_payment_details', compact('wallet_payment'));
     }
 
@@ -65,30 +64,39 @@ class WalletController extends Controller
 
         if ($request->payment_option == 'paypal') {
             $paypal = new PaypalController;
+
             return $paypal->pay();
         } elseif ($request->payment_option == 'instamojo') {
             $instamojo = new InstamojoController;
+
             return $instamojo->pay($request);
         } elseif ($request->payment_option == 'stripe') {
             $stripe = new StripeController;
+
             return $stripe->pay();
         } elseif ($request->payment_option == 'razorpay') {
             $razorpay = new RazorpayController;
+
             return $razorpay->pay($request);
         } elseif ($request->payment_option == 'paystack') {
             $paystack = new PaystackController;
+
             return $paystack->redirectToGateway($request);
         } elseif ($request->payment_option == 'paytm') {
             $paytm = new PaytmController;
+
             return $paytm->index();
         } elseif ($request->payment_option == 'aamarpay') {
             $aamarpay = new AamarpayController;
+
             return $aamarpay->pay();
         } elseif ($request->payment_option == 'sslcommerz') {
             $sslcommerz = new SslcommerzController;
+
             return $sslcommerz->pay($request);
         } elseif ($request->payment_option == 'phonepe') {
             $phonepe = new PhonepeController;
+
             return $phonepe->pay($request);
         } elseif ($request->payment_option == 'manual_payment') {
             $user = Auth::user();
@@ -96,7 +104,7 @@ class WalletController extends Controller
             $wallet = new Wallet;
             $wallet->user_id = $user->id;
             $wallet->amount = $request->amount;
-            $wallet->payment_method =  ManualPaymentMethod::find($request->manual_payment_id)->heading;
+            $wallet->payment_method = ManualPaymentMethod::find($request->manual_payment_id)->heading;
             $wallet->payment_details = $request->payment_details;
             $wallet->offline_payment = 1;
             $wallet->reciept = $request->payment_proof;
@@ -107,6 +115,7 @@ class WalletController extends Controller
             Session::forget('payment_type');
 
             flash(translate('Payment completed'))->success();
+
             return redirect()->route('wallet.index');
         }
     }
@@ -128,12 +137,14 @@ class WalletController extends Controller
         Session::forget('payment_type');
 
         flash(translate('Payment completed'))->success();
+
         return redirect()->route('wallet.index');
     }
 
     public function manual_wallet_recharge_requests()
     {
         $wallets = Wallet::latest()->where('offline_payment', 1)->paginate(10);
+
         return view('admin.wallet.manual_recharge_requests', compact('wallets'));
     }
 
@@ -146,6 +157,7 @@ class WalletController extends Controller
         $user->save();
         $wallet->save();
         flash(translate('Wallet Manual Payment Accepted Successfully'))->success();
+
         return redirect()->route('manual_wallet_recharge_requests');
     }
 
@@ -166,7 +178,7 @@ class WalletController extends Controller
 
         if ($request->date_range) {
             $date_range = $request->date_range;
-            $date_range1 = explode(" / ", $request->date_range);
+            $date_range1 = explode(' / ', $request->date_range);
             $wallet_history = $wallet_history->where('created_at', '>=', $date_range1[0]);
             $wallet_history = $wallet_history->where('created_at', '<=', $date_range1[1]);
         }
@@ -175,6 +187,7 @@ class WalletController extends Controller
         }
 
         $wallets = $wallet_history->paginate(10);
+
         return view('admin.wallet.transaction_history', compact('wallets', 'users_with_wallet', 'user_id', 'date_range'));
     }
 }

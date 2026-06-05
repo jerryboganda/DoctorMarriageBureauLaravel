@@ -5,12 +5,13 @@ namespace App\Http\Resources\PublicProfile;
 use App\Models\Caste;
 use App\Models\Country;
 use App\Models\FamilyValue;
-use App\Models\Language;
 use App\Models\MaritalStatus;
 use App\Models\MemberLanguage;
 use App\Models\Religion;
 use App\Models\State;
 use App\Models\SubCaste;
+use Illuminate\Contracts\Support\Arrayable;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class PartnerExpectationResource extends JsonResource
@@ -18,8 +19,8 @@ class PartnerExpectationResource extends JsonResource
     /**
      * Transform the resource into an array.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return array|\Illuminate\Contracts\Support\Arrayable|\JsonSerializable
+     * @param  Request  $request
+     * @return array|Arrayable|\JsonSerializable
      */
     public function toArray($request)
     {
@@ -32,6 +33,7 @@ class PartnerExpectationResource extends JsonResource
         $family_value = FamilyValue::find($this->family_value_id);
         $marital_status = MaritalStatus::find($this->marital_status_id);
         $language = MemberLanguage::find($this->language_id);
+
         return [
             'general' => $this->general,
             'height' => $this->height,
@@ -39,8 +41,8 @@ class PartnerExpectationResource extends JsonResource
             'marital_status' => $marital_status ? $marital_status->name : null,
             'children_acceptable' => ($this->children_acceptable),
             'residence_country_id' => $residence_country ? $residence_country->name : '',
-            'religion_id' =>  $religion ?  $religion->name : '',
-            'caste_id' =>  $caste ?  $caste->name : '',
+            'religion_id' => $religion ? $religion->name : '',
+            'caste_id' => $caste ? $caste->name : '',
             'sub_caste_id' => $sub_caste ? $sub_caste->name : '',
             'education' => $this->education,
             'profession' => $this->profession,

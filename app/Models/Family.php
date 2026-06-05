@@ -1,7 +1,6 @@
 <?php
 
 namespace App\Models;
-use App\Models\User;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -32,11 +31,11 @@ class Family extends Model
 
     protected $fillable = [
         'user_id',
-        'father', 'mother', 'sibling', 
+        'father', 'mother', 'sibling',
         'father_occupation', 'mother_occupation',
         'about_parents', 'about_siblings', 'about_relatives',
-        'about_description', 'location_city', 'location_country', 
-        'tradition_level', 'affluence_level', 'interests'
+        'about_description', 'location_city', 'location_country',
+        'tradition_level', 'affluence_level', 'interests',
     ];
 
     protected $casts = [

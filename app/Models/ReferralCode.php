@@ -87,7 +87,8 @@ class ReferralCode extends Model
     {
         // Use FRONTEND_URL for the user-facing panel, fallback to panel subdomain
         $baseUrl = rtrim(env('FRONTEND_URL', 'https://panel.doctormarriagebureau.com.pk'), '/');
-        return $baseUrl . '/register?ref=' . $this->code;
+
+        return $baseUrl.'/register?ref='.$this->code;
     }
 
     /**

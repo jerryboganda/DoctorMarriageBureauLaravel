@@ -96,24 +96,24 @@ class ProgressionControllerTest extends TestCase
 
         Sanctum::actingAs($viewer);
 
-        $response = $this->getJson('/api/progression/' . $partner->id);
+        $response = $this->getJson('/api/progression/'.$partner->id);
         $response->assertOk();
         $response->assertJsonPath('result', true);
         $response->assertJsonPath('data.partner_id', $partner->id);
         $response->assertJsonCount(0, 'data.checklist_items');
 
-        $this->postJson('/api/progression/' . $progression->id . '/items', [
+        $this->postJson('/api/progression/'.$progression->id.'/items', [
             'kind' => 'checklist',
             'title' => 'Share biodata',
             'sort_order' => 1,
         ])->assertOk();
 
-        $this->postJson('/api/progression/' . $progression->id . '/items', [
+        $this->postJson('/api/progression/'.$progression->id.'/items', [
             'kind' => 'note',
             'note' => 'Family liked the introduction.',
         ])->assertOk();
 
-        $this->postJson('/api/progression/' . $progression->id . '/items', [
+        $this->postJson('/api/progression/'.$progression->id.'/items', [
             'kind' => 'venue',
             'name' => 'Pearl Continental',
             'venue_type' => 'Dinner',
@@ -123,7 +123,7 @@ class ProgressionControllerTest extends TestCase
             'notes' => 'Good for family meeting',
         ])->assertOk();
 
-        $this->postJson('/api/progression/' . $progression->id . '/items', [
+        $this->postJson('/api/progression/'.$progression->id.'/items', [
             'kind' => 'budget',
             'label' => 'Venue advance',
             'amount' => 30000,
@@ -132,7 +132,7 @@ class ProgressionControllerTest extends TestCase
             'notes' => 'Hold until final date',
         ])->assertOk();
 
-        $this->postJson('/api/progression/' . $progression->id . '/items', [
+        $this->postJson('/api/progression/'.$progression->id.'/items', [
             'kind' => 'event',
             'title' => 'Family meeting',
             'event_at' => now()->addWeek()->toIso8601String(),
@@ -141,12 +141,12 @@ class ProgressionControllerTest extends TestCase
             'notes' => 'Bring biodata prints',
         ])->assertOk();
 
-        $this->patchJson('/api/progression/' . $progression->id . '/items/' . $progression->checklistItems()->first()->id, [
+        $this->patchJson('/api/progression/'.$progression->id.'/items/'.$progression->checklistItems()->first()->id, [
             'kind' => 'checklist',
             'is_completed' => true,
         ])->assertOk();
 
-        $this->patchJson('/api/progression/' . $progression->id . '/settings', [
+        $this->patchJson('/api/progression/'.$progression->id.'/settings', [
             'share_calendar_busy' => false,
             'auto_detect_timezone' => false,
             'timezone' => 'Asia/Karachi',
@@ -157,7 +157,7 @@ class ProgressionControllerTest extends TestCase
             return $event->progression->id === $progression->id && $event->section === 'settings';
         });
 
-        $fresh = $this->getJson('/api/progression/' . $partner->id);
+        $fresh = $this->getJson('/api/progression/'.$partner->id);
         $fresh->assertOk();
         $fresh->assertJsonPath('data.summary.checklist_total', 1);
         $fresh->assertJsonPath('data.summary.checklist_completed', 1);
@@ -200,7 +200,7 @@ class ProgressionControllerTest extends TestCase
 
         Sanctum::actingAs($outsider);
 
-        $this->patchJson('/api/progression/' . $progression->id . '/items/' . $progression->checklistItems()->first()->id, [
+        $this->patchJson('/api/progression/'.$progression->id.'/items/'.$progression->checklistItems()->first()->id, [
             'kind' => 'checklist',
             'is_completed' => true,
         ])->assertForbidden();
@@ -395,4 +395,3 @@ class ProgressionControllerTest extends TestCase
         DB::table('addresses')->insert(['user_id' => $userId, 'city_id' => $cityId, 'type' => 'present', 'created_at' => now(), 'updated_at' => now()]);
     }
 }
-

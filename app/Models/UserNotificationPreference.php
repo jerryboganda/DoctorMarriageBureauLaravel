@@ -30,14 +30,14 @@ class UserNotificationPreference extends Model
      */
     public function shouldAutoWake(): bool
     {
-        if (!$this->profile_snoozed) {
+        if (! $this->profile_snoozed) {
             return false;
         }
-        
+
         if ($this->snooze_until && now()->gte($this->snooze_until)) {
             return true;
         }
-        
+
         return false;
     }
 }

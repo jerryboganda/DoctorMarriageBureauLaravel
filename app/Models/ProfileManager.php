@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
@@ -32,7 +33,7 @@ class ProfileManager extends Model
     ];
 
     const MANAGER_TYPES = ['owner', 'family', 'matchmaker'];
-    
+
     const PERMISSIONS = [
         'view_profile' => 'View profile details',
         'edit_profile' => 'Edit profile information',
@@ -72,7 +73,7 @@ class ProfileManager extends Model
     /**
      * Get managers for a member
      */
-    public static function getForMember(int $memberId): \Illuminate\Database\Eloquent\Collection
+    public static function getForMember(int $memberId): Collection
     {
         return self::where('member_id', $memberId)
             ->where('is_active', true)
@@ -123,7 +124,7 @@ class ProfileManager extends Model
             ->where('is_active', false)
             ->first();
 
-        if (!$manager) {
+        if (! $manager) {
             return null;
         }
 
@@ -142,11 +143,12 @@ class ProfileManager extends Model
      */
     public function hasPermission(string $permission): bool
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 
         $permissions = $this->permissions ?? [];
+
         return in_array($permission, $permissions);
     }
 
@@ -197,7 +199,7 @@ class ProfileManager extends Model
             'permissions' => $this->permissions ?? [],
             'is_primary' => $this->is_primary,
             'is_active' => $this->is_active,
-            'is_pending' => !$this->is_active && $this->invitation_token,
+            'is_pending' => ! $this->is_active && $this->invitation_token,
             'invited_at' => $this->invited_at?->toISOString(),
             'accepted_at' => $this->accepted_at?->toISOString(),
         ];

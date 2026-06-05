@@ -11,8 +11,8 @@ class EmailTemplateController extends BaseAdminController
     {
         $query = EmailTemplate::query()->orderBy('identifier');
         if ($search = $request->get('search')) {
-            $query->where('identifier', 'like', '%' . $search . '%')
-                ->orWhere('subject', 'like', '%' . $search . '%');
+            $query->where('identifier', 'like', '%'.$search.'%')
+                ->orWhere('subject', 'like', '%'.$search.'%');
         }
 
         return $this->ok($this->paginateQuery($request, $query));
@@ -21,7 +21,7 @@ class EmailTemplateController extends BaseAdminController
     public function update(Request $request)
     {
         $id = $request->get('id');
-        if (!$id) {
+        if (! $id) {
             return $this->fail('Template id is required', 422);
         }
 
@@ -37,6 +37,7 @@ class EmailTemplateController extends BaseAdminController
     public function show($id)
     {
         $template = EmailTemplate::findOrFail($id);
+
         return $this->ok($template);
     }
 

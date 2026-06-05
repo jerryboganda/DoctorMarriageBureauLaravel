@@ -11,7 +11,7 @@ class RoleController extends BaseAdminController
     {
         $query = Role::query()->with('permissions')->orderByDesc('id');
         if ($search = $request->get('search')) {
-            $query->where('name', 'like', '%' . $search . '%');
+            $query->where('name', 'like', '%'.$search.'%');
         }
 
         return $this->ok($this->paginateQuery($request, $query));
@@ -25,7 +25,7 @@ class RoleController extends BaseAdminController
 
         $role = Role::create(['name' => $request->name]);
         $permissions = $request->get('permissions', []);
-        if (is_array($permissions) && !empty($permissions)) {
+        if (is_array($permissions) && ! empty($permissions)) {
             $role->syncPermissions($permissions);
         }
 
@@ -35,6 +35,7 @@ class RoleController extends BaseAdminController
     public function show($id)
     {
         $role = Role::with('permissions')->findOrFail($id);
+
         return $this->ok($role);
     }
 
@@ -57,6 +58,7 @@ class RoleController extends BaseAdminController
     {
         $role = Role::findOrFail($id);
         $role->delete();
+
         return $this->ok(null, 'Role deleted successfully');
     }
 

@@ -13,8 +13,8 @@ use App\Models\ProgressionSetting;
 use App\Models\ProgressionStage;
 use App\Models\ProgressionVenue;
 use App\Models\User;
-use Illuminate\Http\Request;
 use App\Utility\MemberUtility;
+use Illuminate\Http\Request;
 
 class ProgressionController extends Controller
 {
@@ -71,7 +71,7 @@ class ProgressionController extends Controller
         }
 
         $progression = $this->resolveSharedProgression($userId, $partnerId);
-        if (!$progression) {
+        if (! $progression) {
             $startStage = ProgressionStage::orderBy('order', 'asc')->first();
             $progression = MemberProgression::create([
                 'user_id' => $userId,
@@ -89,7 +89,7 @@ class ProgressionController extends Controller
             $progression->load($this->progressionRelations());
         }
 
-        event(new ProgressionUpdated($progression, $userId, 'start'));
+        $this->broadcastProgressionUpdate($progression, $userId, 'start');
 
         return response()->json([
             'result' => true,
@@ -104,12 +104,12 @@ class ProgressionController extends Controller
         $partnerId = (int) $id;
 
         $partner = User::find($partnerId);
-        if (!$partner) {
+        if (! $partner) {
             return response()->json(['result' => false, 'message' => 'Partner not found'], 404);
         }
 
         $progression = $this->resolveSharedProgression($viewerId, $partnerId);
-        if (!$progression) {
+        if (! $progression) {
             return response()->json(['result' => false, 'message' => 'Progression not found'], 404);
         }
 
@@ -126,11 +126,11 @@ class ProgressionController extends Controller
         ]);
 
         $progression = $this->resolveProgressionById((int) $id);
-        if (!$progression) {
+        if (! $progression) {
             return response()->json(['result' => false, 'message' => 'Progression not found'], 404);
         }
 
-        if (!$this->isParticipant($progression, auth()->id())) {
+        if (! $this->isParticipant($progression, auth()->id())) {
             return response()->json(['result' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -140,7 +140,7 @@ class ProgressionController extends Controller
             'total_progress_percent' => $stage->progress_percent,
         ]);
 
-        event(new ProgressionUpdated($progression->fresh($this->progressionRelations()), auth()->id(), 'stage'));
+        $this->broadcastProgressionUpdate($progression->fresh($this->progressionRelations()), auth()->id(), 'stage');
 
         return response()->json([
             'result' => true,
@@ -152,11 +152,11 @@ class ProgressionController extends Controller
     public function storeItem(Request $request, $id)
     {
         $progression = $this->resolveProgressionById((int) $id);
-        if (!$progression) {
+        if (! $progression) {
             return response()->json(['result' => false, 'message' => 'Progression not found'], 404);
         }
 
-        if (!$this->isParticipant($progression, auth()->id())) {
+        if (! $this->isParticipant($progression, auth()->id())) {
             return response()->json(['result' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -261,7 +261,7 @@ class ProgressionController extends Controller
         }
 
         $progression = $progression->fresh($this->progressionRelations());
-        event(new ProgressionUpdated($progression, $userId, $section));
+        $this->broadcastProgressionUpdate($progression, $userId, $section);
 
         return response()->json([
             'result' => true,
@@ -273,11 +273,11 @@ class ProgressionController extends Controller
     public function updateItem(Request $request, $id, $itemId)
     {
         $progression = $this->resolveProgressionById((int) $id);
-        if (!$progression) {
+        if (! $progression) {
             return response()->json(['result' => false, 'message' => 'Progression not found'], 404);
         }
 
-        if (!$this->isParticipant($progression, auth()->id())) {
+        if (! $this->isParticipant($progression, auth()->id())) {
             return response()->json(['result' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -365,7 +365,7 @@ class ProgressionController extends Controller
         }
 
         $progression = $progression->fresh($this->progressionRelations());
-        event(new ProgressionUpdated($progression, $userId, $section));
+        $this->broadcastProgressionUpdate($progression, $userId, $section);
 
         return response()->json([
             'result' => true,
@@ -377,11 +377,11 @@ class ProgressionController extends Controller
     public function deleteItem(Request $request, $id, $itemId)
     {
         $progression = $this->resolveProgressionById((int) $id);
-        if (!$progression) {
+        if (! $progression) {
             return response()->json(['result' => false, 'message' => 'Progression not found'], 404);
         }
 
-        if (!$this->isParticipant($progression, auth()->id())) {
+        if (! $this->isParticipant($progression, auth()->id())) {
             return response()->json(['result' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -417,7 +417,7 @@ class ProgressionController extends Controller
         }
 
         $progression = $progression->fresh($this->progressionRelations());
-        event(new ProgressionUpdated($progression, $userId, $section));
+        $this->broadcastProgressionUpdate($progression, $userId, $section);
 
         return response()->json([
             'result' => true,
@@ -429,11 +429,11 @@ class ProgressionController extends Controller
     public function updateSettings(Request $request, $id)
     {
         $progression = $this->resolveProgressionById((int) $id);
-        if (!$progression) {
+        if (! $progression) {
             return response()->json(['result' => false, 'message' => 'Progression not found'], 404);
         }
 
-        if (!$this->isParticipant($progression, auth()->id())) {
+        if (! $this->isParticipant($progression, auth()->id())) {
             return response()->json(['result' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -455,7 +455,7 @@ class ProgressionController extends Controller
         );
 
         $progression = $progression->fresh($this->progressionRelations());
-        event(new ProgressionUpdated($progression, auth()->id(), 'settings'));
+        $this->broadcastProgressionUpdate($progression, auth()->id(), 'settings');
 
         return response()->json([
             'result' => true,
@@ -661,7 +661,9 @@ class ProgressionController extends Controller
 
     private function firstCareer(?User $user)
     {
-        if (!$user) return null;
+        if (! $user) {
+            return null;
+        }
 
         if ($user->relationLoaded('career')) {
             return $user->career->first();
@@ -672,7 +674,9 @@ class ProgressionController extends Controller
 
     private function firstAddress(?User $user)
     {
-        if (!$user) return null;
+        if (! $user) {
+            return null;
+        }
 
         if ($user->relationLoaded('addresses')) {
             return $user->addresses->where('type', 'present')->first() ?? $user->addresses->first();
@@ -684,14 +688,16 @@ class ProgressionController extends Controller
 
     private function fullName(?User $user): string
     {
-        if (!$user) return 'Unknown';
+        if (! $user) {
+            return 'Unknown';
+        }
 
-        return trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')) ?: 'Unknown';
+        return trim(($user->first_name ?? '').' '.($user->last_name ?? '')) ?: 'Unknown';
     }
 
     private function deriveNextAction(MemberProgression $progression): ?string
     {
-        if (!empty($progression->next_steps)) {
+        if (! empty($progression->next_steps)) {
             return $progression->next_steps;
         }
 
@@ -708,10 +714,28 @@ class ProgressionController extends Controller
         return 'Add the next milestone';
     }
 
+    private function broadcastProgressionUpdate(?MemberProgression $progression, ?int $userId, string $section): void
+    {
+        if (! $progression) {
+            return;
+        }
+
+        try {
+            event(new ProgressionUpdated($progression, $userId, $section));
+        } catch (\Throwable $exception) {
+            \Log::warning('Progression broadcast failed: '.$exception->getMessage(), [
+                'progression_id' => $progression->id,
+                'user_id' => $userId,
+                'section' => $section,
+            ]);
+        }
+    }
+
     private function nextSortOrder(MemberProgression $progression, string $modelClass): int
     {
         $query = $modelClass::where('member_progression_id', $progression->id);
         $max = (int) ($query->max('sort_order') ?? 0);
+
         return $max + 1;
     }
 }

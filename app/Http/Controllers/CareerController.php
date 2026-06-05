@@ -2,26 +2,28 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Career;
-use Validator;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Redirect;
+use Validator;
 
 class CareerController extends Controller
 {
     public function __construct()
     {
         $this->rules = [
-            'designation'  => [ 'required','max:255'],
-            'company'      => [ 'required','max:255'],
-            'career_start' => [ 'required','numeric'],
-            'career_end'   => [ 'numeric', 'nullable'],
+            'designation' => ['required', 'max:255'],
+            'company' => ['required', 'max:255'],
+            'career_start' => ['required', 'numeric'],
+            'career_end' => ['numeric', 'nullable'],
         ];
     }
+
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index()
     {
@@ -31,19 +33,19 @@ class CareerController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create(Request $request)
     {
         $member_id = $request->id;
+
         return view('frontend.member.profile.career.create', compact('member_id'));
     }
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(Request $request)
     {
@@ -52,32 +54,34 @@ class CareerController extends Controller
 
         if ($validator->fails()) {
             flash(translate('Something went wrong'))->error();
+
             return Redirect::back();
         }
 
-        $career              = new Career;
-        $career->user_id     = $request->user_id;
+        $career = new Career;
+        $career->user_id = $request->user_id;
         $career->designation = $request->designation;
-        $career->company     = $request->company;
-        $career->start       = $request->career_start;
-        $career->end         = $request->career_end;
+        $career->company = $request->company;
+        $career->start = $request->career_start;
+        $career->end = $request->career_end;
 
-        if($career->save()){
+        if ($career->save()) {
             flash(translate('Career Info has been added successfully'))->success();
+
             return back();
-        }
-        else {
+        } else {
             flash(translate('Sorry! Something went wrong.'))->error();
+
             return back();
         }
     }
 
     /**
      * Display the specified resource.
-    *
-    * @param  int  $id
-    * @return \Illuminate\Http\Response
-    */
+     *
+     * @param  int  $id
+     * @return Response
+     */
     public function show($id)
     {
         //
@@ -85,23 +89,23 @@ class CareerController extends Controller
 
     /**
      * Show the form for editing the specified resource.
-    *
-    * @param  int  $id
-    * @return \Illuminate\Http\Response
-    */
-
+     *
+     * @param  int  $id
+     * @return Response
+     */
     public function edit(Request $request)
     {
         $career = Career::findOrFail($request->id);
+
         return view('frontend.member.profile.career.edit', compact('career'));
     }
+
     /**
      * Update the specified resource in storage.
-    *
-    * @param  \Illuminate\Http\Request  $request
-    * @param  int  $id
-    * @return \Illuminate\Http\Response
-    */
+     *
+     * @param  int  $id
+     * @return Response
+     */
     public function update(Request $request, $id)
     {
         $rules = $this->rules;
@@ -109,21 +113,23 @@ class CareerController extends Controller
 
         if ($validator->fails()) {
             flash(translate('Something went wrong'))->error();
+
             return Redirect::back();
         }
 
-        $career              = Career::findOrFail($id);
+        $career = Career::findOrFail($id);
         $career->designation = $request->designation;
-        $career->company     = $request->company;
-        $career->start       = $request->career_start;
-        $career->end         = $request->career_end;
+        $career->company = $request->company;
+        $career->start = $request->career_start;
+        $career->end = $request->career_end;
 
-        if($career->save()){
+        if ($career->save()) {
             flash(translate('Career Info has been updated successfully'))->success();
+
             return back();
-        }
-        else {
+        } else {
             flash(translate('Sorry! Something went wrong.'))->error();
+
             return back();
         }
     }
@@ -135,26 +141,28 @@ class CareerController extends Controller
         if ($career->save()) {
             $msg = $career->present == 1 ? translate('Enabled') : translate('Disabled');
             flash(translate($msg))->success();
+
             return 1;
         }
+
         return 0;
     }
 
     /**
      * Remove the specified resource from storage.
-    *
-    * @param  int  $id
-    * @return \Illuminate\Http\Response
-    */
+     *
+     * @param  int  $id
+     * @return Response
+     */
     public function destroy($id)
     {
-        if(Career::destroy($id))
-        {
+        if (Career::destroy($id)) {
             flash(translate('Career info has been deleted successfully'))->success();
+
             return back();
-        }
-        else {
+        } else {
             flash(translate('Sorry! Something went wrong.'))->error();
+
             return back();
         }
     }

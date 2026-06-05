@@ -2,25 +2,24 @@
 
 namespace App\Http\Controllers;
 
-use Symfony\Component\Console\Input\Input;
-use Illuminate\Validation\Rule;
 use App\Models\Language;
 use App\Models\Translation;
-use Illuminate\Http\Request;
-use Validator;
-use Redirect;
 use Cache;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Redirect;
+use Validator;
 
 class LanguageController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
+    private $rules = [];
 
-    private $rules = array();
-    private $messages = array();
+    private $messages = [];
 
     public function __construct()
     {
@@ -31,28 +30,28 @@ class LanguageController extends Controller
         $this->middleware(['permission:delete_languages'])->only('destroy');
 
         $this->rules = [
-            'name' => ['required','unique:languages,name','max:100'],
+            'name' => ['required', 'unique:languages,name', 'max:100'],
         ];
 
         $this->messages = [
-            'name.required'     => translate('Name is required'),
-            'name.unique'       => translate('Name must be unique'),
-            'name.max'          => translate('Name must less than :max characters'),
+            'name.required' => translate('Name is required'),
+            'name.unique' => translate('Name must be unique'),
+            'name.max' => translate('Name must less than :max characters'),
         ];
     }
 
-
     public function index()
     {
-        $per_page   = 5;
-        $languages  = Language::paginate($per_page);
-        return view('admin.settings.languages.index', compact('languages','per_page'));
+        $per_page = 5;
+        $languages = Language::paginate($per_page);
+
+        return view('admin.settings.languages.index', compact('languages', 'per_page'));
     }
 
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function create()
     {
@@ -62,8 +61,7 @@ class LanguageController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(Request $request)
     {
@@ -73,19 +71,21 @@ class LanguageController extends Controller
 
         if ($validator->fails()) {
             flash(translate('Something went wrong'))->error();
+
             return Redirect::back()->withErrors($validator);
         }
 
-        $language       = new Language;
+        $language = new Language;
         $language->name = $request->name;
         $language->code = $request->code;
-        if($language->save()){
+        if ($language->save()) {
 
             flash(translate('Language has been inserted successfully'))->success();
+
             return redirect()->route('languages.index');
-        }
-        else{
+        } else {
             flash(translate('Something went wrong'))->error();
+
             return back();
         }
 
@@ -95,86 +95,89 @@ class LanguageController extends Controller
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function show(Request $request, $id)
     {
-        $sort_search  = null;
-        $language     = Language::findOrFail(decrypt($id));
-        $lang_keys    = Translation::where('lang', env('DEFAULT_LANGUAGE', 'en'));
-        if ($request->has('search')){
-            $sort_search  = $request->search;
-            $lang_keys    = $lang_keys->where('lang_key', 'like', '%'.$sort_search.'%');
+        $sort_search = null;
+        $language = Language::findOrFail(decrypt($id));
+        $lang_keys = Translation::where('lang', env('DEFAULT_LANGUAGE', 'en'));
+        if ($request->has('search')) {
+            $sort_search = $request->search;
+            $lang_keys = $lang_keys->where('lang_key', 'like', '%'.$sort_search.'%');
         }
         $lang_keys = $lang_keys->paginate(50);
-        return view('admin.settings.languages.translate', compact('language','lang_keys','sort_search'));
+
+        return view('admin.settings.languages.translate', compact('language', 'lang_keys', 'sort_search'));
     }
 
     /**
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
-     public function edit($id)
-     {
+    public function edit($id)
+    {
         $language = Language::findOrFail($id);
+
         return view('admin.settings.languages.edit', compact('language'));
     }
 
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
-     public function update(Request $request, $id)
-     {
-         $language       = Language::findOrFail($id);
-         $language->name = $request->name;
-         $language->code = $request->code;
-         if($language->save()){
-             flash(translate('Language has been updated successfully'))->success();
-             return redirect()->route('languages.index');
-         }
-         else{
-             flash(translate('Something went wrong'))->error();
-             return back();
-         }
-     }
+    public function update(Request $request, $id)
+    {
+        $language = Language::findOrFail($id);
+        $language->name = $request->name;
+        $language->code = $request->code;
+        if ($language->save()) {
+            flash(translate('Language has been updated successfully'))->success();
+
+            return redirect()->route('languages.index');
+        } else {
+            flash(translate('Something went wrong'))->error();
+
+            return back();
+        }
+    }
 
     public function update_rtl_status(Request $request)
     {
         $language = Language::findOrFail($request->id);
         $language->rtl = $request->status;
-        if($language->save()){
+        if ($language->save()) {
             flash(translate('RTL status updated successfully'))->success();
+
             return 1;
         }
+
         return 0;
     }
-
 
     public function key_value_store(Request $request)
     {
         $language = Language::findOrFail($request->id);
         foreach ($request->values as $key => $value) {
             $translation_def = Translation::where('lang_key', $key)->where('lang', $language->code)->latest()->first();
-            if($translation_def == null){
+            if ($translation_def == null) {
                 $translation_def = new Translation;
                 $translation_def->lang = $language->code;
                 $translation_def->lang_key = $key;
                 $translation_def->lang_value = $value;
                 $translation_def->save();
-            }
-            else {
+            } else {
                 $translation_def->lang_value = $value;
                 $translation_def->save();
             }
         }
         Cache::forget('translations-'.$language->code);
         flash(translate('Translations updated for ').$language->name)->success();
+
         return back();
     }
 
@@ -189,21 +192,21 @@ class LanguageController extends Controller
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function destroy($id)
     {
         $language = Language::findOrFail($id);
         if (env('DEFAULT_LANGUAGE') == $language->code) {
             flash(translate('Default language can not be deleted'))->error();
-        }
-        else {
-            if($language->code == session()->get('locale')){
+        } else {
+            if ($language->code == session()->get('locale')) {
                 session()->put('locale', env('DEFAULT_LANGUAGE'));
             }
             Language::destroy($id);
             flash(translate('Language has been deleted successfully'))->success();
         }
+
         return redirect()->route('languages.index');
     }
 }

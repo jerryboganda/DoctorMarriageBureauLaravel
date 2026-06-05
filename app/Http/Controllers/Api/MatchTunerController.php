@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -15,7 +14,7 @@ class MatchTunerController extends Controller
     public function tune(Request $request)
     {
         $user = auth()->user();
-        
+
         $request->validate([
             'dealbreaker' => 'nullable|string',
             'careerLevel' => 'nullable|string',
@@ -28,12 +27,12 @@ class MatchTunerController extends Controller
         if ($request->dealbreaker === 'Smoking') {
             $updates['smoking_acceptable'] = 'No';
         }
-        
+
         if ($request->careerLevel === 'Established Specialist') {
             $updates['profession'] = 'Specialist';
         }
 
-        if (!empty($updates)) {
+        if (! empty($updates)) {
             DB::table('partner_expectations')->updateOrInsert(
                 ['user_id' => $user->id],
                 array_merge($updates, ['updated_at' => now()])
@@ -45,8 +44,8 @@ class MatchTunerController extends Controller
             'message' => 'Preferences updated successfully',
             'impact' => [
                 'matchesAffected' => rand(5, 15),
-                'newCompatibilityScore' => 0 // Will be recalculated on next load
-            ]
+                'newCompatibilityScore' => 0, // Will be recalculated on next load
+            ],
         ]);
     }
 }

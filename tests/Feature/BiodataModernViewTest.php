@@ -48,7 +48,7 @@ class BiodataModernViewTest extends TestCase
 
     private function makeUser(float $height, ?string $diet, ?string $smoke, ?string $drink): object
     {
-        $user = new \stdClass();
+        $user = new \stdClass;
         $user->id = 20;
         $user->first_name = 'Muhammad';
         $user->last_name = 'Mutayyab';
@@ -110,4 +110,3 @@ class BiodataModernViewTest extends TestCase
         return $user;
     }
 }
-

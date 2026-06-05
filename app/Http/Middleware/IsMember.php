@@ -2,18 +2,18 @@
 
 namespace App\Http\Middleware;
 
-use Closure;
 use Auth;
 use Cache;
 use Carbon\Carbon;
+use Closure;
+use Illuminate\Http\Request;
 
 class IsMember
 {
     /**
      * Handle an incoming request.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
+     * @param  Request  $request
      * @return mixed
      */
     public function handle($request, Closure $next)
@@ -31,7 +31,7 @@ class IsMember
         if (Auth::check() && Auth::user()->user_type == 'member') {
 
             $expiresAt = Carbon::now()->addMinutes(3);
-            Cache::put('user-is-online-' . Auth::user()->id, true, $expiresAt);
+            Cache::put('user-is-online-'.Auth::user()->id, true, $expiresAt);
 
             // Check deactivated status
             if (Auth::user()->deactivated == 1) {
@@ -39,11 +39,13 @@ class IsMember
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
                 flash(translate('Your account has been deactivated by the administrator. Please contact support for assistance.'))->error();
+
                 return redirect()->route('user.login');
             }
 
-            if (Auth::user()->approved == 0 && !$this->isLimitedCommunicationRoute($request)) {
-                flash(translate("Please verify your account."));
+            if (Auth::user()->approved == 0 && ! $this->isLimitedCommunicationRoute($request)) {
+                flash(translate('Please verify your account.'));
+
                 return redirect()->route('member.verification');
             } else {
                 if (Auth::user()->blocked == 1) {
@@ -54,6 +56,7 @@ class IsMember
             }
         } else {
             session(['link' => url()->current()]);
+
             return redirect()->route('user.login');
         }
     }

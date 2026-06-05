@@ -1,13 +1,19 @@
 <?php
 
-
-Route::get('/health', function () { return response()->json(['status' => 'ok', 'time' => now()->toIso8601String(), 'app' => config('app.name')]); });
+Route::get('/health', function () {
+    return response()->json(['status' => 'ok', 'time' => now()->toIso8601String(), 'app' => config('app.name')]);
+});
 
 use App\Http\Controllers\Api\AdditionalAttributeController;
-use App\Http\Controllers\Api\Payment\InstamojoController;
-use App\Http\Controllers\Api\Payment\PhonepeController;
-use App\Http\Controllers\Api\Payment\RazorpayController;
 use App\Http\Controllers\Api\ProfileViewerController;
+use App\Models\ChatThread;
+use App\Models\ExpressInterest;
+use App\Models\HappyStory;
+use App\Models\ProfileMatch;
+use App\Models\ProfileViewer;
+use App\Models\TrustedContact;
+use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -33,8 +39,8 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
 
     Route::post('/forgot/password', 'AuthController@forgotPassword');
     Route::post('/verify/password/reset', 'AuthController@verifyPasswordResetCode');
-    Route::post('/verify/code', 'AuthController@verifyCode')->middleware("auth:sanctum");
-    Route::get('/resend-verify/code', 'AuthController@resendVerifyCode')->middleware("auth:sanctum");
+    Route::post('/verify/code', 'AuthController@verifyCode')->middleware('auth:sanctum');
+    Route::get('/resend-verify/code', 'AuthController@resendVerifyCode')->middleware('auth:sanctum');
     Route::post('/reset/password', 'AuthController@resetPassword');
     Route::post('/password/reset/complete', 'AuthController@resetPassword');
 
@@ -48,10 +54,11 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
 
     // Trusted Contact Verification (public)
     Route::get('/trusted-contact/verify/{token}', function ($token) {
-        $contact = \App\Models\TrustedContact::verifyWithToken($token);
+        $contact = TrustedContact::verifyWithToken($token);
         if ($contact) {
             return response()->json(['success' => true, 'message' => 'Contact verified successfully.']);
         }
+
         return response()->json(['success' => false, 'message' => 'Invalid or expired token.'], 400);
     });
 
@@ -145,22 +152,22 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
 
     Route::get('/countries', 'CountryController@countries');
     Route::get('google-recaptcha', function () {
-        return view("frontend.google_recaptcha.app_recaptcha");
+        return view('frontend.google_recaptcha.app_recaptcha');
     });
 
-    //Payment Gateways
+    // Payment Gateways
     Route::group(['namespace' => 'Payment'], function () {
-        //Paypal START
+        // Paypal START
         Route::get('/paypal/payment/done', 'PaypalController@getDone')->name('api.paypal.done');
         Route::get('/paypal/payment/cancel', 'PaypalController@getCancel')->name('api.paypal.cancel');
-        //Stripe Start           
+        // Stripe Start
         Route::any('/stripe/success', 'StripeController@success')->name('api.stripe.success');
         Route::any('/stripe/cancel', 'StripeController@cancel')->name('api.stripe.cancel');
         Route::any('/stripe/create-checkout-session', 'StripeController@create_checkout_session')->name('api.stripe.get_token');
 
         // PayStack
         Route::get('/paystack/payment/callback', 'PaystackController@handleGatewayCallback');
-        //Paytm
+        // Paytm
         Route::post('/paytm/callback', 'PaytmController@callback')->name('api.paytm.callback');
 
         // Razor Pay
@@ -175,7 +182,7 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
             Route::any('phonepe/callbackUrl', 'phonepe_callbackUrl')->name('api.phonepe.callbackUrl');
         });
 
-        //Instamojo
+        // Instamojo
         Route::controller('InstamojoController')->group(function () {
             Route::get('instamojo/success', 'success')->name('api.instamojo.success');
         });
@@ -191,20 +198,19 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
         Route::post('/member/verification-info-store', 'MemberController@store_verification_info');
     });
 
-
     Route::group(['middleware' => ['auth:sanctum', 'api_email_verified', 'api_member', 'api_require_password_change']], function () {
         Route::post('/update-device-token', 'AuthController@update_device_token');
         Route::get('/app-check', 'AuthController@checkedData');
-        //Payment Gateways
+        // Payment Gateways
         Route::group(['namespace' => 'Payment'], function () {
             Route::get('payment-types', 'PaymentTypesController@getList');
-            //Paypal START
+            // Paypal START
             Route::any('paypal/payment/pay', 'PaypalController@pay')->name('api.paypal.pay');
-            //Stripe Start
+            // Stripe Start
             Route::any('stripe', 'StripeController@stripe');
 
             Route::any('/stripe/payment/callback', 'StripeController@callback')->name('api.stripe.callback');
-            //Paytm
+            // Paytm
             Route::get('/paytm/index', 'PaytmController@index');
             // Razor Pay
             Route::any('pay-with-razorpay', 'RazorpayController@payWithRazorpay')->name('api.razorpay.payment');
@@ -213,15 +219,14 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
             Route::any('pay-with-phonepe', 'PhonepeController@pay')->name('api.phonepe.pay');
             Route::get('/phonepe-credentials', 'PhonepeController@getPhonePayCredentials')->name('api.phonepe.credentials');
 
-
-            //Instamojo
+            // Instamojo
             Route::any('pay-with-instamojo', 'InstamojoController@pay')->name('api.instamojo.pay');
         });
         Route::post('/upload-profile-picture', 'HomeController@upload_profile_picture')->name('api.upload.profile.picture');
 
         // member middleware has removed for api but it exist in web
         Route::group(['prefix' => 'member'], function () {
-            //Profile
+            // Profile
             Route::get('/public-profile/{id}', 'ProfileController@public_profile');
             Route::get('/profile-settings', 'ProfileController@profile_settings');
             Route::get('/introduction', 'ProfileController@get_introduction');
@@ -315,10 +320,7 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
             Route::post('/profile-picture-view-request/accept', 'ProfileImageController@accept_image_view_request')->name('api.profile_picture_view_request_accept');
             Route::post('/profile-picture-view-request/reject', 'ProfileImageController@reject_image_view_request')->name('api.profile_picture_view_request_reject');
 
-
-
-
-            //chat routes
+            // chat routes
             Route::get('/chat-list', 'ChatController@chat_list')->middleware('api_premium_messaging');
             Route::get('/chat-view/{id}', 'ChatController@chat_view')->middleware('api_premium_messaging');
             Route::post('/chat-reply', 'ChatController@chat_reply')->middleware('api_premium_messaging');
@@ -327,16 +329,18 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
 
             // Heartbeat & Online Status
             Route::post('/heartbeat', function () {
-                $expiresAt = \Carbon\Carbon::now()->addMinutes(3);
-                \Cache::put('user-is-online-' . auth()->id(), true, $expiresAt);
+                $expiresAt = Carbon::now()->addMinutes(3);
+                Cache::put('user-is-online-'.auth()->id(), true, $expiresAt);
+
                 return response()->json(['result' => true]);
             });
-            Route::post('/user-online-status', function (\Illuminate\Http\Request $request) {
+            Route::post('/user-online-status', function (Request $request) {
                 $userIds = $request->input('user_ids', []);
                 $statuses = [];
                 foreach ($userIds as $uid) {
-                    $statuses[$uid] = \Cache::has('user-is-online-' . $uid) ? 1 : 0;
+                    $statuses[$uid] = Cache::has('user-is-online-'.$uid) ? 1 : 0;
                 }
+
                 return response()->json(['result' => true, 'data' => $statuses]);
             });
 
@@ -493,14 +497,14 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
         Route::get('/dashboard/stats', function (Request $request) {
             $user = $request->user();
 
-            $totalViews = \App\Models\ProfileViewer::where('user_id', $user->id)->count();
-            $totalLikes = \App\Models\ExpressInterest::where('user_id', $user->id)->count();
-            $totalMatches = \App\Models\ProfileMatch::where('user_id', $user->id)->count();
+            $totalViews = ProfileViewer::where('user_id', $user->id)->count();
+            $totalLikes = ExpressInterest::where('user_id', $user->id)->count();
+            $totalMatches = ProfileMatch::where('user_id', $user->id)->count();
 
             return response()->json([
                 'total_views' => $totalViews,
                 'total_likes' => $totalLikes,
-                'total_matches' => $totalMatches
+                'total_matches' => $totalMatches,
             ]);
         });
 
@@ -509,40 +513,40 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
             try {
                 $user = $request->user();
 
-                $incomingInterests = \App\Models\ExpressInterest::where('user_id', $user->id)
+                $incomingInterests = ExpressInterest::where('user_id', $user->id)
                     ->where('status', 0)
                     ->with([
                         'interestedby' => function ($query) {
                             $query->select('id', 'first_name', 'last_name', 'date_of_birth');
-                        }
+                        },
                     ])
                     ->with([
                         'interestedby.addresses' => function ($query) {
                             $query->select('id', 'user_id', 'city_id')->with('city:id,name');
-                        }
+                        },
                     ])
                     ->latest()
                     ->limit(5)
                     ->get()
                     ->map(function ($interest) {
                         $interestedUser = $interest->interestedby;
-                        if (!$interestedUser) {
+                        if (! $interestedUser) {
                             return null;
                         }
-                        $age = $interestedUser->date_of_birth ? \Carbon\Carbon::parse($interestedUser->date_of_birth)->age : '';
+                        $age = $interestedUser->date_of_birth ? Carbon::parse($interestedUser->date_of_birth)->age : '';
                         $location = optional(optional($interestedUser->addresses->first())->city)->name ?? 'N/A';
 
                         return [
                             'id' => $interestedUser->id,
-                            'name' => $interestedUser->first_name . ' ' . $interestedUser->last_name,
+                            'name' => $interestedUser->first_name.' '.$interestedUser->last_name,
                             'age' => $age,
                             'location' => $location,
-                            'interest_id' => $interest->id
+                            'interest_id' => $interest->id,
                         ];
                     })->filter()->values();
 
                 return response()->json($incomingInterests);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 return response()->json(['error' => $e->getMessage()], 500);
             }
         });
@@ -551,7 +555,7 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
         Route::get('/dashboard/message-preview', function (Request $request) {
             $user = $request->user();
 
-            $messagePreviews = \App\Models\ChatThread::where(function ($query) use ($user) {
+            $messagePreviews = ChatThread::where(function ($query) use ($user) {
                 $query->where('sender_user_id', $user->id)
                     ->orWhere('receiver_user_id', $user->id);
             })
@@ -559,7 +563,7 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
                 ->with([
                     'chats' => function ($query) {
                         $query->latest()->limit(1);
-                    }
+                    },
                 ])
                 ->latest()
                 ->limit(3)
@@ -568,15 +572,16 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
                     $otherUser = $thread->sender_user_id == $user->id ? $thread->receiver : $thread->sender;
                     $latestMessage = $thread->chats->first();
 
-                    if (!$otherUser)
+                    if (! $otherUser) {
                         return null;
+                    }
 
                     return [
-                        'sender_name' => $otherUser->first_name . ' ' . $otherUser->last_name,
-                        'message_preview' => $latestMessage ? substr($latestMessage->message, 0, 50) . '...' : 'No messages yet',
+                        'sender_name' => $otherUser->first_name.' '.$otherUser->last_name,
+                        'message_preview' => $latestMessage ? substr($latestMessage->message, 0, 50).'...' : 'No messages yet',
                         'time_ago' => $latestMessage ? $latestMessage->created_at->diffForHumans() : 'Just now',
                         'unread_count' => $thread->chats()->where('sender_user_id', '!=', $user->id)->where('seen', 0)->count(),
-                        'thread_id' => $thread->id
+                        'thread_id' => $thread->id,
                     ];
                 })->filter();
 
@@ -587,36 +592,36 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
         Route::get('/dashboard/mutual-match', function (Request $request) {
             $user = $request->user();
 
-            $mutualMatches = \App\Models\ExpressInterest::where('user_id', $user->id)
+            $mutualMatches = ExpressInterest::where('user_id', $user->id)
                 ->where('status', 1)
                 ->with([
                     'interestedby' => function ($query) {
                         $query->select('id', 'first_name', 'last_name', 'date_of_birth');
-                    }
+                    },
                 ])
                 ->with([
-                        'interestedby.addresses' => function ($query) {
+                    'interestedby.addresses' => function ($query) {
                         $query->select('id', 'user_id', 'city_id')->with('city:id,name');
-                    }
+                    },
                 ])
                 ->latest()
                 ->limit(3)
                 ->get()
                 ->map(function ($match) {
                     $matchedUser = $match->interestedby;
-                    if (!$matchedUser) {
+                    if (! $matchedUser) {
                         return null;
                     }
-                    $age = $matchedUser->date_of_birth ? \Carbon\Carbon::parse($matchedUser->date_of_birth)->age : null;
+                    $age = $matchedUser->date_of_birth ? Carbon::parse($matchedUser->date_of_birth)->age : null;
                     $location = optional(optional($matchedUser->addresses->first())->city)->name ?? 'N/A';
 
                     return [
                         'id' => $matchedUser->id,
-                        'name' => $matchedUser->first_name . ' ' . $matchedUser->last_name,
+                        'name' => $matchedUser->first_name.' '.$matchedUser->last_name,
                         'age' => $age,
                         'location' => $location,
                         'match_percentage' => rand(85, 98),
-                        'is_online' => rand(0, 1)
+                        'is_online' => rand(0, 1),
                     ];
                 })->filter()->values();
 
@@ -627,33 +632,34 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
         Route::get('/dashboard/recent-visitors', function (Request $request) {
             $user = $request->user();
 
-            $recentVisitors = \App\Models\ProfileViewer::where('user_id', $user->id)
+            $recentVisitors = ProfileViewer::where('user_id', $user->id)
                 ->with([
                     'profileViewer' => function ($query) {
                         $query->select('id', 'first_name', 'last_name', 'date_of_birth');
-                    }
+                    },
                 ])
                 ->with([
                     'profileViewer.addresses' => function ($query) {
                         $query->select('id', 'user_id', 'city_id')->with('city:id,name');
-                    }
+                    },
                 ])
                 ->latest()
                 ->limit(3)
                 ->get()
                 ->map(function ($visitor) {
-                    if (!$visitor->profileViewer)
+                    if (! $visitor->profileViewer) {
                         return null;
+                    }
 
-                    $age = $visitor->profileViewer->date_of_birth ? \Carbon\Carbon::parse($visitor->profileViewer->date_of_birth)->age : null;
+                    $age = $visitor->profileViewer->date_of_birth ? Carbon::parse($visitor->profileViewer->date_of_birth)->age : null;
                     $location = optional(optional($visitor->profileViewer->addresses->first())->city)->name ?? 'N/A';
 
                     return [
                         'id' => $visitor->profileViewer->id,
-                        'name' => $visitor->profileViewer->first_name . ' ' . $visitor->profileViewer->last_name,
+                        'name' => $visitor->profileViewer->first_name.' '.$visitor->profileViewer->last_name,
                         'age' => $age,
                         'location' => $location,
-                        'visited_time' => $visitor->created_at->diffForHumans()
+                        'visited_time' => $visitor->created_at->diffForHumans(),
                     ];
                 })->filter();
 
@@ -662,11 +668,11 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
 
         // Success Stories
         Route::get('/dashboard/success-stories', function (Request $request) {
-            $successStories = \App\Models\HappyStory::where('approved', 1)
+            $successStories = HappyStory::where('approved', 1)
                 ->with([
                     'user' => function ($query) {
                         $query->select('id', 'first_name', 'last_name');
-                    }
+                    },
                 ])
                 ->latest()
                 ->limit(3)
@@ -674,9 +680,9 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
                 ->map(function ($story) {
                     return [
                         'id' => $story->id,
-                        'couple_names' => $story->user->first_name . ' & ' . ($story->partner_name ?? 'Partner'),
-                        'story_preview' => substr($story->story, 0, 100) . '...',
-                        'marriage_date' => $story->marriage_date ? \Carbon\Carbon::parse($story->marriage_date)->format('M d, Y') : 'N/A'
+                        'couple_names' => $story->user->first_name.' & '.($story->partner_name ?? 'Partner'),
+                        'story_preview' => substr($story->story, 0, 100).'...',
+                        'marriage_date' => $story->marriage_date ? Carbon::parse($story->marriage_date)->format('M d, Y') : 'N/A',
                     ];
                 });
 
@@ -687,7 +693,7 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
         Route::get('/dashboard/today-matches', function (Request $request) {
             $user = $request->user();
 
-            $todayMatches = \App\Models\User::where('user_type', 'member')
+            $todayMatches = User::where('user_type', 'member')
                 ->where('approved', 1)
                 ->where('id', '!=', $user->id)
                 ->where('blocked', 0)
@@ -700,22 +706,22 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
                     },
                     'addresses.city' => function ($query) {
                         $query->select('id', 'name');
-                    }
+                    },
                 ])
                 ->latest()
                 ->limit(10)
                 ->get()
                 ->map(function ($newUser) {
-                    $age = $newUser->date_of_birth ? \Carbon\Carbon::parse($newUser->date_of_birth)->age : null;
+                    $age = $newUser->date_of_birth ? Carbon::parse($newUser->date_of_birth)->age : null;
                     $address = $newUser->addresses->first();
                     $location = optional(optional($address)->city)->name ?? 'N/A';
 
                     return [
                         'id' => $newUser->id,
-                        'name' => $newUser->first_name . ' ' . $newUser->last_name,
+                        'name' => $newUser->first_name.' '.$newUser->last_name,
                         'age' => $age,
                         'location' => $location,
-                        'joined_time' => $newUser->created_at->diffForHumans()
+                        'joined_time' => $newUser->created_at->diffForHumans(),
                     ];
                 });
 
@@ -728,17 +734,17 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
             $interestId = $request->input('interest_id');
 
             // Find the interest
-            $interest = \App\Models\ExpressInterest::find($interestId);
+            $interest = ExpressInterest::find($interestId);
 
-            if (!$interest || $interest->user_id != $user->id) {
+            if (! $interest || $interest->user_id != $user->id) {
                 return response()->json(['success' => false, 'message' => 'Interest not found'], 404);
             }
 
             // Create mutual interest (both users like each other)
-            \App\Models\ExpressInterest::create([
+            ExpressInterest::create([
                 'user_id' => $interest->interested_by,
                 'interested_by' => $user->id,
-                'status' => 1
+                'status' => 1,
             ]);
 
             // Update original interest status
@@ -752,9 +758,9 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
             $interestId = $request->input('interest_id');
 
             // Find the interest
-            $interest = \App\Models\ExpressInterest::find($interestId);
+            $interest = ExpressInterest::find($interestId);
 
-            if (!$interest || $interest->user_id != $user->id) {
+            if (! $interest || $interest->user_id != $user->id) {
                 return response()->json(['success' => false, 'message' => 'Interest not found'], 404);
             }
 
@@ -766,7 +772,6 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
 
         // Express Interest
         Route::post('/express-interest', 'InterestController@express_interest');
-
 
         // ===== Referral System API Routes =====
         Route::prefix('referral')->group(function () {

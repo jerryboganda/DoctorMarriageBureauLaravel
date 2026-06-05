@@ -1,16 +1,18 @@
 <?php
+
 require 'vendor/autoload.php';
 $app = require_once 'bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+$kernel = $app->make(Kernel::class);
 $kernel->bootstrap();
 
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\Artisan;
 
 $seeders = [
     'ProfileOptionValueSeeder',
     'ReligionCasteSeeder',
     'AnnualSalaryRangeSeeder',
-    'OnBehalfSeeder'
+    'OnBehalfSeeder',
 ];
 
 foreach ($seeders as $seeder) {
@@ -19,7 +21,7 @@ foreach ($seeders as $seeder) {
         Artisan::call('db:seed', ['--class' => $seeder, '--force' => true]);
         echo Artisan::output();
         echo "Done.\n\n";
-    } catch (\Exception $e) {
-        echo "Error: " . $e->getMessage() . "\n\n";
+    } catch (Exception $e) {
+        echo 'Error: '.$e->getMessage()."\n\n";
     }
 }

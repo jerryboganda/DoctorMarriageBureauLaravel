@@ -1,16 +1,18 @@
 <?php
+
 require 'vendor/autoload.php';
 $app = require_once 'bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+$kernel = $app->make(Kernel::class);
 $kernel->bootstrap();
 
 use App\Models\Caste;
-use App\Models\Religion;
-use App\Models\MaritalStatus;
 use App\Models\FamilyValue;
+use App\Models\MaritalStatus;
 use App\Models\MemberLanguage;
+use App\Models\Religion;
+use Illuminate\Contracts\Console\Kernel;
 
-echo "Seeding Religions..." . PHP_EOL;
+echo 'Seeding Religions...'.PHP_EOL;
 $religions = [
     ['id' => 1, 'name' => 'Hindu'],
     ['id' => 2, 'name' => 'Muslim'],
@@ -28,7 +30,7 @@ foreach ($religions as $religion) {
     Religion::updateOrCreate(['id' => $religion['id']], ['name' => $religion['name']]);
 }
 
-echo "Seeding Castes..." . PHP_EOL;
+echo 'Seeding Castes...'.PHP_EOL;
 $castes = [
     ['religion_id' => 1, 'name' => 'Brahmin'],
     ['religion_id' => 1, 'name' => 'Kshatriya'],
@@ -62,22 +64,22 @@ foreach ($castes as $caste) {
     );
 }
 
-echo "Seeding Marital Statuses..." . PHP_EOL;
+echo 'Seeding Marital Statuses...'.PHP_EOL;
 $maritalStatuses = ['Single', 'Divorced', 'Widowed', 'Awaiting Divorce', 'Annulled'];
 foreach ($maritalStatuses as $status) {
     MaritalStatus::updateOrCreate(['name' => $status], ['name' => $status]);
 }
 
-echo "Seeding Family Values..." . PHP_EOL;
+echo 'Seeding Family Values...'.PHP_EOL;
 $familyValues = ['Traditional', 'Moderate', 'Liberal', 'Spiritual', 'Religious'];
 foreach ($familyValues as $value) {
     FamilyValue::updateOrCreate(['name' => $value], ['name' => $value]);
 }
 
-echo "Seeding Languages..." . PHP_EOL;
+echo 'Seeding Languages...'.PHP_EOL;
 $languages = ['Urdu', 'English', 'Punjabi', 'Sindhi', 'Pashto', 'Balochi', 'Seraiki', 'Hindko', 'Brahui', 'Other'];
 foreach ($languages as $lang) {
     MemberLanguage::updateOrCreate(['name' => $lang], ['name' => $lang]);
 }
 
-echo "Seeding completed successfully." . PHP_EOL;
+echo 'Seeding completed successfully.'.PHP_EOL;

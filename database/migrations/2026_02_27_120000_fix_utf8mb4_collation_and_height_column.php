@@ -14,7 +14,8 @@ use Illuminate\Support\Facades\Schema;
  *    to >9.99 feet. Expand to DOUBLE(5,2) to safely accommodate any value.
  *    Also expand partner_expectations.height for the same reason.
  */
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         // Fix collation on families table

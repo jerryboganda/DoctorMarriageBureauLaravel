@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -15,7 +14,7 @@ class ChatThread extends Model
         'receiver_user_id',
         'thread_code',
         'active',
-        'blocked_by_user'
+        'blocked_by_user',
     ];
 
     public function chats()
@@ -44,11 +43,6 @@ class ChatThread extends Model
     public function blocked_by()
     {
         return $this->belongsTo(User::class, 'blocked_by_user');
-    }
-
-    public function project()
-    {
-        return $this->belongsTo(Project::class);
     }
 
     public function scopeActive($query)

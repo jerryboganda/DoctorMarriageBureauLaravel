@@ -9,23 +9,23 @@ return new class extends Migration
 {
     private function indexExists(string $table, string $indexName): bool
     {
-        $rows = DB::select('SHOW INDEX FROM `' . $table . '` WHERE Key_name = ?', [$indexName]);
+        $rows = DB::select('SHOW INDEX FROM `'.$table.'` WHERE Key_name = ?', [$indexName]);
 
-        return !empty($rows);
+        return ! empty($rows);
     }
 
     public function up(): void
     {
         if (Schema::hasTable('users')) {
             Schema::table('users', function (Blueprint $table) {
-                if (!$this->indexExists('users', 'idx_users_member_visibility_created')) {
+                if (! $this->indexExists('users', 'idx_users_member_visibility_created')) {
                     $table->index(
                         ['user_type', 'blocked', 'deactivated', 'permanently_delete', 'created_at'],
                         'idx_users_member_visibility_created'
                     );
                 }
 
-                if (!$this->indexExists('users', 'idx_users_approval_membership')) {
+                if (! $this->indexExists('users', 'idx_users_approval_membership')) {
                     $table->index(['approved', 'membership'], 'idx_users_approval_membership');
                 }
             });
@@ -33,14 +33,14 @@ return new class extends Migration
 
         if (Schema::hasTable('members')) {
             Schema::table('members', function (Blueprint $table) {
-                if (!$this->indexExists('members', 'idx_members_user_gender_birth_status')) {
+                if (! $this->indexExists('members', 'idx_members_user_gender_birth_status')) {
                     $table->index(
                         ['user_id', 'gender', 'birthday', 'marital_status_id'],
                         'idx_members_user_gender_birth_status'
                     );
                 }
 
-                if (!$this->indexExists('members', 'idx_members_filters')) {
+                if (! $this->indexExists('members', 'idx_members_filters')) {
                     $table->index(
                         ['gender', 'marital_status_id', 'mothere_tongue', 'is_visible'],
                         'idx_members_filters'
@@ -51,14 +51,14 @@ return new class extends Migration
 
         if (Schema::hasTable('addresses')) {
             Schema::table('addresses', function (Blueprint $table) {
-                if (!$this->indexExists('addresses', 'idx_addresses_geo_user')) {
+                if (! $this->indexExists('addresses', 'idx_addresses_geo_user')) {
                     $table->index(
                         ['country_id', 'state_id', 'city_id', 'user_id'],
                         'idx_addresses_geo_user'
                     );
                 }
 
-                if (!$this->indexExists('addresses', 'idx_addresses_type_user')) {
+                if (! $this->indexExists('addresses', 'idx_addresses_type_user')) {
                     $table->index(['type', 'user_id'], 'idx_addresses_type_user');
                 }
             });
@@ -66,7 +66,7 @@ return new class extends Migration
 
         if (Schema::hasTable('ignored_users')) {
             Schema::table('ignored_users', function (Blueprint $table) {
-                if (!$this->indexExists('ignored_users', 'idx_ignored_users_ignored_by_user')) {
+                if (! $this->indexExists('ignored_users', 'idx_ignored_users_ignored_by_user')) {
                     $table->index(['ignored_by', 'user_id'], 'idx_ignored_users_ignored_by_user');
                 }
             });
@@ -83,7 +83,7 @@ return new class extends Migration
         ];
 
         foreach ($indexes as $tableName => $indexNames) {
-            if (!Schema::hasTable($tableName)) {
+            if (! Schema::hasTable($tableName)) {
                 continue;
             }
 

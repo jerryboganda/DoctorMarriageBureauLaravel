@@ -4,7 +4,6 @@ namespace App\Events;
 
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -15,17 +14,20 @@ class ProfileUpdated implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public int $userId;
+
     public string $section;
+
     public array $data;
+
     public ?int $qualityScore;
 
     /**
      * Create a new event instance.
      *
-     * @param int $userId The user whose profile was updated
-     * @param string $section The section that was updated (basics, lifestyle, career, family, preferences, media, visibility)
-     * @param array $data The updated data for that section
-     * @param int|null $qualityScore The recalculated quality score (optional)
+     * @param  int  $userId  The user whose profile was updated
+     * @param  string  $section  The section that was updated (basics, lifestyle, career, family, preferences, media, visibility)
+     * @param  array  $data  The updated data for that section
+     * @param  int|null  $qualityScore  The recalculated quality score (optional)
      */
     public function __construct(int $userId, string $section, array $data, ?int $qualityScore = null)
     {
@@ -38,12 +40,12 @@ class ProfileUpdated implements ShouldBroadcast
     /**
      * Get the channels the event should broadcast on.
      *
-     * @return array<int, \Illuminate\Broadcasting\Channel>
+     * @return array<int, Channel>
      */
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('profile.' . $this->userId),
+            new PrivateChannel('profile.'.$this->userId),
         ];
     }
 

@@ -1,7 +1,6 @@
 <?php
 
 namespace App\Models;
-use App\Models\User;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -21,9 +20,8 @@ class Hobby extends Model
         'sports',
         'fitness_activities',
         'cuisines',
-        'dress_styles'
+        'dress_styles',
     ];
-
 
     public function user()
     {
