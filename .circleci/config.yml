@@ -145,6 +145,9 @@ jobs:
             done
             exit 1
       - run:
+          name: Import Database Baseline Schema
+          command: php ci_import_test_schema.php
+      - run:
           name: Migration-backed API smoke
           command: |
             php artisan migrate --force
