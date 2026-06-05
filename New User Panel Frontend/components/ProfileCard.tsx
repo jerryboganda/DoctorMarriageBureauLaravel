@@ -17,6 +17,19 @@ const isFemaleProfile = (gender?: number | string | null): boolean => {
   return normalized === '2' || normalized === 'female' || normalized === 'f';
 };
 
+const isMaleDefaultAvatar = (url?: string | null): boolean => {
+  const u = `${url ?? ''}`;
+  // matches '...avatar-place.png' but NOT '...female-avatar-place.png'
+  return /[/-]avatar-place\.png(\?|$)/.test(u) && !u.includes('female-avatar-place.png');
+};
+const swapAvatarForGender = (url: string, gender?: number | string | null): string => {
+  if (isFemaleProfile(gender) && isMaleDefaultAvatar(url)) {
+    return url.replace('avatar-place.png', 'female-avatar-place.png');
+  }
+  return url;
+};
+
+
 interface ProfileCardProps {
     profile?: ProfileMatch;
     interestId?: number;
@@ -52,6 +65,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ profile, interestId, onDeclin
   if (!avatarUrl || (!avatarUrl.startsWith('http') && !avatarUrl.startsWith('/'))) {
     avatarUrl = fallbackAvatar;
   }
+  avatarUrl = swapAvatarForGender(avatarUrl, displayProfile.gender);
   const shouldBlurAvatar = Boolean(
     displayProfile.profilePhotoBlur &&
     currentUserId != null &&

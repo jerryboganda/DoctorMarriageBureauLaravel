@@ -72,7 +72,7 @@ class NotificationUtility
                 $item['message']                = $notification->message;
                 $item['link']                   = url($notification->link);
                 $item['sender_name']            = $notification->sender->first_name.' '. $notification->sender->last_name;
-                $item['sender_photo']           = $notification->sender->photo > 0 ? uploaded_asset($notification->sender->photo) : static_asset('assets/img/avatar-place.png');
+                $item['sender_photo']           = $notification->sender->photo > 0 ? uploaded_asset($notification->sender->photo) : gender_avatar($notification->sender?->member);
                 $item['seen']                   = $notification->seen_by_receiver == 1 ? true : false;
                 $item['date']                   = Carbon::parse($notification->created_at)->diffForHumans();
                 $item['express_interest_id']    = $notification->express_interest_id;

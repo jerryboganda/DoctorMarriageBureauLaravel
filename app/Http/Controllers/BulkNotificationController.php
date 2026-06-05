@@ -87,14 +87,9 @@ class BulkNotificationController extends Controller
             'title'     => 'required|string|max:255',
             'body'      => 'required|string|max:10000',
             'channels'  => 'required|array|min:1',
-            'channels.*' => 'in:email,sms,whatsapp,push',
+            'channels.*' => 'in:email,whatsapp,push',
         ]);
-
-        $channels = array_values(array_diff($request->channels, ['sms']));
-        if (empty($channels)) {
-            flash(translate('SMS has been disabled. Please choose email, push, or WhatsApp.'))->warning();
-            return redirect()->route('admin.bulk_notifications.index');
-        }
+        $channels = $request->channels;
         $title = $request->title;
         $body = $request->body;
 
@@ -105,8 +100,6 @@ class BulkNotificationController extends Controller
             'total_targeted' => $users->count(),
             'email_sent' => 0,
             'email_failed' => 0,
-            'sms_sent' => 0,
-            'sms_failed' => 0,
             'push_sent' => 0,
             'push_failed' => 0,
             'whatsapp_links' => [],
@@ -189,8 +182,6 @@ class BulkNotificationController extends Controller
             'total_targeted' => $stats['total_targeted'],
             'email_sent' => $stats['email_sent'],
             'email_failed' => $stats['email_failed'],
-            'sms_sent' => $stats['sms_sent'],
-            'sms_failed' => $stats['sms_failed'],
             'push_sent' => $stats['push_sent'],
             'push_failed' => $stats['push_failed'],
             'created_at' => now(),

@@ -478,7 +478,7 @@ class ProgressionController extends Controller
             'profile' => [
                 'id' => $partner?->id,
                 'name' => $this->fullName($partner),
-                'avatarUrl' => $partner?->photo ? url('public/' . $partner->photo) : null,
+                'avatarUrl' => $partner?->photo ? uploaded_asset($partner->photo) : null,
                 'profilePhotoBlur' => MemberUtility::member_profile_photo_blur($partner?->id ?? 0),
                 'specialty' => $career?->designation,
                 'hospital' => $career?->company,
@@ -583,7 +583,7 @@ class ProgressionController extends Controller
             'profile' => [
                 'id' => $partner?->id,
                 'name' => $this->fullName($partner),
-                'avatarUrl' => $partner?->photo ? url('public/' . $partner->photo) : null,
+                'avatarUrl' => $partner?->photo ? uploaded_asset($partner->photo) : null,
                 'profilePhotoBlur' => MemberUtility::member_profile_photo_blur($partner?->id ?? 0),
                 'specialty' => $career?->designation,
                 'hospital' => $career?->company,

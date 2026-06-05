@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+﻿import React, { useEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Info, CheckCircle2, Lightbulb, Loader2, Eye, Heart, X, User as UserIcon, MapPin, ChevronRight, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -25,6 +25,8 @@ const SECTION_ICONS: Record<string, string> = {
   preferences: '💝',
   media: '🎙️',
 };
+
+const cleanTemplateText = (text: string) => text.replace(/\{\{\s*name\s*\}\}/gi, '').replace(/\s+/g, ' ').trim();
 
 interface ProfileItem {
   user_id: number;
@@ -204,6 +206,11 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ onNavigateToProfile }) => {
   const [popupType, setPopupType] = useState<'viewers' | 'interests' | null>(null);
   const [popupItems, setPopupItems] = useState<ProfileItem[]>([]);
   const [popupLoading, setPopupLoading] = useState(false);
+
+  const activityText = useCallback((key: string, fallback: string, name: string) => {
+    const translated = t(key, { name, defaultValue: fallback });
+    return cleanTemplateText(translated || fallback);
+  }, [t]);
 
   useEffect(() => {
     let isActive = true;
@@ -529,13 +536,13 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ onNavigateToProfile }) => {
                 <div className="flex flex-col gap-1">
                   {activity.type === 'view' && (
                     <p className="text-sm text-slate-800">
-                      <span className="font-bold">{activity.user}</span> {t('dashboard.sidebar.viewedProfile')}
+                      <span className="font-bold">{activity.user}</span> {activityText('dashboard.sidebar.viewedProfile', 'viewed your profile', activity.user)}
                     </p>
                   )}
                   {activity.type === 'message' && (
                     <>
                       <p className="text-sm text-slate-800">
-                        {t('dashboard.sidebar.newMessage')} <span className="font-bold">{activity.user}</span>
+                        {activityText('dashboard.sidebar.newMessage', 'New message from', activity.user)} <span className="font-bold">{activity.user}</span>
                       </p>
                       <div className="bg-background-light p-2 rounded-lg mt-1">
                         <p className="text-xs text-slate-500 italic">{activity.message}</p>
@@ -545,7 +552,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ onNavigateToProfile }) => {
                   {activity.type === 'interest' && (
                     <>
                       <p className="text-sm text-slate-800">
-                        <span className="font-bold">{activity.user}</span> {t('dashboard.sidebar.sentInterest')}
+                        <span className="font-bold">{activity.user}</span> {activityText('dashboard.sidebar.sentInterest', 'sent you an interest', activity.user)}
                       </p>
                       <div className="bg-background-light p-2 rounded-lg mt-1">
                         <p className="text-xs text-slate-500 italic">{activity.message}</p>

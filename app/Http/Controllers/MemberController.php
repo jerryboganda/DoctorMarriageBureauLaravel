@@ -50,7 +50,6 @@ use Redirect;
 use Auth;
 use Illuminate\Support\Facades\Log;
 use App\Utility\EmailUtility;
-use App\Utility\SmsUtility;
 use MehediIitdu\CoreComponentRepository\CoreComponentRepository;
 
 class MemberController extends Controller
@@ -229,9 +228,6 @@ class MemberController extends Controller
             }
 
             // Account Opening SMS to member
-            if ($user->phone != null && addon_activation('otp_system') && (get_sms_template('account_opening_by_admin', 'status') == 1)) {
-                SmsUtility::account_opening_by_admin($user, $request->password);
-            }
 
             flash('New member has been added successfully')->success();
             return redirect()->route('members.index', $membership);
@@ -979,7 +975,7 @@ class MemberController extends Controller
     }
 
     /**
-     * Send notification to a specific member via selected channels (email, sms, whatsapp, push).
+     * Send notification to a specific member via selected channels (email, whatsapp, push).
      * Returns JSON so the frontend can handle WhatsApp link opening without popup-blocker issues.
      */
     public function sendNotification(Request $request)
@@ -989,7 +985,7 @@ class MemberController extends Controller
             'title'     => 'required|string|max:255',
             'body'      => 'required|string|max:5000',
             'channels'  => 'required|array|min:1',
-            'channels.*'=> 'in:email,sms,whatsapp,push',
+            'channels.*'=> 'in:email,whatsapp,push',
         ]);
 
         $user = User::findOrFail($request->member_id);
@@ -1017,12 +1013,6 @@ class MemberController extends Controller
                 $results['email'] = 'skipped: no email address';
             }
         }
-
-        // --- SMS ---
-        if (in_array('sms', $channels)) {
-            $results['sms'] = 'disabled: SMS sending is email-only';
-        }
-
         // --- WHATSAPP ---
         if (in_array('whatsapp', $channels)) {
             $waDigits = $this->normalizeWhatsappPhone($user->phone);

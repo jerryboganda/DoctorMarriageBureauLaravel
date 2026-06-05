@@ -112,7 +112,6 @@ class NotificationCenterController extends Controller
                 'email_digest' => true,
                 'whatsapp' => true,
                 'push_notifications' => true,
-                'sms' => false,
                 'weekly_digest' => true,
                 'profile_snoozed' => false,
             ]
@@ -147,7 +146,6 @@ class NotificationCenterController extends Controller
             'email_digest',
             'whatsapp',
             'push_notifications',
-            'sms',
             'weekly_digest',
         ]));
         

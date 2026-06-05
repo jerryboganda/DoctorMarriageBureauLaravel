@@ -53,9 +53,6 @@ class RouteServiceProvider extends ServiceProvider
         $this->mapAdminRoutes();
 
         $this->mapSupportTicketRoutes();
-
-        $this->mapOtpRoutes();
-
         $this->mapReferralRoutes();
 
         $this->mapWebRoutes();
@@ -92,14 +89,6 @@ class RouteServiceProvider extends ServiceProvider
             ->namespace($this->namespace)
             ->group(base_path('routes/support_tickets.php'));
     }
-
-    protected function mapOtpRoutes()
-    {
-        Route::middleware('web')
-            ->namespace($this->namespace)
-            ->group(base_path('routes/otp.php'));
-    }
-
     protected function mapReferralRoutes()
     {
         Route::middleware('web')

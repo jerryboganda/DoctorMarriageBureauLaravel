@@ -70,7 +70,12 @@ class MemberController extends Controller
         $authGender = optional($authUser->member)->gender;
         if ($authGender !== null && $authGender !== '') {
             $users_query->whereHas('member', function ($query) use ($authGender) {
-                $query->where('gender', '!=', $authGender);
+                $query->where('gender', '!=', $authGender)
+                    ->where('is_visible', 1);
+            });
+        } else {
+            $users_query->whereHas('member', function ($query) {
+                $query->where('is_visible', 1);
             });
         }
 
@@ -246,10 +251,16 @@ class MemberController extends Controller
 
     public function add_to_ignore_list(Request $request)
     {
-        if (User::find($request->user_id)) {
+        $targetUserId = (int) $request->user_id;
+        if ($targetUserId === (int) auth()->id()) {
+            return $this->failure_message('You cannot ignore your own profile.');
+        }
+
+        if (User::find($targetUserId)) {
             try {
-                IgnoredUser::create($request->only('user_id') + [
-                    'ignored_by' => auth()->user()->id
+                IgnoredUser::firstOrCreate([
+                    'user_id' => $targetUserId,
+                    'ignored_by' => auth()->user()->id,
                 ]);
 
                 return $this->success_message('You have ignored this member');
@@ -302,6 +313,21 @@ class MemberController extends Controller
     public function member_info($id)
     {
         $data = array();
+        $profileUser = User::with('member')->find($id);
+        if (!$profileUser) {
+            return response()->json([
+                'result' => false,
+                'message' => 'This profile is not available.',
+            ], 404);
+        }
+
+        if ((int) auth()->id() !== (int) $profileUser->id && (int) ($profileUser->member?->is_visible ?? 1) !== 1) {
+            return response()->json([
+                'result' => false,
+                'message' => 'This profile is not available.',
+                'hidden' => true,
+            ], 404);
+        }
 
         $shortlist = Shortlist::where('user_id', $id)->where('shortlisted_by', auth()->id())->first();
         $profile_reported = ReportedUser::where('user_id', $id)->where('reported_by', auth()->id())->first();
@@ -390,7 +416,7 @@ class MemberController extends Controller
 
         $data['member_name'] = $user->first_name . ' ' . $user->last_name;
         $data['member_email'] = $user->email;
-        $data['member_photo'] = uploaded_asset($user->photo) !== null ? uploaded_asset($user->photo) : static_asset('assets/img/avatar-place.png');
+        $data['member_photo'] = uploaded_asset($user->photo) !== null ? uploaded_asset($user->photo) : gender_avatar($user?->member);
         $data['remaining_interest'] = get_remaining_package_value($user->id, 'remaining_interest');
         $data['remaining_contact_view'] = get_remaining_package_value($user->id, 'remaining_contact_view');
         $data['remaining_photo_gallery'] = get_remaining_package_value($user->id, 'remaining_photo_gallery');

@@ -36,7 +36,7 @@ class UserTwoFactorSetting extends Model
         'recovery_codes',
     ];
 
-    const METHODS = ['app', 'sms', 'email'];
+    const METHODS = ['app', 'email'];
     const MAX_FAILED_ATTEMPTS = 5;
     const LOCKOUT_MINUTES = 30;
     const RECOVERY_CODE_COUNT = 8;

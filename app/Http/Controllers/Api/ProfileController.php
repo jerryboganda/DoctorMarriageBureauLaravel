@@ -243,7 +243,7 @@ class ProfileController extends Controller
     public function physical_attributes_update(Request $request)
     {
         $this->validate($request, [
-            'height' => ['required', 'numeric', 'between:0,9.99'],
+            'height' => ['required', 'numeric', 'between:0,999.99'],
             'weight' => ['required', 'numeric', 'between:0,999.99'],
             'eye_color' => ['required', 'max:50'],
             'hair_color' => ['required', 'max:50'],
@@ -581,6 +581,22 @@ class ProfileController extends Controller
             || $request->boolean('non_mutating')
             || $request->boolean('no_track')
             || $request->boolean('preview');
+        if (!$user) {
+            return response()->json([
+                'result' => false,
+                'message' => 'This profile is not available.',
+            ], 404);
+        }
+
+        $viewerOwnsProfile = $auth_user && (int) $auth_user->id === (int) $user->id;
+        if (!$viewerOwnsProfile && (int) ($user->member?->is_visible ?? 1) !== 1) {
+            return response()->json([
+                'result' => false,
+                'message' => 'This profile is not available.',
+                'hidden' => true,
+            ], 404);
+        }
+
         if ($user) {
             $member_known_languages = null;
             $member_mother_tongue = null;

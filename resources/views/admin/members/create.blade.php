@@ -58,18 +58,7 @@
                                 <small class="form-text text-danger">{{ $message }}</small>
                             @enderror
                         </div>
-                        @if(addon_activation('otp_system'))
-                          <div class="form-group row">
-                              <label class="col-md-2 col-form-label">{{translate('Phone Number')}}</label>
-                              <div class="col-md-9">
-                                <input type="tel" id="phone-code" class="form-control @error('phone') is-invalid @enderror" name="phone" placeholder="{{ translate('Phone')}}" >
-                                <input type="hidden" name="country_code" value="">
-                                  @error('phone')
-                                      <small class="form-text text-danger">{{ $message }}</small>
-                                  @enderror
-                              </div>
-                          </div>
-                        @endif
+                        
                         @php $on_behalves = \App\Models\OnBehalf::all(); @endphp
                         @if ($on_behalves->isNotEmpty())
                         <div class="form-group row">
@@ -187,8 +176,6 @@
             }
         }
     </script>
-    @if(addon_activation('otp_system'))
-        @include('partials.emailOrPhone')
-    @endif
+    
 
 @endsection

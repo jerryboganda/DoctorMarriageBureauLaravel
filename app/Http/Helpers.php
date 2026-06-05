@@ -8,7 +8,6 @@ use App\Models\Currency;
 use App\Models\Member;
 use App\Models\ChatThread;
 use App\Models\EmailTemplate;
-use App\Models\SmsTemplate;
 use App\Models\Notification;
 use App\Models\User;
 use App\Utility\MimoUtility;
@@ -203,17 +202,6 @@ if (!function_exists('get_email_template')) {
     }
 }
 
-// SMS template data
-if (!function_exists('get_sms_template')) {
-    function get_sms_template($identifier, $colmn_name = null)
-    {
-        $smsTemplate = SmsTemplate::where('identifier', $identifier)->first();
-        if ($smsTemplate && $colmn_name) {
-            return $smsTemplate->$colmn_name;
-        }
-        return $smsTemplate;
-    }
-}
 
 
 
@@ -255,17 +243,6 @@ if (!function_exists('addon_activation')) {
     }
 }
 
-// Send SMS
-if (!function_exists('sendSMS')) {
-    function sendSMS($to, $from, $text, $template_id)
-    {
-        \Log::info('SMS delivery skipped because verification is email-only.', [
-            'to' => $to,
-        ]);
-
-        return false;
-    }
-}
 
 // system configurations value
 if (!function_exists('get_remaining_package_value')) {
@@ -694,5 +671,17 @@ if (!function_exists('attribute_text_format')) {
             $formatted_text = 'Does Not Matter';
         }
         return $formatted_text;
+    }
+}
+
+/**
+ * Return gender-aware default avatar URL.
+ * gender: 1=male, 2=female (matches members.gender column)
+ */
+if (!function_exists("gender_avatar")) {
+    function gender_avatar($gender = null) {
+        $g = is_object($gender) ? ($gender->gender ?? null) : $gender;
+        $isFemale = ($g == 2 || $g === "2" || strtolower((string)$g) === "female" || strtolower((string)$g) === "f");
+        return static_asset($isFemale ? "assets/img/female-avatar-place.png" : "assets/img/avatar-place.png");
     }
 }

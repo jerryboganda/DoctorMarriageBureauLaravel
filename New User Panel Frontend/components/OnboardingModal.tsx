@@ -387,9 +387,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                     const formData = new FormData();
                     const uploadFile = await compressImage(photoFile);
                     formData.append('photo', uploadFile);
-                    const uploadResponse = await api.post('/upload-profile-picture', formData, {
-                        headers: { 'Content-Type': 'multipart/form-data' },
-                    });
+                    const uploadResponse = await api.post('/upload-profile-picture', formData);
                     const uploadedPhotoUrl = uploadResponse?.data?.data?.photo_url || uploadResponse?.data?.photo_url;
                     setData((current: any) => ({
                         ...current,

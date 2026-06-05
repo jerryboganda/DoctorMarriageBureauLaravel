@@ -120,15 +120,6 @@ Route::group(['prefix' => 'admin', 'as' => 'admin-api.', 'namespace' => 'Api\Adm
 
         Route::apiResource('manual-payment-methods', 'ManualPaymentMethodController');
 
-        Route::get('/otp/templates', 'OtpController@templates');
-        Route::post('/otp/templates', 'OtpController@storeTemplate');
-        Route::get('/otp/templates/{id}', 'OtpController@showTemplate');
-        Route::put('/otp/templates/{id}', 'OtpController@updateTemplate');
-        Route::delete('/otp/templates/{id}', 'OtpController@destroyTemplate');
-        Route::get('/otp/credentials', 'OtpController@credentials');
-        Route::post('/otp/credentials', 'OtpController@updateCredentials');
-        Route::post('/otp/send-sms', 'OtpController@sendSms');
-
         Route::get('/uploaded-files', 'UploadedFileController@index');
         Route::post('/uploaded-files', 'UploadedFileController@store');
         Route::get('/uploaded-files/{id}/info', 'UploadedFileController@info');

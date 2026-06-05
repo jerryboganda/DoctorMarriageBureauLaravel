@@ -15,7 +15,6 @@ class UserNotificationPreference extends Model
         'email_digest' => 'boolean',
         'whatsapp' => 'boolean',
         'push_notifications' => 'boolean',
-        'sms' => 'boolean',
         'weekly_digest' => 'boolean',
         'profile_snoozed' => 'boolean',
         'snooze_until' => 'datetime',

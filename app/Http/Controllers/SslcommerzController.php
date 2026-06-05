@@ -122,7 +122,7 @@ class SslcommerzController extends Controller
                 /*
                         That means IPN worked. Here you need to update order status
                         in order table as Processing or Complete.
-                        Here you can also sent sms or email for successfull transaction to customer
+                        Here you can also sent email for successfull transaction to customer
                         */
                 echo "Transaction is successfully Complete";
             } else {

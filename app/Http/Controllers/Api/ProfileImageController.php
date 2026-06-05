@@ -9,7 +9,6 @@ use App\Models\ViewProfilePicture;
 use App\Notifications\DbStoreNotification;
 use App\Services\FirbaseNotification;
 use App\Utility\EmailUtility;
-use App\Utility\SmsUtility;
 use DB;
 use Illuminate\Http\Request;
 use Kutia\Larafirebase\Facades\Larafirebase;
@@ -78,9 +77,6 @@ class ProfileImageController extends Controller
                 }
 
                 // View Profile Picture email SMS to member
-                if ($notify_user->phone != null && addon_activation('otp_system') && (get_sms_template('profile_picture_view_request', 'status') == 1)) {
-                    SmsUtility::sms_on_request($notify_user, 'profile_picture_view_request');
-                }
 
                 return $this->success_message('profile image view request sent successfully');
             } else {
@@ -127,9 +123,6 @@ class ProfileImageController extends Controller
             }
 
             // View Profile Picture email SMS to member
-            if ($notify_user->phone != null && addon_activation('otp_system') && (get_sms_template('profile_picture_view_request_accepted', 'status') == 1)) {
-                SmsUtility::sms_on_accept_request($notify_user, 'profile_picture_view_request_accepted');
-            }
             return $this->success_message('Interest has been accepted successfully.');
         } else {
             return $this->failure_message('Sorry! Did not find any request');

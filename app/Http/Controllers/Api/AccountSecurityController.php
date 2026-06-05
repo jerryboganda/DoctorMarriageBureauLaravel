@@ -48,25 +48,13 @@ class AccountSecurityController extends Controller
     protected function getCredentialStatus(User $user): array
     {
         $member = $user->member;
-
-        // Use the User model robust check for phone verification status
-        $phoneVerified = $user->isPhoneVerified();
-        $phoneVerifiedAt = $user->phone_verified_at;
-
         return [
             'email' => [
                 'value' => $this->maskEmail($user->email),
                 'raw' => $user->email, // Needed for verification API
                 'verified' => (bool) $user->email_verified_at,
                 'verified_at' => $user->email_verified_at?->toISOString(),
-            ],
-            'phone' => [
-                'value' => $this->maskPhone($member->phone ?? $user->phone ?? null),
-                'raw' => $member->phone ?? $user->phone ?? null, // Needed for verification API
-                'verified' => $phoneVerified,
-                'verified_at' => $phoneVerifiedAt ? $phoneVerifiedAt->toISOString() : null,
-            ],
-            'social_logins' => $this->getSocialLogins($user),
+            ],            'social_logins' => $this->getSocialLogins($user),
         ];
     }
 
@@ -248,7 +236,7 @@ class AccountSecurityController extends Controller
         }
 
         $request->validate([
-            'method' => 'sometimes|in:app,sms,email',
+            'method' => 'sometimes|in:app,email',
         ]);
 
         $method = $request->input('method', 'app');

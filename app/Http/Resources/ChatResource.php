@@ -20,9 +20,9 @@ class ChatResource extends JsonResource
         return [
             'thread_id' => $this->id,
             'receiver_name' => $this->receiver->first_name . ' ' . $this->receiver->last_name,
-            'receiver_photo' => $this->receiver->photo != null ? uploaded_asset($this->receiver->photo) : static_asset('assets/frontend/default/img/avatar-place.png'),
+            'receiver_photo' => $this->receiver->photo != null ? uploaded_asset($this->receiver->photo) : gender_avatar($this->receiver?->member),
             'sender_name' => $this->sender->first_name . ' ' . $this->sender->last_name,
-            'auth_user_photo' => uploaded_asset(auth()->user()->photo) !== null ? uploaded_asset(auth()->user()->photo) : static_asset('assets/frontend/default/img/avatar-place.png'),
+            'auth_user_photo' => uploaded_asset(auth()->user()->photo) !== null ? uploaded_asset(auth()->user()->photo) : gender_avatar(auth()->user()?->member),
             'messages' => ChatViewResource::collection($chats),
         ];
     }

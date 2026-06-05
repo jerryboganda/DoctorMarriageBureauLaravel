@@ -90,9 +90,7 @@ Route::controller(HomeController::class)->group(function () {
 
 // Registration Verification Routes
 Route::post('/send-email-verification', [App\Http\Controllers\Api\AuthController::class, 'sendEmailVerification']);
-Route::post('/send-phone-verification', [App\Http\Controllers\Api\AuthController::class, 'sendPhoneVerification']);
 Route::post('/verify-email-code', [App\Http\Controllers\Api\AuthController::class, 'verifyEmailCode']);
-Route::post('/verify-phone-code', [App\Http\Controllers\Api\AuthController::class, 'verifyPhoneCode']);
 
 Route::controller(VerificationController::class)->group(function () {
     Route::get('/email_change/callback', 'email_change_callback')->name('email_change.callback');
@@ -134,17 +132,14 @@ Route::controller(VerificationController::class)->group(function () {
 Route::post('/language', [LanguageController::class, 'changeLanguage'])->name('language.change');
 Route::get('/packages', [PackageController::class, 'select_package'])->name('packages');
 
-// OTP Flow
-Route::get('/otp-initiation', function() { return view('auth.otp_initiation'); })->name('otp.initiation')->middleware('auth');
-Route::get('/email/verify', function() { return view('auth.otp_initiation'); })->name('verification.notice')->middleware('auth');
-Route::get('/otp-verify', function() { return view('auth.otp_verify'); })->name('otp.verify')->middleware('auth');
+// Email verification notice (must exist as it's referenced by Laravel auth)
+Route::get('/email/verify', function() { return response()->json(['message' => 'Please verify your email address.'], 200); })->name('verification.notice')->middleware('auth');
+
 
 Route::group(['middleware' => ['auth']], function () {
     Route::post('/send-email-verification', [App\Http\Controllers\Api\AuthController::class, 'sendEmailVerification']);
-    Route::post('/send-phone-verification', [App\Http\Controllers\Api\AuthController::class, 'sendPhoneVerification']);
-    Route::post('/verify-email-code', [App\Http\Controllers\Api\AuthController::class, 'verifyEmailCode']);
-    Route::post('/verify-phone-code', [App\Http\Controllers\Api\AuthController::class, 'verifyPhoneCode']);
-});
+        Route::post('/verify-email-code', [App\Http\Controllers\Api\AuthController::class, 'verifyEmailCode']);
+    });
 
 //Blog
 Route::controller(BlogController::class)->group(function () {

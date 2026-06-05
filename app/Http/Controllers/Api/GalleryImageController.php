@@ -12,7 +12,6 @@ use App\Models\ViewGalleryImage;
 use App\Notifications\DbStoreNotification;
 use App\Services\FirbaseNotification;
 use App\Utility\EmailUtility;
-use App\Utility\SmsUtility;
 use DB;
 use Illuminate\Http\Request;
 use Kutia\Larafirebase\Facades\Larafirebase;
@@ -296,9 +295,6 @@ class GalleryImageController extends Controller
                 }
 
                 // View Profile Picture email SMS to member
-                if ($notify_user->phone != null && addon_activation('otp_system') && (get_sms_template('gallery_image_view_request', 'status') == 1)) {
-                    SmsUtility::sms_on_request($notify_user, 'gallery_image_view_request');
-                }
 
                 return $this->success_message('gallery image view request sent successfully');
             } else {
@@ -345,9 +341,6 @@ class GalleryImageController extends Controller
             }
 
             // View Profile Picture email SMS to member
-            if ($notify_user->phone != null && addon_activation('otp_system') && (get_sms_template('gallery_image_view_request_accepted', 'status') == 1)) {
-                SmsUtility::sms_on_accept_request($notify_user, 'gallery_image_view_request_accepted');
-            }
 
             return $this->success_message('Interest has been accepted successfully.');
         } else {

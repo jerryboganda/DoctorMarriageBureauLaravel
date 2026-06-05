@@ -773,19 +773,6 @@ class AuthController extends Controller
             ], 500);
         }
     }
-
-    /**
-     * Send Phone Verification Code
-     */
-    public function sendPhoneVerification(Request $request)
-    {
-        return response()->json([
-            'success' => false,
-            'result' => false,
-            'message' => 'Phone verification has been disabled. Please verify with email.',
-        ], 410);
-    }
-
     /**
      * Verify Email Code
      */
@@ -840,17 +827,5 @@ class AuthController extends Controller
             'message' => 'Email verified successfully',
             'user' => null // Means proceed to signup
         ]);
-    }
-
-    /**
-     * Verify Phone Code
-     */
-    public function verifyPhoneCode(Request $request)
-    {
-        return response()->json([
-            'success' => false,
-            'result' => false,
-            'message' => 'Phone verification has been disabled. Please verify with email.',
-        ], 410);
     }
 }

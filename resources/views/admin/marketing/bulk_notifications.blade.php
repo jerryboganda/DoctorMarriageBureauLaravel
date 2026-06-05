@@ -352,9 +352,7 @@
                             <span><i class="las la-envelope text-primary"></i> {{ translate('Email') }}</span>
                         </label>
                         <label class="aiz-checkbox">
-                            <input type="checkbox" name="channels[]" value="sms">
                             <span class="aiz-square-check"></span>
-                            <span><i class="las la-sms text-info"></i> {{ translate('SMS') }}</span>
                         </label>
                         <label class="aiz-checkbox">
                             <input type="checkbox" name="channels[]" value="push">
@@ -367,7 +365,7 @@
                             <span><i class="lab la-whatsapp text-success"></i> {{ translate('WhatsApp') }}</span>
                         </label>
                     </div>
-                    <small class="text-muted d-block mt-1">{{ translate('WhatsApp generates clickable links (browser opens WhatsApp Web). SMS costs may apply. Push notifications require the user to be registered.') }}</small>
+                    <small class="text-muted d-block mt-1">{{ translate('WhatsApp generates clickable links (browser opens WhatsApp Web). Push notifications require the user to be registered.') }}</small>
                 </div>
             </div>
 
@@ -382,7 +380,7 @@
                 <label class="col-md-3 col-form-label">{{ translate('Body / Content') }} <span class="text-danger">*</span></label>
                 <div class="col-md-9">
                     <textarea name="body" rows="8" class="form-control aiz-text-editor" data-buttons='[["font", ["bold", "underline", "italic"]],["para", ["ul", "ol"]], ["insert", ["link", "picture"]],["view", ["undo","redo"]]]' required></textarea>
-                    <small class="text-muted d-block mt-1">{{ translate('HTML formatting works for Email. Plain text will be used for SMS, Push, and WhatsApp.') }}</small>
+                    <small class="text-muted d-block mt-1">{{ translate('HTML formatting works for Email. Plain text will be used for Push and WhatsApp.') }}</small>
                 </div>
             </div>
         </div>
@@ -409,7 +407,6 @@
                     <th>{{ translate('Filters') }}</th>
                     <th>{{ translate('Targeted') }}</th>
                     <th>{{ translate('Email') }}</th>
-                    <th>{{ translate('SMS') }}</th>
                     <th>{{ translate('Push') }}</th>
                     <th>{{ translate('Sent At') }}</th>
                 </tr>
@@ -422,7 +419,6 @@
                     <td>
                         @foreach(explode(',', $log->channels) as $ch)
                             @if($ch == 'email') <span class="badge badge-primary">Email</span>
-                            @elseif($ch == 'sms') <span class="badge badge-info">SMS</span>
                             @elseif($ch == 'push') <span class="badge badge-warning">Push</span>
                             @elseif($ch == 'whatsapp') <span class="badge badge-success">WA</span>
                             @endif
@@ -436,9 +432,6 @@
                         @else — @endif
                     </td>
                     <td>
-                        @if($log->sms_sent > 0 || $log->sms_failed > 0)
-                            <span class="text-success">{{ $log->sms_sent }}</span> / <span class="text-danger">{{ $log->sms_failed }}</span>
-                        @else — @endif
                     </td>
                     <td>
                         @if($log->push_sent > 0 || $log->push_failed > 0)

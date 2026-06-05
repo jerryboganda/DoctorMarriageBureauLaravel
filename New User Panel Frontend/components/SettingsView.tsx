@@ -76,6 +76,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onLaunchOnboarding, onOpenB
     const [visibilityStatus, setVisibilityStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
     const [visibilityStatusMessage, setVisibilityStatusMessage] = useState<string | null>(null);
     const visibilityStatusTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+    const isPremiumMember = Number(user?.membership ?? packageDetails?.membership ?? 0) === 2;
 
     // Recovery State
     const [trustedContacts, setTrustedContacts] = useState<any[]>([]);
@@ -109,9 +110,9 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onLaunchOnboarding, onOpenB
         setIncognito(visibilityData.incognito === true);
         setWatermark(visibilityData.screenshot_deterrence !== false);
         setProfilePhotoBlur(visibilityData.profile_photo_blur === true);
-        const visibilityPublic = visibilityData.photo_visibility_public !== false;
+        const visibilityPublic = visibilityData.photo_visibility_public === true;
         const visibilityMembers = visibilityData.photo_visibility_members !== false;
-        setPhotoVisibility(visibilityPublic ? 'everyone' : visibilityMembers ? 'members' : 'requests');
+        setPhotoVisibility((visibilityPublic || visibilityMembers) ? 'everyone' : 'requests');
         setVisibilitySavingKey(null);
         setVisibilityStatus((current) => current === 'saving' ? 'saved' : current);
 
@@ -254,6 +255,19 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onLaunchOnboarding, onOpenB
     }, [appliedCouponCode]);
 
     const updateVisibilitySetting = async (fieldName: string, isVisible: boolean) => {
+        if (fieldName === 'incognito' && isVisible && !isPremiumMember) {
+            setVisibilityStatus('error');
+            setVisibilityStatusMessage('Browse Privately is available for premium members only.');
+            setIncognito(false);
+            onOpenBilling?.();
+            if (visibilityStatusTimerRef.current) clearTimeout(visibilityStatusTimerRef.current);
+            visibilityStatusTimerRef.current = setTimeout(() => {
+                setVisibilityStatus((current) => current === 'error' ? 'idle' : current);
+                setVisibilityStatusMessage(null);
+            }, 3500);
+            return false;
+        }
+
         setVisibility((prev) => ({ ...prev, [fieldName]: isVisible }));
         setVisibilitySavingKey(fieldName);
         setVisibilityStatus('saving');
@@ -347,11 +361,10 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onLaunchOnboarding, onOpenB
 
     const handleAlertsChange = async (next: { email: boolean }) => {
         setLoginAlerts(next);
-        setNotificationPrefs((prev) => (prev ? { ...prev, email_digest: next.email, sms: false } : prev));
+        setNotificationPrefs((prev) => (prev ? { ...prev, email_digest: next.email } : prev));
         try {
             await api.post('/member/notifications/preferences', {
                 email_digest: next.email,
-                sms: false,
                 whatsapp: notificationPrefs?.whatsapp ?? true,
                 push_notifications: notificationPrefs?.push_notifications ?? true,
                 weekly_digest: notificationPrefs?.weekly_digest ?? true,
@@ -421,12 +434,10 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onLaunchOnboarding, onOpenB
         }
     };
 
-    const handlePhotoVisibilityChange = async (value: 'everyone' | 'members' | 'requests') => {
+    const handlePhotoVisibilityChange = async (value: 'everyone' | 'requests') => {
         const payload = value === 'everyone'
-            ? { photo_visibility_public: true, photo_visibility_members: true }
-            : value === 'members'
-                ? { photo_visibility_public: false, photo_visibility_members: true }
-                : { photo_visibility_public: false, photo_visibility_members: false };
+            ? { photo_visibility_public: false, photo_visibility_members: true }
+            : { photo_visibility_public: false, photo_visibility_members: false };
 
         setPhotoVisibility(value);
         setVisibilitySavingKey('photo_visibility');
@@ -1423,12 +1434,22 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onLaunchOnboarding, onOpenB
                                                 </div>
                                                 <p className="text-xs text-slate-500">{t('settings.privacy.incognitoDesc')}</p>
                                             </div>
-                                            <label className={`relative inline-flex items-center ${visibilitySavingKey ? 'cursor-wait opacity-70' : 'cursor-pointer'}`}>
+                                            <div className="flex items-center gap-3">
+                                                {!isPremiumMember && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={onOpenBilling}
+                                                        className="text-xs font-bold text-primary hover:text-primary-hover"
+                                                    >
+                                                        Upgrade
+                                                    </button>
+                                                )}
+                                                <label className={`relative inline-flex items-center ${visibilitySavingKey ? 'cursor-wait opacity-70' : isPremiumMember ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`}>
                                                 <input
                                                     type="checkbox"
                                                     className="sr-only peer"
                                                     checked={incognito}
-                                                    disabled={visibilitySavingKey !== null}
+                                                    disabled={visibilitySavingKey !== null || !isPremiumMember}
                                                     onChange={(e) => {
                                                         const next = e.target.checked;
                                                         setIncognito(next);
@@ -1436,7 +1457,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onLaunchOnboarding, onOpenB
                                                     }}
                                                 />
                                                 <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-900"></div>
-                                            </label>
+                                                </label>
+                                            </div>
                                         </div>
 
                                         <hr className="border-slate-100" />
@@ -1490,7 +1512,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onLaunchOnboarding, onOpenB
                                         <div>
                                             <h4 className="font-bold text-slate-900 mb-3">{t('settings.privacy.whoCanSeePhotos')}</h4>
                                             <div className="space-y-3">
-                                                {['everyone', 'members', 'requests'].map((opt) => (
+                                                {(['everyone', 'requests'] as const).map((opt) => (
                                                     <label key={opt} className={`flex items-center gap-3 p-3 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors ${visibilitySavingKey ? 'cursor-wait opacity-70' : 'cursor-pointer'}`}>
                                                         <input
                                                             type="radio"
@@ -1498,10 +1520,10 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onLaunchOnboarding, onOpenB
                                                             className="accent-primary size-4"
                                                             checked={photoVisibility === opt}
                                                             disabled={visibilitySavingKey !== null}
-                                                            onChange={() => handlePhotoVisibilityChange(opt as 'everyone' | 'members' | 'requests')}
+                                                            onChange={() => handlePhotoVisibilityChange(opt)}
                                                         />
                                                         <span className="text-sm text-slate-700 capitalize">
-                                                            {opt === 'everyone' ? t('settings.privacy.publicAllVisitors') : opt === 'members' ? t('settings.privacy.registeredMembersOnly') : t('settings.privacy.onlyOnRequest')}
+                                                            {opt === 'everyone' ? 'All Members Can See' : t('settings.privacy.onlyOnRequest')}
                                                         </span>
                                                     </label>
                                                 ))}

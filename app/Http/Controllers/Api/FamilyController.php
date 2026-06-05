@@ -104,7 +104,7 @@ class FamilyController extends Controller
                 $photoUrl = uploaded_asset($target->photo);
             }
             if (!$photoUrl) {
-                $photoUrl = static_asset('assets/img/avatar-place.png');
+                $photoUrl = gender_avatar($targetUser?->member ?? null);
             }
 
             return [

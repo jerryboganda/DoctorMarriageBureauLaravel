@@ -432,7 +432,7 @@ class HomeController extends Controller
 
         $data['member_name'] = $user->first_name . ' ' . $user->last_name;
         $data['member_email'] = $user->email;
-        $data['member_photo'] = uploaded_asset($user->photo) !== null ? uploaded_asset($user->photo) : static_asset('assets/img/avatar-place.png');
+        $data['member_photo'] = uploaded_asset($user->photo) !== null ? uploaded_asset($user->photo) : gender_avatar($user?->member);
         $data['remaining_interest'] = get_remaining_package_value($user->id, 'remaining_interest');
         $data['remaining_contact_view'] = get_remaining_package_value($user->id, 'remaining_contact_view');
         $data['remaining_photo_gallery'] = get_remaining_package_value($user->id, 'remaining_photo_gallery');
@@ -456,7 +456,6 @@ class HomeController extends Controller
     public function addon_check()
     {
         $addons = array();
-        $addons['otp_system'] = addon_activation('otp_system') ? true : false;
         $addons['referral_system'] = addon_activation('referral_system') ? true : false;
         $addons['support_tickets'] = addon_activation('support_tickets')  ? true : false;
 

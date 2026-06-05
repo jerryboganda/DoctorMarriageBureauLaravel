@@ -536,48 +536,6 @@
                 </li>
                 @endif
                 @endif
-
-                {{-- OTP addon --}}
-                @if (addon_activation('otp_system'))
-                @if (auth()->user()->can('manage_sms_templates') ||
-                auth()->user()->can('manage_otp_credentials') ||
-                auth()->user()->can('send_sms'))
-                <li class="aiz-side-nav-item">
-                    <a href="#" class="aiz-side-nav-link">
-                        <i class="las la-phone aiz-side-nav-icon"></i>
-                        <span class="aiz-side-nav-text">{{ translate('OTP System') }}</span>
-                        @if (env('DEMO_MODE') == 'On')
-                        <span class="badge badge-inline badge-danger">{{ translate('Addon') }}</span>
-                        @endif
-                        <span class="aiz-side-nav-arrow"></span>
-                    </a>
-                    <ul class="aiz-side-nav-list level-2">
-                        @can('manage_sms_templates')
-                        <li class="aiz-side-nav-item">
-                            <a href="{{ route('sms-templates.index') }}" class="aiz-side-nav-link">
-                                <span class="aiz-side-nav-text">{{ translate('SMS Templates') }}</span>
-                            </a>
-                        </li>
-                        @endcan
-                        @can('manage_otp_credentials')
-                        <li class="aiz-side-nav-item">
-                            <a href="{{ route('otp_credentials.index') }}" class="aiz-side-nav-link">
-                                <span class="aiz-side-nav-text">{{ translate('Set OTP Credentials') }}</span>
-                            </a>
-                        </li>
-                        @endcan
-                        @can('send_sms')
-                        <li class="aiz-side-nav-item">
-                            <a href="{{ route('bulk_sms.index') }}" class="aiz-side-nav-link">
-                                <span class="aiz-side-nav-text">{{ translate('Send SMS') }}</span>
-                            </a>
-                        </li>
-                        @endcan
-                    </ul>
-                </li>
-                @endif
-                @endif
-
                 <!-- Uploader Manage -->
 
                 <li class="aiz-side-nav-item">

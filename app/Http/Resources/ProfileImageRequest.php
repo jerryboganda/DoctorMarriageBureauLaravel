@@ -24,7 +24,7 @@ class ProfileImageRequest extends JsonResource
             $requestState = (int) $view_profile_images->status === 1 ? 'approved' : 'pending';
             return [
                 'id' => $this->id,
-                'photo' => uploaded_asset($user->photo) ?? static_asset('assets/img/avatar-place.png'),
+                'photo' => uploaded_asset($user->photo) ?? gender_avatar($user?->member),
                 'name' => $user->first_name . $user->last_name,
                 'date_of_birth' => MemberUtility::member_age($user->id),
                 'status' => $view_profile_images->status,

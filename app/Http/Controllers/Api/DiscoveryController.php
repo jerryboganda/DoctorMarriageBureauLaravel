@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ActiveUserResource;
+use App\Models\IgnoredUser;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -31,6 +32,8 @@ class DiscoveryController extends Controller
                 'spiritual_backgrounds.sect',
                 'spiritual_backgrounds.caste',
                 'addresses.country',
+                'addresses.state',
+                'addresses.city',
             ])
             ->where('user_type', 'member')
             ->where('id', '!=', $user?->id)
@@ -41,6 +44,11 @@ class DiscoveryController extends Controller
                 $q->where('gender', $opposite_gender)
                   ->where('is_visible', 1);
             });
+
+        if ($user) {
+            $query->whereNotIn('id', IgnoredUser::where('ignored_by', $user->id)->select('user_id'))
+                ->whereNotIn('id', IgnoredUser::where('user_id', $user->id)->select('ignored_by'));
+        }
 
         if ($this->isTruthyQueryFlag($request, 'verified')) {
             $query->where('verification_info', '!=', '')
@@ -120,6 +128,9 @@ class DiscoveryController extends Controller
         $sect = trim((string) $request->query('sect', ''));
         $caste = trim((string) $request->query('caste', ''));
         $country = trim((string) $request->query('country', ''));
+        $state = trim((string) $request->query('state', ''));
+        $city = trim((string) $request->query('city', ''));
+        $marital_status = trim((string) $request->query('marital_status', ''));
         $job_title_id = trim((string) $request->query('job_title_id', ''));
         $profession = trim((string) $request->query('profession', ''));
 
@@ -189,6 +200,42 @@ class DiscoveryController extends Controller
                 $query->whereHas('addresses.country', function($sub) use ($country) {
                     $sub->where('name', 'LIKE', "%{$country}%")
                         ->orWhere('code', 'LIKE', "%{$country}%");
+                });
+            }
+        }
+
+        if ($state !== '') {
+            if (is_numeric($state)) {
+                $query->whereHas('addresses', function($sub) use ($state) {
+                    $sub->where('state_id', (int) $state);
+                });
+            } else {
+                $query->whereHas('addresses.state', function($sub) use ($state) {
+                    $sub->where('name', 'LIKE', "%{$state}%");
+                });
+            }
+        }
+
+        if ($city !== '') {
+            if (is_numeric($city)) {
+                $query->whereHas('addresses', function($sub) use ($city) {
+                    $sub->where('city_id', (int) $city);
+                });
+            } else {
+                $query->whereHas('addresses.city', function($sub) use ($city) {
+                    $sub->where('name', 'LIKE', "%{$city}%");
+                });
+            }
+        }
+
+        if ($marital_status !== '') {
+            if (is_numeric($marital_status)) {
+                $query->whereHas('member', function($sub) use ($marital_status) {
+                    $sub->where('marital_status_id', (int) $marital_status);
+                });
+            } else {
+                $query->whereHas('member.marital_status', function($sub) use ($marital_status) {
+                    $sub->where('name', 'LIKE', "%{$marital_status}%");
                 });
             }
         }

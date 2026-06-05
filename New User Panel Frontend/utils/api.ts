@@ -24,6 +24,13 @@ api.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
 
+  // Browser FormData must set its own multipart boundary. The axios instance
+  // defaults to JSON, so remove Content-Type for file uploads.
+  if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+    delete config.headers['Content-Type'];
+    delete config.headers['content-type'];
+  }
+
   // Send selected language to backend (read by AppLanguage middleware)
   const lang = localStorage.getItem('lang') || 'en';
   config.headers['App-Language'] = lang;

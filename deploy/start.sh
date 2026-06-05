@@ -5,4 +5,7 @@ service cron start
 
 # Run composer install and start php-fpm
 composer install --no-interaction --optimize-autoloader --no-dev
+php artisan config:cache || true
+php artisan event:cache || true
+php artisan view:cache || true
 php-fpm

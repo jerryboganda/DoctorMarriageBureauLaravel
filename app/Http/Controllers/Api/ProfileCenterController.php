@@ -183,6 +183,19 @@ class ProfileCenterController extends Controller
 
         $updatedSettings = [];
 
+        if (
+            array_key_exists('incognito', $updates)
+            && filter_var($updates['incognito'], FILTER_VALIDATE_BOOLEAN)
+            && (int) ($user->membership ?? 0) !== 2
+        ) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Browse Privately is available for premium members only.',
+                'code' => 'PREMIUM_REQUIRED',
+                'data' => $this->buildVisibilitySnapshot($user->fresh(['member'])),
+            ], 403);
+        }
+
         if (array_key_exists('photo_visibility_public', $updates) || array_key_exists('photo_visibility_members', $updates)) {
             $currentSettings = FieldVisibilitySetting::where('user_id', $user->id)
                 ->pluck('is_visible', 'field_name')
@@ -599,7 +612,7 @@ class ProfileCenterController extends Controller
                 'last_name' => $user->last_name,
                 'email' => $user->email,
                 'phone' => $user->phone,
-                'photo' => $user->photo ? Storage::url($user->photo) : null,
+                'photo' => $user->photo ? uploaded_asset($user->photo) : null,
                 'birthday' => $member?->birthday,
                 'gender' => $member?->gender,
                 'height' => $physicalAttributes?->height,

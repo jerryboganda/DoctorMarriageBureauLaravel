@@ -555,7 +555,6 @@ const BasicsSection: React.FC<{ data: any, optionSets?: any, updateData: (field:
     const genderOptions = ensureOptionValue(data?.gender, optionSets?.genders ?? []);
     const marriageTimelineOptions = ensureOptionValue(data?.marriageTimeline, optionSets?.marriageTimeline ?? []);
     const relocationOptions = ensureOptionValue(data?.relocationWillingness, optionSets?.relocationWillingness ?? []);
-    const seriousnessOptions = ensureOptionValue(data?.seriousnessLevel, optionSets?.seriousnessLevel ?? []);
     const immigrationOptions = ensureOptionValue(data?.immigrationStatus, optionSets?.immigrationStatusOptions ?? []);
     const countryOptions = optionSets?.countries ?? [];
     const languageOptions = optionSets?.languages ?? [];
@@ -871,7 +870,7 @@ const BasicsSection: React.FC<{ data: any, optionSets?: any, updateData: (field:
 
             <div className="md:col-span-2">
                 <Card title={t('profile.edit.marriageIntent')}>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <InputGroup label={t('profile.edit.timeline')} optional>
                             <select
                                 className="form-input"
@@ -895,21 +894,6 @@ const BasicsSection: React.FC<{ data: any, optionSets?: any, updateData: (field:
                                     <option key={option.value} value={option.value}>{option.label}</option>
                                 ))}
                             </select>
-                        </InputGroup>
-                        <InputGroup label={t('profile.edit.seriousness')} optional>
-                            <div className="flex items-center gap-2 form-input bg-green-50 text-green-700 border border-green-200">
-                                <Check size={16} />
-                                <select
-                                    className="flex-1 bg-transparent outline-none text-green-700 font-bold"
-                                    value={resolveOptionValue(data.seriousnessLevel, seriousnessOptions)}
-                                    onChange={(e) => updateData('seriousnessLevel', e.target.value)}
-                                >
-                                    <option value="">{t('profile.edit.selectLevel')}</option>
-                                    {seriousnessOptions.map((option: any) => (
-                                        <option key={option.value} value={option.value}>{option.label}</option>
-                                    ))}
-                                </select>
-                            </div>
                         </InputGroup>
                     </div>
                 </Card>

@@ -1,6 +1,10 @@
 version: '3'
 services:
   app:
+    memswap_limit: 786m
+    cpus: "1.25"
+    pids_limit: 160
+    mem_limit: 786m
     build:
       context: .
       dockerfile: deploy/Dockerfile
@@ -16,6 +20,10 @@ services:
       - nginx-proxy-manager_default
 
   web:
+    memswap_limit: 192m
+    cpus: "0.50"
+    pids_limit: 96
+    mem_limit: 192m
     image: nginx:alpine
     container_name: marriagebureau-web
     restart: unless-stopped
@@ -31,6 +39,10 @@ services:
       - nginx-proxy-manager_default
 
   db:
+    memswap_limit: 1024m
+    cpus: "1.00"
+    pids_limit: 160
+    mem_limit: 1024m
     image: mysql:8.0
     container_name: marriagebureau-db
     restart: unless-stopped
@@ -50,10 +62,14 @@ services:
       - marriagebureau-network
 
   soketi:
+    memswap_limit: 256m
+    cpus: "0.50"
+    pids_limit: 128
+    mem_limit: 256m
     image: quay.io/soketi/soketi:latest-16-alpine
     container_name: marriagebureau-soketi
     environment:
-      SOKETI_DEBUG: '1'
+      SOKETI_DEBUG: '0'
       SOKETI_METRICS_SERVER_PORT: '9601'
       SOKETI_DEFAULT_APP_ID: '${PUSHER_APP_ID}'
       SOKETI_DEFAULT_APP_KEY: '${PUSHER_APP_KEY}'
@@ -67,6 +83,10 @@ services:
       - nginx-proxy-manager_default
 
   frontend:
+    memswap_limit: 192m
+    cpus: "0.50"
+    pids_limit: 96
+    mem_limit: 192m
     build:
       context: ./New User Panel Frontend
       dockerfile: Dockerfile

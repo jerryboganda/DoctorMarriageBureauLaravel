@@ -106,21 +106,7 @@ const moduleConfigs: Record<string, ModuleConfig> = {
   '/admin-react/website/appearances': { kind: 'single', title: 'Website Appearances', endpoint: '/website/appearances', saveEndpoint: '/website/appearances' },
   '/admin-react/referral/settings': { kind: 'single', title: 'Referral Settings', endpoint: '/referral/settings', saveEndpoint: '/referral/settings' },
   '/admin-react/support/settings': { kind: 'single', title: 'Support Settings', endpoint: '/support-settings', saveEndpoint: '/support-settings' },
-  '/admin-react/otp/credentials': { kind: 'single', title: 'OTP Credentials', endpoint: '/otp/credentials', saveEndpoint: '/otp/credentials' },
   '/admin-react/profile-reminders': { kind: 'single', title: 'Profile Reminders', endpoint: '/profile-reminders', saveEndpoint: '/profile-reminders/update' },
-
-  '/admin-react/otp/templates': {
-    kind: 'resource',
-    title: 'SMS Templates',
-    endpoint: '/otp/templates',
-    createDefaults: { identifier: '', subject: '', sms_body: '', status: 1 },
-  },
-  '/admin-react/otp/send-sms': {
-    kind: 'action',
-    title: 'Send SMS',
-    endpoint: '/otp/send-sms',
-    createDefaults: { phone: '', message: '' },
-  },
   '/admin-react/bulk-notifications': {
     kind: 'action',
     title: 'Bulk Notifications',

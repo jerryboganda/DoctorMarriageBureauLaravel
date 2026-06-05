@@ -10,7 +10,6 @@ use App\Notifications\DbStoreNotification;
 use App\Services\FirbaseNotification;
 use App\Services\InterestService;
 use App\Utility\EmailUtility;
-use App\Utility\SmsUtility;
 use Auth;
 use DB;
 use Illuminate\Http\Request;
@@ -196,9 +195,6 @@ class ExpressInterestController extends Controller
             }
 
             // Express Interest Send SMS to member
-            if ($notify_user->phone != null && addon_activation('otp_system') && (get_sms_template('accept_interest', 'status') == 1)) {
-                SmsUtility::sms_on_accept_request($notify_user, 'accept_interest');
-            }
             flash(translate('Interest has been accepted successfully.'))->success();
             return redirect()->route('interest_requests');
         } else {

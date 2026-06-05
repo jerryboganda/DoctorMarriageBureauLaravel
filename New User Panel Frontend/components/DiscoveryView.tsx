@@ -28,6 +28,19 @@ const isFemaleProfile = (gender?: number | string | null): boolean => {
   return normalized === '2' || normalized === 'female' || normalized === 'f';
 };
 
+const isMaleDefaultAvatar = (url?: string | null): boolean => {
+  const u = `${url ?? ''}`;
+  // matches '...avatar-place.png' but NOT '...female-avatar-place.png'
+  return /[/-]avatar-place\.png(\?|$)/.test(u) && !u.includes('female-avatar-place.png');
+};
+const swapAvatarForGender = (url: string, gender?: number | string | null): string => {
+  if (isFemaleProfile(gender) && isMaleDefaultAvatar(url)) {
+    return url.replace('avatar-place.png', 'female-avatar-place.png');
+  }
+  return url;
+};
+
+
 const resolveAvatarUrl = (value?: string | null): string => {
   const candidate = `${value ?? ''}`.trim();
   if (!candidate) return DEFAULT_AVATAR;
@@ -76,6 +89,7 @@ const normalizeProfile = (profile: any): ProfileMatch => {
   if (!avatarUrl || avatarUrl === '' || (!avatarUrl.startsWith('http') && !avatarUrl.startsWith('/'))) {
     avatarUrl = fallbackAvatar;
   }
+  avatarUrl = swapAvatarForGender(avatarUrl, gender);
 
   return {
     id: String(profile.id ?? profile.user_id ?? profile.code ?? ''),
@@ -130,6 +144,9 @@ type DiscoveryFilters = {
   ageMin: string;
   ageMax: string;
   country: string;
+  state: string;
+  city: string;
+  maritalStatus: string;
   religion: string;
   sect: string;
   caste: string;
@@ -142,6 +159,9 @@ const DEFAULT_FILTERS: DiscoveryFilters = {
   ageMin: '',
   ageMax: '',
   country: '',
+  state: '',
+  city: '',
+  maritalStatus: '',
   religion: '',
   sect: '',
   caste: '',
@@ -175,6 +195,9 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
   const [filters, setFilters] = useState<DiscoveryFilters>(DEFAULT_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState<DiscoveryFilters>(DEFAULT_FILTERS);
   const [countries, setCountries] = useState<Array<{ id: string | number; name: string; code?: string }>>([]);
+  const [states, setStates] = useState<Array<{ id: string | number; name: string }>>([]);
+  const [cities, setCities] = useState<Array<{ id: string | number; name: string }>>([]);
+  const [maritalStatuses, setMaritalStatuses] = useState<Array<{ id: string | number; name: string }>>([]);
   const [religions, setReligions] = useState<Array<{ id: string | number; name: string }>>([]);
   const [sects, setSects] = useState<Array<{ id: string | number; name: string }>>([]);
   const [castes, setCastes] = useState<Array<{ id: string | number; name: string; religion_id?: string | number }>>([]);
@@ -356,8 +379,9 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
 
     const loadFilterOptions = async () => {
       try {
-        const [countriesRes, religionsRes, sectsRes, profileRes] = await Promise.all([
+        const [countriesRes, maritalStatusesRes, religionsRes, sectsRes, profileRes] = await Promise.all([
           api.get('/member/countries'),
+          api.get('/member/maritial-status'),
           api.get('/member/religions'),
           api.get('/member/sects'),
           api.get('/full-profile'),
@@ -366,6 +390,7 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
         if (!isMounted) return;
 
         setCountries(unwrapList(countriesRes.data));
+        setMaritalStatuses(unwrapList(maritalStatusesRes.data));
         setReligions(unwrapList(religionsRes.data));
         setSects(unwrapList(sectsRes.data));
 
@@ -384,6 +409,64 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadStates = async () => {
+      if (!filters.country) {
+        setStates([]);
+        setCities([]);
+        return;
+      }
+
+      try {
+        const response = await api.get(`/member/states/${filters.country}`);
+        if (!isMounted) return;
+        setStates(unwrapList(response.data));
+      } catch (error) {
+        if (isMounted) {
+          console.error('Failed to load province options', error);
+          setStates([]);
+          setCities([]);
+        }
+      }
+    };
+
+    loadStates();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [filters.country]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadCities = async () => {
+      if (!filters.state) {
+        setCities([]);
+        return;
+      }
+
+      try {
+        const response = await api.get(`/member/cities/${filters.state}`);
+        if (!isMounted) return;
+        setCities(unwrapList(response.data));
+      } catch (error) {
+        if (isMounted) {
+          console.error('Failed to load city options', error);
+          setCities([]);
+        }
+      }
+    };
+
+    loadCities();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [filters.state]);
 
   useEffect(() => {
     let isMounted = true;
@@ -508,6 +591,9 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
       if (filterSet.ageMin) params.age_min = filterSet.ageMin;
       if (filterSet.ageMax) params.age_max = filterSet.ageMax;
       if (filterSet.country) params.country = filterSet.country;
+      if (filterSet.state) params.state = filterSet.state;
+      if (filterSet.city) params.city = filterSet.city;
+      if (filterSet.maritalStatus) params.marital_status = filterSet.maritalStatus;
       if (filterSet.religion) params.religion = filterSet.religion;
       if (filterSet.sect) params.sect = filterSet.sect;
       if (filterSet.caste) params.caste = filterSet.caste;
@@ -551,6 +637,9 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
       appliedFilters.ageMin !== '' ||
       appliedFilters.ageMax !== '' ||
       appliedFilters.country !== '' ||
+      appliedFilters.state !== '' ||
+      appliedFilters.city !== '' ||
+      appliedFilters.maritalStatus !== '' ||
       appliedFilters.religion.trim() !== '' ||
       appliedFilters.sect.trim() !== '' ||
       appliedFilters.caste.trim() !== '' ||
@@ -601,6 +690,9 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({ onSendProposal, onProposa
       ageMin: filters.ageMin,
       ageMax: filters.ageMax,
       country: filters.country,
+      state: filters.state,
+      city: filters.city,
+      maritalStatus: filters.maritalStatus,
       religion: filters.religion.trim(),
       sect: filters.sect.trim(),
       caste: filters.caste.trim(),
@@ -751,6 +843,9 @@ const buildShortlistedMap = (items: ProfileMatch[]): Record<string, boolean> => 
       appliedFilters.ageMin !== '' ||
       appliedFilters.ageMax !== '' ||
       appliedFilters.country !== '' ||
+      appliedFilters.state !== '' ||
+      appliedFilters.city !== '' ||
+      appliedFilters.maritalStatus !== '' ||
       appliedFilters.religion.trim() !== '' ||
     appliedFilters.sect.trim() !== '' ||
     appliedFilters.caste.trim() !== '' ||
@@ -908,7 +1003,7 @@ const buildShortlistedMap = (items: ProfileMatch[]): Record<string, boolean> => 
                     <FilterGroup label="Location">
                         <select
                           value={filters.country}
-                          onChange={(e) => setFilters((prev) => ({ ...prev, country: e.target.value }))}
+                          onChange={(e) => setFilters((prev) => ({ ...prev, country: e.target.value, state: '', city: '' }))}
                           className="w-full text-sm p-2 border border-slate-200 rounded-md focus:outline-none focus:border-primary"
                         >
                           <option value="">Any country</option>
@@ -917,6 +1012,63 @@ const buildShortlistedMap = (items: ProfileMatch[]): Record<string, boolean> => 
                               {country.name}{country.code ? ` (${country.code})` : ''}
                             </option>
                           ))}
+                        </select>
+                        <select
+                          value={filters.state}
+                          onChange={(e) => setFilters((prev) => ({ ...prev, state: e.target.value, city: '' }))}
+                          className="w-full text-sm p-2 border border-slate-200 rounded-md focus:outline-none focus:border-primary mt-3"
+                          disabled={!filters.country}
+                        >
+                          <option value="">{filters.country ? 'Any province' : 'Choose a country first'}</option>
+                          {states.map((state) => (
+                            <option key={String(state.id)} value={String(state.id)}>
+                              {state.name}
+                            </option>
+                          ))}
+                        </select>
+                        <select
+                          value={filters.city}
+                          onChange={(e) => setFilters((prev) => ({ ...prev, city: e.target.value }))}
+                          className="w-full text-sm p-2 border border-slate-200 rounded-md focus:outline-none focus:border-primary mt-3"
+                          disabled={!filters.state}
+                        >
+                          <option value="">{filters.state ? 'Any city' : 'Choose a province first'}</option>
+                          {cities.map((city) => (
+                            <option key={String(city.id)} value={String(city.id)}>
+                              {city.name}
+                            </option>
+                          ))}
+                        </select>
+                    </FilterGroup>
+
+                    <FilterGroup label="Marital Status">
+                        <select
+                          value={filters.maritalStatus}
+                          onChange={(e) => setFilters((prev) => ({ ...prev, maritalStatus: e.target.value }))}
+                          className="w-full text-sm p-2 border border-slate-200 rounded-md focus:outline-none focus:border-primary"
+                        >
+                          <option value="">Any marital status</option>
+                          {maritalStatuses.map((status) => (
+                            <option key={String(status.id)} value={String(status.id)}>
+                              {status.name}
+                            </option>
+                          ))}
+                        </select>
+                    </FilterGroup>
+
+                    <FilterGroup label="Caste">
+                        <select
+                            value={filters.caste}
+                            onChange={(e) => setFilters((prev) => ({ ...prev, caste: e.target.value }))}
+                            className="w-full text-sm p-2 border border-slate-200 rounded-md focus:outline-none focus:border-primary"
+                            disabled={!filters.religion}
+                        >
+                            <option value="">{filters.religion ? 'Any caste' : 'Choose a religion first'}</option>
+                            {castes.map((caste) => (
+                                <option key={String(caste.id)} value={String(caste.id)}>
+                                    {caste.name}
+                                </option>
+                            ))}
                         </select>
                     </FilterGroup>
 
@@ -950,22 +1102,6 @@ const buildShortlistedMap = (items: ProfileMatch[]): Record<string, boolean> => 
                         </select>
                     </FilterGroup>
 
-                    <FilterGroup label="Caste">
-                        <select
-                            value={filters.caste}
-                            onChange={(e) => setFilters((prev) => ({ ...prev, caste: e.target.value }))}
-                            className="w-full text-sm p-2 border border-slate-200 rounded-md focus:outline-none focus:border-primary"
-                            disabled={!filters.religion}
-                        >
-                            <option value="">{filters.religion ? 'Any caste' : 'Choose a religion first'}</option>
-                            {castes.map((caste) => (
-                                <option key={String(caste.id)} value={String(caste.id)}>
-                                    {caste.name}
-                                </option>
-                            ))}
-                        </select>
-                    </FilterGroup>
-
                     <FilterGroup label="Profession">
                          <select
                             value={filters.professionId}
@@ -988,7 +1124,7 @@ const buildShortlistedMap = (items: ProfileMatch[]): Record<string, boolean> => 
                          </select>
                          <input
                             type="text"
-                            placeholder="Search profession keywords"
+                            placeholder="Any Other Professional"
                             value={filters.profession}
                             onChange={(e) => setFilters({ ...filters, profession: e.target.value, professionId: '' })}
                             className="w-full text-sm p-2 border border-slate-200 rounded-md focus:outline-none focus:border-primary mt-3"
@@ -1254,7 +1390,7 @@ const ProfileGridCard: React.FC<{
     const interestFlags = getInterestFlags(profile, Boolean(superLiked));
     const profilePhotoAccess = mediaAccess.profilePhoto;
     const fallbackAvatar = isFemaleProfile(profile.gender) ? DEFAULT_FEMALE_AVATAR : DEFAULT_AVATAR;
-    const avatarUrl = profile.avatarUrl || fallbackAvatar;
+    const avatarUrl = swapAvatarForGender(profile.avatarUrl || fallbackAvatar, profile.gender);
     const shouldBlurAvatar = Boolean(
       profile.profilePhotoBlur &&
       profile.photoExists &&

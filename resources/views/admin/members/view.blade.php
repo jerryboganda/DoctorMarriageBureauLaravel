@@ -84,10 +84,7 @@
                         <tr>
                             <th>{{ translate('Email') }}</th>
                             <td>{{ $member->email }}</td>
-                            @if (addon_activation('otp_system'))
-                                <th>{{ translate('Phone Number') }}</th>
-                                <td>{{ $member->phone }}</td>
-                            @endif
+                            
                         </tr>
                         <tr>
                             <th>{{ translate('Marital Status') }}</th>

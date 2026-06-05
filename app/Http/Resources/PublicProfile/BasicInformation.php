@@ -41,7 +41,7 @@ class BasicInformation extends JsonResource
             'gender' => $this->member->gender == 1 ? "Male" : "Female",
             'phone' => $this->phone ?? "",
             'maritial_status' =>  $this->member->marital_status ? $this->member->marital_status->name : '',
-            'photo' => show_profile_picture($this) ? (uploaded_asset($this->photo) ?? static_asset('assets/img/avatar-place.png')) : static_asset('assets/img/avatar-place.png'),
+            'photo' => show_profile_picture($this) ? (uploaded_asset($this->photo) ?? gender_avatar($this->member)) : gender_avatar($this->member),
             'profile_photo_blur' => $profilePhotoBlur,
             'profile_photo_request_state' => $photoRequestInfo['profile_photo_request_state'],
             'profile_photo_request_text' => $photoRequestInfo['profile_photo_request_text'],

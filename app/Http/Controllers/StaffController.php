@@ -8,7 +8,6 @@ use App\Models\Role;
 use App\Models\User;
 use Hash;
 use App\Utility\EmailUtility;
-use App\Utility\SmsUtility;
 
 class StaffController extends Controller
 {
@@ -71,13 +70,6 @@ class StaffController extends Controller
                     {
                         EmailUtility::staff_account_opening_email($user, $request->password, $role_name);
                     }
-
-                    // Account Approval SMS send to staff
-                    if($user->phone != null && addon_activation('otp_system') && (get_sms_template('staff_account_opening','status') == 1))
-                    {
-                        SmsUtility::staff_account_opening($user, $request->password, $role_name);
-                    }
-
                     flash(translate('Staff has been inserted successfully'))->success();
                     return redirect()->route('staffs.index');
                 }

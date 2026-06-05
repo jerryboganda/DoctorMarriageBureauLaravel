@@ -230,11 +230,7 @@ class RegisterController extends Controller
         if (isset($data['email'])) {
             session()->forget('email_verified_' . $data['email']);
         }
-        if (isset($data['phone'])) {
-            session()->forget('phone_verified_' . $data['phone']);
-        }
-
-        return $user;
+                return $user;
     }
 
     public function register(Request $request)

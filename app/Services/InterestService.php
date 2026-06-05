@@ -7,7 +7,6 @@ use App\Models\ExpressInterest;
 use App\Models\User;
 use App\Notifications\DbStoreNotification;
 use App\Utility\EmailUtility;
-use App\Utility\SmsUtility;
 use Illuminate\Support\Facades\Notification;
 use Kutia\Larafirebase\Facades\Larafirebase;
 
@@ -138,9 +137,6 @@ class InterestService
                   }
 
                   // Express Interest Send SMS to member
-                  if ($notify_user->phone != null && addon_activation('otp_system') && (get_sms_template('express_interest', 'status') == 1)) {
-                        SmsUtility::sms_on_request($notify_user, 'express_interest');
-                  }
 
                   return ['success' => true];
             } else {
@@ -197,9 +193,6 @@ class InterestService
                   }
 
                   // Express Interest Send SMS to member
-                  if ($notify_user->phone != null && addon_activation('otp_system') && (get_sms_template('accept_interest', 'status') == 1)) {
-                        SmsUtility::sms_on_accept_request($notify_user, 'accept_interest');
-                  }
 
                   return true;
             }

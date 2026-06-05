@@ -13,7 +13,6 @@ use App\Services\FirbaseNotification;
 use App\Services\CouponService;
 use App\Services\ReferralService;
 use App\Utility\EmailUtility;
-use App\Utility\SmsUtility;
 use Auth;
 use Illuminate\Http\Request;
 use Kutia\Larafirebase\Facades\Larafirebase;
@@ -383,9 +382,6 @@ class PackagePaymentController extends Controller
             }
 
             // Payment approval SMS send to member
-            if ($user->phone != null && addon_activation('otp_system') && get_sms_template('manual_payment_approval', 'status')) {
-                SmsUtility::manual_payment_approval($user, $package_payment);
-            }
         }
 
         flash(translate('Payemnt accepted successfully.'))->success();

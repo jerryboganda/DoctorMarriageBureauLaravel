@@ -39,7 +39,7 @@ class NotificationResource extends JsonResource
             $check = !empty($interestData);
         }
 
-        $avatarImage = 'assets/img/avatar-place.png';
+        $avatarImage = $sender && isset($sender->member) ? str_replace(static_asset(''),'',gender_avatar($sender->member)) : 'assets/img/avatar-place.png';
         $profilePictureShow = false;
         if ($user) {
             $avatarImage = optional($user->member)->gender == 1

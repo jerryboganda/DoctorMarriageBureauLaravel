@@ -1,5 +1,8 @@
 <?php
 
+
+Route::get('/health', function () { return response()->json(['status' => 'ok', 'time' => now()->toIso8601String(), 'app' => config('app.name')]); });
+
 use App\Http\Controllers\Api\AdditionalAttributeController;
 use App\Http\Controllers\Api\Payment\InstamojoController;
 use App\Http\Controllers\Api\Payment\PhonepeController;
@@ -54,9 +57,7 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
 
     // Registration Verification Routes
     Route::post('/send-email-verification', 'AuthController@sendEmailVerification');
-    Route::post('/send-phone-verification', 'AuthController@sendPhoneVerification');
     Route::post('/verify-email-code', 'AuthController@verifyEmailCode');
-    Route::post('/verify-phone-code', 'AuthController@verifyPhoneCode');
     Route::post('social-login', 'AuthController@socialLogin');
     Route::get('user-by-token', 'AuthController@getUserByToken');
 

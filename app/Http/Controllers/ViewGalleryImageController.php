@@ -8,7 +8,6 @@ use App\Models\ViewGalleryImage;
 use App\Notifications\DbStoreNotification;
 use App\Services\FirbaseNotification;
 use App\Utility\EmailUtility;
-use App\Utility\SmsUtility;
 use Auth;
 use DB;
 use Illuminate\Http\Request;
@@ -81,9 +80,6 @@ class ViewGalleryImageController extends Controller
             }
 
             // View Profile Picture email SMS to member
-            if ($notify_user->phone != null && addon_activation('otp_system') && (get_sms_template('gallery_image_view_request', 'status') == 1)) {
-                SmsUtility::sms_on_request($notify_user, 'gallery_image_view_request');
-            }
 
             return 1;
         } else {
@@ -128,9 +124,6 @@ class ViewGalleryImageController extends Controller
             }
 
             // View Profile Picture email SMS to member
-            if ($notify_user->phone != null && addon_activation('otp_system') && (get_sms_template('gallery_image_view_request_accepted', 'status') == 1)) {
-                SmsUtility::sms_on_accept_request($notify_user, 'gallery_image_view_request_accepted');
-            }
 
             flash(translate('Interest has been accepted successfully.'))->success();
             return redirect()->route('gallery-image-view-request.index');

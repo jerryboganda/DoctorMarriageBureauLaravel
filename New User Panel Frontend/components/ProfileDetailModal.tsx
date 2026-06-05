@@ -23,6 +23,19 @@ const isFemaleProfile = (gender?: number | string | null): boolean => {
   return normalized === '2' || normalized === 'female' || normalized === 'f';
 };
 
+const isMaleDefaultAvatar = (url?: string | null): boolean => {
+  const u = `${url ?? ''}`;
+  // matches '...avatar-place.png' but NOT '...female-avatar-place.png'
+  return /[/-]avatar-place\.png(\?|$)/.test(u) && !u.includes('female-avatar-place.png');
+};
+const swapAvatarForGender = (url: string, gender?: number | string | null): string => {
+  if (isFemaleProfile(gender) && isMaleDefaultAvatar(url)) {
+    return url.replace('avatar-place.png', 'female-avatar-place.png');
+  }
+  return url;
+};
+
+
 interface ProfileDetailModalProps {
   profile: ProfileMatch;
   onClose: () => void;
@@ -57,6 +70,7 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({ profile, onClos
   const [intelError, setIntelError] = useState<string | null>(null);
   const [showFriction, setShowFriction] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showPhotoPreview, setShowPhotoPreview] = useState(false);
   const [hiding, setHiding] = useState(false);
   const [removingFromShortlist, setRemovingFromShortlist] = useState(false);
 
@@ -195,7 +209,8 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({ profile, onClos
   const profileGender = basicInfo?.gender ?? profile.gender;
   const initialAvatarLooksDefault = `${profile.avatarUrl ?? ''}`.includes('avatar-place.png');
   const fallbackAvatar = isFemaleProfile(profileGender) ? DEFAULT_FEMALE_AVATAR : DEFAULT_AVATAR;
-  const photoUrl = basicInfo?.photo || (initialAvatarLooksDefault ? '' : profile.avatarUrl) || fallbackAvatar;
+  const rawPhotoUrl = basicInfo?.photo || (initialAvatarLooksDefault ? '' : profile.avatarUrl) || fallbackAvatar;
+  const photoUrl = swapAvatarForGender(rawPhotoUrl, profileGender);
   const shouldBlurPhoto = Boolean(
     profilePhotoBlur &&
     currentUserId != null &&
@@ -358,129 +373,128 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({ profile, onClos
         {/* ═══════════════════════════════════════════
             HEADER — Compact mobile-first hero (non-scrollable)
            ═══════════════════════════════════════════ */}
-        <div className="shrink-0">
-          {/* Gradient banner */}
-          <div className="h-20 sm:h-28 bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 relative overflow-hidden rounded-t-2xl">
+        <div className="shrink-0 bg-white rounded-t-2xl overflow-hidden border-b border-slate-100">
+          <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4 sm:px-6 pt-4 pb-24 sm:pb-28">
             <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+')] opacity-40" />
-            <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
-              <div className="bg-white/95 backdrop-blur-sm rounded-full px-2.5 py-1 flex items-center gap-1 shadow-md">
-                <Zap size={12} className="text-primary fill-primary" />
-                <span className="text-xs font-bold text-primary">{profile.matchPercentage}% {t('common.match')}</span>
+            <div className="relative z-10 flex items-center justify-between">
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 shadow-md">
+                <Zap size={13} className="text-primary fill-primary" />
+                <span className="text-xs sm:text-sm font-black text-primary">{profile.matchPercentage}% {t('common.match')}</span>
               </div>
               <button
                 onClick={onClose}
-                className="p-1.5 bg-white/15 hover:bg-white/25 rounded-full text-white transition-colors"
+                className="size-9 rounded-full bg-white/15 text-white hover:bg-white/25 transition-colors flex items-center justify-center"
+                aria-label={t('common.close') || 'Close'}
               >
-                <X size={18} />
+                <X size={19} />
               </button>
             </div>
           </div>
 
-          {/* Avatar + Name row */}
-          <div className="px-4 sm:px-5 pb-2 -mt-10 flex items-end gap-3 relative z-10">
-            <div className="size-[72px] sm:size-20 rounded-xl border-[3px] border-white bg-slate-200 shadow-lg overflow-hidden shrink-0">
-              <img
-                src={photoUrl}
-                alt={displayName}
-                className={`w-full h-full object-cover transition duration-300 ${shouldBlurPhoto ? 'scale-110 blur-2xl' : ''}`}
-                onError={(e) => { (e.target as HTMLImageElement).src = fallbackAvatar; }}
-              />
-            </div>
-            <div className="flex-1 min-w-0 pt-12 pb-0.5">
-              <h2 className="text-base sm:text-lg font-bold text-slate-900 leading-snug truncate">{displayName}</h2>
-              <div className="mt-0.5">
-                <div className="flex items-center gap-x-2.5 gap-y-0.5 flex-wrap">
-                  {quickInfo.map((item, i) => (
-                    <span
-                      key={i}
-                      className={`inline-flex items-center gap-1 text-[11px] text-slate-500 ${item.wrap ? 'max-w-full sm:max-w-[320px]' : 'whitespace-nowrap'}`}
-                    >
-                      {item.icon}
-                      <span className={item.wrap ? 'truncate' : ''}>{item.text}</span>
-                    </span>
-                  ))}
-                </div>
+          <div className="px-4 sm:px-6 -mt-20 sm:-mt-24 relative z-10">
+            <div className="flex flex-col items-center text-center">
+              <button
+                type="button"
+                onClick={() => setShowPhotoPreview(true)}
+                className="group relative size-40 sm:size-52 rounded-2xl border-[5px] border-white bg-slate-100 shadow-2xl overflow-hidden focus:outline-none focus:ring-4 focus:ring-primary/25"
+                aria-label={t('profile.viewPhoto') || 'View profile photo'}
+              >
+                <img
+                  src={photoUrl}
+                  alt={displayName}
+                  className={`w-full h-full object-cover transition duration-300 group-hover:scale-[1.03] ${shouldBlurPhoto ? 'scale-110 blur-2xl' : ''}`}
+                  onError={(e) => { (e.target as HTMLImageElement).src = fallbackAvatar; }}
+                />
+                <span className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-1.5 bg-slate-950/55 px-3 py-2 text-[11px] font-bold text-white opacity-0 transition-opacity group-hover:opacity-100">
+                  <Eye size={13} /> {t('common.view') || 'View'}
+                </span>
+              </button>
+
+              <h2 className="mt-4 text-2xl sm:text-3xl font-black text-slate-950 leading-tight">{displayName}</h2>
+              <div className="mt-3 flex flex-wrap justify-center gap-2 max-w-3xl">
+                {quickInfo.map((item, i) => (
+                  <span
+                    key={i}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs sm:text-[13px] font-semibold text-slate-600 leading-snug"
+                  >
+                    <span className="text-primary/70 shrink-0">{item.icon}</span>
+                    <span className="whitespace-normal text-left">{item.text}</span>
+                  </span>
+                ))}
               </div>
             </div>
-          </div>
 
-          {/* Proposal button — status-aware CTA */}
-          <div className="px-4 sm:px-5 pb-2.5">
-            {interestState === 'sent_accepted' || interestState === 'received_accepted' ? (
-              /* Mutual match — show Chat Now */
-              <motion.button
-                whileTap={BTN_TAP}
-                onClick={() => { onClose(); onNavigate?.('messages'); }}
-                className="w-full py-2.5 rounded-xl font-bold text-sm shadow-md flex items-center justify-center gap-2 transition-all bg-emerald-500 text-white hover:bg-emerald-600"
-              >
-                <MessageSquare size={15} /> {t('profile.interestAccepted')}
-              </motion.button>
-            ) : interestState === 'sent_pending' ? (
-              /* I sent interest, awaiting response */
-              <div className="w-full py-2.5 rounded-xl font-bold text-sm shadow-md flex items-center justify-center gap-2 bg-amber-50 text-amber-700 border border-amber-200">
-                <Clock size={15} /> {t('profile.pendingResponse')}
-              </div>
-            ) : interestState === 'received_pending' ? (
-              /* They sent me interest — show Respond */
-              <motion.button
-                whileTap={BTN_TAP}
-                onClick={() => { onClose(); onNavigate?.('dashboard'); }}
-                className="w-full py-2.5 rounded-xl font-bold text-sm shadow-md flex items-center justify-center gap-2 transition-all bg-blue-500 text-white hover:bg-blue-600"
-              >
-                <Heart size={15} /> {t('profile.respondToInterest')}
-              </motion.button>
-            ) : (
-              /* No interest — show Send Proposal */
-              <motion.button
-                whileTap={BTN_TAP}
-                onClick={handleSendProposal}
-                className="w-full py-2.5 rounded-xl font-bold text-sm shadow-md flex items-center justify-center gap-2 transition-all bg-primary text-white hover:bg-primary-hover"
-              >
-                <Send size={15} /> {t('profile.sendProposal')}
-              </motion.button>
-            )}
-          </div>
-
-          {!isOwnProfile && (
-            <div className='px-4 sm:px-5 pb-3'>
-              <div className='rounded-xl border border-slate-200 bg-slate-50 p-3'>
-                <div className='mb-2'>
-                  <span className='text-[11px] font-bold uppercase tracking-wide text-slate-400'>{t('profile.safetyActions')}</span>
+            <div className="mt-5">
+              {interestState === 'sent_accepted' || interestState === 'received_accepted' ? (
+                <motion.button
+                  whileTap={BTN_TAP}
+                  onClick={() => { onClose(); onNavigate?.('messages'); }}
+                  className="w-full py-3.5 rounded-2xl font-black text-sm sm:text-base shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all bg-emerald-500 text-white hover:bg-emerald-600"
+                >
+                  <MessageSquare size={17} /> {t('profile.interestAccepted')}
+                </motion.button>
+              ) : interestState === 'sent_pending' ? (
+                <div className="w-full py-3.5 rounded-2xl font-black text-sm sm:text-base shadow-sm flex items-center justify-center gap-2 bg-amber-50 text-amber-700 border border-amber-200">
+                  <Clock size={17} /> {t('profile.pendingResponse')}
                 </div>
-                <div className='grid grid-cols-1 sm:grid-cols-3 gap-2'>
+              ) : interestState === 'received_pending' ? (
+                <motion.button
+                  whileTap={BTN_TAP}
+                  onClick={() => { onClose(); onNavigate?.('dashboard'); }}
+                  className="w-full py-3.5 rounded-2xl font-black text-sm sm:text-base shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 transition-all bg-blue-500 text-white hover:bg-blue-600"
+                >
+                  <Heart size={17} /> {t('profile.respondToInterest')}
+                </motion.button>
+              ) : (
+                <motion.button
+                  whileTap={BTN_TAP}
+                  onClick={handleSendProposal}
+                  className="w-full py-3.5 rounded-2xl font-black text-sm sm:text-base shadow-lg shadow-primary/25 flex items-center justify-center gap-2 transition-all bg-primary text-white hover:bg-primary-hover"
+                >
+                  <Send size={17} /> {t('profile.sendProposal')}
+                </motion.button>
+              )}
+            </div>
+
+            {!isOwnProfile && (
+              <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/90 p-3.5 sm:p-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <span className="text-[11px] font-black uppercase tracking-wide text-slate-400">{t('profile.safetyActions')}</span>
+                  <span className="h-px flex-1 bg-slate-200" />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                   <button
                     onClick={handleHideFromDiscovery}
                     disabled={hiding || removingFromShortlist}
-                    className='w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-slate-700 hover:bg-slate-100 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed'
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-slate-700 hover:bg-slate-100 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    <EyeOff size={14} className='text-slate-500' />
+                    <EyeOff size={15} className="text-slate-500" />
                     {hiding ? t('profile.blocking') : t('profile.hideFromDiscovery')}
                   </button>
                   <button
                     onClick={handleRemoveFromShortlist}
                     disabled={hiding || removingFromShortlist}
-                    className='w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-slate-700 hover:bg-slate-100 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed'
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-slate-700 hover:bg-slate-100 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    <Trash2 size={14} className='text-slate-500' />
+                    <Trash2 size={15} className="text-slate-500" />
                     {removingFromShortlist ? t('profile.removingFromShortlist') : t('profile.removeFromShortlist')}
                   </button>
                   <button
                     onClick={() => setShowReportModal(true)}
-                    className='w-full rounded-xl border border-red-200 bg-red-50 px-3 py-3 text-sm font-bold text-red-700 hover:bg-red-100 flex items-center justify-center gap-2'
+                    className="w-full rounded-xl border border-red-200 bg-red-50 px-3 py-3 text-sm font-bold text-red-700 hover:bg-red-100 flex items-center justify-center gap-2"
                   >
-                    <Flag size={14} />
+                    <Flag size={15} />
                     {t('profile.reportProfile')}
                   </button>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
-          {/* Tab bar */}
-          <div className="px-4 sm:px-5 border-b border-slate-200 flex items-stretch gap-2 bg-white overflow-x-auto scrollbar-hide">
+          <div className="mt-4 px-4 sm:px-6 border-t border-slate-100 flex items-stretch gap-2 bg-white overflow-x-auto scrollbar-hide">
             <button
               onClick={() => setActiveTab('about')}
-              className={`flex-1 sm:flex-none sm:px-5 py-2.5 text-xs sm:text-sm font-bold border-b-2 transition-colors text-center ${
+              className={`flex-1 sm:flex-none sm:px-5 py-3 text-xs sm:text-sm font-black border-b-2 transition-colors text-center ${
                 activeTab === 'about'
                   ? 'border-primary text-primary'
                   : 'border-transparent text-slate-400 hover:text-slate-600'
@@ -490,22 +504,22 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({ profile, onClos
             </button>
             <button
               onClick={() => setActiveTab('compatibility')}
-              className={`flex-1 sm:flex-none sm:px-5 py-2.5 text-xs sm:text-sm font-bold border-b-2 transition-colors flex items-center justify-center gap-1.5 ${
+              className={`flex-1 sm:flex-none sm:px-5 py-3 text-xs sm:text-sm font-black border-b-2 transition-colors flex items-center justify-center gap-1.5 ${
                 activeTab === 'compatibility'
                   ? 'border-primary text-primary'
                   : 'border-transparent text-slate-400 hover:text-slate-600'
               }`}
             >
-              <BrainCircuit size={13} />
+              <BrainCircuit size={14} />
               {t('profile.compatibility')}
             </button>
             {onRequestMediaAccess && (
               <button
                 onClick={() => onRequestMediaAccess(profile, 'gallery')}
-                className="flex-1 sm:flex-none sm:px-5 py-2.5 text-xs sm:text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap"
+                className="flex-1 sm:flex-none sm:px-5 py-3 text-xs sm:text-sm font-black border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap"
                 title={galleryAccessLabel}
               >
-                <ImageIcon size={13} />
+                <ImageIcon size={14} />
                 {galleryAccessLabel}
               </button>
             )}
@@ -516,7 +530,7 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({ profile, onClos
             SCROLLABLE CONTENT AREA
            ═══════════════════════════════════════════ */}
         <div
-          className="flex-1 overflow-y-auto overscroll-contain min-h-0"
+          className="flex-1 overflow-y-auto overscroll-contain min-h-0 bg-slate-50/70"
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
           {loading ? (
@@ -532,12 +546,12 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({ profile, onClos
               <p className="text-slate-500 text-sm">{error}</p>
             </div>
           ) : activeTab === 'about' ? (
-            <div className="p-4 sm:p-5 space-y-4">
+            <div className="p-4 sm:p-6 space-y-4">
 
               {/* About */}
               {introduction && (
                 <Section title={t('profile.about')} icon={<BookOpen size={15} />}>
-                  <p className="text-[13px] text-slate-600 leading-relaxed">{introduction}</p>
+                  <p className="text-sm sm:text-[15px] text-slate-600 leading-relaxed">{introduction}</p>
                 </Section>
               )}
 
@@ -928,6 +942,28 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({ profile, onClos
           )}
         </div>
       </div>
+      {showPhotoPreview && (
+        <div
+          className="fixed inset-0 z-[70] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4"
+          onMouseDown={(e) => { if (e.target === e.currentTarget) setShowPhotoPreview(false); }}
+        >
+          <button
+            onClick={() => setShowPhotoPreview(false)}
+            className="absolute right-4 top-4 size-10 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors flex items-center justify-center"
+            aria-label={t('common.close') || 'Close'}
+          >
+            <X size={22} />
+          </button>
+          <div className="max-h-[86vh] max-w-[92vw] rounded-2xl overflow-hidden bg-slate-900 shadow-2xl border border-white/10">
+            <img
+              src={photoUrl}
+              alt={displayName}
+              className={`max-h-[86vh] max-w-[92vw] object-contain ${shouldBlurPhoto ? 'scale-110 blur-2xl' : ''}`}
+              onError={(e) => { (e.target as HTMLImageElement).src = fallbackAvatar; }}
+            />
+          </div>
+        </div>
+      )}
       {!isOwnProfile && showReportModal && (
         <ReportModal
           onClose={() => setShowReportModal(false)}
@@ -945,10 +981,10 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({ profile, onClos
    ════════════════════════════════════════════════════════════ */
 
 const Section: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode }> = ({ title, icon, children }) => (
-  <div>
-    <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-slate-100">
-      <span className="text-slate-400">{icon}</span>
-      <h3 className="font-bold text-slate-800 text-[13px]">{title}</h3>
+  <div className="rounded-2xl border border-slate-100 bg-white p-4 sm:p-5 shadow-sm shadow-slate-200/40">
+    <div className="flex items-center gap-2.5 mb-3 pb-2.5 border-b border-slate-100">
+      <span className="size-8 rounded-xl bg-primary/5 text-primary flex items-center justify-center shrink-0">{icon}</span>
+      <h3 className="font-black text-slate-900 text-sm sm:text-[15px]">{title}</h3>
     </div>
     {children}
   </div>
@@ -957,7 +993,7 @@ const Section: React.FC<{ title: string; icon: React.ReactNode; children: React.
 const InfoGrid: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const validChildren = React.Children.toArray(children).filter(Boolean);
   if (validChildren.length === 0) return null;
-  return <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">{validChildren}</div>;
+  return <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">{validChildren}</div>;
 };
 
 const InfoItem: React.FC<{ label: string; value: any }> = ({ label, value }) => {
@@ -966,9 +1002,9 @@ const InfoItem: React.FC<{ label: string; value: any }> = ({ label, value }) => 
   if (!displayValue || displayValue === '' || displayValue === 'N/A') return null;
 
   return (
-    <div className="p-2 sm:p-2.5 bg-slate-50 rounded-lg">
-      <p className="text-[9px] sm:text-[10px] uppercase tracking-wider text-primary/60 font-bold mb-0.5">{label}</p>
-      <p className="text-[13px] font-medium text-slate-800 break-words leading-snug">{displayValue}</p>
+    <div className="p-3 sm:p-3.5 bg-slate-50 rounded-xl border border-slate-100">
+      <p className="text-[10px] uppercase tracking-wide text-primary/70 font-black mb-1">{label}</p>
+      <p className="text-sm font-semibold text-slate-800 break-words leading-snug">{displayValue}</p>
     </div>
   );
 };

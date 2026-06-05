@@ -348,13 +348,6 @@ class ReferralService
 
             case 'email_verified':
                 return $user->email_verified_at !== null;
-
-            case 'phone_verified':
-                return $user->isPhoneVerified();
-
-            case 'email_and_phone_verified':
-                return $user->email_verified_at !== null && $user->isPhoneVerified();
-
             case 'paid_subscription':
                 $member = $user->member;
                 if (!$member) return false;

@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Models\User;
 use App\Models\ChatThread;
-use App\Utility\SmsUtility;
 use Illuminate\Http\Request;
 use App\Utility\EmailUtility;
 use App\Models\ExpressInterest;
