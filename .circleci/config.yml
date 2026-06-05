@@ -107,14 +107,11 @@ jobs:
             - composer-v1-{{ checksum "composer.lock" }}
       - run:
           name: Install Composer dependencies
-          command: composer install --no-interaction --prefer-dist --no-progress --no-scripts
+          command: composer install --no-interaction --prefer-dist --no-progress
       - save_cache:
           key: composer-v1-{{ checksum "composer.lock" }}
           paths:
             - vendor
-      - run:
-          name: Discover packages (verbose for diagnosis)
-          command: php artisan package:discover -vvv
       - run:
           name: Generate application key
           command: php artisan key:generate --no-interaction
@@ -127,12 +124,18 @@ jobs:
     steps:
       - checkout
       - install_php_system_deps
+      - run:
+          name: Prepare environment file
+          command: cp .env.example .env
       - restore_cache:
           keys:
             - composer-v1-{{ checksum "composer.lock" }}
       - run:
           name: Install Composer dependencies
           command: composer install --no-interaction --prefer-dist --no-progress
+      - run:
+          name: Generate application key
+          command: php artisan key:generate --no-interaction
       - run:
           name: Wait for MySQL
           command: |
