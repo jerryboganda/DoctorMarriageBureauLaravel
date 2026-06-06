@@ -94,7 +94,7 @@ try {
 
     echo "Healing schema drifts in baseline tables...\n";
     try {
-        $connection->exec("ALTER TABLE `lifestyles` ADD COLUMN `property` VARCHAR(191) NULL DEFAULT NULL AFTER `living_with`");
+        $connection->exec('ALTER TABLE `lifestyles` ADD COLUMN `property` VARCHAR(191) NULL DEFAULT NULL AFTER `living_with`');
         echo "  Added missing 'property' column to 'lifestyles' table.\n";
     } catch (Exception $e) {
         // column already exists, ignore
