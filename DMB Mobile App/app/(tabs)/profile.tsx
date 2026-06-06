@@ -124,9 +124,10 @@ const ProfileTab = () => {
 
     const fetchProfileData = useCallback(async () => {
         try {
-            const { data } = await api.get('/profile/all');
-            setProfileData(data.data);
-            setQualityScore(data.quality);
+            const { data } = await api.get('/member/profile/full');
+            const payload = data.data || {};
+            setProfileData(payload.profile || {});
+            setQualityScore(payload.quality_score || null);
         } catch (error) {
             console.error('Error fetching profile:', error);
         } finally {
@@ -145,15 +146,11 @@ const ProfileTab = () => {
                 [section]: { ...prev[section], [field]: value },
             }));
 
-            await api.post('/profile/update', {
-                section,
-                field,
-                value,
-            });
+            await api.post(`/member/profile/section/${section}`, { [field]: value });
 
             // Refresh quality score after update
-            const { data } = await api.get('/profile/quality');
-            setQualityScore(data);
+            const { data } = await api.get('/member/profile/quality-score');
+            setQualityScore(data.data || data);
         } catch (error) {
             console.error('Update failed:', error);
         }
@@ -173,13 +170,13 @@ const ProfileTab = () => {
                 const fileUri = result.assets[0].uri;
                 const formData = new FormData();
                 // @ts-ignore
-                formData.append('avatar', {
+                formData.append('photo', {
                     uri: fileUri,
                     type: 'image/jpeg',
                     name: 'avatar.jpg',
                 });
 
-                await api.post('/profile/avatar', formData, {
+                await api.post('/upload-profile-picture', formData, {
                     headers: { 'Content-Type': 'multipart/form-data' },
                 });
 
@@ -204,7 +201,14 @@ const ProfileTab = () => {
     const handleSave = async () => {
         try {
             setSaving(true);
-            await api.post('/profile/update/all', profileData);
+            const sections = ['basics', 'lifestyle', 'career', 'family', 'preferences', 'media'];
+            await Promise.all(
+                sections
+                    .filter((section) => profileData?.[section])
+                    .map((section) =>
+                        api.post(`/member/profile/section/${section}`, profileData[section]),
+                    ),
+            );
             Alert.alert(t('profile.alerts.successTitle'), t('profile.alerts.profileUpdated'));
             fetchProfileData();
         } catch (error) {
@@ -216,7 +220,7 @@ const ProfileTab = () => {
 
     const handleDownloadBiodata = async () => {
         try {
-            const { data } = await api.get('/profile/biodata/download');
+            const { data } = await api.get('/profile/download-biodata');
             if (data.url) {
                 const fileUri = FileSystem.cacheDirectory + 'biodata.pdf';
                 const downloadRes = await FileSystem.downloadAsync(data.url, fileUri);
@@ -256,7 +260,7 @@ const ProfileTab = () => {
         );
     }
 
-    const basicInfo = profileData?.basic ?? {};
+    const basicInfo = profileData?.basics ?? {};
     const lifestyle = profileData?.lifestyle ?? {};
     const careerInfo = profileData?.career ?? {};
     const family = profileData?.family ?? {};

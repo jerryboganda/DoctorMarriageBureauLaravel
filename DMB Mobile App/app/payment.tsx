@@ -109,7 +109,9 @@ const PaymentScreen = () => {
 
     const fetchPaymentMethods = async () => {
         try {
-            const response = await api.get('/member/payment-methods');
+            const response = await api.get('/payment-types', {
+                params: { payment_type: 'package_payment' },
+            });
             if (response.data.result) {
                 setPaymentMethods(response.data.data || []);
             }
