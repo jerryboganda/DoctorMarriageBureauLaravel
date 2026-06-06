@@ -90,7 +90,8 @@ class ProfileImageController extends Controller
     public function accept_image_view_request(Request $request)
     {
         $auth_user = auth()->user();
-        $view_profile_picture = ViewProfilePicture::findOrFail($request->profile_pic_view_request_id);
+        $view_profile_picture = ViewProfilePicture::where('user_id', $auth_user->id)
+            ->findOrFail($request->profile_pic_view_request_id);
 
         if ($view_profile_picture) {
             $view_profile_picture->status = 1;
@@ -132,9 +133,10 @@ class ProfileImageController extends Controller
     public function reject_image_view_request(Request $request)
     {
         $auth_user = auth()->user();
-        $profile_pic_view_request = ViewProfilePicture::findOrFail($request->profile_pic_view_request_id);
+        $profile_pic_view_request = ViewProfilePicture::where('user_id', $auth_user->id)
+            ->findOrFail($request->profile_pic_view_request_id);
 
-        if (ViewProfilePicture::destroy($request->profile_pic_view_request_id)) {
+        if ($profile_pic_view_request->delete()) {
 
             $notify_user = User::where('id', $profile_pic_view_request->requested_by)->first();
             try {

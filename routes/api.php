@@ -65,6 +65,8 @@ Route::group(['namespace' => 'Api', 'middleware' => ['app_language']], function 
     // Registration Verification Routes
     Route::post('/send-email-verification', 'AuthController@sendEmailVerification')->middleware('throttle:api-sensitive');
     Route::post('/verify-email-code', 'AuthController@verifyEmailCode')->middleware('throttle:api-sensitive');
+    Route::post('/send-phone-verification', 'AuthController@sendPhoneVerification')->middleware('throttle:api-sensitive');
+    Route::post('/verify-phone-code', 'AuthController@verifyPhoneCode')->middleware('throttle:api-sensitive');
     Route::post('social-login', 'AuthController@socialLogin');
     Route::get('user-by-token', 'AuthController@getUserByToken');
 

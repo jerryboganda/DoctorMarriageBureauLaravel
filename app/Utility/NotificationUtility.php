@@ -5,6 +5,7 @@ namespace App\Utility;
 use App\Models\Notification;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class NotificationUtility
 {
@@ -20,8 +21,14 @@ class NotificationUtility
             $notification->seen_by_receiver = 0;
             $notification->showing_panel = $showing_panel;
             $notification->save();
-        } catch (\Exception $e) {
-            dd($e->getMessage());
+        } catch (\Throwable $e) {
+            Log::error('Failed to create notification', [
+                'type' => $type,
+                'receiver_id' => $receiver,
+                'showing_panel' => $showing_panel,
+                'exception' => get_class($e),
+                'message' => $e->getMessage(),
+            ]);
         }
 
     }

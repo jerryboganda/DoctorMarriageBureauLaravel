@@ -191,6 +191,35 @@ jobs:
             export DB_ROOT_PASSWORD=dummy
             docker compose config --quiet
 
+  compose_smoke:
+    machine:
+      image: ubuntu-2404:current
+    resource_class: medium
+    steps:
+      - checkout
+      - run:
+          name: Build and smoke Docker Compose stack
+          command: |
+            set -euo pipefail
+            export DB_PASSWORD=dummy
+            export DB_ROOT_PASSWORD=dummy-root
+            export DB_HOST=db
+            docker network create nginx-proxy-manager_default || true
+            docker compose build app web frontend soketi db
+            docker compose up -d app web frontend soketi db
+            for i in $(seq 1 30); do
+              if docker inspect -f '{{.State.Health.Status}}' marriagebureau-db 2>/dev/null | grep -qx healthy; then
+                break
+              fi
+              sleep 5
+            done
+            docker inspect -f '{{.State.Health.Status}}' marriagebureau-db | grep -qx healthy
+            curl -fsS -o /dev/null http://localhost:8086/
+      - run:
+          name: Stop Docker Compose stack
+          command: docker compose down -v
+          when: always
+
   deploy_production:
     machine:
       image: ubuntu-2404:current
@@ -230,6 +259,7 @@ jobs:
               fi
               sleep 5
             done
+            docker inspect -f '{{.State.Health.Status}}' marriagebureau-db | grep -qx healthy
             docker ps --filter 'name=marriagebureau' --format '{{.Names}}|{{.Status}}'
             REMOTE
       - run:
@@ -249,6 +279,7 @@ workflows:
       - user_frontend_quality
       - mobile_web_quality
       - compose_validate
+      - compose_smoke
       - deploy_production:
           requires:
             - backend_quality
@@ -257,6 +288,7 @@ workflows:
             - user_frontend_quality
             - mobile_web_quality
             - compose_validate
+            - compose_smoke
           filters:
             branches:
               only:

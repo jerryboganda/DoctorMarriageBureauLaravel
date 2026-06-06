@@ -14,6 +14,8 @@ use App\Models\Member;
 use App\Models\Notification;
 use App\Models\SupportTicket;
 use App\Models\User;
+use App\Models\ViewGalleryImage;
+use App\Models\ViewProfilePicture;
 use App\Utility\MemberUtility;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -314,6 +316,133 @@ class BackendApiRegressionTest extends TestCase
         $response->assertNotFound();
     }
 
+    public function test_staff_token_cannot_access_admin_api_without_full_admin_type(): void
+    {
+        $staff = $this->createUser('staff@example.com', ['user_type' => 'staff']);
+        Sanctum::actingAs($staff);
+
+        $response = $this->getJson('/api/admin/me');
+
+        $response->assertForbidden();
+    }
+
+    public function test_member_cannot_accept_another_members_incoming_interest(): void
+    {
+        $sender = $this->createMember('interest-sender@example.com', 1);
+        $recipient = $this->createMember('interest-recipient@example.com', 1);
+        $attacker = $this->createMember('interest-attacker@example.com', 1);
+
+        $interest = ExpressInterest::create([
+            'user_id' => $recipient->id,
+            'interested_by' => $sender->id,
+            'status' => 0,
+        ]);
+
+        Sanctum::actingAs($attacker);
+
+        $response = $this->postJson('/api/member/interest-accept', [
+            'interest_id' => $interest->id,
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('result', false);
+        $this->assertDatabaseHas('express_interests', [
+            'id' => $interest->id,
+            'status' => 0,
+        ]);
+        $this->assertDatabaseCount('chat_threads', 0);
+    }
+
+    public function test_member_cannot_accept_another_members_profile_picture_request(): void
+    {
+        $owner = $this->createMember('profile-photo-owner@example.com', 1);
+        $requester = $this->createMember('profile-photo-requester@example.com', 1);
+        $attacker = $this->createMember('profile-photo-attacker@example.com', 1);
+
+        DB::table('view_profile_pictures')->insert([
+            'id' => 1,
+            'user_id' => $owner->id,
+            'requested_by' => $requester->id,
+            'status' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $viewRequest = ViewProfilePicture::findOrFail(1);
+
+        Sanctum::actingAs($attacker);
+
+        $response = $this->postJson('/api/member/profile-picture-view-request/accept', [
+            'profile_pic_view_request_id' => $viewRequest->id,
+        ]);
+
+        $response->assertNotFound();
+        $this->assertDatabaseHas('view_profile_pictures', [
+            'id' => $viewRequest->id,
+            'status' => 0,
+        ]);
+    }
+
+    public function test_member_cannot_reject_another_members_gallery_image_request(): void
+    {
+        $owner = $this->createMember('gallery-request-owner@example.com', 1);
+        $requester = $this->createMember('gallery-requester@example.com', 1);
+        $attacker = $this->createMember('gallery-request-attacker@example.com', 1);
+
+        DB::table('view_gallery_images')->insert([
+            'id' => 1,
+            'user_id' => $owner->id,
+            'requested_by' => $requester->id,
+            'status' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $viewRequest = ViewGalleryImage::findOrFail(1);
+
+        Sanctum::actingAs($attacker);
+
+        $response = $this->postJson('/api/member/gallery-image-view-request/reject', [
+            'gallery_image_view_request_id' => $viewRequest->id,
+        ]);
+
+        $response->assertNotFound();
+        $this->assertDatabaseHas('view_gallery_images', [
+            'id' => $viewRequest->id,
+            'status' => 0,
+        ]);
+    }
+
+    public function test_additional_member_info_update_ignores_client_supplied_member_id(): void
+    {
+        $owner = $this->createMember('additional-owner@example.com', 1);
+        $attacker = $this->createMember('additional-attacker@example.com', 1);
+
+        DB::table('additional_attributes')->insert([
+            'id' => 10,
+            'status' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        Sanctum::actingAs($attacker);
+
+        $response = $this->postJson('/api/member/additional-member-info/update', [
+            'member_id' => $owner->id,
+            'attributes' => [10],
+            '10' => 'attacker-controlled',
+        ]);
+
+        $response->assertOk();
+        $this->assertDatabaseMissing('additional_member_infos', [
+            'user_id' => $owner->id,
+            'additional_attribute_id' => 10,
+        ]);
+        $this->assertDatabaseHas('additional_member_infos', [
+            'user_id' => $attacker->id,
+            'additional_attribute_id' => 10,
+            'value' => 'attacker-controlled',
+        ]);
+    }
+
     private function createTestSchema(): void
     {
         Schema::create('users', function (Blueprint $table) {
@@ -592,6 +721,21 @@ class BackendApiRegressionTest extends TestCase
             $table->timestamps();
         });
 
+        Schema::create('additional_attributes', function (Blueprint $table) {
+            $table->id();
+            $table->string('type')->nullable();
+            $table->unsignedTinyInteger('status')->default(1);
+            $table->timestamps();
+        });
+
+        Schema::create('additional_member_infos', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('additional_attribute_id');
+            $table->text('value')->nullable();
+            $table->timestamps();
+        });
+
         Schema::create('support_categories', function (Blueprint $table) {
             $table->id();
             $table->string('name');
@@ -642,7 +786,7 @@ class BackendApiRegressionTest extends TestCase
             'approved' => $overrides['approved'] ?? 1,
             'verification_info' => $overrides['verification_info'] ?? 'verified',
             'email_verified_at' => now(),
-            'user_type' => 'member',
+            'user_type' => $overrides['user_type'] ?? 'member',
         ]);
     }
 

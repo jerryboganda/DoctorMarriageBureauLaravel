@@ -158,9 +158,13 @@ class InterestService
         }
     }
 
-    public function accept($interest_id)
+    public function accept($interest_id, $recipientUserId = null)
     {
         $interest = ExpressInterest::find($interest_id);
+        if ($interest && $recipientUserId !== null && (int) $interest->user_id !== (int) $recipientUserId) {
+            return false;
+        }
+
         if ($interest) {
             $interest->status = 1;
             $interest->save();
@@ -201,9 +205,13 @@ class InterestService
         return false;
     }
 
-    public function reject($interest_id)
+    public function reject($interest_id, $recipientUserId = null)
     {
         $interest = ExpressInterest::find($interest_id);
+        if ($interest && $recipientUserId !== null && (int) $interest->user_id !== (int) $recipientUserId) {
+            return false;
+        }
+
         if ($interest) {
             ExpressInterest::destroy($interest_id);
 

@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Log;
+
 class FirbaseNotification
 {
     public static function send($data)
@@ -34,10 +36,18 @@ class FirbaseNotification
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($fields));
 
         $result = curl_exec($ch);
+        if ($result === false) {
+            Log::warning('Firebase notification request failed', [
+                'error' => curl_error($ch),
+                'errno' => curl_errno($ch),
+            ]);
+        }
         curl_close($ch);
+
+        return $result !== false;
     }
 }

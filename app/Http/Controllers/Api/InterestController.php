@@ -161,7 +161,7 @@ class InterestController extends Controller
     public function accept_interest(Request $request)
     {
         $interest = new InterestService;
-        $accept_interest = $interest->accept($request->interest_id);
+        $accept_interest = $interest->accept($request->interest_id, auth()->id());
 
         return ($accept_interest) ?
             $this->success_message('Proposal has been accepted successfully.') :
@@ -171,7 +171,7 @@ class InterestController extends Controller
     public function reject_interest(Request $request)
     {
         $interest = new InterestService;
-        $reject_interest = $interest->reject($request->interest_id);
+        $reject_interest = $interest->reject($request->interest_id, auth()->id());
 
         return ($reject_interest) ?
             $this->success_message('Proposal has been rejected successfully.') :

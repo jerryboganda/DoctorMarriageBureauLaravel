@@ -23,10 +23,10 @@ class AdditionalAttributeController extends Controller
         if ($request->attributes != null) {
             foreach ($request['attributes'] as $attribute) {
                 AdditionalMemberInfo::UpdateOrCreate([
-                    'user_id' => $request->member_id,
+                    'user_id' => auth()->id(),
                     'additional_attribute_id' => $attribute,
                 ], [
-                    'user_id' => $request->member_id,
+                    'user_id' => auth()->id(),
                     'additional_attribute_id' => $attribute,
                     'value' => $request[$attribute],
                 ]);

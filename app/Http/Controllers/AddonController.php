@@ -77,7 +77,9 @@ class AddonController extends Controller
                     $res = $zip->extractTo(base_path('temp/'.$random_dir.'/addons'));
                     $zip->close();
                 } else {
-                    dd('could not open');
+                    flash(translate('Could not open addon package'))->error();
+
+                    return back();
                 }
 
                 $str = file_get_contents(base_path('temp/'.$random_dir.'/addons/'.$dir.'/config.json'));

@@ -319,7 +319,8 @@ class GalleryImageController extends Controller
     public function accept_image_view_request(Request $request)
     {
         $auth_user = auth()->user();
-        $view_gallery_image = ViewGalleryImage::findOrFail($request->gallery_image_view_request_id);
+        $view_gallery_image = ViewGalleryImage::where('user_id', $auth_user->id)
+            ->findOrFail($request->gallery_image_view_request_id);
         //   dd($view_gallery_image);
         $view_gallery_image->status = 1;
         $view_gallery_image->save();
@@ -363,9 +364,10 @@ class GalleryImageController extends Controller
     public function reject_image_view_request(Request $request)
     {
         $auth_user = auth()->user();
-        $gallery_view_request = ViewGalleryImage::findOrFail($request->gallery_image_view_request_id);
+        $gallery_view_request = ViewGalleryImage::where('user_id', $auth_user->id)
+            ->findOrFail($request->gallery_image_view_request_id);
 
-        if (ViewGalleryImage::destroy($request->gallery_image_view_request_id)) {
+        if ($gallery_view_request->delete()) {
 
             $notify_user = User::where('id', $gallery_view_request->requested_by)->first();
             try {

@@ -781,9 +781,48 @@ class AuthController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to send verification. Error: '.$e->getMessage(),
+                'message' => 'Failed to send verification. Please try again later.',
             ], 500);
         }
+    }
+
+    public function sendPhoneVerification(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'phone' => 'required|string|max:30',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid phone number',
+            ], 400);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Phone verification is not configured. Please use email verification.',
+        ], 501);
+    }
+
+    public function verifyPhoneCode(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'phone' => 'required|string|max:30',
+            'code' => 'required|string|size:6',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid verification data',
+            ], 400);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Phone verification is not configured. Please use email verification.',
+        ], 501);
     }
 
     /**

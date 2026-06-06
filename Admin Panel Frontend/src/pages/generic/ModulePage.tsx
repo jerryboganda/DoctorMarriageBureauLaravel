@@ -532,7 +532,7 @@ function inferFormFields(data: Record<string, unknown>): string[] {
 }
 
 function resolveConfig(pathname: string) {
-    if (moduleConfigs[pathname]) {
+    if (moduleConfigs[pathname] && pathname !== '/admin-react/wallet/payment-detail') {
         return {
             config: moduleConfigs[pathname],
             mode: 'base' as const,
