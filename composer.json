@@ -95,10 +95,10 @@
             "@php artisan key:generate --ansi"
         ],
         "lint:php": [
-            "git ls-files '*.php' ':!:vendor/*' ':!:storage/*' ':!:bootstrap/cache/*' | xargs -r -n 1 php -l"
+            "@php ci_lint_php.php"
         ],
         "format:check": [
-            "pint --test"
+            "@php -d memory_limit=512M vendor/bin/pint --test"
         ],
         "analyse": [
             "phpstan analyse --memory-limit=1G"

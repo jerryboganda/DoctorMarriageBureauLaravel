@@ -122,6 +122,15 @@ function translate($key, $lang = null, $replace = [])
 
     $lang_key = preg_replace('/[^A-Za-z0-9\_]/', '', str_replace(' ', '_', strtolower($key)));
 
+    if (app()->runningInConsole() && in_array('route:list', $_SERVER['argv'] ?? [], true)) {
+        $result = $key;
+        foreach ($replace as $k => $v) {
+            $result = str_replace(':'.$k, (string) $v, $result);
+        }
+
+        return $result;
+    }
+
     $translations_default = Cache::rememberForever('translations-'.env('DEFAULT_LANGUAGE', 'en'), function () {
         return Translation::where('lang', env('DEFAULT_LANGUAGE', 'en'))->pluck('lang_value', 'lang_key')->toArray();
     });
