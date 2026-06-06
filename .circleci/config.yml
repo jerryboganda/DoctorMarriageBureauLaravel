@@ -4,7 +4,7 @@ executors:
   php_cli:
     docker:
       - image: php:8.3-cli-bullseye
-    resource_class: small
+    resource_class: medium
   php_cli_mysql:
     docker:
       - image: php:8.3-cli-bullseye
@@ -23,7 +23,7 @@ executors:
         environment:
           MYSQL_ROOT_PASSWORD: root
           MYSQL_DATABASE: dmb_test
-    resource_class: small
+    resource_class: medium
   node_lts:
     docker:
       - image: cimg/node:22.14
