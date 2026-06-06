@@ -615,7 +615,7 @@ const App: React.FC = () => {
             verificationDelayRef.current = null;
         }
         await logout();
-        setCurrentView('dashboard');
+        setCurrentView('discovery');
     };
 
     const handleForcedPasswordChange = async () => {
@@ -692,6 +692,12 @@ const App: React.FC = () => {
         setIsMobileMenuOpen(false); // Close mobile menu on navigate
     };
 
+    const handleAuthComplete = () => {
+        setCurrentView('discovery');
+        window.history.replaceState({ view: 'discovery' }, '', window.location.pathname);
+        checkAuth();
+    };
+
     const handleOpenNotificationProfile = (profileId: string) => {
         const normalizedProfileId = String(profileId || '').trim();
         if (!normalizedProfileId) return;
@@ -746,7 +752,7 @@ const App: React.FC = () => {
                         <motion.div key={initialAuthStep} exit={{ opacity: 0 }}>
                             <WelcomeScreen
                                 initialStep={initialAuthStep}
-                                onComplete={() => checkAuth()}
+                                onComplete={handleAuthComplete}
                             />
                         </motion.div>
                     </AnimatePresence>
@@ -1609,7 +1615,10 @@ const App: React.FC = () => {
                         <Suspense fallback={null}>
                             <AuthModal
                                 onClose={() => setShowAuthModal(false)}
-                                onLogin={() => setShowAuthModal(false)}
+                                onLogin={() => {
+                                    setShowAuthModal(false);
+                                    handleAuthComplete();
+                                }}
                             />
                         </Suspense>
                     )}

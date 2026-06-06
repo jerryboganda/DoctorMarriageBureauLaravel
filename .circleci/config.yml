@@ -214,6 +214,15 @@ jobs:
               sleep 5
             done
             docker inspect -f '{{.State.Health.Status}}' marriagebureau-db | grep -qx healthy
+            docker compose restart web
+            for i in $(seq 1 30); do
+              if curl -fsS -o /dev/null http://localhost:8086/; then
+                exit 0
+              fi
+              docker logs --tail=20 marriagebureau-app || true
+              docker logs --tail=20 marriagebureau-web || true
+              sleep 5
+            done
             curl -fsS -o /dev/null http://localhost:8086/
       - run:
           name: Stop Docker Compose stack

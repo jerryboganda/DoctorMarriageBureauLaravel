@@ -95,7 +95,7 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
 }) => {
     const { t } = useTranslation();
     const currentUserId = useAuthStore((state) => state.user?.id);
-    const [activeTab, setActiveTab] = useState<'about' | 'compatibility'>('about');
+    const [activeTab, setActiveTab] = useState<'about' | 'compatibility' | 'photos'>('about');
     const [profileData, setProfileData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -424,6 +424,123 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
               ? t('discovery.galleryAccessRequested')
               : t('profile.galleryAccess');
 
+    const renderPhotoAccessContent = () => (
+        <div className="space-y-4 p-4 sm:p-6">
+            <Section title={t('profile.gallery')} icon={<ImageIcon size={15} />}>
+                <div className="mb-4 rounded-xl border border-primary/10 bg-primary/5 px-4 py-3">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <p className="text-sm font-black text-slate-900">
+                                {galleryAccessLabel}
+                            </p>
+                            <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                                {galleryRequestAccessible || galleryRequestState === 'approved'
+                                    ? t('discovery.manageMediaAccess')
+                                    : galleryRequestState === 'pending'
+                                      ? t('discovery.galleryAccessRequested')
+                                      : t('discovery.requestMediaAccess')}
+                            </p>
+                        </div>
+                        {onRequestMediaAccess && hasLockedGallery && (
+                            <motion.button
+                                whileTap={BTN_TAP}
+                                onClick={() => onRequestMediaAccess(profile, 'gallery')}
+                                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-primary/20 hover:bg-primary-hover sm:w-auto"
+                            >
+                                <Lock size={15} />
+                                {galleryRequestAccessible
+                                    ? t('discovery.manageMediaAccess')
+                                    : galleryRequestState === 'pending'
+                                      ? t('discovery.galleryAccessRequested')
+                                      : t('discovery.requestMediaAccess')}
+                            </motion.button>
+                        )}
+                    </div>
+                </div>
+
+                {visibleGallery.length > 0 || blurredGallery.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                        {visibleGallery.map((img: any, idx: number) => (
+                            <div
+                                key={`photos-visible-${idx}`}
+                                className="relative aspect-square overflow-hidden rounded-xl bg-slate-100"
+                            >
+                                <img
+                                    src={img.image}
+                                    alt=""
+                                    className="h-full w-full object-cover"
+                                />
+                                {screenshotDeterrence && (
+                                    <div className="pointer-events-none absolute inset-0 select-none overflow-hidden">
+                                        <div
+                                            className="absolute inset-[-50%] flex items-center justify-center"
+                                            style={{
+                                                transform: 'rotate(-30deg)',
+                                                width: '200%',
+                                                height: '200%',
+                                            }}
+                                        >
+                                            <div
+                                                className="flex h-full w-full flex-wrap items-start justify-start gap-6 p-3"
+                                                style={{ opacity: 0.07 }}
+                                            >
+                                                {Array.from({ length: 16 }).map((_, i) => (
+                                                    <span
+                                                        key={i}
+                                                        className="whitespace-nowrap text-[9px] font-bold tracking-wider text-white"
+                                                    >
+                                                        DMB PROTECTED
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                        {blurredGallery.map((img: any, idx: number) => (
+                            <div
+                                key={`photos-blurred-${idx}`}
+                                className="relative aspect-square overflow-hidden rounded-xl bg-slate-200"
+                            >
+                                <img
+                                    src={img.thumbnail}
+                                    alt=""
+                                    className="h-full w-full scale-110 object-cover"
+                                    style={{ filter: 'blur(20px)' }}
+                                />
+                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/15">
+                                    <Lock size={18} className="mb-1 text-white/80" />
+                                    <span className="text-[10px] font-black uppercase tracking-wider text-white/75">
+                                        Private
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="flex min-h-44 flex-col items-center justify-center rounded-xl bg-slate-50 px-6 py-8 text-center">
+                        <Lock size={22} className="mb-2 text-slate-400" />
+                        <p className="text-sm font-bold text-slate-600">
+                            {lockedCount > 0
+                                ? `${lockedCount} ${t('profile.photosLocked', { count: lockedCount })}`
+                                : 'No photos available'}
+                        </p>
+                    </div>
+                )}
+
+                {lockedCount > 0 && (visibleGallery.length > 0 || blurredGallery.length > 0) && (
+                    <div className="mt-3 flex items-center justify-center gap-1.5 rounded-xl bg-slate-50 py-2 text-xs font-semibold text-slate-500">
+                        <Lock size={12} />
+                        <span>
+                            {lockedCount} {t('profile.photosLocked', { count: lockedCount })}
+                        </span>
+                    </div>
+                )}
+            </Section>
+        </div>
+    );
+
     return (
         <div
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
@@ -433,14 +550,14 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
         >
             {/* Position wrapper — no framer-motion, no flex, just raw positioning */}
             <div
-                className="fixed bottom-0 left-0 right-0 flex h-[calc(100vh-16px)] flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:bottom-auto sm:left-1/2 sm:right-auto sm:top-1/2 sm:grid sm:h-auto sm:w-[calc(100vw-48px)] sm:max-w-[1180px] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:grid-cols-[320px_minmax(0,1fr)] sm:rounded-2xl"
+                className="fixed bottom-0 left-0 right-0 flex h-[calc(100vh-16px)] flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:bottom-auto sm:left-1/2 sm:right-auto sm:top-1/2 sm:grid sm:h-[calc(100vh-48px)] sm:w-[calc(100vw-48px)] sm:max-w-[1180px] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:grid-cols-[320px_minmax(0,1fr)] sm:rounded-2xl"
                 style={{ maxHeight: 'calc(100vh - 48px)' }}
                 onMouseDown={(e) => e.stopPropagation()}
             >
                 {/* ═══════════════════════════════════════════
             HEADER — Compact mobile-first hero (non-scrollable)
            ═══════════════════════════════════════════ */}
-                <aside className="flex shrink-0 flex-col border-b border-slate-100 bg-white sm:max-h-full sm:overflow-y-auto sm:border-b-0 sm:border-r">
+                <aside className="flex min-h-0 shrink-0 flex-col border-b border-slate-100 bg-white sm:max-h-full sm:overflow-y-auto sm:border-b-0 sm:border-r">
                     <div className="relative bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 px-4 pb-12 pt-3 sm:px-5 sm:pb-5">
                         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+')] opacity-40" />
                         <div className="relative z-10 flex items-center justify-between">
@@ -580,611 +697,621 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
                             </div>
                         )}
                     </div>
-
                 </aside>
 
-                <main className="flex min-h-0 flex-1 flex-col bg-slate-50/80">
+                <main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-slate-50/80">
                     <div className="shrink-0 border-b border-slate-100 bg-white px-4 sm:px-6">
                         <div className="flex items-stretch gap-2 overflow-x-auto scrollbar-hide">
-                        <button
-                            onClick={() => setActiveTab('about')}
-                            className={`flex-1 sm:flex-none sm:px-5 py-3 text-xs sm:text-sm font-black border-b-2 transition-colors text-center ${
-                                activeTab === 'about'
-                                    ? 'border-primary text-primary'
-                                    : 'border-transparent text-slate-400 hover:text-slate-600'
-                            }`}
-                        >
-                            {t('profile.profileDetails')}
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('compatibility')}
-                            className={`flex-1 sm:flex-none sm:px-5 py-3 text-xs sm:text-sm font-black border-b-2 transition-colors flex items-center justify-center gap-1.5 ${
-                                activeTab === 'compatibility'
-                                    ? 'border-primary text-primary'
-                                    : 'border-transparent text-slate-400 hover:text-slate-600'
-                            }`}
-                        >
-                            <BrainCircuit size={14} />
-                            {t('profile.compatibility')}
-                        </button>
-                        {onRequestMediaAccess && (
                             <button
-                                onClick={() => onRequestMediaAccess(profile, 'gallery')}
-                                className="flex-1 sm:flex-none sm:px-5 py-3 text-xs sm:text-sm font-black border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap"
-                                title={galleryAccessLabel}
+                                onClick={() => setActiveTab('about')}
+                                className={`flex-1 sm:flex-none sm:px-5 py-3 text-xs sm:text-sm font-black border-b-2 transition-colors text-center ${
+                                    activeTab === 'about'
+                                        ? 'border-primary text-primary'
+                                        : 'border-transparent text-slate-400 hover:text-slate-600'
+                                }`}
                             >
-                                <ImageIcon size={14} />
-                                {galleryAccessLabel}
+                                {t('profile.profileDetails')}
                             </button>
-                        )}
+                            <button
+                                onClick={() => setActiveTab('compatibility')}
+                                className={`flex-1 sm:flex-none sm:px-5 py-3 text-xs sm:text-sm font-black border-b-2 transition-colors flex items-center justify-center gap-1.5 ${
+                                    activeTab === 'compatibility'
+                                        ? 'border-primary text-primary'
+                                        : 'border-transparent text-slate-400 hover:text-slate-600'
+                                }`}
+                            >
+                                <BrainCircuit size={14} />
+                                {t('profile.compatibility')}
+                            </button>
+                            {onRequestMediaAccess && (
+                                <button
+                                    onClick={() => setActiveTab('photos')}
+                                    className={`flex-1 sm:flex-none sm:px-5 py-3 text-xs sm:text-sm font-black border-b-2 transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap ${
+                                        activeTab === 'photos'
+                                            ? 'border-primary text-primary'
+                                            : 'border-transparent text-slate-500 hover:text-slate-700'
+                                    }`}
+                                    title={galleryAccessLabel}
+                                >
+                                    <ImageIcon size={14} />
+                                    {galleryAccessLabel}
+                                </button>
+                            )}
                         </div>
                     </div>
 
-                {/* ═══════════════════════════════════════════
+                    {/* ═══════════════════════════════════════════
             SCROLLABLE CONTENT AREA
            ═══════════════════════════════════════════ */}
-                <div
-                    className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-slate-50/80"
-                    style={{ WebkitOverflowScrolling: 'touch' }}
-                >
-                    {loading ? (
-                        <div className="h-48 flex flex-col items-center justify-center gap-3">
-                            <Loader2 className="animate-spin text-primary" size={28} />
-                            <p className="text-slate-400 text-sm">{t('profile.loadingProfile')}</p>
-                        </div>
-                    ) : error ? (
-                        <div className="h-48 flex flex-col items-center justify-center gap-3 text-center px-6">
-                            <div className="size-11 bg-red-50 text-red-400 rounded-full flex items-center justify-center">
-                                <AlertTriangle size={22} />
+                    <div
+                        className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-slate-50/80"
+                        style={{ WebkitOverflowScrolling: 'touch' }}
+                    >
+                        {loading ? (
+                            <div className="h-48 flex flex-col items-center justify-center gap-3">
+                                <Loader2 className="animate-spin text-primary" size={28} />
+                                <p className="text-slate-400 text-sm">
+                                    {t('profile.loadingProfile')}
+                                </p>
                             </div>
-                            <p className="text-slate-500 text-sm">{error}</p>
-                        </div>
-                    ) : activeTab === 'about' ? (
-                        <div className="space-y-3 p-4 sm:p-6">
-                            {/* About */}
-                            {introduction && (
-                                <Section title={t('profile.about')} icon={<BookOpen size={15} />}>
-                                    <p className="text-sm sm:text-[15px] text-slate-600 leading-relaxed">
-                                        {introduction}
-                                    </p>
-                                </Section>
-                            )}
-
-                            {/* Voice Introduction */}
-                            {profileData?.voice_intro_url && (
-                                <Section
-                                    title={t('profile.voiceIntroduction')}
-                                    icon={<Mic size={15} />}
-                                >
-                                    <VoiceIntroPlayer
-                                        url={profileData.voice_intro_url}
-                                        name={displayName}
-                                    />
-                                </Section>
-                            )}
-
-                            {/* Basic Information */}
-                            {basicInfo &&
-                                hasAnyValue(basicInfo, [
-                                    'gender',
-                                    'age',
-                                    'religion',
-                                    'caste',
-                                    'maritial_status',
-                                    'no_of_children',
-                                ]) && (
+                        ) : error ? (
+                            <div className="h-48 flex flex-col items-center justify-center gap-3 text-center px-6">
+                                <div className="size-11 bg-red-50 text-red-400 rounded-full flex items-center justify-center">
+                                    <AlertTriangle size={22} />
+                                </div>
+                                <p className="text-slate-500 text-sm">{error}</p>
+                            </div>
+                        ) : activeTab === 'about' ? (
+                            <div className="space-y-3 p-4 sm:p-6">
+                                {/* About */}
+                                {introduction && (
                                     <Section
-                                        title={t('profile.basicInformation')}
-                                        icon={<Users size={15} />}
+                                        title={t('profile.about')}
+                                        icon={<BookOpen size={15} />}
                                     >
-                                        <InfoGrid>
-                                            <InfoItem label="Gender" value={basicInfo.gender} />
-                                            <InfoItem
-                                                label="Age"
-                                                value={
-                                                    Number(basicInfo.age) > 0
-                                                        ? `${basicInfo.age} years`
-                                                        : null
-                                                }
-                                            />
-                                            <InfoItem label="Religion" value={basicInfo.religion} />
-                                            <InfoItem label="Caste" value={basicInfo.caste} />
-                                            <InfoItem
-                                                label="Marital Status"
-                                                value={basicInfo.maritial_status}
-                                            />
-                                            <InfoItem
-                                                label="Children"
-                                                value={basicInfo.no_of_children}
-                                            />
-                                        </InfoGrid>
+                                        <p className="text-sm sm:text-[15px] text-slate-600 leading-relaxed">
+                                            {introduction}
+                                        </p>
                                     </Section>
                                 )}
 
-                            {/* Education */}
-                            {education && education.length > 0 && (
-                                <Section
-                                    title={t('profile.education')}
-                                    icon={<GraduationCap size={15} />}
-                                >
-                                    <div className="space-y-2">
-                                        {education.map((edu: any, idx: number) => (
-                                            <div
-                                                key={idx}
-                                                className="flex items-start gap-2.5 p-2.5 bg-slate-50 rounded-xl"
-                                            >
-                                                <div className="size-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
-                                                    <GraduationCap size={14} />
-                                                </div>
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="font-semibold text-[13px] text-slate-900 truncate">
-                                                        {edu.degree || 'Degree'}
-                                                    </p>
-                                                    {edu.institution && (
-                                                        <p className="text-xs text-slate-500 truncate">
-                                                            {edu.institution}
-                                                        </p>
-                                                    )}
-                                                    {edu.start && (
-                                                        <p className="text-[11px] text-slate-400 mt-0.5">
-                                                            {edu.start}
-                                                            {edu.end ? ` – ${edu.end}` : ''}
-                                                        </p>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </Section>
-                            )}
-
-                            {/* Career */}
-                            {career && career.length > 0 && (
-                                <Section title={t('profile.career')} icon={<Briefcase size={15} />}>
-                                    <div className="space-y-2">
-                                        {career.map((c: any, idx: number) => (
-                                            <div
-                                                key={idx}
-                                                className="flex items-start gap-2.5 p-2.5 bg-slate-50 rounded-xl"
-                                            >
-                                                <div className="size-8 bg-emerald-100 text-emerald-600 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
-                                                    <Briefcase size={14} />
-                                                </div>
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="font-semibold text-[13px] text-slate-900 truncate">
-                                                        {c.designation || 'Position'}
-                                                    </p>
-                                                    {c.company && (
-                                                        <p className="text-xs text-slate-500 truncate">
-                                                            {c.company}
-                                                        </p>
-                                                    )}
-                                                    {c.start && (
-                                                        <p className="text-[11px] text-slate-400 mt-0.5">
-                                                            {c.start}
-                                                            {c.end ? ` – ${c.end}` : ' – Present'}
-                                                        </p>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </Section>
-                            )}
-
-                            {/* Physical Attributes */}
-                            {physical &&
-                                hasAnyValue(physical, [
-                                    'height',
-                                    'weight',
-                                    'eye_color',
-                                    'hair_color',
-                                    'body_type',
-                                    'complexion',
-                                    'blood_group',
-                                    'disability',
-                                ]) && (
+                                {/* Voice Introduction */}
+                                {profileData?.voice_intro_url && (
                                     <Section
-                                        title={t('profile.physicalAttributes')}
-                                        icon={<Ruler size={15} />}
+                                        title={t('profile.voiceIntroduction')}
+                                        icon={<Mic size={15} />}
                                     >
-                                        <InfoGrid>
-                                            <InfoItem
-                                                label="Height"
-                                                value={
-                                                    physical.height ? `${physical.height} cm` : null
-                                                }
-                                            />
-                                            <InfoItem
-                                                label="Weight"
-                                                value={
-                                                    physical.weight ? `${physical.weight} kg` : null
-                                                }
-                                            />
-                                            <InfoItem
-                                                label="Eye Color"
-                                                value={physical.eye_color}
-                                            />
-                                            <InfoItem
-                                                label="Hair Color"
-                                                value={physical.hair_color}
-                                            />
-                                            <InfoItem
-                                                label="Body Type"
-                                                value={physical.body_type}
-                                            />
-                                            <InfoItem
-                                                label="Complexion"
-                                                value={physical.complexion}
-                                            />
-                                            <InfoItem
-                                                label="Blood Group"
-                                                value={physical.blood_group}
-                                            />
-                                            <InfoItem
-                                                label="Disability"
-                                                value={physical.disability}
-                                            />
-                                        </InfoGrid>
+                                        <VoiceIntroPlayer
+                                            url={profileData.voice_intro_url}
+                                            name={displayName}
+                                        />
                                     </Section>
                                 )}
 
-                            {/* Religious Background */}
-                            {spiritual &&
-                                hasAnyValue(spiritual, [
-                                    'religion',
-                                    'caste',
-                                    'sub_caste',
-                                    'ethnicity',
-                                ]) && (
-                                    <Section
-                                        title={t('profile.religiousBackground')}
-                                        icon={<Moon size={15} />}
-                                    >
-                                        <InfoGrid>
-                                            <InfoItem label="Religion" value={spiritual.religion} />
-                                            <InfoItem label="Caste" value={spiritual.caste} />
-                                            <InfoItem
-                                                label="Sub Caste"
-                                                value={spiritual.sub_caste}
-                                            />
-                                            <InfoItem
-                                                label="Ethnicity"
-                                                value={spiritual.ethnicity}
-                                            />
-                                        </InfoGrid>
-                                    </Section>
-                                )}
-
-                            {/* Residence */}
-                            {residence &&
-                                hasAnyValue(residence, [
-                                    'country',
-                                    'state',
-                                    'city',
-                                    'nationality',
-                                    'born_in',
-                                    'grew_up_in',
-                                ]) && (
-                                    <Section
-                                        title={t('profile.residence')}
-                                        icon={<Home size={15} />}
-                                    >
-                                        <InfoGrid>
-                                            <InfoItem label="Country" value={residence.country} />
-                                            <InfoItem label="State" value={residence.state} />
-                                            <InfoItem label="City" value={residence.city} />
-                                            <InfoItem
-                                                label="Nationality"
-                                                value={residence.nationality}
-                                            />
-                                            <InfoItem label="Born In" value={residence.born_in} />
-                                            <InfoItem
-                                                label="Grew Up In"
-                                                value={residence.grew_up_in}
-                                            />
-                                        </InfoGrid>
-                                    </Section>
-                                )}
-
-                            {/* Family */}
-                            {family &&
-                                hasAnyValue(family, [
-                                    'father',
-                                    'mother',
-                                    'siblings',
-                                    'family_type',
-                                    'family_value',
-                                    'family_status',
-                                ]) && (
-                                    <Section
-                                        title={t('profile.familyInformation')}
-                                        icon={<Users size={15} />}
-                                    >
-                                        <InfoGrid>
-                                            <InfoItem label="Father" value={family.father} />
-                                            <InfoItem label="Mother" value={family.mother} />
-                                            <InfoItem label="Siblings" value={family.siblings} />
-                                            <InfoItem
-                                                label="Family Type"
-                                                value={family.family_type}
-                                            />
-                                            <InfoItem
-                                                label="Family Values"
-                                                value={family.family_value}
-                                            />
-                                            <InfoItem
-                                                label="Family Status"
-                                                value={family.family_status}
-                                            />
-                                        </InfoGrid>
-                                    </Section>
-                                )}
-
-                            {/* Lifestyle */}
-                            {lifestyle &&
-                                hasAnyValue(lifestyle, [
-                                    'diet',
-                                    'drink',
-                                    'smoke',
-                                    'living_with',
-                                ]) && (
-                                    <Section
-                                        title={t('profile.lifestyle')}
-                                        icon={<Star size={15} />}
-                                    >
-                                        <InfoGrid>
-                                            <InfoItem label="Diet" value={lifestyle.diet} />
-                                            <InfoItem label="Drink" value={lifestyle.drink} />
-                                            <InfoItem label="Smoke" value={lifestyle.smoke} />
-                                            <InfoItem
-                                                label="Living With"
-                                                value={lifestyle.living_with}
-                                            />
-                                        </InfoGrid>
-                                    </Section>
-                                )}
-
-                            {/* Hobbies & Interests */}
-                            {hobbies &&
-                                hasAnyValue(hobbies, [
-                                    'hobbies',
-                                    'interests',
-                                    'music',
-                                    'books',
-                                    'movies',
-                                    'sports',
-                                    'cuisine',
-                                    'dress_style',
-                                ]) && (
-                                    <Section
-                                        title={t('profile.hobbiesAndInterests')}
-                                        icon={<Heart size={15} />}
-                                    >
-                                        <InfoGrid>
-                                            <InfoItem label="Hobbies" value={hobbies.hobbies} />
-                                            <InfoItem label="Interests" value={hobbies.interests} />
-                                            <InfoItem label="Music" value={hobbies.music} />
-                                            <InfoItem label="Books" value={hobbies.books} />
-                                            <InfoItem label="Movies" value={hobbies.movies} />
-                                            <InfoItem label="Sports" value={hobbies.sports} />
-                                            <InfoItem label="Cuisine" value={hobbies.cuisine} />
-                                            <InfoItem
-                                                label="Dress Style"
-                                                value={hobbies.dress_style}
-                                            />
-                                        </InfoGrid>
-                                    </Section>
-                                )}
-
-                            {/* Partner Expectations */}
-                            {partnerExpectation &&
-                                hasAnyValue(partnerExpectation, [
-                                    'min_age',
-                                    'max_age',
-                                    'height',
-                                    'weight',
-                                    'religion_id',
-                                    'caste_id',
-                                    'residence_country_id',
-                                    'marital_status',
-                                    'education',
-                                    'profession',
-                                    'smoking_acceptable',
-                                    'drinking_acceptable',
-                                    'family_value_id',
-                                    'general',
-                                ]) && (
-                                    <Section
-                                        title={t('profile.partnerExpectations')}
-                                        icon={<Heart size={15} className="text-pink-500" />}
-                                    >
-                                        <InfoGrid>
-                                            <InfoItem
-                                                label="Age Range"
-                                                value={
-                                                    partnerExpectation.min_age &&
-                                                    partnerExpectation.max_age
-                                                        ? `${partnerExpectation.min_age} – ${partnerExpectation.max_age} yrs`
-                                                        : null
-                                                }
-                                            />
-                                            <InfoItem
-                                                label="Height"
-                                                value={
-                                                    partnerExpectation.height
-                                                        ? `${partnerExpectation.height} cm`
-                                                        : null
-                                                }
-                                            />
-                                            <InfoItem
-                                                label="Weight"
-                                                value={
-                                                    partnerExpectation.weight
-                                                        ? `${partnerExpectation.weight} kg`
-                                                        : null
-                                                }
-                                            />
-                                            <InfoItem
-                                                label="Religion"
-                                                value={partnerExpectation.religion_id}
-                                            />
-                                            <InfoItem
-                                                label="Caste"
-                                                value={partnerExpectation.caste_id}
-                                            />
-                                            <InfoItem
-                                                label="Residence"
-                                                value={partnerExpectation.residence_country_id}
-                                            />
-                                            <InfoItem
-                                                label="Marital Status"
-                                                value={partnerExpectation.marital_status}
-                                            />
-                                            <InfoItem
-                                                label="Education"
-                                                value={partnerExpectation.education}
-                                            />
-                                            <InfoItem
-                                                label="Profession"
-                                                value={partnerExpectation.profession}
-                                            />
-                                            <InfoItem
-                                                label="Smoking"
-                                                value={partnerExpectation.smoking_acceptable}
-                                            />
-                                            <InfoItem
-                                                label="Drinking"
-                                                value={partnerExpectation.drinking_acceptable}
-                                            />
-                                            <InfoItem
-                                                label="Family Value"
-                                                value={partnerExpectation.family_value_id}
-                                            />
-                                        </InfoGrid>
-                                        {partnerExpectation.general && (
-                                            <div className="mt-3 p-4 bg-gradient-to-br from-pink-50 to-rose-50 rounded-xl border border-pink-100">
-                                                <p className="text-[11px] font-semibold text-pink-400 uppercase tracking-wider mb-1.5">
-                                                    {t('profile.idealPartner')}
-                                                </p>
-                                                <p className="text-[13px] text-slate-700 leading-relaxed italic">
-                                                    "{partnerExpectation.general}"
-                                                </p>
-                                            </div>
-                                        )}
-                                    </Section>
-                                )}
-
-                            {/* Gallery */}
-                            {(visibleGallery.length > 0 || blurredGallery.length > 0) && (
-                                <Section title={t('profile.gallery')} icon={<Eye size={15} />}>
-                                    <div className="grid grid-cols-3 gap-1.5">
-                                        {/* Visible (public) photos */}
-                                        {visibleGallery.map((img: any, idx: number) => (
-                                            <div
-                                                key={`v-${idx}`}
-                                                className="aspect-square rounded-lg overflow-hidden bg-slate-100 relative"
-                                            >
-                                                <img
-                                                    src={img.image}
-                                                    alt=""
-                                                    className="w-full h-full object-cover"
+                                {/* Basic Information */}
+                                {basicInfo &&
+                                    hasAnyValue(basicInfo, [
+                                        'gender',
+                                        'age',
+                                        'religion',
+                                        'caste',
+                                        'maritial_status',
+                                        'no_of_children',
+                                    ]) && (
+                                        <Section
+                                            title={t('profile.basicInformation')}
+                                            icon={<Users size={15} />}
+                                        >
+                                            <InfoGrid>
+                                                <InfoItem label="Gender" value={basicInfo.gender} />
+                                                <InfoItem
+                                                    label="Age"
+                                                    value={
+                                                        Number(basicInfo.age) > 0
+                                                            ? `${basicInfo.age} years`
+                                                            : null
+                                                    }
                                                 />
-                                                {/* Screenshot deterrence watermark */}
-                                                {screenshotDeterrence && (
-                                                    <div
-                                                        className="absolute inset-0 pointer-events-none overflow-hidden select-none"
-                                                        style={{ zIndex: 2 }}
-                                                    >
+                                                <InfoItem
+                                                    label="Religion"
+                                                    value={basicInfo.religion}
+                                                />
+                                                <InfoItem label="Caste" value={basicInfo.caste} />
+                                                <InfoItem
+                                                    label="Marital Status"
+                                                    value={basicInfo.maritial_status}
+                                                />
+                                                <InfoItem
+                                                    label="Children"
+                                                    value={basicInfo.no_of_children}
+                                                />
+                                            </InfoGrid>
+                                        </Section>
+                                    )}
+
+                                {/* Education */}
+                                {education && education.length > 0 && (
+                                    <Section
+                                        title={t('profile.education')}
+                                        icon={<GraduationCap size={15} />}
+                                    >
+                                        <div className="space-y-2">
+                                            {education.map((edu: any, idx: number) => (
+                                                <div
+                                                    key={idx}
+                                                    className="flex items-start gap-2.5 p-2.5 bg-slate-50 rounded-xl"
+                                                >
+                                                    <div className="size-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
+                                                        <GraduationCap size={14} />
+                                                    </div>
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="font-semibold text-[13px] text-slate-900 truncate">
+                                                            {edu.degree || 'Degree'}
+                                                        </p>
+                                                        {edu.institution && (
+                                                            <p className="text-xs text-slate-500 truncate">
+                                                                {edu.institution}
+                                                            </p>
+                                                        )}
+                                                        {edu.start && (
+                                                            <p className="text-[11px] text-slate-400 mt-0.5">
+                                                                {edu.start}
+                                                                {edu.end ? ` – ${edu.end}` : ''}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </Section>
+                                )}
+
+                                {/* Career */}
+                                {career && career.length > 0 && (
+                                    <Section
+                                        title={t('profile.career')}
+                                        icon={<Briefcase size={15} />}
+                                    >
+                                        <div className="space-y-2">
+                                            {career.map((c: any, idx: number) => (
+                                                <div
+                                                    key={idx}
+                                                    className="flex items-start gap-2.5 p-2.5 bg-slate-50 rounded-xl"
+                                                >
+                                                    <div className="size-8 bg-emerald-100 text-emerald-600 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
+                                                        <Briefcase size={14} />
+                                                    </div>
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="font-semibold text-[13px] text-slate-900 truncate">
+                                                            {c.designation || 'Position'}
+                                                        </p>
+                                                        {c.company && (
+                                                            <p className="text-xs text-slate-500 truncate">
+                                                                {c.company}
+                                                            </p>
+                                                        )}
+                                                        {c.start && (
+                                                            <p className="text-[11px] text-slate-400 mt-0.5">
+                                                                {c.start}
+                                                                {c.end
+                                                                    ? ` – ${c.end}`
+                                                                    : ' – Present'}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </Section>
+                                )}
+
+                                {/* Physical Attributes */}
+                                {physical &&
+                                    hasAnyValue(physical, [
+                                        'height',
+                                        'weight',
+                                        'eye_color',
+                                        'hair_color',
+                                        'body_type',
+                                        'complexion',
+                                        'blood_group',
+                                        'disability',
+                                    ]) && (
+                                        <Section
+                                            title={t('profile.physicalAttributes')}
+                                            icon={<Ruler size={15} />}
+                                        >
+                                            <InfoGrid>
+                                                <InfoItem
+                                                    label="Height"
+                                                    value={
+                                                        physical.height
+                                                            ? `${physical.height} cm`
+                                                            : null
+                                                    }
+                                                />
+                                                <InfoItem
+                                                    label="Weight"
+                                                    value={
+                                                        physical.weight
+                                                            ? `${physical.weight} kg`
+                                                            : null
+                                                    }
+                                                />
+                                                <InfoItem
+                                                    label="Eye Color"
+                                                    value={physical.eye_color}
+                                                />
+                                                <InfoItem
+                                                    label="Hair Color"
+                                                    value={physical.hair_color}
+                                                />
+                                                <InfoItem
+                                                    label="Body Type"
+                                                    value={physical.body_type}
+                                                />
+                                                <InfoItem
+                                                    label="Complexion"
+                                                    value={physical.complexion}
+                                                />
+                                                <InfoItem
+                                                    label="Blood Group"
+                                                    value={physical.blood_group}
+                                                />
+                                                <InfoItem
+                                                    label="Disability"
+                                                    value={physical.disability}
+                                                />
+                                            </InfoGrid>
+                                        </Section>
+                                    )}
+
+                                {/* Religious Background */}
+                                {spiritual &&
+                                    hasAnyValue(spiritual, [
+                                        'religion',
+                                        'caste',
+                                        'sub_caste',
+                                        'ethnicity',
+                                    ]) && (
+                                        <Section
+                                            title={t('profile.religiousBackground')}
+                                            icon={<Moon size={15} />}
+                                        >
+                                            <InfoGrid>
+                                                <InfoItem
+                                                    label="Religion"
+                                                    value={spiritual.religion}
+                                                />
+                                                <InfoItem label="Caste" value={spiritual.caste} />
+                                                <InfoItem
+                                                    label="Sub Caste"
+                                                    value={spiritual.sub_caste}
+                                                />
+                                                <InfoItem
+                                                    label="Ethnicity"
+                                                    value={spiritual.ethnicity}
+                                                />
+                                            </InfoGrid>
+                                        </Section>
+                                    )}
+
+                                {/* Residence */}
+                                {residence &&
+                                    hasAnyValue(residence, [
+                                        'country',
+                                        'state',
+                                        'city',
+                                        'nationality',
+                                        'born_in',
+                                        'grew_up_in',
+                                    ]) && (
+                                        <Section
+                                            title={t('profile.residence')}
+                                            icon={<Home size={15} />}
+                                        >
+                                            <InfoGrid>
+                                                <InfoItem
+                                                    label="Country"
+                                                    value={residence.country}
+                                                />
+                                                <InfoItem label="State" value={residence.state} />
+                                                <InfoItem label="City" value={residence.city} />
+                                                <InfoItem
+                                                    label="Nationality"
+                                                    value={residence.nationality}
+                                                />
+                                                <InfoItem
+                                                    label="Born In"
+                                                    value={residence.born_in}
+                                                />
+                                                <InfoItem
+                                                    label="Grew Up In"
+                                                    value={residence.grew_up_in}
+                                                />
+                                            </InfoGrid>
+                                        </Section>
+                                    )}
+
+                                {/* Family */}
+                                {family &&
+                                    hasAnyValue(family, [
+                                        'father',
+                                        'mother',
+                                        'siblings',
+                                        'family_type',
+                                        'family_value',
+                                        'family_status',
+                                    ]) && (
+                                        <Section
+                                            title={t('profile.familyInformation')}
+                                            icon={<Users size={15} />}
+                                        >
+                                            <InfoGrid>
+                                                <InfoItem label="Father" value={family.father} />
+                                                <InfoItem label="Mother" value={family.mother} />
+                                                <InfoItem
+                                                    label="Siblings"
+                                                    value={family.siblings}
+                                                />
+                                                <InfoItem
+                                                    label="Family Type"
+                                                    value={family.family_type}
+                                                />
+                                                <InfoItem
+                                                    label="Family Values"
+                                                    value={family.family_value}
+                                                />
+                                                <InfoItem
+                                                    label="Family Status"
+                                                    value={family.family_status}
+                                                />
+                                            </InfoGrid>
+                                        </Section>
+                                    )}
+
+                                {/* Lifestyle */}
+                                {lifestyle &&
+                                    hasAnyValue(lifestyle, [
+                                        'diet',
+                                        'drink',
+                                        'smoke',
+                                        'living_with',
+                                    ]) && (
+                                        <Section
+                                            title={t('profile.lifestyle')}
+                                            icon={<Star size={15} />}
+                                        >
+                                            <InfoGrid>
+                                                <InfoItem label="Diet" value={lifestyle.diet} />
+                                                <InfoItem label="Drink" value={lifestyle.drink} />
+                                                <InfoItem label="Smoke" value={lifestyle.smoke} />
+                                                <InfoItem
+                                                    label="Living With"
+                                                    value={lifestyle.living_with}
+                                                />
+                                            </InfoGrid>
+                                        </Section>
+                                    )}
+
+                                {/* Hobbies & Interests */}
+                                {hobbies &&
+                                    hasAnyValue(hobbies, [
+                                        'hobbies',
+                                        'interests',
+                                        'music',
+                                        'books',
+                                        'movies',
+                                        'sports',
+                                        'cuisine',
+                                        'dress_style',
+                                    ]) && (
+                                        <Section
+                                            title={t('profile.hobbiesAndInterests')}
+                                            icon={<Heart size={15} />}
+                                        >
+                                            <InfoGrid>
+                                                <InfoItem label="Hobbies" value={hobbies.hobbies} />
+                                                <InfoItem
+                                                    label="Interests"
+                                                    value={hobbies.interests}
+                                                />
+                                                <InfoItem label="Music" value={hobbies.music} />
+                                                <InfoItem label="Books" value={hobbies.books} />
+                                                <InfoItem label="Movies" value={hobbies.movies} />
+                                                <InfoItem label="Sports" value={hobbies.sports} />
+                                                <InfoItem label="Cuisine" value={hobbies.cuisine} />
+                                                <InfoItem
+                                                    label="Dress Style"
+                                                    value={hobbies.dress_style}
+                                                />
+                                            </InfoGrid>
+                                        </Section>
+                                    )}
+
+                                {/* Partner Expectations */}
+                                {partnerExpectation &&
+                                    hasAnyValue(partnerExpectation, [
+                                        'min_age',
+                                        'max_age',
+                                        'height',
+                                        'weight',
+                                        'religion_id',
+                                        'caste_id',
+                                        'residence_country_id',
+                                        'marital_status',
+                                        'education',
+                                        'profession',
+                                        'smoking_acceptable',
+                                        'drinking_acceptable',
+                                        'family_value_id',
+                                        'general',
+                                    ]) && (
+                                        <Section
+                                            title={t('profile.partnerExpectations')}
+                                            icon={<Heart size={15} className="text-pink-500" />}
+                                        >
+                                            <InfoGrid>
+                                                <InfoItem
+                                                    label="Age Range"
+                                                    value={
+                                                        partnerExpectation.min_age &&
+                                                        partnerExpectation.max_age
+                                                            ? `${partnerExpectation.min_age} – ${partnerExpectation.max_age} yrs`
+                                                            : null
+                                                    }
+                                                />
+                                                <InfoItem
+                                                    label="Height"
+                                                    value={
+                                                        partnerExpectation.height
+                                                            ? `${partnerExpectation.height} cm`
+                                                            : null
+                                                    }
+                                                />
+                                                <InfoItem
+                                                    label="Weight"
+                                                    value={
+                                                        partnerExpectation.weight
+                                                            ? `${partnerExpectation.weight} kg`
+                                                            : null
+                                                    }
+                                                />
+                                                <InfoItem
+                                                    label="Religion"
+                                                    value={partnerExpectation.religion_id}
+                                                />
+                                                <InfoItem
+                                                    label="Caste"
+                                                    value={partnerExpectation.caste_id}
+                                                />
+                                                <InfoItem
+                                                    label="Residence"
+                                                    value={partnerExpectation.residence_country_id}
+                                                />
+                                                <InfoItem
+                                                    label="Marital Status"
+                                                    value={partnerExpectation.marital_status}
+                                                />
+                                                <InfoItem
+                                                    label="Education"
+                                                    value={partnerExpectation.education}
+                                                />
+                                                <InfoItem
+                                                    label="Profession"
+                                                    value={partnerExpectation.profession}
+                                                />
+                                                <InfoItem
+                                                    label="Smoking"
+                                                    value={partnerExpectation.smoking_acceptable}
+                                                />
+                                                <InfoItem
+                                                    label="Drinking"
+                                                    value={partnerExpectation.drinking_acceptable}
+                                                />
+                                                <InfoItem
+                                                    label="Family Value"
+                                                    value={partnerExpectation.family_value_id}
+                                                />
+                                            </InfoGrid>
+                                            {partnerExpectation.general && (
+                                                <div className="mt-3 p-4 bg-gradient-to-br from-pink-50 to-rose-50 rounded-xl border border-pink-100">
+                                                    <p className="text-[11px] font-semibold text-pink-400 uppercase tracking-wider mb-1.5">
+                                                        {t('profile.idealPartner')}
+                                                    </p>
+                                                    <p className="text-[13px] text-slate-700 leading-relaxed italic">
+                                                        "{partnerExpectation.general}"
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </Section>
+                                    )}
+
+                                {/* Gallery */}
+                                {(visibleGallery.length > 0 || blurredGallery.length > 0) && (
+                                    <Section title={t('profile.gallery')} icon={<Eye size={15} />}>
+                                        <div className="grid grid-cols-3 gap-1.5">
+                                            {/* Visible (public) photos */}
+                                            {visibleGallery.map((img: any, idx: number) => (
+                                                <div
+                                                    key={`v-${idx}`}
+                                                    className="aspect-square rounded-lg overflow-hidden bg-slate-100 relative"
+                                                >
+                                                    <img
+                                                        src={img.image}
+                                                        alt=""
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                    {/* Screenshot deterrence watermark */}
+                                                    {screenshotDeterrence && (
                                                         <div
-                                                            className="absolute inset-[-50%] flex items-center justify-center"
-                                                            style={{
-                                                                transform: 'rotate(-30deg)',
-                                                                width: '200%',
-                                                                height: '200%',
-                                                            }}
+                                                            className="absolute inset-0 pointer-events-none overflow-hidden select-none"
+                                                            style={{ zIndex: 2 }}
                                                         >
                                                             <div
-                                                                className="w-full h-full flex flex-wrap items-start justify-start gap-6 p-3"
-                                                                style={{ opacity: 0.07 }}
+                                                                className="absolute inset-[-50%] flex items-center justify-center"
+                                                                style={{
+                                                                    transform: 'rotate(-30deg)',
+                                                                    width: '200%',
+                                                                    height: '200%',
+                                                                }}
                                                             >
-                                                                {Array.from({ length: 16 }).map(
-                                                                    (_, i) => (
-                                                                        <span
-                                                                            key={i}
-                                                                            className="text-white text-[9px] font-bold whitespace-nowrap tracking-wider"
-                                                                        >
-                                                                            DMB PROTECTED
-                                                                        </span>
-                                                                    ),
-                                                                )}
+                                                                <div
+                                                                    className="w-full h-full flex flex-wrap items-start justify-start gap-6 p-3"
+                                                                    style={{ opacity: 0.07 }}
+                                                                >
+                                                                    {Array.from({ length: 16 }).map(
+                                                                        (_, i) => (
+                                                                            <span
+                                                                                key={i}
+                                                                                className="text-white text-[9px] font-bold whitespace-nowrap tracking-wider"
+                                                                            >
+                                                                                DMB PROTECTED
+                                                                            </span>
+                                                                        ),
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ))}
-                                        {/* Blurred (private) photos */}
-                                        {blurredGallery.map((img: any, idx: number) => (
-                                            <div
-                                                key={`b-${idx}`}
-                                                className="aspect-square rounded-lg overflow-hidden bg-slate-200 relative"
-                                            >
-                                                <img
-                                                    src={img.thumbnail}
-                                                    alt=""
-                                                    className="w-full h-full object-cover scale-110"
-                                                    style={{ filter: 'blur(20px)' }}
-                                                />
-                                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/10">
-                                                    <Lock
-                                                        size={16}
-                                                        className="text-white/70 mb-1"
-                                                    />
-                                                    <span className="text-[9px] font-bold text-white/60 uppercase tracking-wider">
-                                                        Private
-                                                    </span>
+                                                    )}
                                                 </div>
+                                            ))}
+                                            {/* Blurred (private) photos */}
+                                            {blurredGallery.map((img: any, idx: number) => (
+                                                <div
+                                                    key={`b-${idx}`}
+                                                    className="aspect-square rounded-lg overflow-hidden bg-slate-200 relative"
+                                                >
+                                                    <img
+                                                        src={img.thumbnail}
+                                                        alt=""
+                                                        className="w-full h-full object-cover scale-110"
+                                                        style={{ filter: 'blur(20px)' }}
+                                                    />
+                                                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/10">
+                                                        <Lock
+                                                            size={16}
+                                                            className="text-white/70 mb-1"
+                                                        />
+                                                        <span className="text-[9px] font-bold text-white/60 uppercase tracking-wider">
+                                                            Private
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        {lockedCount > 0 && (
+                                            <div className="mt-2 flex items-center justify-center gap-1.5 text-[11px] text-slate-400 py-1">
+                                                <Lock size={11} />
+                                                <span>
+                                                    {lockedCount}{' '}
+                                                    {t('profile.photosLocked', {
+                                                        count: lockedCount,
+                                                    })}
+                                                </span>
                                             </div>
-                                        ))}
-                                    </div>
-                                    {lockedCount > 0 && (
-                                        <div className="mt-2 flex items-center justify-center gap-1.5 text-[11px] text-slate-400 py-1">
-                                            <Lock size={11} />
-                                            <span>
-                                                {lockedCount}{' '}
-                                                {t('profile.photosLocked', { count: lockedCount })}
-                                            </span>
-                                        </div>
-                                    )}
-                                    {onRequestMediaAccess && hasLockedGallery && (
-                                        <button
-                                            onClick={() => onRequestMediaAccess(profile, 'gallery')}
-                                            className="mt-3 w-full sm:w-auto sm:px-4 py-2 rounded-xl border border-primary/15 bg-primary/5 text-primary font-bold text-sm hover:bg-primary/10 transition-colors"
-                                        >
-                                            {galleryRequestAccessible
-                                                ? t('discovery.manageMediaAccess')
-                                                : galleryRequestState === 'pending'
-                                                  ? t('discovery.galleryAccessRequested')
-                                                  : t('discovery.requestMediaAccess')}
-                                        </button>
-                                    )}
-                                </Section>
-                            )}
-
-                            {/* Gallery — only locked images, no visible ones */}
-                            {visibleGallery.length === 0 &&
-                                blurredGallery.length === 0 &&
-                                lockedCount > 0 && (
-                                    <Section title={t('profile.gallery')} icon={<Eye size={15} />}>
-                                        <div className="flex items-center justify-center gap-2 text-sm text-slate-400 py-6 bg-slate-50 rounded-xl">
-                                            <Lock size={14} />
-                                            <span>
-                                                {lockedCount}{' '}
-                                                {t('profile.photosLocked', { count: lockedCount })}
-                                            </span>
-                                        </div>
-                                        {onRequestMediaAccess && (
+                                        )}
+                                        {onRequestMediaAccess && hasLockedGallery && (
                                             <button
                                                 onClick={() =>
                                                     onRequestMediaAccess(profile, 'gallery')
@@ -1200,206 +1327,252 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
                                         )}
                                     </Section>
                                 )}
-                        </div>
-                    ) : (
-                        /* ═══════════════════════════════════════
+
+                                {/* Gallery — only locked images, no visible ones */}
+                                {visibleGallery.length === 0 &&
+                                    blurredGallery.length === 0 &&
+                                    lockedCount > 0 && (
+                                        <Section
+                                            title={t('profile.gallery')}
+                                            icon={<Eye size={15} />}
+                                        >
+                                            <div className="flex items-center justify-center gap-2 text-sm text-slate-400 py-6 bg-slate-50 rounded-xl">
+                                                <Lock size={14} />
+                                                <span>
+                                                    {lockedCount}{' '}
+                                                    {t('profile.photosLocked', {
+                                                        count: lockedCount,
+                                                    })}
+                                                </span>
+                                            </div>
+                                            {onRequestMediaAccess && (
+                                                <button
+                                                    onClick={() =>
+                                                        onRequestMediaAccess(profile, 'gallery')
+                                                    }
+                                                    className="mt-3 w-full sm:w-auto sm:px-4 py-2 rounded-xl border border-primary/15 bg-primary/5 text-primary font-bold text-sm hover:bg-primary/10 transition-colors"
+                                                >
+                                                    {galleryRequestAccessible
+                                                        ? t('discovery.manageMediaAccess')
+                                                        : galleryRequestState === 'pending'
+                                                          ? t('discovery.galleryAccessRequested')
+                                                          : t('discovery.requestMediaAccess')}
+                                                </button>
+                                            )}
+                                        </Section>
+                                    )}
+                            </div>
+                        ) : activeTab === 'photos' ? (
+                            renderPhotoAccessContent()
+                        ) : (
+                            /* ═══════════════════════════════════════
                COMPATIBILITY TAB
                ═══════════════════════════════════════ */
-                        <div className="p-4 sm:p-5">
-                            {intelLoading ? (
-                                <div className="h-48 flex flex-col items-center justify-center gap-3">
-                                    <Loader2 className="animate-spin text-primary" size={28} />
-                                    <p className="text-slate-400 text-sm">
-                                        {t('profile.analyzingCompatibility')}
-                                    </p>
-                                </div>
-                            ) : intelError || !intelligence ? (
-                                <div className="h-48 flex flex-col items-center justify-center gap-3 text-center px-6">
-                                    <div className="size-11 bg-red-50 text-red-400 rounded-full flex items-center justify-center">
-                                        <AlertTriangle size={22} />
+                            <div className="p-4 sm:p-5">
+                                {intelLoading ? (
+                                    <div className="h-48 flex flex-col items-center justify-center gap-3">
+                                        <Loader2 className="animate-spin text-primary" size={28} />
+                                        <p className="text-slate-400 text-sm">
+                                            {t('profile.analyzingCompatibility')}
+                                        </p>
                                     </div>
-                                    <p className="text-slate-500 text-sm">
-                                        {intelError || t('profile.failedToLoadCompatibility')}
-                                    </p>
-                                </div>
-                            ) : (
-                                <div className="space-y-5">
-                                    {/* Score ring */}
-                                    <div className="flex flex-col items-center text-center">
-                                        <div className="relative size-28 sm:size-32 mb-3">
-                                            <svg
-                                                className="size-full -rotate-90"
-                                                viewBox="0 0 36 36"
-                                            >
-                                                <path
-                                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                                                    fill="none"
-                                                    stroke="#f1f5f9"
-                                                    strokeWidth="3"
-                                                />
-                                                <path
-                                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                                                    fill="none"
-                                                    stroke="#d41173"
-                                                    strokeWidth="3"
-                                                    strokeDasharray={`${intelligence.totalScore}, 100`}
-                                                />
-                                            </svg>
-                                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
-                                                <span className="text-2xl sm:text-3xl font-black text-slate-900">
-                                                    {intelligence.totalScore}%
-                                                </span>
-                                                <span className="text-[9px] font-bold text-primary uppercase tracking-wider">
-                                                    {t('profile.compatible')}
-                                                </span>
-                                            </div>
+                                ) : intelError || !intelligence ? (
+                                    <div className="h-48 flex flex-col items-center justify-center gap-3 text-center px-6">
+                                        <div className="size-11 bg-red-50 text-red-400 rounded-full flex items-center justify-center">
+                                            <AlertTriangle size={22} />
                                         </div>
+                                        <p className="text-slate-500 text-sm">
+                                            {intelError || t('profile.failedToLoadCompatibility')}
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-5">
+                                        {/* Score ring */}
+                                        <div className="flex flex-col items-center text-center">
+                                            <div className="relative size-28 sm:size-32 mb-3">
+                                                <svg
+                                                    className="size-full -rotate-90"
+                                                    viewBox="0 0 36 36"
+                                                >
+                                                    <path
+                                                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                                        fill="none"
+                                                        stroke="#f1f5f9"
+                                                        strokeWidth="3"
+                                                    />
+                                                    <path
+                                                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                                        fill="none"
+                                                        stroke="#d41173"
+                                                        strokeWidth="3"
+                                                        strokeDasharray={`${intelligence.totalScore}, 100`}
+                                                    />
+                                                </svg>
+                                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+                                                    <span className="text-2xl sm:text-3xl font-black text-slate-900">
+                                                        {intelligence.totalScore}%
+                                                    </span>
+                                                    <span className="text-[9px] font-bold text-primary uppercase tracking-wider">
+                                                        {t('profile.compatible')}
+                                                    </span>
+                                                </div>
+                                            </div>
 
-                                        <div className="w-full max-w-xs space-y-2.5">
-                                            {intelligence.categories.map(
-                                                (cat: any, idx: number) => (
-                                                    <div key={idx}>
-                                                        <div className="flex justify-between items-end mb-0.5">
-                                                            <span className="text-[11px] font-semibold text-slate-600">
-                                                                {cat.name}
-                                                            </span>
-                                                            <span className="text-[11px] font-bold text-slate-800">
-                                                                {cat.score}%
-                                                            </span>
+                                            <div className="w-full max-w-xs space-y-2.5">
+                                                {intelligence.categories.map(
+                                                    (cat: any, idx: number) => (
+                                                        <div key={idx}>
+                                                            <div className="flex justify-between items-end mb-0.5">
+                                                                <span className="text-[11px] font-semibold text-slate-600">
+                                                                    {cat.name}
+                                                                </span>
+                                                                <span className="text-[11px] font-bold text-slate-800">
+                                                                    {cat.score}%
+                                                                </span>
+                                                            </div>
+                                                            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                                                <div
+                                                                    className={`h-full rounded-full transition-all duration-500 ${
+                                                                        cat.score >= 80
+                                                                            ? 'bg-green-500'
+                                                                            : cat.score >= 60
+                                                                              ? 'bg-amber-500'
+                                                                              : 'bg-red-400'
+                                                                    }`}
+                                                                    style={{
+                                                                        width: `${cat.score}%`,
+                                                                    }}
+                                                                />
+                                                            </div>
                                                         </div>
-                                                        <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                                                            <div
-                                                                className={`h-full rounded-full transition-all duration-500 ${
-                                                                    cat.score >= 80
-                                                                        ? 'bg-green-500'
-                                                                        : cat.score >= 60
-                                                                          ? 'bg-amber-500'
-                                                                          : 'bg-red-400'
-                                                                }`}
-                                                                style={{ width: `${cat.score}%` }}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                ),
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Mutual Fit */}
-                                    <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-100">
-                                        <div className="flex items-center gap-2 mb-2.5">
-                                            <ArrowLeftRight size={14} className="text-slate-500" />
-                                            <h3 className="font-bold text-slate-900 text-[13px]">
-                                                {t('profile.mutualPreferenceFit')}
-                                            </h3>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex-1 text-center">
-                                                <div className="text-lg font-bold text-slate-900">
-                                                    {intelligence.mutualFit.youMeetThem}%
-                                                </div>
-                                                <div className="text-[11px] text-slate-500 leading-tight">
-                                                    {t('profile.youMeetTheirCriteria')}
-                                                </div>
-                                            </div>
-                                            <div className="h-7 w-px bg-slate-200" />
-                                            <div className="flex-1 text-center">
-                                                <div className="text-lg font-bold text-slate-900">
-                                                    {intelligence.mutualFit.theyMeetYou}%
-                                                </div>
-                                                <div className="text-[11px] text-slate-500 leading-tight">
-                                                    {t('profile.theyMeetYourCriteria')}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Top Reasons */}
-                                    {intelligence.topReasons.length > 0 && (
-                                        <div>
-                                            <h3 className="font-bold text-slate-900 text-[13px] mb-2 flex items-center gap-2">
-                                                <Zap
-                                                    size={13}
-                                                    className="text-yellow-500 fill-yellow-500"
-                                                />
-                                                {t('profile.topReasonsCompatible')}
-                                            </h3>
-                                            <ul className="space-y-1.5">
-                                                {intelligence.topReasons.map(
-                                                    (reason: string, idx: number) => (
-                                                        <li
-                                                            key={idx}
-                                                            className="flex items-start gap-2 text-[13px] text-slate-700"
-                                                        >
-                                                            <CheckCircle2
-                                                                size={14}
-                                                                className="text-green-500 shrink-0 mt-0.5"
-                                                            />
-                                                            {reason}
-                                                        </li>
                                                     ),
                                                 )}
-                                            </ul>
-                                        </div>
-                                    )}
-
-                                    {/* Friction Points */}
-                                    {intelligence.frictionPoints.length > 0 && (
-                                        <div>
-                                            <div className="flex items-center justify-between mb-2">
-                                                <h3 className="font-bold text-slate-900 text-[13px] flex items-center gap-2">
-                                                    <AlertTriangle
-                                                        size={13}
-                                                        className="text-orange-500"
-                                                    />
-                                                    {t('profile.potentialFrictionPoints')}
-                                                </h3>
-                                                <button
-                                                    onClick={() => setShowFriction(!showFriction)}
-                                                    className="text-xs font-bold text-primary hover:underline"
-                                                >
-                                                    {showFriction ? 'Hide' : 'View'}
-                                                </button>
                                             </div>
-                                            <div
-                                                className={`transition-all duration-300 ${showFriction ? 'opacity-100' : 'opacity-50 blur-sm select-none'}`}
-                                            >
+                                        </div>
+
+                                        {/* Mutual Fit */}
+                                        <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-100">
+                                            <div className="flex items-center gap-2 mb-2.5">
+                                                <ArrowLeftRight
+                                                    size={14}
+                                                    className="text-slate-500"
+                                                />
+                                                <h3 className="font-bold text-slate-900 text-[13px]">
+                                                    {t('profile.mutualPreferenceFit')}
+                                                </h3>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex-1 text-center">
+                                                    <div className="text-lg font-bold text-slate-900">
+                                                        {intelligence.mutualFit.youMeetThem}%
+                                                    </div>
+                                                    <div className="text-[11px] text-slate-500 leading-tight">
+                                                        {t('profile.youMeetTheirCriteria')}
+                                                    </div>
+                                                </div>
+                                                <div className="h-7 w-px bg-slate-200" />
+                                                <div className="flex-1 text-center">
+                                                    <div className="text-lg font-bold text-slate-900">
+                                                        {intelligence.mutualFit.theyMeetYou}%
+                                                    </div>
+                                                    <div className="text-[11px] text-slate-500 leading-tight">
+                                                        {t('profile.theyMeetYourCriteria')}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Top Reasons */}
+                                        {intelligence.topReasons.length > 0 && (
+                                            <div>
+                                                <h3 className="font-bold text-slate-900 text-[13px] mb-2 flex items-center gap-2">
+                                                    <Zap
+                                                        size={13}
+                                                        className="text-yellow-500 fill-yellow-500"
+                                                    />
+                                                    {t('profile.topReasonsCompatible')}
+                                                </h3>
                                                 <ul className="space-y-1.5">
-                                                    {intelligence.frictionPoints.map(
-                                                        (point: string, idx: number) => (
+                                                    {intelligence.topReasons.map(
+                                                        (reason: string, idx: number) => (
                                                             <li
                                                                 key={idx}
-                                                                className="flex items-start gap-2 text-[13px] text-slate-600"
+                                                                className="flex items-start gap-2 text-[13px] text-slate-700"
                                                             >
-                                                                <div className="size-1.5 rounded-full bg-orange-400 mt-1.5 shrink-0" />
-                                                                {point}
+                                                                <CheckCircle2
+                                                                    size={14}
+                                                                    className="text-green-500 shrink-0 mt-0.5"
+                                                                />
+                                                                {reason}
                                                             </li>
                                                         ),
                                                     )}
                                                 </ul>
                                             </div>
-                                        </div>
-                                    )}
+                                        )}
 
-                                    {/* Agent Notes */}
-                                    {intelligence.agentNotes && (
-                                        <div className="bg-purple-50 border border-purple-100 rounded-xl p-3.5">
-                                            <div className="flex items-center gap-2 mb-1.5">
-                                                <UserCheck size={14} className="text-purple-600" />
-                                                <h3 className="font-bold text-purple-900 text-[13px]">
-                                                    {t('profile.matchmakersNote')}
-                                                </h3>
+                                        {/* Friction Points */}
+                                        {intelligence.frictionPoints.length > 0 && (
+                                            <div>
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <h3 className="font-bold text-slate-900 text-[13px] flex items-center gap-2">
+                                                        <AlertTriangle
+                                                            size={13}
+                                                            className="text-orange-500"
+                                                        />
+                                                        {t('profile.potentialFrictionPoints')}
+                                                    </h3>
+                                                    <button
+                                                        onClick={() =>
+                                                            setShowFriction(!showFriction)
+                                                        }
+                                                        className="text-xs font-bold text-primary hover:underline"
+                                                    >
+                                                        {showFriction ? 'Hide' : 'View'}
+                                                    </button>
+                                                </div>
+                                                <div
+                                                    className={`transition-all duration-300 ${showFriction ? 'opacity-100' : 'opacity-50 blur-sm select-none'}`}
+                                                >
+                                                    <ul className="space-y-1.5">
+                                                        {intelligence.frictionPoints.map(
+                                                            (point: string, idx: number) => (
+                                                                <li
+                                                                    key={idx}
+                                                                    className="flex items-start gap-2 text-[13px] text-slate-600"
+                                                                >
+                                                                    <div className="size-1.5 rounded-full bg-orange-400 mt-1.5 shrink-0" />
+                                                                    {point}
+                                                                </li>
+                                                            ),
+                                                        )}
+                                                    </ul>
+                                                </div>
                                             </div>
-                                            <p className="text-[13px] text-purple-800 italic leading-relaxed">
-                                                "{intelligence.agentNotes}"
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
+                                        )}
+
+                                        {/* Agent Notes */}
+                                        {intelligence.agentNotes && (
+                                            <div className="bg-purple-50 border border-purple-100 rounded-xl p-3.5">
+                                                <div className="flex items-center gap-2 mb-1.5">
+                                                    <UserCheck
+                                                        size={14}
+                                                        className="text-purple-600"
+                                                    />
+                                                    <h3 className="font-bold text-purple-900 text-[13px]">
+                                                        {t('profile.matchmakersNote')}
+                                                    </h3>
+                                                </div>
+                                                <p className="text-[13px] text-purple-800 italic leading-relaxed">
+                                                    "{intelligence.agentNotes}"
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </main>
             </div>
             {showPhotoPreview && (
@@ -1463,11 +1636,7 @@ const Section: React.FC<{ title: string; icon: React.ReactNode; children: React.
 const InfoGrid: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const validChildren = React.Children.toArray(children).filter(Boolean);
     if (validChildren.length === 0) return null;
-    return (
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {validChildren}
-        </div>
-    );
+    return <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">{validChildren}</div>;
 };
 
 const InfoItem: React.FC<{ label: string; value: any }> = ({ label, value }) => {
