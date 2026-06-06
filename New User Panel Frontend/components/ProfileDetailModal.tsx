@@ -433,15 +433,15 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
         >
             {/* Position wrapper — no framer-motion, no flex, just raw positioning */}
             <div
-                className="fixed bottom-0 left-0 right-0 sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-4xl bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col pb-14 sm:pb-0"
-                style={{ maxHeight: '90vh' }}
+                className="fixed bottom-0 left-0 right-0 flex h-[calc(100vh-16px)] flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:bottom-auto sm:left-1/2 sm:right-auto sm:top-1/2 sm:grid sm:h-auto sm:w-[calc(100vw-48px)] sm:max-w-[1180px] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:grid-cols-[320px_minmax(0,1fr)] sm:rounded-2xl"
+                style={{ maxHeight: 'calc(100vh - 48px)' }}
                 onMouseDown={(e) => e.stopPropagation()}
             >
                 {/* ═══════════════════════════════════════════
             HEADER — Compact mobile-first hero (non-scrollable)
            ═══════════════════════════════════════════ */}
-                <div className="shrink-0 bg-white rounded-t-2xl overflow-hidden border-b border-slate-100">
-                    <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4 sm:px-6 pt-4 pb-24 sm:pb-28">
+                <aside className="flex shrink-0 flex-col border-b border-slate-100 bg-white sm:max-h-full sm:overflow-y-auto sm:border-b-0 sm:border-r">
+                    <div className="relative bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 px-4 pb-12 pt-3 sm:px-5 sm:pb-5">
                         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+')] opacity-40" />
                         <div className="relative z-10 flex items-center justify-between">
                             <div className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 shadow-md">
@@ -460,12 +460,12 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
                         </div>
                     </div>
 
-                    <div className="px-4 sm:px-6 -mt-20 sm:-mt-24 relative z-10">
+                    <div className="relative z-10 -mt-9 px-4 pb-4 sm:mt-0 sm:px-5 sm:pt-5">
                         <div className="flex flex-col items-center text-center">
                             <button
                                 type="button"
                                 onClick={() => setShowPhotoPreview(true)}
-                                className="group relative size-40 sm:size-52 rounded-2xl border-[5px] border-white bg-slate-100 shadow-2xl overflow-hidden focus:outline-none focus:ring-4 focus:ring-primary/25"
+                                className="group relative size-28 overflow-hidden rounded-2xl border-[4px] border-white bg-slate-100 shadow-xl focus:outline-none focus:ring-4 focus:ring-primary/25 sm:size-44 sm:border-0"
                                 aria-label={t('profile.viewPhoto') || 'View profile photo'}
                             >
                                 <img
@@ -481,14 +481,14 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
                                 </span>
                             </button>
 
-                            <h2 className="mt-4 text-2xl sm:text-3xl font-black text-slate-950 leading-tight">
+                            <h2 className="mt-3 max-w-full text-xl font-black leading-tight text-slate-950 sm:text-2xl">
                                 {displayName}
                             </h2>
-                            <div className="mt-3 flex flex-wrap justify-center gap-2 max-w-3xl">
+                            <div className="mt-3 flex max-w-full flex-wrap justify-center gap-1.5 sm:flex-col sm:items-stretch">
                                 {quickInfo.map((item, i) => (
                                     <span
                                         key={i}
-                                        className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs sm:text-[13px] font-semibold text-slate-600 leading-snug"
+                                        className="inline-flex items-center justify-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold leading-snug text-slate-600 sm:justify-start sm:rounded-xl sm:px-3"
                                     >
                                         <span className="text-primary/70 shrink-0">
                                             {item.icon}
@@ -510,12 +510,12 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
                                         onClose();
                                         onNavigate?.('messages');
                                     }}
-                                    className="w-full py-3.5 rounded-2xl font-black text-sm sm:text-base shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all bg-emerald-500 text-white hover:bg-emerald-600"
+                                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-500 py-3.5 text-sm font-black text-white shadow-lg shadow-emerald-500/20 transition-all hover:bg-emerald-600"
                                 >
                                     <MessageSquare size={17} /> {t('profile.interestAccepted')}
                                 </motion.button>
                             ) : interestState === 'sent_pending' ? (
-                                <div className="w-full py-3.5 rounded-2xl font-black text-sm sm:text-base shadow-sm flex items-center justify-center gap-2 bg-amber-50 text-amber-700 border border-amber-200">
+                                <div className="flex w-full items-center justify-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 py-3.5 text-sm font-black text-amber-700 shadow-sm">
                                     <Clock size={17} /> {t('profile.pendingResponse')}
                                 </div>
                             ) : interestState === 'received_pending' ? (
@@ -525,7 +525,7 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
                                         onClose();
                                         onNavigate?.('dashboard');
                                     }}
-                                    className="w-full py-3.5 rounded-2xl font-black text-sm sm:text-base shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 transition-all bg-blue-500 text-white hover:bg-blue-600"
+                                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-500 py-3.5 text-sm font-black text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-600"
                                 >
                                     <Heart size={17} /> {t('profile.respondToInterest')}
                                 </motion.button>
@@ -533,7 +533,7 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
                                 <motion.button
                                     whileTap={BTN_TAP}
                                     onClick={handleSendProposal}
-                                    className="w-full py-3.5 rounded-2xl font-black text-sm sm:text-base shadow-lg shadow-primary/25 flex items-center justify-center gap-2 transition-all bg-primary text-white hover:bg-primary-hover"
+                                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-3.5 text-sm font-black text-white shadow-lg shadow-primary/25 transition-all hover:bg-primary-hover"
                                 >
                                     <Send size={17} /> {t('profile.sendProposal')}
                                 </motion.button>
@@ -541,18 +541,18 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
                         </div>
 
                         {!isOwnProfile && (
-                            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/90 p-3.5 sm:p-4">
+                            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/90 p-3">
                                 <div className="mb-3 flex items-center justify-between gap-3">
                                     <span className="text-[11px] font-black uppercase tracking-wide text-slate-400">
                                         {t('profile.safetyActions')}
                                     </span>
                                     <span className="h-px flex-1 bg-slate-200" />
                                 </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                <div className="grid grid-cols-1 gap-2">
                                     <button
                                         onClick={handleHideFromDiscovery}
                                         disabled={hiding || removingFromShortlist}
-                                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-slate-700 hover:bg-slate-100 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                                        className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
                                     >
                                         <EyeOff size={15} className="text-slate-500" />
                                         {hiding
@@ -562,7 +562,7 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
                                     <button
                                         onClick={handleRemoveFromShortlist}
                                         disabled={hiding || removingFromShortlist}
-                                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-slate-700 hover:bg-slate-100 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                                        className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
                                     >
                                         <Trash2 size={15} className="text-slate-500" />
                                         {removingFromShortlist
@@ -571,7 +571,7 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
                                     </button>
                                     <button
                                         onClick={() => setShowReportModal(true)}
-                                        className="w-full rounded-xl border border-red-200 bg-red-50 px-3 py-3 text-sm font-bold text-red-700 hover:bg-red-100 flex items-center justify-center gap-2"
+                                        className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm font-bold text-red-700 hover:bg-red-100"
                                     >
                                         <Flag size={15} />
                                         {t('profile.reportProfile')}
@@ -581,7 +581,11 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
                         )}
                     </div>
 
-                    <div className="mt-4 px-4 sm:px-6 border-t border-slate-100 flex items-stretch gap-2 bg-white overflow-x-auto scrollbar-hide">
+                </aside>
+
+                <main className="flex min-h-0 flex-1 flex-col bg-slate-50/80">
+                    <div className="shrink-0 border-b border-slate-100 bg-white px-4 sm:px-6">
+                        <div className="flex items-stretch gap-2 overflow-x-auto scrollbar-hide">
                         <button
                             onClick={() => setActiveTab('about')}
                             className={`flex-1 sm:flex-none sm:px-5 py-3 text-xs sm:text-sm font-black border-b-2 transition-colors text-center ${
@@ -613,14 +617,14 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
                                 {galleryAccessLabel}
                             </button>
                         )}
+                        </div>
                     </div>
-                </div>
 
                 {/* ═══════════════════════════════════════════
             SCROLLABLE CONTENT AREA
            ═══════════════════════════════════════════ */}
                 <div
-                    className="flex-1 overflow-y-auto overscroll-contain min-h-0 bg-slate-50/70"
+                    className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-slate-50/80"
                     style={{ WebkitOverflowScrolling: 'touch' }}
                 >
                     {loading ? (
@@ -636,7 +640,7 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
                             <p className="text-slate-500 text-sm">{error}</p>
                         </div>
                     ) : activeTab === 'about' ? (
-                        <div className="p-4 sm:p-6 space-y-4">
+                        <div className="space-y-3 p-4 sm:p-6">
                             {/* About */}
                             {introduction && (
                                 <Section title={t('profile.about')} icon={<BookOpen size={15} />}>
@@ -1396,6 +1400,7 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
                         </div>
                     )}
                 </div>
+                </main>
             </div>
             {showPhotoPreview && (
                 <div
@@ -1444,12 +1449,12 @@ const Section: React.FC<{ title: string; icon: React.ReactNode; children: React.
     icon,
     children,
 }) => (
-    <div className="rounded-2xl border border-slate-100 bg-white p-4 sm:p-5 shadow-sm shadow-slate-200/40">
-        <div className="flex items-center gap-2.5 mb-3 pb-2.5 border-b border-slate-100">
-            <span className="size-8 rounded-xl bg-primary/5 text-primary flex items-center justify-center shrink-0">
+    <div className="rounded-xl border border-slate-200/80 bg-white p-3.5 shadow-sm shadow-slate-200/30 sm:p-4">
+        <div className="mb-3 flex items-center gap-2 border-b border-slate-100 pb-2.5">
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/5 text-primary">
                 {icon}
             </span>
-            <h3 className="font-black text-slate-900 text-sm sm:text-[15px]">{title}</h3>
+            <h3 className="text-sm font-black text-slate-900">{title}</h3>
         </div>
         {children}
     </div>
@@ -1459,7 +1464,7 @@ const InfoGrid: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const validChildren = React.Children.toArray(children).filter(Boolean);
     if (validChildren.length === 0) return null;
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {validChildren}
         </div>
     );
@@ -1472,18 +1477,18 @@ const InfoItem: React.FC<{ label: string; value: any }> = ({ label, value }) => 
     if (!displayValue || displayValue === '' || displayValue === 'N/A') return null;
 
     return (
-        <div className="p-3 sm:p-3.5 bg-slate-50 rounded-xl border border-slate-100">
-            <p className="text-[10px] uppercase tracking-wide text-primary/70 font-black mb-1">
+        <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2.5">
+            <p className="mb-1 text-[10px] font-black uppercase tracking-wide text-primary/70">
                 {label}
             </p>
-            <p className="text-sm font-semibold text-slate-800 break-words leading-snug">
+            <p className="break-words text-sm font-semibold leading-snug text-slate-800">
                 {displayValue}
             </p>
         </div>
     );
 };
 
-const VoiceIntroPlayer: React.FC<{ url: string; name: string }> = ({ url, name }) => {
+const VoiceIntroPlayer: React.FC<{ url: string; name: string }> = ({ url, name: _name }) => {
     const { t } = useTranslation();
     const [isPlaying, setIsPlaying] = useState(false);
     const [progress, setProgress] = useState(0);
