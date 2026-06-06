@@ -92,6 +92,14 @@ try {
     }
     echo "[✓] Baseline import complete. Executed $count statements.\n";
 
+    echo "Healing schema drifts in baseline tables...\n";
+    try {
+        $connection->exec("ALTER TABLE `lifestyles` ADD COLUMN `property` VARCHAR(191) NULL DEFAULT NULL AFTER `living_with`");
+        echo "  Added missing 'property' column to 'lifestyles' table.\n";
+    } catch (Exception $e) {
+        // column already exists, ignore
+    }
+
     echo "Pre-registering initial migrations to prevent creation conflicts...\n";
     $connection->exec('CREATE TABLE IF NOT EXISTS migrations (
         id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
