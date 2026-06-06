@@ -239,7 +239,7 @@ class BackendApiRegressionTest extends TestCase
 
     public function test_auth_and_sensitive_api_routes_have_targeted_rate_limits(): void
     {
-        $routes = collect(app('router')->getRoutes());
+        $routes = app('router')->getRoutes();
 
         $this->assertContains(
             'throttle:api-auth',
