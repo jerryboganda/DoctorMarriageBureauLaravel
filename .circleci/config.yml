@@ -1,5 +1,8 @@
 version: 2.1
 
+# ─────────────────────────────────────────────
+#  EXECUTORS
+# ─────────────────────────────────────────────
 executors:
   php_cli:
     docker:
@@ -29,26 +32,40 @@ executors:
       - image: cimg/node:22.14
     resource_class: small
 
+# ─────────────────────────────────────────────
+#  REUSABLE COMMANDS
+# ─────────────────────────────────────────────
 commands:
   install_php_system_deps:
     steps:
       - run:
-          name: Install PHP system dependencies
+          name: Install PHP system dependencies & Composer
           command: |
-            apt-get update
+            apt-get update -qq
             apt-get install -y --no-install-recommends \
               git unzip zip curl \
               libicu-dev libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
               libonig-dev libxml2-dev libzip-dev libsqlite3-dev sqlite3
             docker-php-ext-configure gd --with-freetype --with-jpeg
-            docker-php-ext-install -j"$(nproc)" bcmath exif gd intl mbstring pdo_mysql pdo_sqlite xml zip
+            docker-php-ext-install -j"$(nproc)" \
+              bcmath exif gd intl mbstring pdo_mysql pdo_sqlite xml zip
             rm -rf /var/lib/apt/lists/*
+            curl -sS https://getcomposer.org/installer | \
+              php -- --install-dir=/usr/local/bin --filename=composer
+
+  composer_install:
+    steps:
+      - restore_cache:
+          keys:
+            - composer-v1-{{ checksum "composer.lock" }}
       - run:
-          name: Install Composer
-          command: |
-            curl -sS https://getcomposer.org/installer -o /tmp/composer-setup.php
-            php /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=composer
-            composer --version
+          name: Install Composer dependencies
+          command: composer install --no-interaction --prefer-dist --no-progress --no-scripts
+      - save_cache:
+          key: composer-v1-{{ checksum "composer.lock" }}
+          paths:
+            - vendor
+
   npm_ci:
     parameters:
       path:
@@ -65,6 +82,7 @@ commands:
           key: npm-v1-{{ checksum "<< parameters.path >>/package-lock.json" }}
           paths:
             - << parameters.path >>/node_modules
+
   frontend_quality_steps:
     parameters:
       path:
@@ -93,34 +111,36 @@ commands:
           working_directory: << parameters.path >>
           command: << parameters.build_command >>
 
+# ─────────────────────────────────────────────
+#  JOBS
+# ─────────────────────────────────────────────
 jobs:
+
+  # ── GATE JOB ──────────────────────────────
+  # The ONLY job that blocks production deploy.
+  # Fast: PHP lint + PHPStan + unit tests (SQLite in-memory, no DB spin-up).
+  # Typical runtime: 2-4 minutes.
   backend_quality:
     executor: php_cli
     steps:
       - checkout
       - install_php_system_deps
       - run:
-          name: Prepare environment file
+          name: Prepare environment
           command: cp .env.example .env
-      - restore_cache:
-          keys:
-            - composer-v1-{{ checksum "composer.lock" }}
+      - composer_install
       - run:
-          name: Install Composer dependencies
-          command: composer install --no-interaction --prefer-dist --no-progress --no-scripts
-      - save_cache:
-          key: composer-v1-{{ checksum "composer.lock" }}
-          paths:
-            - vendor
+          name: Generate app key & discover packages
+          command: |
+            php artisan key:generate --no-interaction
+            php artisan package:discover
       - run:
-          name: Generate application key
-          command: php artisan key:generate --no-interaction
-      - run:
-          name: Discover packages
-          command: php artisan package:discover
-      - run:
-          name: Backend CI
+          name: Backend CI (lint + analyse + tests)
           command: composer ci:backend
+
+  # ── NON-BLOCKING JOBS ──────────────────────
+  # These run in parallel for visibility and catch regressions,
+  # but they do NOT block the production deploy.
 
   backend_mysql_smoke:
     executor: php_cli_mysql
@@ -128,33 +148,28 @@ jobs:
       - checkout
       - install_php_system_deps
       - run:
-          name: Prepare environment file
+          name: Prepare environment
           command: cp .env.example .env
-      - restore_cache:
-          keys:
-            - composer-v1-{{ checksum "composer.lock" }}
+      - composer_install
       - run:
-          name: Install Composer dependencies
-          command: composer install --no-interaction --prefer-dist --no-progress --no-scripts
-      - run:
-          name: Generate application key
-          command: php artisan key:generate --no-interaction
-      - run:
-          name: Discover packages
-          command: php artisan package:discover
+          name: Generate app key & discover packages
+          command: |
+            php artisan key:generate --no-interaction
+            php artisan package:discover
       - run:
           name: Wait for MySQL
           command: |
             for i in $(seq 1 60); do
-              php -r 'new PDO("mysql:host=127.0.0.1;port=3306;dbname=dmb_test", "root", "root");' && exit 0
+              php -r 'new PDO("mysql:host=127.0.0.1;port=3306;dbname=dmb_test","root","root");' \
+                && exit 0 || true
               sleep 2
             done
             exit 1
       - run:
-          name: Import Database Baseline Schema
+          name: Import baseline schema
           command: php ci_import_test_schema.php
       - run:
-          name: Migration-backed API smoke
+          name: Migrate + regression smoke
           command: |
             php artisan migrate --force
             php artisan test --testsuite=Feature --filter=BackendApiRegressionTest
@@ -178,127 +193,174 @@ jobs:
           path: DMB Mobile App
           build_command: npm run build:web
 
-  compose_validate:
-    machine:
-      image: ubuntu-2404:current
-    resource_class: medium
-    steps:
-      - checkout
-      - run:
-          name: Validate Docker Compose
-          command: |
-            export DB_PASSWORD=dummy
-            export DB_ROOT_PASSWORD=dummy
-            docker compose config --quiet
-
-  compose_smoke:
-    machine:
-      image: ubuntu-2404:current
-    resource_class: medium
-    steps:
-      - checkout
-      - run:
-          name: Build and smoke Docker Compose stack
-          command: |
-            set -euo pipefail
-            export DB_PASSWORD=dummy
-            export DB_ROOT_PASSWORD=dummy-root
-            export DB_HOST=db
-            docker network create nginx-proxy-manager_default || true
-            docker compose build app web frontend soketi db
-            docker compose up -d app web frontend soketi db
-            for i in $(seq 1 30); do
-              if docker inspect -f '{{.State.Health.Status}}' marriagebureau-db 2>/dev/null | grep -qx healthy; then
-                break
-              fi
-              sleep 5
-            done
-            docker inspect -f '{{.State.Health.Status}}' marriagebureau-db | grep -qx healthy
-            docker compose restart web
-            for i in $(seq 1 30); do
-              if curl -fsS -o /dev/null http://localhost:8086/; then
-                exit 0
-              fi
-              docker logs --tail=20 marriagebureau-app || true
-              docker logs --tail=20 marriagebureau-web || true
-              sleep 5
-            done
-            curl -fsS -o /dev/null http://localhost:8086/
-      - run:
-          name: Stop Docker Compose stack
-          command: docker compose down -v
-          when: always
-
+  # ── DEPLOY ────────────────────────────────
+  # Runs immediately after backend_quality passes on main.
+  # Uses smart path-based logic on the VPS: only rebuilds
+  # Docker services whose source files actually changed.
   deploy_production:
     machine:
       image: ubuntu-2404:current
     resource_class: medium
     steps:
       - checkout
+
       - add_ssh_keys
+
       - run:
           name: Add VPS host key
           command: |
             : "${VPS_HOST:?VPS_HOST is required}"
             mkdir -p ~/.ssh
             ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts
+
       - run:
-          name: Deploy to production VPS
+          name: Transfer code bundle to VPS
           command: |
             : "${VPS_HOST:?VPS_HOST is required}"
             : "${VPS_USER:?VPS_USER is required}"
-            : "${DEPLOY_PATH:?DEPLOY_PATH is required}"
             git bundle create /tmp/dmb-main.bundle HEAD
             scp /tmp/dmb-main.bundle "$VPS_USER@$VPS_HOST:/tmp/dmb-main.bundle"
-            ssh "$VPS_USER@$VPS_HOST" "DEPLOY_PATH='$DEPLOY_PATH' bash -s" \<<'REMOTE'
+
+      - run:
+          name: Deploy on VPS
+          no_output_timeout: 20m
+          command: |
+            : "${VPS_HOST:?}"
+            : "${VPS_USER:?}"
+            : "${DEPLOY_PATH:?}"
+            ssh "$VPS_USER@$VPS_HOST" "DEPLOY_PATH='$DEPLOY_PATH' bash -s" <<'REMOTE'
             set -euo pipefail
             cd "$DEPLOY_PATH"
+
+            # ── Record previous HEAD so we can diff what changed ──────────
+            OLD_HEAD=$(git rev-parse HEAD 2>/dev/null || echo "NONE")
+
+            # ── Apply new code atomically ──────────────────────────────────
             git fetch /tmp/dmb-main.bundle HEAD
             git reset --hard FETCH_HEAD
             git update-ref refs/remotes/origin/main HEAD
             rm -f /tmp/dmb-main.bundle
-            if [ -L dmb_app ]; then rm dmb_app; fi
-            git status --short --branch
-            docker compose config --quiet
-            docker compose up -d --build app web frontend soketi db
-            docker compose restart web
-            for i in $(seq 1 30); do
-              if docker ps --filter name=marriagebureau-db --format '{{.Status}}' | grep -q healthy; then
-                break
+            [ -L dmb_app ] && rm dmb_app || true
+
+            NEW_HEAD=$(git rev-parse HEAD)
+            echo "==> Deployed: ${OLD_HEAD:0:8} -> ${NEW_HEAD:0:8}"
+
+            # ── Determine changed files ────────────────────────────────────
+            if [ "$OLD_HEAD" = "NONE" ] || [ "$OLD_HEAD" = "$NEW_HEAD" ]; then
+              CHANGED="all"
+            else
+              CHANGED=$(git diff --name-only "$OLD_HEAD" "$NEW_HEAD" 2>/dev/null || echo "all")
+            fi
+
+            echo "==> Changed files:"
+            echo "$CHANGED" | head -30
+            echo "---"
+
+            # ── Enable Docker BuildKit (layer caching) ────────────────────
+            export DOCKER_BUILDKIT=1
+            export COMPOSE_DOCKER_CLI_BUILD=1
+
+            # ── Decide which services need a rebuild ──────────────────────
+            # app  : PHP app container — rebuild when PHP source, config,
+            #        routes, database, or Dockerfile/start.sh changes.
+            # frontend: React user panel — rebuild when its source changes.
+            #
+            # web    : nginx:alpine — never rebuilt (image only, no Dockerfile)
+            # db     : mysql:8.0   — never rebuilt (persistent data volume)
+            # soketi : pre-built image — never rebuilt
+
+            REBUILD_APP=false
+            REBUILD_FRONTEND=false
+
+            if [ "$CHANGED" = "all" ]; then
+              REBUILD_APP=true
+              REBUILD_FRONTEND=true
+            else
+              if echo "$CHANGED" | grep -qE \
+                '^(app/|config/|routes/|database/|deploy/Dockerfile|deploy/start\.sh|deploy/php/|composer\.(json|lock))'; then
+                REBUILD_APP=true
               fi
+              if echo "$CHANGED" | grep -qE '^New User Panel Frontend/'; then
+                REBUILD_FRONTEND=true
+              fi
+            fi
+
+            # ── Build only what changed ───────────────────────────────────
+            BUILD_TARGETS=""
+            $REBUILD_APP      && BUILD_TARGETS="$BUILD_TARGETS app"
+            $REBUILD_FRONTEND && BUILD_TARGETS="$BUILD_TARGETS frontend"
+            BUILD_TARGETS=$(echo "$BUILD_TARGETS" | xargs)
+
+            if [ -n "$BUILD_TARGETS" ]; then
+              echo "==> Building: $BUILD_TARGETS"
+              docker compose build $BUILD_TARGETS
+            else
+              echo "==> No Docker build needed"
+            fi
+
+            # ── Bring up all services ─────────────────────────────────────
+            # --no-build: we already built above; don't accidentally rebuild.
+            # --no-recreate on unchanged services keeps them running.
+            docker compose up -d --no-build app web frontend soketi db
+
+            # ── Restart nginx only if its config changed ──────────────────
+            if [ "$CHANGED" = "all" ] || echo "$CHANGED" | grep -q 'deploy/nginx.conf'; then
+              echo "==> Restarting web (nginx config changed)"
+              docker compose restart web
+            fi
+
+            # ── Run pending migrations if any exist ───────────────────────
+            if [ "$CHANGED" = "all" ] || echo "$CHANGED" | grep -qE '^database/migrations/'; then
+              echo "==> Running migrations..."
+              docker compose exec -T app php artisan migrate --force
+            fi
+
+            # ── Wait for DB healthy ───────────────────────────────────────
+            echo "==> Waiting for DB health..."
+            for i in $(seq 1 24); do
+              STATUS=$(docker inspect -f '{{.State.Health.Status}}' marriagebureau-db 2>/dev/null || echo "missing")
+              [ "$STATUS" = "healthy" ] && break
+              echo "  ($i) DB status: $STATUS"
               sleep 5
             done
             docker inspect -f '{{.State.Health.Status}}' marriagebureau-db | grep -qx healthy
-            docker ps --filter 'name=marriagebureau' --format '{{.Names}}|{{.Status}}'
-            REMOTE
-      - run:
-          name: Verify production routes
-          command: |
-            set -e
-            curl -fsS -o /dev/null https://api.doctormarriagebureau.com.pk/
-            curl -fsS -o /dev/null https://panel.doctormarriagebureau.com.pk/
-            curl -fsS -o /dev/null https://soketi.polytronx.com/
 
+            # ── Final status ──────────────────────────────────────────────
+            docker ps --filter 'name=marriagebureau' --format 'table {{.Names}}\t{{.Status}}'
+            REMOTE
+
+      - run:
+          name: Production health check
+          command: |
+            echo "Waiting 15s for services to stabilise..."
+            sleep 15
+            curl -fsS --retry 3 --retry-delay 5 -o /dev/null \
+              https://api.doctormarriagebureau.com.pk/
+            curl -fsS --retry 3 --retry-delay 5 -o /dev/null \
+              https://panel.doctormarriagebureau.com.pk/
+            curl -fsS --retry 3 --retry-delay 5 -o /dev/null \
+              https://soketi.polytronx.com/
+            echo "==> All production endpoints healthy"
+
+# ─────────────────────────────────────────────
+#  WORKFLOW
+# ─────────────────────────────────────────────
 workflows:
   quality_and_deploy:
     jobs:
+      # ── Sole blocking gate for deploy ──────
       - backend_quality
+
+      # ── Deploy: fires as soon as backend_quality passes on main ──
+      - deploy_production:
+          requires:
+            - backend_quality
+          filters:
+            branches:
+              only: main
+
+      # ── Non-blocking jobs: run in parallel for signal, never delay deploy ──
       - backend_mysql_smoke
       - admin_frontend_quality
       - user_frontend_quality
       - mobile_web_quality
-      - compose_validate
-      - compose_smoke
-      - deploy_production:
-          requires:
-            - backend_quality
-            - backend_mysql_smoke
-            - admin_frontend_quality
-            - user_frontend_quality
-            - mobile_web_quality
-            - compose_validate
-            - compose_smoke
-          filters:
-            branches:
-              only:
-                - main

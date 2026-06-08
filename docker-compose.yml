@@ -117,6 +117,26 @@ services:
       - marriagebureau-network
       - nginx-proxy-manager_default
 
+  admin:
+    memswap_limit: 192m
+    cpus: "0.50"
+    pids_limit: 96
+    mem_limit: 192m
+    build:
+      context: ./Admin Panel Frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_ADMIN_API_BASE_URL:-https://api.doctormarriagebureau.com.pk/api/admin}
+        VITE_APP_NAME: ${VITE_ADMIN_APP_NAME:-DMB Admin}
+    image: marriagebureau-admin
+    container_name: marriagebureau-admin
+    restart: unless-stopped
+    ports:
+      - 3002:80
+    networks:
+      - marriagebureau-network
+      - nginx-proxy-manager_default
+
   flutter-app:
     profiles:
       - mobile
