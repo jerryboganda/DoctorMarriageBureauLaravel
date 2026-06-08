@@ -57,13 +57,13 @@ jobs:
 
       - name: Pull latest code on server
         run: |
-          cd /root/doctormarriagebureau
+          cd /opt/doctormarriagebureau
           git fetch origin main
           git reset --hard origin/main
 
       - name: Deploy changed services
         run: |
-          cd /root/doctormarriagebureau
+          cd /opt/doctormarriagebureau
           chmod +x deploy/fast-deploy.sh
           bash deploy/fast-deploy.sh \
             --backend="${{ steps.changes.outputs.backend }}" \
