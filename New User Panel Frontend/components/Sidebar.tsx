@@ -83,12 +83,19 @@ const Sidebar: React.FC<SidebarProps> = ({
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
 
+            if (!response.data?.success && !response.data?.result) {
+                throw { response };
+            }
+
             if (response.data.success || response.data.result) {
+                const photoUrl = response.data?.data?.photo_url || response.data?.photo_url;
+                const requiresApproval =
+                    response.data?.data?.requires_approval ?? response.data?.requires_approval;
                 const updatedUser = {
                     ...user,
-                    avatar: response.data.data.photo_url,
-                    avatar_original: response.data.data.photo_url,
-                    photo_approved: !response.data.data.requires_approval,
+                    avatar: photoUrl,
+                    avatar_original: photoUrl,
+                    photo_approved: !requiresApproval,
                 };
                 setUser(updatedUser as any);
                 alert(response.data.message || t('nav.profilePictureUploadSuccess'));

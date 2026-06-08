@@ -11,7 +11,7 @@ class ApiIsAdmin
     {
         $user = $request->user();
 
-        if ($user && $user->user_type === 'admin') {
+        if ($user && in_array($user->user_type, ['admin', 'staff'], true)) {
             return $next($request);
         }
 

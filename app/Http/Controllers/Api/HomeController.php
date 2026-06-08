@@ -582,12 +582,30 @@ class HomeController extends Controller
             // Upload the image
             $photo = null;
             if ($request->hasFile('photo')) {
-                $photo = upload_api_file($request->file('photo'));
+                try {
+                    $photo = upload_api_file($request->file('photo'));
+                } catch (\RuntimeException $e) {
+                    \Log::error('Profile picture storage failure: '.$e->getMessage(), [
+                        'user_id' => $user->id,
+                        'size_bytes' => $request->file('photo')->getSize(),
+                        'mime_type' => $request->file('photo')->getMimeType(),
+                        'extension' => $request->file('photo')->getClientOriginalExtension(),
+                    ]);
+
+                    return response()->json([
+                        'result' => false,
+                        'success' => false,
+                        'code' => 'PROFILE_PHOTO_STORAGE_FAILED',
+                        'message' => translate('Profile photo could not be saved on the server. Please contact support.'),
+                        'error' => app()->environment('local') ? $e->getMessage() : null,
+                    ], 500);
+                }
 
                 if (! $photo) {
                     return response()->json([
                         'result' => false,
                         'success' => false,
+                        'code' => 'PROFILE_PHOTO_PROCESSING_FAILED',
                         'message' => translate('Failed to upload image. Please try again.'),
                     ], 500);
                 }
@@ -633,6 +651,7 @@ class HomeController extends Controller
             return response()->json([
                 'result' => false,
                 'success' => false,
+                'code' => 'PROFILE_PHOTO_UPLOAD_FAILED',
                 'message' => translate('Failed to upload profile picture. Please try again.'),
                 'error' => app()->environment('local') ? $e->getMessage() : null,
             ], 500);

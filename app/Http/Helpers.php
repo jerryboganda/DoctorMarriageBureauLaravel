@@ -131,29 +131,38 @@ function translate($key, $lang = null, $replace = [])
         return $result;
     }
 
-    $translations_default = Cache::rememberForever('translations-'.env('DEFAULT_LANGUAGE', 'en'), function () {
-        return Translation::where('lang', env('DEFAULT_LANGUAGE', 'en'))->pluck('lang_value', 'lang_key')->toArray();
-    });
+    try {
+        $translations_default = Cache::rememberForever('translations-'.env('DEFAULT_LANGUAGE', 'en'), function () {
+            return Translation::where('lang', env('DEFAULT_LANGUAGE', 'en'))->pluck('lang_value', 'lang_key')->toArray();
+        });
 
-    if (! isset($translations_default[$lang_key])) {
-        $translation_def = new Translation;
-        $translation_def->lang = env('DEFAULT_LANGUAGE', 'en');
-        $translation_def->lang_key = $lang_key;
-        $translation_def->lang_value = $key;
-        $translation_def->save();
-        Cache::forget('translations-'.env('DEFAULT_LANGUAGE', 'en'));
-    }
+        if (! isset($translations_default[$lang_key])) {
+            $translation_def = new Translation;
+            $translation_def->lang = env('DEFAULT_LANGUAGE', 'en');
+            $translation_def->lang_key = $lang_key;
+            $translation_def->lang_value = $key;
+            $translation_def->save();
+            Cache::forget('translations-'.env('DEFAULT_LANGUAGE', 'en'));
+        }
 
-    $translation_locale = Cache::rememberForever('translations-'.$lang, function () use ($lang) {
-        return Translation::where('lang', $lang)->pluck('lang_value', 'lang_key')->toArray();
-    });
+        $translation_locale = Cache::rememberForever('translations-'.$lang, function () use ($lang) {
+            return Translation::where('lang', $lang)->pluck('lang_value', 'lang_key')->toArray();
+        });
 
-    // Check for session lang
-    if (isset($translation_locale[$lang_key])) {
-        $result = $translation_locale[$lang_key];
-    } elseif (isset($translations_default[$lang_key])) {
-        $result = $translations_default[$lang_key];
-    } else {
+        // Check for session lang
+        if (isset($translation_locale[$lang_key])) {
+            $result = $translation_locale[$lang_key];
+        } elseif (isset($translations_default[$lang_key])) {
+            $result = $translations_default[$lang_key];
+        } else {
+            $result = $key;
+        }
+    } catch (\Throwable $e) {
+        Log::warning('Translation lookup failed; falling back to source text.', [
+            'message' => $e->getMessage(),
+            'lang' => $lang,
+            'key' => $lang_key,
+        ]);
         $result = $key;
     }
 
@@ -188,13 +197,39 @@ if (! function_exists('formatBytes')) {
 if (! function_exists('get_setting')) {
     function get_setting($key, $default = null)
     {
-        $settings = Cache::remember('settings', 86400, function () {
-            return Setting::all();
-        });
+        try {
+            $settings = Cache::remember('settings', 86400, function () {
+                return Setting::all();
+            });
 
-        $setting = $settings->where('type', $key)->first();
+            $setting = $settings->where('type', $key)->first();
 
-        return $setting == null ? $default : $setting->value;
+            return $setting == null ? $default : $setting->value;
+        } catch (\Throwable $e) {
+            Log::warning('Setting lookup failed; falling back to default.', [
+                'message' => $e->getMessage(),
+                'key' => $key,
+            ]);
+
+            return $default;
+        }
+    }
+}
+
+if (! function_exists('current_language_is_rtl')) {
+    function current_language_is_rtl()
+    {
+        try {
+            $language = \App\Models\Language::where('code', Session::get('locale', Config::get('app.locale')))->first();
+
+            return $language && (int) $language->rtl === 1;
+        } catch (\Throwable $e) {
+            Log::warning('Language direction lookup failed; using LTR.', [
+                'message' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
     }
 }
 
@@ -609,8 +644,12 @@ if (! function_exists('upload_api_file')) {
         $filename = time().'_'.uniqid();
         $destinationPath = public_path('uploads/all');
 
-        if (! file_exists($destinationPath)) {
-            mkdir($destinationPath, 0777, true);
+        if (! is_dir($destinationPath) && ! mkdir($destinationPath, 0775, true) && ! is_dir($destinationPath)) {
+            throw new RuntimeException('Upload directory could not be created.');
+        }
+
+        if (! is_writable($destinationPath)) {
+            throw new RuntimeException('Upload directory is not writable.');
         }
 
         if (in_array($extension, $convertible_extensions, true)) {
@@ -632,6 +671,9 @@ if (! function_exists('upload_api_file')) {
                 $fullPath = $destinationPath.'/'.$filename;
 
                 $img->encode('webp', 80)->save($fullPath);
+                if (! file_exists($fullPath)) {
+                    throw new RuntimeException('Optimized image could not be saved.');
+                }
                 $extension = 'webp';
             } catch (Throwable $e) {
                 // Fallback to original file when optimization/conversion fails.
@@ -657,13 +699,18 @@ if (! function_exists('upload_api_file')) {
             $extension = $safeExtension;
         }
 
+        $storedPath = $destinationPath.'/'.$filename;
+        if (! file_exists($storedPath) || ! is_readable($storedPath)) {
+            throw new RuntimeException('Uploaded file was not stored successfully.');
+        }
+
         $upload = new Upload;
         $upload->file_original_name = pathinfo($image->getClientOriginalName(), PATHINFO_FILENAME);
         $upload->file_name = $path;
         $upload->user_id = auth()->id();
         $upload->extension = $extension;
         $upload->type = 'image';
-        $upload->file_size = filesize($destinationPath.'/'.$filename);
+        $upload->file_size = filesize($storedPath);
         $upload->save();
 
         return $upload->id;

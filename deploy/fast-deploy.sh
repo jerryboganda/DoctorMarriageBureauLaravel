@@ -62,6 +62,7 @@ elif [ "$BACKEND" = "true" ]; then
   # PHP source / config / routes changed — refresh caches in running container
   # Zero downtime: no restart, no rebuild (~8-12 seconds)
   echo "[app] PHP source changed — refreshing caches..."
+  $DC exec -T app sh -lc 'mkdir -p public/uploads/all && chown -R www-data:www-data storage bootstrap/cache public/uploads && chmod -R u+rwX,g+rwX storage bootstrap/cache public/uploads'
   $DC exec -T app php artisan config:cache
   $DC exec -T app php artisan route:cache
   $DC exec -T app php artisan view:cache
@@ -104,6 +105,8 @@ fi
 echo ""
 echo "[health] Waiting for services..."
 sleep 4
+
+$DC exec -T app sh -lc 'test -w public/uploads/all && test -w storage/logs && test -w bootstrap/cache'
 
 HEALTHY=0
 for i in 1 2 3 4 5; do

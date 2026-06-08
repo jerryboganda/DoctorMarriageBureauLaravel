@@ -432,11 +432,17 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ onClose }) => {
                     const uploadFile = await compressImage(photoFile);
                     formData.append('photo', uploadFile);
                     const uploadResponse = await api.post('/upload-profile-picture', formData);
+                    if (!uploadResponse?.data?.success && !uploadResponse?.data?.result) {
+                        throw { response: uploadResponse };
+                    }
                     const uploadedPhotoUrl =
                         uploadResponse?.data?.data?.photo_url || uploadResponse?.data?.photo_url;
+                    const uploadedPhotoId =
+                        uploadResponse?.data?.data?.photo_id || uploadResponse?.data?.photo_id;
                     setData((current: any) => ({
                         ...current,
                         avatarUrl: uploadedPhotoUrl || current.avatarUrl,
+                        profilePhotoId: uploadedPhotoId || current.profilePhotoId,
                         hasProfilePhoto: true,
                     }));
                 } catch (uploadErr: any) {

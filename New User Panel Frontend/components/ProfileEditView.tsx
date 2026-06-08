@@ -655,9 +655,13 @@ const BasicsSection: React.FC<{
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
 
+            if (!response.data?.success && !response.data?.result) {
+                throw { response };
+            }
+
             if (response.data.success || response.data.result) {
+                const newPhotoUrl = response.data?.data?.photo_url || response.data?.photo_url;
                 // Update global state
-                const newPhotoUrl = response.data.data.photo_url;
                 setUser({
                     ...user,
                     avatar: newPhotoUrl,

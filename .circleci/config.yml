@@ -209,15 +209,15 @@ jobs:
       - run:
           name: Add VPS host key
           command: |
-            : "${VPS_HOST:?VPS_HOST is required}"
+            if [ -z "$VPS_HOST" ]; then echo "VPS_HOST is required"; exit 1; fi
             mkdir -p ~/.ssh
             ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts
 
       - run:
           name: Transfer code bundle to VPS
           command: |
-            : "${VPS_HOST:?VPS_HOST is required}"
-            : "${VPS_USER:?VPS_USER is required}"
+            if [ -z "$VPS_HOST" ]; then echo "VPS_HOST is required"; exit 1; fi
+            if [ -z "$VPS_USER" ]; then echo "VPS_USER is required"; exit 1; fi
             git bundle create /tmp/dmb-main.bundle HEAD
             scp /tmp/dmb-main.bundle "$VPS_USER@$VPS_HOST:/tmp/dmb-main.bundle"
 
@@ -225,109 +225,11 @@ jobs:
           name: Deploy on VPS
           no_output_timeout: 20m
           command: |
-            : "${VPS_HOST:?}"
-            : "${VPS_USER:?}"
-            : "${DEPLOY_PATH:?}"
-            ssh "$VPS_USER@$VPS_HOST" "DEPLOY_PATH='$DEPLOY_PATH' bash -s" <<'REMOTE'
-            set -euo pipefail
-            cd "$DEPLOY_PATH"
-
-            # ── Record previous HEAD so we can diff what changed ──────────
-            OLD_HEAD=$(git rev-parse HEAD 2>/dev/null || echo "NONE")
-
-            # ── Apply new code atomically ──────────────────────────────────
-            git fetch /tmp/dmb-main.bundle HEAD
-            git reset --hard FETCH_HEAD
-            git update-ref refs/remotes/origin/main HEAD
-            rm -f /tmp/dmb-main.bundle
-            [ -L dmb_app ] && rm dmb_app || true
-
-            NEW_HEAD=$(git rev-parse HEAD)
-            echo "==> Deployed: ${OLD_HEAD:0:8} -> ${NEW_HEAD:0:8}"
-
-            # ── Determine changed files ────────────────────────────────────
-            if [ "$OLD_HEAD" = "NONE" ] || [ "$OLD_HEAD" = "$NEW_HEAD" ]; then
-              CHANGED="all"
-            else
-              CHANGED=$(git diff --name-only "$OLD_HEAD" "$NEW_HEAD" 2>/dev/null || echo "all")
-            fi
-
-            echo "==> Changed files:"
-            echo "$CHANGED" | head -30
-            echo "---"
-
-            # ── Enable Docker BuildKit (layer caching) ────────────────────
-            export DOCKER_BUILDKIT=1
-            export COMPOSE_DOCKER_CLI_BUILD=1
-
-            # ── Decide which services need a rebuild ──────────────────────
-            # app  : PHP app container — rebuild when PHP source, config,
-            #        routes, database, or Dockerfile/start.sh changes.
-            # frontend: React user panel — rebuild when its source changes.
-            #
-            # web    : nginx:alpine — never rebuilt (image only, no Dockerfile)
-            # db     : mysql:8.0   — never rebuilt (persistent data volume)
-            # soketi : pre-built image — never rebuilt
-
-            REBUILD_APP=false
-            REBUILD_FRONTEND=false
-
-            if [ "$CHANGED" = "all" ]; then
-              REBUILD_APP=true
-              REBUILD_FRONTEND=true
-            else
-              if echo "$CHANGED" | grep -qE \
-                '^(app/|config/|routes/|database/|deploy/Dockerfile|deploy/start\.sh|deploy/php/|composer\.(json|lock))'; then
-                REBUILD_APP=true
-              fi
-              if echo "$CHANGED" | grep -qE '^New User Panel Frontend/'; then
-                REBUILD_FRONTEND=true
-              fi
-            fi
-
-            # ── Build only what changed ───────────────────────────────────
-            BUILD_TARGETS=""
-            $REBUILD_APP      && BUILD_TARGETS="$BUILD_TARGETS app"
-            $REBUILD_FRONTEND && BUILD_TARGETS="$BUILD_TARGETS frontend"
-            BUILD_TARGETS=$(echo "$BUILD_TARGETS" | xargs)
-
-            if [ -n "$BUILD_TARGETS" ]; then
-              echo "==> Building: $BUILD_TARGETS"
-              docker compose build $BUILD_TARGETS
-            else
-              echo "==> No Docker build needed"
-            fi
-
-            # ── Bring up all services ─────────────────────────────────────
-            # --no-build: we already built above; don't accidentally rebuild.
-            # --no-recreate on unchanged services keeps them running.
-            docker compose up -d --no-build app web frontend soketi db
-
-            # ── Restart nginx only if its config changed ──────────────────
-            if [ "$CHANGED" = "all" ] || echo "$CHANGED" | grep -q 'deploy/nginx.conf'; then
-              echo "==> Restarting web (nginx config changed)"
-              docker compose restart web
-            fi
-
-            # ── Run pending migrations if any exist ───────────────────────
-            if [ "$CHANGED" = "all" ] || echo "$CHANGED" | grep -qE '^database/migrations/'; then
-              echo "==> Running migrations..."
-              docker compose exec -T app php artisan migrate --force
-            fi
-
-            # ── Wait for DB healthy ───────────────────────────────────────
-            echo "==> Waiting for DB health..."
-            for i in $(seq 1 24); do
-              STATUS=$(docker inspect -f '{{.State.Health.Status}}' marriagebureau-db 2>/dev/null || echo "missing")
-              [ "$STATUS" = "healthy" ] && break
-              echo "  ($i) DB status: $STATUS"
-              sleep 5
-            done
-            docker inspect -f '{{.State.Health.Status}}' marriagebureau-db | grep -qx healthy
-
-            # ── Final status ──────────────────────────────────────────────
-            docker ps --filter 'name=marriagebureau' --format 'table {{.Names}}\t{{.Status}}'
-            REMOTE
+            if [ -z "$VPS_HOST" ]; then echo "VPS_HOST is required"; exit 1; fi
+            if [ -z "$VPS_USER" ]; then echo "VPS_USER is required"; exit 1; fi
+            if [ -z "$DEPLOY_PATH" ]; then echo "DEPLOY_PATH is required"; exit 1; fi
+            scp deploy/circleci-remote-deploy.sh "$VPS_USER@$VPS_HOST:/tmp/dmb-circleci-remote-deploy.sh"
+            ssh "$VPS_USER@$VPS_HOST" "DEPLOY_PATH='$DEPLOY_PATH' bash /tmp/dmb-circleci-remote-deploy.sh"
 
       - run:
           name: Production health check
@@ -336,6 +238,12 @@ jobs:
             sleep 15
             curl -fsS --retry 3 --retry-delay 5 -o /dev/null \
               https://api.doctormarriagebureau.com.pk/
+            curl -fsS --retry 3 --retry-delay 5 -o /dev/null \
+              https://api.doctormarriagebureau.com.pk/api/health
+            curl -fsS --retry 3 --retry-delay 5 -o /dev/null \
+              https://api.doctormarriagebureau.com.pk/admin
+            curl -fsS --retry 3 --retry-delay 5 -o /dev/null \
+              https://api.doctormarriagebureau.com.pk/admin-react/login
             curl -fsS --retry 3 --retry-delay 5 -o /dev/null \
               https://panel.doctormarriagebureau.com.pk/
             curl -fsS --retry 3 --retry-delay 5 -o /dev/null \

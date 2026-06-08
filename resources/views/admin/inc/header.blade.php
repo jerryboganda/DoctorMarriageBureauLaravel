@@ -62,8 +62,11 @@
                             @if($notifications->count() > 0)
                                 @foreach ($notifications as $key => $notification)
                                     @php
-                                        $notify_data = json_decode($notification->data);
-                                        $user_data = \App\Models\User::where('id',$notify_data->notify_by)->first();
+                                        $notify_data = is_array($notification->data)
+                                            ? (object) $notification->data
+                                            : (json_decode($notification->data ?? '{}') ?: (object) []);
+                                        $notify_by = $notify_data->notify_by ?? null;
+                                        $user_data = $notify_by ? \App\Models\User::where('id', $notify_by)->first() : null;
                                     @endphp
                                     @if(!empty($user_data))
                                     <li class="list-group-item d-flex justify-content-between align-items-start hov-bg-soft-primary">
@@ -78,7 +81,7 @@
                                             <div class="media-body">
                                                 <p class="mb-1">{{ $user_data->first_name.' '.$user_data->last_name }}</p>
                                                 <small class="text-muted">
-                                                    {{ $notify_data->message }}
+                                                    {{ $notify_data->message ?? '' }}
                                                 </small>
                                             </div>
                                         </a>
