@@ -12,7 +12,7 @@ concurrency:
 jobs:
   deploy:
     name: Deploy to Production
-    runs-on: ubuntu-latest
+    runs-on: self-hosted   # Runs directly on the VPS — no billing, no SSH overhead
     timeout-minutes: 20
 
     steps:
@@ -22,7 +22,7 @@ jobs:
           fetch-depth: 0
 
       # Detect exactly which services changed between the before and after SHA
-      # so we only rebuild what's necessary on the server.
+      # so we only rebuild what's necessary.
       - name: Detect changed services
         id: changes
         run: |
@@ -55,29 +55,21 @@ jobs:
           # docker-compose.yml — re-apply with up -d
           echo "compose=$(echo "$FILES" | grep -q '^docker-compose\.yml' && echo true || echo false)" >> "$GITHUB_OUTPUT"
 
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_KEY }}
-          port: ${{ secrets.DEPLOY_PORT || 22 }}
-          timeout: 600s
-          script: |
-            set -e
-            cd "${{ secrets.DEPLOY_PATH }}"
+      - name: Pull latest code on server
+        run: |
+          cd /root/doctormarriagebureau
+          git fetch origin main
+          git reset --hard origin/main
 
-            echo "=== Pulling latest code ==="
-            git fetch origin main
-            git reset --hard origin/main
-
-            echo "=== Running fast deploy ==="
-            chmod +x deploy/fast-deploy.sh
-            bash deploy/fast-deploy.sh \
-              --backend="${{ steps.changes.outputs.backend }}" \
-              --composer-lock="${{ steps.changes.outputs.composer_lock }}" \
-              --frontend="${{ steps.changes.outputs.frontend }}" \
-              --admin="${{ steps.changes.outputs.admin }}" \
-              --app-dockerfile="${{ steps.changes.outputs.app_dockerfile }}" \
-              --nginx="${{ steps.changes.outputs.nginx }}" \
-              --compose="${{ steps.changes.outputs.compose }}"
+      - name: Deploy changed services
+        run: |
+          cd /root/doctormarriagebureau
+          chmod +x deploy/fast-deploy.sh
+          bash deploy/fast-deploy.sh \
+            --backend="${{ steps.changes.outputs.backend }}" \
+            --composer-lock="${{ steps.changes.outputs.composer_lock }}" \
+            --frontend="${{ steps.changes.outputs.frontend }}" \
+            --admin="${{ steps.changes.outputs.admin }}" \
+            --app-dockerfile="${{ steps.changes.outputs.app_dockerfile }}" \
+            --nginx="${{ steps.changes.outputs.nginx }}" \
+            --compose="${{ steps.changes.outputs.compose }}"
