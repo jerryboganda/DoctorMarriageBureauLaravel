@@ -56,10 +56,18 @@ jobs:
           echo "compose=$(echo "$FILES" | grep -q '^docker-compose\.yml' && echo true || echo false)" >> "$GITHUB_OUTPUT"
 
       - name: Pull latest code on server
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           cd /opt/doctormarriagebureau
+          # Trust this directory for the runner user
+          git config --global --add safe.directory /opt/doctormarriagebureau
+          # Use GITHUB_TOKEN over HTTPS — avoids SSH key management on the server
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/jerryboganda/DoctorMarriageBureauLaravel.git"
           git fetch origin main
           git reset --hard origin/main
+          # Restore SSH remote for any manual root operations
+          git remote set-url origin "git@github.com:jerryboganda/DoctorMarriageBureauLaravel.git"
 
       - name: Deploy changed services
         run: |
