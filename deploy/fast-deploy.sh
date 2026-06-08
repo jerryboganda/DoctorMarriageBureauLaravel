@@ -96,7 +96,7 @@ fi
 if [ "$DEPLOYED" = "0" ]; then
   echo "No service-affecting changes detected — nothing to restart."
   echo ""
-  $DC ps
+  docker ps --filter "name=marriagebureau" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
   exit 0
 fi
 
@@ -126,6 +126,6 @@ fi
 
 # ── Final status ─────────────────────────────────────────────────────────────
 echo ""
-$DC ps
+docker ps --filter "name=marriagebureau" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 echo ""
 echo "✓ Deploy complete"
