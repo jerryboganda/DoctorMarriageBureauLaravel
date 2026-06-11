@@ -35,11 +35,14 @@ class ChatController extends Controller
 
     private function ensureCanSendMessage()
     {
-        if ($entitlementError = $this->ensureMessagingEntitlement()) {
-            return $entitlementError;
+        $user = auth()->user();
+        $limits = $this->communicationLimits();
+
+        if ($limits->isVerified($user)) {
+            return $limits->ensureCanSendVerifiedFreeMessage($user);
         }
 
-        return $this->communicationLimits()->ensureCanSendMessage(auth()->user());
+        return $limits->ensureCanSendMessage($user);
     }
 
     /**

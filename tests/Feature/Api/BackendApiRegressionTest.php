@@ -31,6 +31,8 @@ class BackendApiRegressionTest extends TestCase
     {
         parent::setUp();
 
+        config(['broadcasting.default' => 'null']);
+
         Schema::dropAllTables();
         $this->createTestSchema();
         MemberUtility::resetCaches();
@@ -166,6 +168,94 @@ class BackendApiRegressionTest extends TestCase
         $response->assertJsonPath('result', true);
         $response->assertJsonPath('data.0.last_message', 'Hello');
         $response->assertJsonPath('data.0.unseen_message_count', 1);
+    }
+
+    public function test_verified_non_premium_member_can_send_three_chat_messages_before_subscription_required(): void
+    {
+        $sender = $this->createMember('verified-free-sender@example.com', 1);
+        $receiver = $this->createMember('verified-free-receiver@example.com', 2);
+        $thread = $this->createChatThread($sender, $receiver, 'verified-free-thread');
+
+        Sanctum::actingAs($sender);
+
+        for ($messageNumber = 1; $messageNumber <= 3; $messageNumber++) {
+            $response = $this->postJson('/api/member/chat-reply', [
+                'chat_thread_id' => $thread->id,
+                'message' => 'Allowed message '.$messageNumber,
+            ]);
+
+            $response->assertOk();
+            $response->assertJsonPath('result', true);
+        }
+
+        $this->assertDatabaseHas('members', [
+            'user_id' => $sender->id,
+            'unverified_messages_used' => 3,
+        ]);
+
+        $response = $this->postJson('/api/member/chat-reply', [
+            'chat_thread_id' => $thread->id,
+            'message' => 'Blocked message 4',
+        ]);
+
+        $response->assertForbidden();
+        $response->assertJsonPath('code', 'SUBSCRIPTION_REQUIRED');
+        $response->assertJsonPath('free_limit', 3);
+        $this->assertDatabaseCount('chats', 3);
+    }
+
+    public function test_verified_premium_member_can_send_beyond_three_chat_messages_without_free_counter(): void
+    {
+        $sender = $this->createMember('verified-premium-sender@example.com', 2);
+        $receiver = $this->createMember('verified-premium-receiver@example.com', 2);
+        $thread = $this->createChatThread($sender, $receiver, 'verified-premium-thread');
+
+        Sanctum::actingAs($sender);
+
+        for ($messageNumber = 1; $messageNumber <= 4; $messageNumber++) {
+            $response = $this->postJson('/api/member/chat-reply', [
+                'chat_thread_id' => $thread->id,
+                'message' => 'Premium message '.$messageNumber,
+            ]);
+
+            $response->assertOk();
+            $response->assertJsonPath('result', true);
+        }
+
+        $this->assertDatabaseHas('members', [
+            'user_id' => $sender->id,
+            'unverified_messages_used' => 0,
+        ]);
+        $this->assertDatabaseCount('chats', 4);
+    }
+
+    public function test_unapproved_member_still_uses_unverified_message_quota(): void
+    {
+        $sender = $this->createMember('unapproved-sender@example.com', 1, ['approved' => 0]);
+        $receiver = $this->createMember('unapproved-receiver@example.com', 2);
+        $thread = $this->createChatThread($sender, $receiver, 'unapproved-thread');
+
+        Sanctum::actingAs($sender);
+
+        for ($messageNumber = 1; $messageNumber <= 5; $messageNumber++) {
+            $response = $this->postJson('/api/member/chat-reply', [
+                'chat_thread_id' => $thread->id,
+                'message' => 'Unapproved message '.$messageNumber,
+            ]);
+
+            $response->assertOk();
+            $response->assertJsonPath('result', true);
+        }
+
+        $response = $this->postJson('/api/member/chat-reply', [
+            'chat_thread_id' => $thread->id,
+            'message' => 'Blocked unapproved message 6',
+        ]);
+
+        $response->assertForbidden();
+        $response->assertJsonPath('code', 'VERIFICATION_REQUIRED');
+        $response->assertJsonPath('free_limit', 5);
+        $this->assertDatabaseCount('chats', 5);
     }
 
     public function test_discovery_handles_profiles_with_missing_optional_relations(): void
@@ -382,6 +472,35 @@ class BackendApiRegressionTest extends TestCase
         ]);
     }
 
+    public function test_member_cannot_reject_another_members_profile_picture_request(): void
+    {
+        $owner = $this->createMember('profile-photo-reject-owner@example.com', 1);
+        $requester = $this->createMember('profile-photo-reject-requester@example.com', 1);
+        $attacker = $this->createMember('profile-photo-reject-attacker@example.com', 1);
+
+        DB::table('view_profile_pictures')->insert([
+            'id' => 1,
+            'user_id' => $owner->id,
+            'requested_by' => $requester->id,
+            'status' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $viewRequest = ViewProfilePicture::findOrFail(1);
+
+        Sanctum::actingAs($attacker);
+
+        $response = $this->postJson('/api/member/profile-picture-view-request/reject', [
+            'profile_pic_view_request_id' => $viewRequest->id,
+        ]);
+
+        $response->assertNotFound();
+        $this->assertDatabaseHas('view_profile_pictures', [
+            'id' => $viewRequest->id,
+            'status' => 0,
+        ]);
+    }
+
     public function test_member_cannot_reject_another_members_gallery_image_request(): void
     {
         $owner = $this->createMember('gallery-request-owner@example.com', 1);
@@ -474,6 +593,8 @@ class BackendApiRegressionTest extends TestCase
             $table->integer('remaining_profile_image_view')->default(0);
             $table->integer('remaining_gallery_image_view')->default(0);
             $table->integer('remaining_profile_viewer_view')->default(0);
+            $table->unsignedTinyInteger('unverified_messages_used')->default(0);
+            $table->unsignedTinyInteger('unverified_proposals_used')->default(0);
             $table->unsignedBigInteger('mothere_tongue')->nullable();
             $table->unsignedTinyInteger('is_agent_pick')->default(0);
             $table->unsignedTinyInteger('is_high_intent')->default(0);
@@ -519,6 +640,7 @@ class BackendApiRegressionTest extends TestCase
             $table->unsignedBigInteger('chat_thread_id');
             $table->unsignedBigInteger('sender_user_id');
             $table->text('message')->nullable();
+            $table->text('attachment')->nullable();
             $table->unsignedTinyInteger('seen')->default(0);
             $table->timestamps();
             $table->softDeletes();
@@ -805,5 +927,15 @@ class BackendApiRegressionTest extends TestCase
         ]);
 
         return $user;
+    }
+
+    private function createChatThread(User $sender, User $receiver, string $threadCode): ChatThread
+    {
+        return ChatThread::create([
+            'sender_user_id' => $sender->id,
+            'receiver_user_id' => $receiver->id,
+            'thread_code' => $threadCode,
+            'active' => 1,
+        ]);
     }
 }

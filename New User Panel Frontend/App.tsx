@@ -680,6 +680,14 @@ const App: React.FC = () => {
             return;
         }
 
+        if (view === 'packages' || view === 'subscription') {
+            setMessageTargetMemberId(null);
+            setShowSubscription(true);
+            setIsMobileMenuOpen(false);
+            fetchNotificationCount();
+            return;
+        }
+
         if (view !== 'messages') {
             setMessageTargetMemberId(null);
         }

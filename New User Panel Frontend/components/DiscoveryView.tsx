@@ -863,6 +863,10 @@ const DiscoveryView: React.FC<DiscoveryViewProps> = ({
     const openMediaAccessModal = useCallback(
         (profile: ProfileMatch, preferredKind: 'photo' | 'gallery' = 'photo') => {
             if (requireVerification()) return;
+            setMediaAccessStates((prev) => ({
+                ...prev,
+                [profile.id]: resolveMediaAccessBundle(profile),
+            }));
             setMediaAccessTarget(profile);
             setMediaAccessPriority(preferredKind);
             setShowMediaAccessModal(true);

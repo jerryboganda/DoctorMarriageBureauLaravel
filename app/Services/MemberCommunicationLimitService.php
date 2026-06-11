@@ -8,6 +8,7 @@ use App\Models\User;
 class MemberCommunicationLimitService
 {
     public const FREE_LIMIT = 5;
+    public const VERIFIED_FREE_MESSAGE_LIMIT = 3;
 
     public function isVerified(?User $user): bool
     {
@@ -17,6 +18,36 @@ class MemberCommunicationLimitService
     public function ensureCanSendMessage(?User $user)
     {
         return $this->ensureCanUseUnverifiedQuota($user, 'message');
+    }
+
+    public function ensureCanSendVerifiedFreeMessage(?User $user)
+    {
+        if (! $user) {
+            return response()->json([
+                'result' => false,
+                'message' => 'Unauthenticated.',
+            ], 401);
+        }
+
+        if ((int) $user->membership === 2) {
+            return null;
+        }
+
+        $member = $user->member()->first();
+        if (! $member) {
+            return response()->json([
+                'result' => false,
+                'error_code' => 'profile_incomplete',
+                'message' => translate('Please complete your profile before continuing.'),
+            ], 403);
+        }
+
+        $used = $this->usedCount($member, 'message');
+        if ($used < self::VERIFIED_FREE_MESSAGE_LIMIT) {
+            return null;
+        }
+
+        return $this->subscriptionRequiredResponse(self::VERIFIED_FREE_MESSAGE_LIMIT, min($used, self::VERIFIED_FREE_MESSAGE_LIMIT));
     }
 
     public function ensureCanSendProposal(?User $user)
@@ -34,13 +65,24 @@ class MemberCommunicationLimitService
         $this->incrementUnverifiedCounter($user, 'proposal');
     }
 
-    public function subscriptionRequiredResponse()
+    public function subscriptionRequiredResponse(?int $freeLimit = null, ?int $used = null)
     {
-        return response()->json([
+        $payload = [
             'result' => false,
             'code' => 'SUBSCRIPTION_REQUIRED',
             'message' => 'Messaging is a premium feature. Please subscribe to a premium package.',
-        ], 403);
+        ];
+
+        if ($freeLimit !== null) {
+            $payload['limit_type'] = 'message';
+            $payload['free_limit'] = $freeLimit;
+        }
+
+        if ($used !== null) {
+            $payload['used'] = $used;
+        }
+
+        return response()->json($payload, 403);
     }
 
     private function ensureCanUseUnverifiedQuota(?User $user, string $type)
@@ -56,7 +98,7 @@ class MemberCommunicationLimitService
             return null;
         }
 
-        $member = $user->member;
+        $member = $user->member()->first();
         if (! $member) {
             return response()->json([
                 'result' => false,
@@ -75,7 +117,11 @@ class MemberCommunicationLimitService
 
     private function incrementUnverifiedCounter(User $user, string $type): void
     {
-        if ($this->isVerified($user) || ! $user->member) {
+        if (! $user->member()->exists()) {
+            return;
+        }
+
+        if ($this->isVerified($user) && ($type !== 'message' || (int) $user->membership === 2)) {
             return;
         }
 

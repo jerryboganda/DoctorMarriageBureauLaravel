@@ -22,13 +22,16 @@ class ProfileImageRequest extends JsonResource
         $view_profile_images = ViewProfilePicture::find($this->id);
         $user = User::where('id', $view_profile_images->requested_by)->first();
         if ($user != null) {
-            $photoRequestInfo = MemberUtility::member_profile_photo_request_info($user->id);
             $requestState = (int) $view_profile_images->status === 1 ? 'approved' : 'pending';
 
             return [
                 'id' => $this->id,
+                'profile_pic_view_request_id' => $this->id,
+                'requester_id' => $user->id,
+                'requested_by' => $user->id,
+                'owner_id' => $view_profile_images->user_id,
                 'photo' => uploaded_asset($user->photo) ?? gender_avatar($user?->member),
-                'name' => $user->first_name.$user->last_name,
+                'name' => trim($user->first_name.' '.$user->last_name),
                 'date_of_birth' => MemberUtility::member_age($user->id),
                 'status' => $view_profile_images->status,
                 'photo_request_state' => $requestState,
@@ -41,9 +44,9 @@ class ProfileImageRequest extends JsonResource
                     : translate('Photo Access Requested'),
                 'profile_photo_request_requested' => true,
                 'profile_photo_request_approved' => $requestState === 'approved',
-                'profile_photo_request_required' => $photoRequestInfo['profile_photo_request_required'],
-                'profile_photo_accessible' => $photoRequestInfo['profile_photo_accessible'],
-                'profile_photo_exists' => $photoRequestInfo['profile_photo_exists'],
+                'profile_photo_request_required' => true,
+                'profile_photo_accessible' => $requestState === 'approved',
+                'profile_photo_exists' => ! empty($user->photo),
             ];
         }
     }

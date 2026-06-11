@@ -379,6 +379,34 @@ class DiscoveryControllerTest extends TestCase
         $requestResponse->assertOk();
         $requestResponse->assertJsonPath('result', true);
 
+        $requestId = ViewProfilePicture::query()->latest('id')->value('id');
+        $this->assertNotNull($requestId);
+        $this->assertDatabaseHas('notifications', [
+            'notifiable_id' => $target->id,
+        ]);
+
+        $notification = DB::table('notifications')->where('notifiable_id', $target->id)->first();
+        $notificationData = json_decode($notification->data, true);
+        $this->assertSame('profile_picture_view', $notificationData['type']);
+        $this->assertSame($viewer->id, $notificationData['notify_by']);
+        $this->assertSame($requestId, $notificationData['info_id']);
+
+        Sanctum::actingAs($target);
+        $incomingRequests = $this->getJson('/api/member/profile-picture-view-request');
+        $incomingRequests->assertOk();
+        $incomingRequests->assertJsonPath('data.0.id', $requestId);
+        $incomingRequests->assertJsonPath('data.0.profile_pic_view_request_id', $requestId);
+        $incomingRequests->assertJsonPath('data.0.requester_id', $viewer->id);
+        $incomingRequests->assertJsonPath('data.0.owner_id', $target->id);
+        $incomingRequests->assertJsonPath('data.0.profile_photo_request_state', 'pending');
+
+        $notificationsResponse = $this->getJson('/api/member/notifications');
+        $notificationsResponse->assertOk();
+        $notificationsResponse->assertJsonPath('data.0.type', 'profile_picture_view');
+        $notificationsResponse->assertJsonPath('data.0.info_id', $requestId);
+        $notificationsResponse->assertJsonPath('data.0.raw_data.profile_photo_request_state', 'pending');
+        $notificationsResponse->assertJsonPath('data.0.raw_data.profile_photo_request_handled', false);
+
         Sanctum::actingAs($target);
         $blurResponse = $this->postJson('/api/member/profile/visibility', [
             'profile_photo_blur' => true,
@@ -403,15 +431,17 @@ class DiscoveryControllerTest extends TestCase
         $publicPending->assertJsonPath('data.profile_photo_request_state', 'pending');
         $publicPending->assertJsonPath('data.profile_pic_request', true);
 
-        $requestId = ViewProfilePicture::query()->latest('id')->value('id');
-        $this->assertNotNull($requestId);
-
         Sanctum::actingAs($target);
         $acceptResponse = $this->postJson('/api/member/profile-picture-view-request/accept', [
             'profile_pic_view_request_id' => $requestId,
         ]);
         $acceptResponse->assertOk();
         $acceptResponse->assertJsonPath('result', true);
+
+        $handledNotification = $this->getJson('/api/member/notifications');
+        $handledNotification->assertOk();
+        $handledNotification->assertJsonPath('data.0.raw_data.profile_photo_request_state', 'approved');
+        $handledNotification->assertJsonPath('data.0.raw_data.profile_photo_request_handled', true);
 
         MemberUtility::resetCaches();
         Sanctum::actingAs($viewer);
@@ -644,6 +674,12 @@ class DiscoveryControllerTest extends TestCase
         $this->assertNotNull($requestId);
 
         Sanctum::actingAs($target);
+        $incomingRequests = $this->getJson('/api/member/profile-picture-view-request');
+        $incomingRequests->assertOk();
+        $incomingRequests->assertJsonPath('data.0.id', $requestId);
+        $incomingRequests->assertJsonPath('data.0.requester_id', $viewer->id);
+        $incomingRequests->assertJsonPath('data.0.profile_photo_request_state', 'pending');
+
         $rejectResponse = $this->postJson('/api/member/profile-picture-view-request/reject', [
             'profile_pic_view_request_id' => $requestId,
         ]);
@@ -1311,6 +1347,16 @@ class DiscoveryControllerTest extends TestCase
             $table->text('lang_value');
             $table->timestamps();
             $table->unique(['lang', 'lang_key']);
+        });
+
+        Schema::create('notifications', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->string('type');
+            $table->morphs('notifiable');
+            $table->text('data');
+            $table->string('notification_type', 50)->nullable();
+            $table->timestamp('read_at')->nullable();
+            $table->timestamps();
         });
 
         Schema::create('view_profile_pictures', function (Blueprint $table) {

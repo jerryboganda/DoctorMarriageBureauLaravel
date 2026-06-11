@@ -106,6 +106,9 @@ const NotificationsView: React.FC<NotificationsViewProps> = ({
     const [notifications, setNotifications] = useState<NotificationItem[]>([]);
     const [selectedNotification, setSelectedNotification] = useState<NotificationItem | null>(null);
     const [detailLoading, setDetailLoading] = useState(false);
+    const [requestActionLoading, setRequestActionLoading] = useState<'accept' | 'reject' | null>(
+        null,
+    );
 
     const fetchNotifications = useCallback(async () => {
         try {
@@ -155,6 +158,12 @@ const NotificationsView: React.FC<NotificationsViewProps> = ({
             current && current.notification_id === notificationId ? updater(current) : current,
         );
     };
+
+    const isProfilePhotoRequestNotification = (notification: NotificationItem | null): boolean =>
+        normalizeNotificationType(notification?.type) === 'profile_picture_view';
+
+    const isRequestHandled = (notification: NotificationItem | null): boolean =>
+        Boolean(notification?.raw_data?.profile_photo_request_handled);
 
     const markNotificationRead = async (notificationId: string, shouldRefresh = false) => {
         updateNotification(notificationId, (item) => ({
@@ -360,6 +369,58 @@ const NotificationsView: React.FC<NotificationsViewProps> = ({
         }
     };
 
+    const handleProfilePhotoRequestAction = async (action: 'accept' | 'reject') => {
+        if (!selectedNotification || requestActionLoading) return;
+
+        const requestId = String(selectedNotification.info_id ?? '').trim();
+        if (!requestId) {
+            console.error('Missing profile photo request id on notification');
+            return;
+        }
+
+        setRequestActionLoading(action);
+
+        try {
+            const endpoint =
+                action === 'accept'
+                    ? '/member/profile-picture-view-request/accept'
+                    : '/member/profile-picture-view-request/reject';
+
+            await api.post(endpoint, {
+                profile_pic_view_request_id: requestId,
+            });
+
+            updateNotification(selectedNotification.notification_id, (item) => ({
+                ...item,
+                read_at: 'read',
+                is_read: true,
+                raw_data: {
+                    ...(item.raw_data ?? {}),
+                    profile_photo_request_handled: true,
+                },
+                full_message:
+                    action === 'accept'
+                        ? t('notifications.photoRequestAccepted')
+                        : t('notifications.photoRequestRejected'),
+                message:
+                    action === 'accept'
+                        ? t('notifications.photoRequestAccepted')
+                        : t('notifications.photoRequestRejected'),
+                body:
+                    action === 'accept'
+                        ? t('notifications.photoRequestAccepted')
+                        : t('notifications.photoRequestRejected'),
+            }));
+
+            await fetchNotifications();
+            onDataChanged?.();
+        } catch (error) {
+            console.error(`Failed to ${action} profile photo request`, error);
+        } finally {
+            setRequestActionLoading(null);
+        }
+    };
+
     const displayedNotifications = notifications.filter((notification) =>
         activeTab === 'unread' ? notification.read_at === 'New' : true,
     );
@@ -516,8 +577,16 @@ const NotificationsView: React.FC<NotificationsViewProps> = ({
                 }
                 isLoading={detailLoading}
                 showOpenAction={canOpenRelatedPage(selectedNotification)}
+                showRequestActions={
+                    isProfilePhotoRequestNotification(selectedNotification) &&
+                    Boolean(selectedNotification?.info_id)
+                }
+                requestActionLoading={requestActionLoading}
+                requestActionHandled={isRequestHandled(selectedNotification)}
                 onClose={() => setSelectedNotification(null)}
                 onOpenRelated={handleOpenRelatedPage}
+                onAcceptRequest={() => handleProfilePhotoRequestAction('accept')}
+                onRejectRequest={() => handleProfilePhotoRequestAction('reject')}
             />
         </>
     );

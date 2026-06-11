@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Models\ExpressInterest;
 use App\Models\User;
+use App\Models\ViewProfilePicture;
 use Carbon\Carbon;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Http\Request;
@@ -39,6 +40,15 @@ class NotificationResource extends JsonResource
         if ($notifyType === 'express_interest') {
             $interestData = ExpressInterest::find($notifyData['info_id'] ?? null);
             $check = ! empty($interestData);
+        }
+
+        if ($notifyType === 'profile_picture_view') {
+            $profilePhotoRequest = ViewProfilePicture::find($notifyData['info_id'] ?? null);
+            $notifyData['profile_photo_request_state'] = $profilePhotoRequest
+                ? ((int) $profilePhotoRequest->status === 1 ? 'approved' : 'pending')
+                : 'removed';
+            $notifyData['profile_photo_request_handled'] = ! $profilePhotoRequest
+                || (int) $profilePhotoRequest->status === 1;
         }
 
         $avatarImage = 'assets/img/avatar-place.png';

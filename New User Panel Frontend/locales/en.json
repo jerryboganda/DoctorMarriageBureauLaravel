@@ -1094,6 +1094,11 @@
         "receivedLabel": "Received",
         "fullDetailsLabel": "Full message",
         "openRelatedPage": "Open related page",
+        "acceptPhotoRequest": "Accept photo request",
+        "rejectPhotoRequest": "Reject photo request",
+        "requestHandled": "Request handled",
+        "photoRequestAccepted": "Photo access request accepted.",
+        "photoRequestRejected": "Photo access request rejected.",
         "emptyTitle": "No notifications yet",
         "emptyDescription": "We'll alert you when something important happens.",
         "status": {

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Bell, Clock3, ExternalLink, Info, Loader2, User, X } from 'lucide-react';
+import { Bell, Check, Clock3, ExternalLink, Info, Loader2, User, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export interface NotificationDetailItem {
@@ -20,16 +20,26 @@ interface NotificationDetailModalProps {
     notification: NotificationDetailItem | null;
     isLoading?: boolean;
     showOpenAction?: boolean;
+    showRequestActions?: boolean;
+    requestActionLoading?: 'accept' | 'reject' | null;
+    requestActionHandled?: boolean;
     onClose: () => void;
     onOpenRelated?: () => void;
+    onAcceptRequest?: () => void;
+    onRejectRequest?: () => void;
 }
 
 const NotificationDetailModal: React.FC<NotificationDetailModalProps> = ({
     notification,
     isLoading = false,
     showOpenAction = false,
+    showRequestActions = false,
+    requestActionLoading = null,
+    requestActionHandled = false,
     onClose,
     onOpenRelated,
+    onAcceptRequest,
+    onRejectRequest,
 }) => {
     const { t } = useTranslation();
 
@@ -182,6 +192,38 @@ const NotificationDetailModal: React.FC<NotificationDetailModalProps> = ({
                                 {t('notifications.openRelatedPage')}
                                 <ExternalLink size={16} />
                             </button>
+                        ) : null}
+                        {showRequestActions && requestActionHandled ? (
+                            <div className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700">
+                                <Check size={16} />
+                                {t('notifications.requestHandled')}
+                            </div>
+                        ) : null}
+                        {showRequestActions && !requestActionHandled ? (
+                            <>
+                                <button
+                                    type="button"
+                                    onClick={onRejectRequest}
+                                    disabled={Boolean(requestActionLoading)}
+                                    className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 px-5 py-3 text-sm font-semibold text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    {requestActionLoading === 'reject' ? (
+                                        <Loader2 size={16} className="animate-spin" />
+                                    ) : null}
+                                    {t('notifications.rejectPhotoRequest')}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={onAcceptRequest}
+                                    disabled={Boolean(requestActionLoading)}
+                                    className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    {requestActionLoading === 'accept' ? (
+                                        <Loader2 size={16} className="animate-spin" />
+                                    ) : null}
+                                    {t('notifications.acceptPhotoRequest')}
+                                </button>
+                            </>
                         ) : null}
                     </div>
                 </div>

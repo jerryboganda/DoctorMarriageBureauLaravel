@@ -20,9 +20,9 @@ class ProfileImageController extends Controller
     public function image_view_request()
     {
         $my_profile_pic_view_requests = DB::table('view_profile_pictures')
-            ->orderBy('id', 'desc')
+            ->orderBy('view_profile_pictures.id', 'desc')
             ->where('user_id', auth()->id())
-            ->join('users', 'view_profile_pictures.user_id', '=', 'users.id')
+            ->join('users', 'view_profile_pictures.requested_by', '=', 'users.id')
             ->select('view_profile_pictures.id')
             ->distinct()
             ->paginate(10);

@@ -97,6 +97,7 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
     const currentUserId = useAuthStore((state) => state.user?.id);
     const [activeTab, setActiveTab] = useState<'about' | 'compatibility' | 'photos'>('about');
     const [profileData, setProfileData] = useState<any>(null);
+    const [memberInfoData, setMemberInfoData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -138,6 +139,8 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
         const fetchProfile = async () => {
             try {
                 setLoading(true);
+                setProfileData(null);
+                setMemberInfoData(null);
                 const [profileRes, memberInfoRes] = await Promise.all([
                     api.get(`/member/public-profile/${profile.id}`, { signal: controller.signal }),
                     api
@@ -154,6 +157,7 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
                 // Update interest state from fresh member_info data
                 if (memberInfoRes?.data?.data) {
                     const info = memberInfoRes.data.data;
+                    setMemberInfoData(info);
                     setInterestState(
                         resolveInterestState(info.interest_status, info.interest_text),
                     );
@@ -241,14 +245,90 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
     const hobbies = profileData?.hobbies_interest;
     const gallery = profileData?.photo_gallery;
     const screenshotDeterrence = profileData?.screenshot_deterrence;
+    const mediaAccessProfile = useMemo<ProfileMatch>(() => {
+        const freshGalleryExists =
+            profileData?.gallery_image_exists ??
+            basicInfo?.gallery_image_exists ??
+            memberInfoData?.gallery_image_exists;
+        const freshGalleryRequired =
+            profileData?.gallery_image_request_required ??
+            basicInfo?.gallery_image_request_required ??
+            memberInfoData?.gallery_image_request_required;
+        const freshGalleryAccessible =
+            profileData?.gallery_image_accessible ??
+            basicInfo?.gallery_image_accessible ??
+            memberInfoData?.gallery_image_accessible;
+        const freshGalleryState =
+            profileData?.gallery_image_request_state ??
+            basicInfo?.gallery_image_request_state ??
+            memberInfoData?.gallery_image_request_state;
+        const freshGalleryText =
+            profileData?.gallery_image_request_text ??
+            basicInfo?.gallery_image_request_text ??
+            memberInfoData?.gallery_image_request_text;
+        const freshGalleryRequested =
+            profileData?.gallery_image_request_requested ??
+            basicInfo?.gallery_image_request_requested ??
+            memberInfoData?.gallery_image_request_requested;
+        const freshGalleryApproved =
+            profileData?.gallery_image_request_approved ??
+            basicInfo?.gallery_image_request_approved ??
+            memberInfoData?.gallery_image_request_approved;
+
+        const freshPhotoExists =
+            profileData?.profile_photo_exists ??
+            basicInfo?.profile_photo_exists ??
+            memberInfoData?.profile_photo_exists;
+        const freshPhotoRequired =
+            profileData?.profile_photo_request_required ??
+            basicInfo?.profile_photo_request_required ??
+            memberInfoData?.profile_photo_request_required;
+        const freshPhotoAccessible =
+            profileData?.profile_photo_accessible ??
+            basicInfo?.profile_photo_accessible ??
+            memberInfoData?.profile_photo_accessible;
+        const freshPhotoState =
+            profileData?.profile_photo_request_state ??
+            basicInfo?.profile_photo_request_state ??
+            memberInfoData?.profile_photo_request_state;
+        const freshPhotoText =
+            profileData?.profile_photo_request_text ??
+            basicInfo?.profile_photo_request_text ??
+            memberInfoData?.profile_photo_request_text;
+        const freshPhotoRequested =
+            profileData?.profile_photo_request_requested ??
+            basicInfo?.profile_photo_request_requested ??
+            memberInfoData?.profile_photo_request_requested;
+        const freshPhotoApproved =
+            profileData?.profile_photo_request_approved ??
+            basicInfo?.profile_photo_request_approved ??
+            memberInfoData?.profile_photo_request_approved;
+
+        return {
+            ...profile,
+            photoRequestState: freshPhotoState ?? profile.photoRequestState,
+            photoRequestText: freshPhotoText ?? profile.photoRequestText,
+            photoRequestRequested: freshPhotoRequested ?? profile.photoRequestRequested,
+            photoRequestApproved: freshPhotoApproved ?? profile.photoRequestApproved,
+            photoRequestRequired: freshPhotoRequired ?? profile.photoRequestRequired,
+            photoAccessible: freshPhotoAccessible ?? profile.photoAccessible,
+            photoExists: freshPhotoExists ?? profile.photoExists,
+            galleryImageRequestState: freshGalleryState ?? profile.galleryImageRequestState,
+            galleryImageRequestText: freshGalleryText ?? profile.galleryImageRequestText,
+            galleryImageRequestRequested:
+                freshGalleryRequested ?? profile.galleryImageRequestRequested,
+            galleryImageRequestApproved: freshGalleryApproved ?? profile.galleryImageRequestApproved,
+            galleryImageRequestRequired: freshGalleryRequired ?? profile.galleryImageRequestRequired,
+            galleryImageAccessible: freshGalleryAccessible ?? profile.galleryImageAccessible,
+            galleryImageExists: freshGalleryExists ?? profile.galleryImageExists,
+        };
+    }, [basicInfo, memberInfoData, profile, profileData]);
     const galleryRequestState =
-        `${profile.galleryImageRequestState ?? profileData?.gallery_image_request_state ?? 'none'}` as
+        `${mediaAccessProfile.galleryImageRequestState ?? 'none'}` as
             | 'none'
             | 'pending'
             | 'approved';
-    const galleryRequestAccessible = Boolean(
-        profile.galleryImageAccessible ?? profileData?.gallery_image_accessible,
-    );
+    const galleryRequestAccessible = Boolean(mediaAccessProfile.galleryImageAccessible);
     const profilePhotoBlur = Boolean(
         profile.profilePhotoBlur ??
         profileData?.profile_photo_blur ??
@@ -444,7 +524,7 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
                         {onRequestMediaAccess && hasLockedGallery && (
                             <motion.button
                                 whileTap={BTN_TAP}
-                                onClick={() => onRequestMediaAccess(profile, 'gallery')}
+                                onClick={() => onRequestMediaAccess(mediaAccessProfile, 'gallery')}
                                 className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-primary/20 hover:bg-primary-hover sm:w-auto"
                             >
                                 <Lock size={15} />
@@ -550,15 +630,14 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
         >
             {/* Position wrapper — no framer-motion, no flex, just raw positioning */}
             <div
-                className="fixed bottom-0 left-0 right-0 flex h-[calc(100vh-16px)] flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:bottom-auto sm:left-1/2 sm:right-auto sm:top-1/2 sm:grid sm:h-[calc(100vh-48px)] sm:w-[calc(100vw-48px)] sm:max-w-[1180px] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:grid-cols-[320px_minmax(0,1fr)] sm:rounded-2xl"
-                style={{ maxHeight: 'calc(100vh - 48px)' }}
+                className="fixed bottom-0 left-0 right-0 flex h-[calc(100dvh-8px)] flex-col overflow-y-auto overscroll-contain rounded-t-2xl bg-white shadow-2xl sm:bottom-auto sm:left-1/2 sm:right-auto sm:top-1/2 sm:grid sm:h-[calc(100dvh-48px)] sm:w-[calc(100vw-48px)] sm:max-w-[1180px] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:grid-cols-[320px_minmax(0,1fr)] sm:overflow-hidden sm:rounded-2xl"
                 onMouseDown={(e) => e.stopPropagation()}
             >
                 {/* ═══════════════════════════════════════════
             HEADER — Compact mobile-first hero (non-scrollable)
            ═══════════════════════════════════════════ */}
-                <aside className="flex min-h-0 shrink-0 flex-col border-b border-slate-100 bg-white sm:max-h-full sm:overflow-y-auto sm:border-b-0 sm:border-r">
-                    <div className="relative bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 px-4 pb-12 pt-3 sm:px-5 sm:pb-5">
+                <aside className="flex shrink-0 flex-col border-b border-slate-100 bg-white sm:min-h-0 sm:max-h-full sm:overflow-y-auto sm:border-b-0 sm:border-r">
+                    <div className="relative bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 px-4 pb-10 pt-3 sm:px-5 sm:pb-5">
                         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+')] opacity-40" />
                         <div className="relative z-10 flex items-center justify-between">
                             <div className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 shadow-md">
@@ -577,12 +656,12 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
                         </div>
                     </div>
 
-                    <div className="relative z-10 -mt-9 px-4 pb-4 sm:mt-0 sm:px-5 sm:pt-5">
+                    <div className="relative z-10 -mt-8 px-4 pb-4 sm:mt-0 sm:px-5 sm:pt-5">
                         <div className="flex flex-col items-center text-center">
                             <button
                                 type="button"
                                 onClick={() => setShowPhotoPreview(true)}
-                                className="group relative size-28 overflow-hidden rounded-2xl border-[4px] border-white bg-slate-100 shadow-xl focus:outline-none focus:ring-4 focus:ring-primary/25 sm:size-44 sm:border-0"
+                                className="group relative size-24 overflow-hidden rounded-2xl border-[4px] border-white bg-slate-100 shadow-xl focus:outline-none focus:ring-4 focus:ring-primary/25 min-[390px]:size-28 sm:size-44 sm:border-0"
                                 aria-label={t('profile.viewPhoto') || 'View profile photo'}
                             >
                                 <img
@@ -598,19 +677,21 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
                                 </span>
                             </button>
 
-                            <h2 className="mt-3 max-w-full text-xl font-black leading-tight text-slate-950 sm:text-2xl">
+                            <h2 className="mt-3 max-w-full text-balance text-[1.35rem] font-black leading-tight text-slate-950 sm:text-2xl">
                                 {displayName}
                             </h2>
                             <div className="mt-3 flex max-w-full flex-wrap justify-center gap-1.5 sm:flex-col sm:items-stretch">
                                 {quickInfo.map((item, i) => (
                                     <span
                                         key={i}
-                                        className="inline-flex items-center justify-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold leading-snug text-slate-600 sm:justify-start sm:rounded-xl sm:px-3"
+                                        className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold leading-snug text-slate-600 sm:justify-start sm:rounded-xl sm:px-3 ${item.wrap ? 'basis-full max-w-full sm:basis-auto' : 'max-w-full'}`}
                                     >
                                         <span className="text-primary/70 shrink-0">
                                             {item.icon}
                                         </span>
-                                        <span className="whitespace-normal text-left">
+                                        <span
+                                            className={`min-w-0 text-left ${item.wrap ? 'line-clamp-2 break-words sm:line-clamp-none' : 'truncate'}`}
+                                        >
                                             {item.text}
                                         </span>
                                     </span>
@@ -658,7 +739,7 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
                         </div>
 
                         {!isOwnProfile && (
-                            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/90 p-3">
+                            <div className="mt-4 hidden rounded-2xl border border-slate-200 bg-slate-50/90 p-3 sm:block">
                                 <div className="mb-3 flex items-center justify-between gap-3">
                                     <span className="text-[11px] font-black uppercase tracking-wide text-slate-400">
                                         {t('profile.safetyActions')}
@@ -699,12 +780,12 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
                     </div>
                 </aside>
 
-                <main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-slate-50/80">
-                    <div className="shrink-0 border-b border-slate-100 bg-white px-4 sm:px-6">
+                <main className="flex flex-none flex-col overflow-visible bg-slate-50/80 sm:min-h-0 sm:flex-1 sm:overflow-hidden">
+                    <div className="sticky top-0 z-20 shrink-0 border-b border-slate-100 bg-white/95 px-3 backdrop-blur sm:static sm:bg-white sm:px-6">
                         <div className="flex items-stretch gap-2 overflow-x-auto scrollbar-hide">
                             <button
                                 onClick={() => setActiveTab('about')}
-                                className={`flex-1 sm:flex-none sm:px-5 py-3 text-xs sm:text-sm font-black border-b-2 transition-colors text-center ${
+                                className={`min-w-fit flex-1 border-b-2 px-2 py-3 text-center text-xs font-black transition-colors sm:flex-none sm:px-5 sm:text-sm ${
                                     activeTab === 'about'
                                         ? 'border-primary text-primary'
                                         : 'border-transparent text-slate-400 hover:text-slate-600'
@@ -714,7 +795,7 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
                             </button>
                             <button
                                 onClick={() => setActiveTab('compatibility')}
-                                className={`flex-1 sm:flex-none sm:px-5 py-3 text-xs sm:text-sm font-black border-b-2 transition-colors flex items-center justify-center gap-1.5 ${
+                                className={`flex min-w-fit flex-1 items-center justify-center gap-1.5 border-b-2 px-2 py-3 text-xs font-black transition-colors sm:flex-none sm:px-5 sm:text-sm ${
                                     activeTab === 'compatibility'
                                         ? 'border-primary text-primary'
                                         : 'border-transparent text-slate-400 hover:text-slate-600'
@@ -726,7 +807,7 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
                             {onRequestMediaAccess && (
                                 <button
                                     onClick={() => setActiveTab('photos')}
-                                    className={`flex-1 sm:flex-none sm:px-5 py-3 text-xs sm:text-sm font-black border-b-2 transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap ${
+                                    className={`flex min-w-fit flex-1 items-center justify-center gap-1.5 whitespace-nowrap border-b-2 px-2 py-3 text-xs font-black transition-colors sm:flex-none sm:px-5 sm:text-sm ${
                                         activeTab === 'photos'
                                             ? 'border-primary text-primary'
                                             : 'border-transparent text-slate-500 hover:text-slate-700'
@@ -744,7 +825,7 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
             SCROLLABLE CONTENT AREA
            ═══════════════════════════════════════════ */}
                     <div
-                        className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-slate-50/80"
+                        className="bg-slate-50/80 sm:min-h-0 sm:flex-1 sm:overflow-y-auto sm:overscroll-contain"
                         style={{ WebkitOverflowScrolling: 'touch' }}
                     >
                         {loading ? (
@@ -762,7 +843,7 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
                                 <p className="text-slate-500 text-sm">{error}</p>
                             </div>
                         ) : activeTab === 'about' ? (
-                            <div className="space-y-3 p-4 sm:p-6">
+                            <div className="space-y-3 p-4 pb-5 sm:p-6">
                                 {/* About */}
                                 {introduction && (
                                     <Section
@@ -1314,7 +1395,10 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
                                         {onRequestMediaAccess && hasLockedGallery && (
                                             <button
                                                 onClick={() =>
-                                                    onRequestMediaAccess(profile, 'gallery')
+                                                    onRequestMediaAccess(
+                                                        mediaAccessProfile,
+                                                        'gallery',
+                                                    )
                                                 }
                                                 className="mt-3 w-full sm:w-auto sm:px-4 py-2 rounded-xl border border-primary/15 bg-primary/5 text-primary font-bold text-sm hover:bg-primary/10 transition-colors"
                                             >
@@ -1348,7 +1432,10 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
                                             {onRequestMediaAccess && (
                                                 <button
                                                     onClick={() =>
-                                                        onRequestMediaAccess(profile, 'gallery')
+                                                        onRequestMediaAccess(
+                                                            mediaAccessProfile,
+                                                            'gallery',
+                                                        )
                                                     }
                                                     className="mt-3 w-full sm:w-auto sm:px-4 py-2 rounded-xl border border-primary/15 bg-primary/5 text-primary font-bold text-sm hover:bg-primary/10 transition-colors"
                                                 >
@@ -1573,6 +1660,47 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
                             </div>
                         )}
                     </div>
+                    {!isOwnProfile && (
+                        <div className="bg-slate-50/80 px-4 pb-8 pt-1 sm:hidden">
+                            <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+                                <div className="mb-3 flex items-center justify-between gap-3">
+                                    <span className="text-[11px] font-black uppercase tracking-wide text-slate-400">
+                                        {t('profile.safetyActions')}
+                                    </span>
+                                    <span className="h-px flex-1 bg-slate-200" />
+                                </div>
+                                <div className="grid grid-cols-1 gap-2">
+                                    <button
+                                        onClick={handleHideFromDiscovery}
+                                        disabled={hiding || removingFromShortlist}
+                                        className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-bold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                        <EyeOff size={15} className="text-slate-500" />
+                                        {hiding
+                                            ? t('profile.blocking')
+                                            : t('profile.hideFromDiscovery')}
+                                    </button>
+                                    <button
+                                        onClick={handleRemoveFromShortlist}
+                                        disabled={hiding || removingFromShortlist}
+                                        className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-bold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                        <Trash2 size={15} className="text-slate-500" />
+                                        {removingFromShortlist
+                                            ? t('profile.removingFromShortlist')
+                                            : t('profile.removeFromShortlist')}
+                                    </button>
+                                    <button
+                                        onClick={() => setShowReportModal(true)}
+                                        className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-3 text-sm font-bold text-red-700 hover:bg-red-100"
+                                    >
+                                        <Flag size={15} />
+                                        {t('profile.reportProfile')}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </main>
             </div>
             {showPhotoPreview && (
