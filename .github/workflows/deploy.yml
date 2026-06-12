@@ -3,6 +3,28 @@ name: Deploy
 on:
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      force_backend:
+        description: Force backend cache refresh
+        required: false
+        default: false
+        type: boolean
+      force_frontend:
+        description: Force user-panel frontend rebuild
+        required: false
+        default: false
+        type: boolean
+      force_admin:
+        description: Force admin frontend rebuild
+        required: false
+        default: false
+        type: boolean
+      force_all:
+        description: Force all deployable services
+        required: false
+        default: false
+        type: boolean
 
 # Prevent concurrent deploys; never cancel an in-progress deploy
 concurrency:
@@ -12,7 +34,7 @@ concurrency:
 jobs:
   deploy:
     name: Deploy to Production
-    runs-on: self-hosted   # Runs directly on the VPS — no billing, no SSH overhead
+    runs-on: self-hosted   # Runs directly on the VPS, no billing or SSH overhead
     timeout-minutes: 20
 
     steps:
@@ -26,11 +48,17 @@ jobs:
       - name: Detect changed services
         id: changes
         run: |
-          BEFORE="${{ github.event.before }}"
+          BEFORE="${{ github.event.before || '' }}"
           AFTER="${{ github.sha }}"
+          FORCE_ALL="${{ inputs.force_all || false }}"
+          FORCE_BACKEND="${{ inputs.force_backend || false }}"
+          FORCE_FRONTEND="${{ inputs.force_frontend || false }}"
+          FORCE_ADMIN="${{ inputs.force_admin || false }}"
 
-          # First push to branch — before SHA is all zeros
-          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+          # First push to branch: before SHA is all zeros. Manual dispatch has no before SHA.
+          if [ -z "$BEFORE" ]; then
+            FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || git diff-tree --no-commit-id -r --name-only "$AFTER")
+          elif [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
             FILES=$(git diff-tree --no-commit-id -r --name-only "$AFTER")
           else
             FILES=$(git diff --name-only "$BEFORE" "$AFTER" 2>/dev/null || git diff --name-only HEAD~1 HEAD)
@@ -41,18 +69,18 @@ jobs:
           echo "====================="
 
           # PHP backend: routes, controllers, config, DB migrations, views, composer
-          echo "backend=$(echo "$FILES" | grep -qE '^(app/|routes/|config/|database/|resources/|bootstrap/|artisan|composer\.(json|lock))' && echo true || echo false)" >> "$GITHUB_OUTPUT"
-          # Composer lock specifically — triggers a container restart (not just artisan cache)
+          echo "backend=$( { [ "$FORCE_ALL" = "true" ] || [ "$FORCE_BACKEND" = "true" ] || echo "$FILES" | grep -qE '^(app/|routes/|config/|database/|resources/|bootstrap/|artisan|composer\.(json|lock))'; } && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          # Composer lock specifically triggers a container restart, not just artisan cache.
           echo "composer_lock=$(echo "$FILES" | grep -q '^composer\.lock' && echo true || echo false)" >> "$GITHUB_OUTPUT"
-          # New User Panel (React/Vite) — needs Docker image rebuild
-          echo "frontend=$(echo "$FILES" | grep -q '^New User Panel Frontend/' && echo true || echo false)" >> "$GITHUB_OUTPUT"
-          # Admin Panel (React/Vite) — needs Docker image rebuild
-          echo "admin=$(echo "$FILES" | grep -q '^Admin Panel Frontend/' && echo true || echo false)" >> "$GITHUB_OUTPUT"
-          # Backend Dockerfile or PHP-FPM config — needs image rebuild
+          # New User Panel (React/Vite) needs Docker image rebuild.
+          echo "frontend=$( { [ "$FORCE_ALL" = "true" ] || [ "$FORCE_FRONTEND" = "true" ] || echo "$FILES" | grep -q '^New User Panel Frontend/'; } && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          # Admin Panel (React/Vite) needs Docker image rebuild.
+          echo "admin=$( { [ "$FORCE_ALL" = "true" ] || [ "$FORCE_ADMIN" = "true" ] || echo "$FILES" | grep -q '^Admin Panel Frontend/'; } && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          # Backend Dockerfile or PHP-FPM config needs image rebuild.
           echo "app_dockerfile=$(echo "$FILES" | grep -qE '^deploy/(Dockerfile|php/)' && echo true || echo false)" >> "$GITHUB_OUTPUT"
-          # Nginx config only — hot-reload, no rebuild
+          # Nginx config only: hot-reload, no rebuild.
           echo "nginx=$(echo "$FILES" | grep -q '^deploy/nginx' && echo true || echo false)" >> "$GITHUB_OUTPUT"
-          # docker-compose.yml — re-apply with up -d
+          # docker-compose.yml: re-apply with up -d.
           echo "compose=$(echo "$FILES" | grep -q '^docker-compose\.yml' && echo true || echo false)" >> "$GITHUB_OUTPUT"
 
       - name: Pull latest code on server
@@ -62,7 +90,7 @@ jobs:
           cd /opt/doctormarriagebureau
           # Trust this directory for the runner user
           git config --global --add safe.directory /opt/doctormarriagebureau
-          # Use GITHUB_TOKEN over HTTPS — avoids SSH key management on the server
+          # Use GITHUB_TOKEN over HTTPS to avoid SSH key management on the server.
           git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/jerryboganda/DoctorMarriageBureauLaravel.git"
           git fetch origin main
           git reset --hard origin/main
