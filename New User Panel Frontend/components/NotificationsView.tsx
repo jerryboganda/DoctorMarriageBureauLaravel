@@ -166,7 +166,8 @@ const NotificationsView: React.FC<NotificationsViewProps> = ({
         normalizeNotificationType(notification?.type) === 'gallery_image_view';
 
     const isMediaRequestNotification = (notification: NotificationItem | null): boolean =>
-        isProfilePhotoRequestNotification(notification) || isGalleryImageRequestNotification(notification);
+        isProfilePhotoRequestNotification(notification) ||
+        isGalleryImageRequestNotification(notification);
 
     const isRequestHandled = (notification: NotificationItem | null): boolean =>
         isGalleryImageRequestNotification(notification)

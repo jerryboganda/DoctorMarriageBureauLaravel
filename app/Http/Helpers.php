@@ -5,6 +5,7 @@ use App\Models\Addon;
 use App\Models\ChatThread;
 use App\Models\Currency;
 use App\Models\EmailTemplate;
+use App\Models\Language;
 use App\Models\Member;
 use App\Models\Setting;
 use App\Models\Translation;
@@ -157,7 +158,7 @@ function translate($key, $lang = null, $replace = [])
         } else {
             $result = $key;
         }
-    } catch (\Throwable $e) {
+    } catch (Throwable $e) {
         Log::warning('Translation lookup failed; falling back to source text.', [
             'message' => $e->getMessage(),
             'lang' => $lang,
@@ -205,7 +206,7 @@ if (! function_exists('get_setting')) {
             $setting = $settings->where('type', $key)->first();
 
             return $setting == null ? $default : $setting->value;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::warning('Setting lookup failed; falling back to default.', [
                 'message' => $e->getMessage(),
                 'key' => $key,
@@ -220,10 +221,10 @@ if (! function_exists('current_language_is_rtl')) {
     function current_language_is_rtl()
     {
         try {
-            $language = \App\Models\Language::where('code', Session::get('locale', Config::get('app.locale')))->first();
+            $language = Language::where('code', Session::get('locale', Config::get('app.locale')))->first();
 
             return $language && (int) $language->rtl === 1;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::warning('Language direction lookup failed; using LTR.', [
                 'message' => $e->getMessage(),
             ]);

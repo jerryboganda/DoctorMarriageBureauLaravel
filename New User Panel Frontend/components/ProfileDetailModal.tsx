@@ -317,17 +317,18 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
             galleryImageRequestText: freshGalleryText ?? profile.galleryImageRequestText,
             galleryImageRequestRequested:
                 freshGalleryRequested ?? profile.galleryImageRequestRequested,
-            galleryImageRequestApproved: freshGalleryApproved ?? profile.galleryImageRequestApproved,
-            galleryImageRequestRequired: freshGalleryRequired ?? profile.galleryImageRequestRequired,
+            galleryImageRequestApproved:
+                freshGalleryApproved ?? profile.galleryImageRequestApproved,
+            galleryImageRequestRequired:
+                freshGalleryRequired ?? profile.galleryImageRequestRequired,
             galleryImageAccessible: freshGalleryAccessible ?? profile.galleryImageAccessible,
             galleryImageExists: freshGalleryExists ?? profile.galleryImageExists,
         };
     }, [basicInfo, memberInfoData, profile, profileData]);
-    const galleryRequestState =
-        `${mediaAccessProfile.galleryImageRequestState ?? 'none'}` as
-            | 'none'
-            | 'pending'
-            | 'approved';
+    const galleryRequestState = `${mediaAccessProfile.galleryImageRequestState ?? 'none'}` as
+        | 'none'
+        | 'pending'
+        | 'approved';
     const galleryRequestAccessible = Boolean(mediaAccessProfile.galleryImageAccessible);
     const profilePhotoBlur = Boolean(
         profile.profilePhotoBlur ??

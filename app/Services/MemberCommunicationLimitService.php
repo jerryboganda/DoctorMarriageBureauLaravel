@@ -8,6 +8,7 @@ use App\Models\User;
 class MemberCommunicationLimitService
 {
     public const FREE_LIMIT = 5;
+
     public const VERIFIED_FREE_MESSAGE_LIMIT = 3;
 
     public function isVerified(?User $user): bool
