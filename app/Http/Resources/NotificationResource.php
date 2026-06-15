@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Models\ExpressInterest;
 use App\Models\User;
+use App\Models\ViewGalleryImage;
 use App\Models\ViewProfilePicture;
 use Carbon\Carbon;
 use Illuminate\Contracts\Support\Arrayable;
@@ -49,6 +50,15 @@ class NotificationResource extends JsonResource
                 : 'removed';
             $notifyData['profile_photo_request_handled'] = ! $profilePhotoRequest
                 || (int) $profilePhotoRequest->status === 1;
+        }
+
+        if ($notifyType === 'gallery_image_view') {
+            $galleryImageRequest = ViewGalleryImage::find($notifyData['info_id'] ?? null);
+            $notifyData['gallery_image_request_state'] = $galleryImageRequest
+                ? ((int) $galleryImageRequest->status === 1 ? 'approved' : 'pending')
+                : 'removed';
+            $notifyData['gallery_image_request_handled'] = ! $galleryImageRequest
+                || (int) $galleryImageRequest->status === 1;
         }
 
         $avatarImage = 'assets/img/avatar-place.png';

@@ -27,8 +27,12 @@ class GalleryImageRequest extends JsonResource
 
             return [
                 'id' => $this->id,
+                'gallery_image_view_request_id' => $this->id,
+                'requester_id' => $user->id,
+                'requested_by' => $user->id,
+                'owner_id' => $view_gallery_images->user_id,
                 'photo' => uploaded_asset($user->photo) ?? gender_avatar($user?->member),
-                'name' => $user->first_name.$user->last_name,
+                'name' => trim($user->first_name.' '.$user->last_name),
                 'date_of_birth' => MemberUtility::member_birthdate($user->id),
                 'age' => MemberUtility::member_age($user->id),
                 'status' => $view_gallery_images->status,

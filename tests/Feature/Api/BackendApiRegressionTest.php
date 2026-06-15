@@ -175,8 +175,26 @@ class BackendApiRegressionTest extends TestCase
         $sender = $this->createMember('verified-free-sender@example.com', 1);
         $receiver = $this->createMember('verified-free-receiver@example.com', 2);
         $thread = $this->createChatThread($sender, $receiver, 'verified-free-thread');
+        Chat::create([
+            'chat_thread_id' => $thread->id,
+            'sender_user_id' => $receiver->id,
+            'message' => 'Existing readable message',
+            'seen' => 0,
+        ]);
 
         Sanctum::actingAs($sender);
+
+        $this->getJson('/api/member/chat-list')
+            ->assertOk()
+            ->assertJsonPath('result', true);
+
+        $this->getJson('/api/member/chat-view/'.$thread->id)
+            ->assertOk()
+            ->assertJsonPath('result', true);
+
+        $this->postJson('/api/member/chat/old-messages', [
+            'first_message_id' => Chat::where('chat_thread_id', $thread->id)->latest('id')->value('id'),
+        ])->assertOk();
 
         for ($messageNumber = 1; $messageNumber <= 3; $messageNumber++) {
             $response = $this->postJson('/api/member/chat-reply', [
@@ -196,6 +214,39 @@ class BackendApiRegressionTest extends TestCase
         $response = $this->postJson('/api/member/chat-reply', [
             'chat_thread_id' => $thread->id,
             'message' => 'Blocked message 4',
+        ]);
+
+        $response->assertForbidden();
+        $response->assertJsonPath('code', 'SUBSCRIPTION_REQUIRED');
+        $response->assertJsonPath('free_limit', 3);
+        $this->assertDatabaseCount('chats', 4);
+    }
+
+    public function test_verified_non_premium_member_web_chat_reply_is_limited_to_three_messages(): void
+    {
+        $sender = $this->createMember('verified-free-web-sender@example.com', 1);
+        $receiver = $this->createMember('verified-free-web-receiver@example.com', 2);
+        $thread = $this->createChatThread($sender, $receiver, 'verified-free-web-thread');
+
+        $this->actingAs($sender);
+
+        for ($messageNumber = 1; $messageNumber <= 3; $messageNumber++) {
+            $response = $this->post('/chat-reply', [
+                'chat_thread_id' => $thread->id,
+                'message' => 'Allowed web message '.$messageNumber,
+            ], ['X-Requested-With' => 'XMLHttpRequest']);
+
+            $response->assertOk();
+        }
+
+        $this->assertDatabaseHas('members', [
+            'user_id' => $sender->id,
+            'unverified_messages_used' => 3,
+        ]);
+
+        $response = $this->postJson('/chat-reply', [
+            'chat_thread_id' => $thread->id,
+            'message' => 'Blocked web message 4',
         ]);
 
         $response->assertForbidden();
@@ -496,6 +547,35 @@ class BackendApiRegressionTest extends TestCase
 
         $response->assertNotFound();
         $this->assertDatabaseHas('view_profile_pictures', [
+            'id' => $viewRequest->id,
+            'status' => 0,
+        ]);
+    }
+
+    public function test_member_cannot_accept_another_members_gallery_image_request(): void
+    {
+        $owner = $this->createMember('gallery-request-accept-owner@example.com', 1);
+        $requester = $this->createMember('gallery-request-accept-requester@example.com', 1);
+        $attacker = $this->createMember('gallery-request-accept-attacker@example.com', 1);
+
+        DB::table('view_gallery_images')->insert([
+            'id' => 1,
+            'user_id' => $owner->id,
+            'requested_by' => $requester->id,
+            'status' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $viewRequest = ViewGalleryImage::findOrFail(1);
+
+        Sanctum::actingAs($attacker);
+
+        $response = $this->postJson('/api/member/gallery-image-view-request/accept', [
+            'gallery_image_view_request_id' => $viewRequest->id,
+        ]);
+
+        $response->assertNotFound();
+        $this->assertDatabaseHas('view_gallery_images', [
             'id' => $viewRequest->id,
             'status' => 0,
         ]);

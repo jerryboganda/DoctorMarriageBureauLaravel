@@ -21,18 +21,6 @@ class ChatController extends Controller
         return new MemberCommunicationLimitService;
     }
 
-    private function ensureMessagingEntitlement()
-    {
-        $user = auth()->user();
-        $limits = $this->communicationLimits();
-
-        if ($limits->isVerified($user) && (int) $user->membership !== 2) {
-            return $limits->subscriptionRequiredResponse();
-        }
-
-        return null;
-    }
-
     private function ensureCanSendMessage()
     {
         $user = auth()->user();
@@ -51,10 +39,6 @@ class ChatController extends Controller
      */
     public function chat_list()
     {
-        if ($entitlementError = $this->ensureMessagingEntitlement()) {
-            return $entitlementError;
-        }
-
         $userId = auth()->id();
 
         $chatThreads = ChatThread::with([
@@ -101,10 +85,6 @@ class ChatController extends Controller
      */
     public function chat_view($id)
     {
-        if ($entitlementError = $this->ensureMessagingEntitlement()) {
-            return $entitlementError;
-        }
-
         $chatThread = ChatThread::with([
             'sender:id,first_name,last_name,photo',
             'receiver:id,first_name,last_name,photo',
@@ -141,10 +121,6 @@ class ChatController extends Controller
      */
     public function get_old_messages(Request $request)
     {
-        if ($entitlementError = $this->ensureMessagingEntitlement()) {
-            return $entitlementError;
-        }
-
         $chat = Chat::findOrFail($request->first_message_id);
         $thread = ChatThread::where('id', $chat->chat_thread_id)
             ->where(function ($query) {

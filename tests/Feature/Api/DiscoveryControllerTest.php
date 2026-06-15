@@ -549,6 +549,35 @@ class DiscoveryControllerTest extends TestCase
         $requestResponse->assertOk();
         $requestResponse->assertJsonPath('result', true);
 
+        $requestId = ViewGalleryImage::query()->latest('id')->value('id');
+        $this->assertNotNull($requestId);
+        $this->assertDatabaseHas('notifications', [
+            'notifiable_id' => $target->id,
+        ]);
+
+        $notification = DB::table('notifications')->where('notifiable_id', $target->id)->first();
+        $notificationData = json_decode($notification->data, true);
+        $this->assertSame('gallery_image_view', $notificationData['type']);
+        $this->assertSame($viewer->id, $notificationData['notify_by']);
+        $this->assertSame($requestId, $notificationData['info_id']);
+
+        Sanctum::actingAs($target);
+        $incomingRequests = $this->getJson('/api/member/gallery-image-view-request');
+        $incomingRequests->assertOk();
+        $incomingRequests->assertJsonPath('data.0.id', $requestId);
+        $incomingRequests->assertJsonPath('data.0.gallery_image_view_request_id', $requestId);
+        $incomingRequests->assertJsonPath('data.0.requester_id', $viewer->id);
+        $incomingRequests->assertJsonPath('data.0.owner_id', $target->id);
+        $incomingRequests->assertJsonPath('data.0.gallery_image_request_state', 'pending');
+
+        $notificationsResponse = $this->getJson('/api/member/notifications');
+        $notificationsResponse->assertOk();
+        $notificationsResponse->assertJsonPath('data.0.type', 'gallery_image_view');
+        $notificationsResponse->assertJsonPath('data.0.info_id', $requestId);
+        $notificationsResponse->assertJsonPath('data.0.raw_data.gallery_image_request_state', 'pending');
+        $notificationsResponse->assertJsonPath('data.0.raw_data.gallery_image_request_handled', false);
+
+        Sanctum::actingAs($viewer);
         MemberUtility::resetCaches();
 
         $discoveryPending = $this->getJson('/api/discovery');
@@ -563,15 +592,17 @@ class DiscoveryControllerTest extends TestCase
         $publicPending->assertJsonPath('data.gallery_image_request_state', 'pending');
         $publicPending->assertJsonPath('data.photo_gallery.0.image_path', static_asset('assets/img/placeholder.jpg'));
 
-        $requestId = ViewGalleryImage::query()->latest('id')->value('id');
-        $this->assertNotNull($requestId);
-
         Sanctum::actingAs($target);
         $acceptResponse = $this->postJson('/api/member/gallery-image-view-request/accept', [
             'gallery_image_view_request_id' => $requestId,
         ]);
         $acceptResponse->assertOk();
         $acceptResponse->assertJsonPath('result', true);
+
+        $handledNotification = $this->getJson('/api/member/notifications');
+        $handledNotification->assertOk();
+        $handledNotification->assertJsonPath('data.0.raw_data.gallery_image_request_state', 'approved');
+        $handledNotification->assertJsonPath('data.0.raw_data.gallery_image_request_handled', true);
 
         MemberUtility::resetCaches();
         Sanctum::actingAs($viewer);

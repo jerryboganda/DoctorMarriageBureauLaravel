@@ -74,7 +74,10 @@ class ChatController extends Controller
     public function chat_reply(Request $request)
     {
         $communicationLimits = new MemberCommunicationLimitService;
-        $verificationLimitError = $communicationLimits->ensureCanSendMessage(Auth::user());
+        $user = Auth::user();
+        $verificationLimitError = $communicationLimits->isVerified($user)
+            ? $communicationLimits->ensureCanSendVerifiedFreeMessage($user)
+            : $communicationLimits->ensureCanSendMessage($user);
         if ($verificationLimitError) {
             if ($request->expectsJson() || $request->ajax()) {
                 return $verificationLimitError;
@@ -86,13 +89,13 @@ class ChatController extends Controller
 
         $chat = new Chat;
         $chat->chat_thread_id = $request->chat_thread_id;
-        $chat->sender_user_id = Auth::user()->id;
+        $chat->sender_user_id = $user->id;
         $chat->message = $request->message;
         if ($request->attachment != null) {
             $chat->attachment = json_encode(explode(',', $request->attachment));
         }
         $chat->save();
-        $communicationLimits->recordMessageSent(Auth::user());
+        $communicationLimits->recordMessageSent($user);
 
         return view('frontend.member.messages.messages_right_single', compact('chat'));
     }

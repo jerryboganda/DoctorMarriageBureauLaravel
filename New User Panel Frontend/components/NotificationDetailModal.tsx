@@ -23,6 +23,8 @@ interface NotificationDetailModalProps {
     showRequestActions?: boolean;
     requestActionLoading?: 'accept' | 'reject' | null;
     requestActionHandled?: boolean;
+    acceptRequestLabel?: string;
+    rejectRequestLabel?: string;
     onClose: () => void;
     onOpenRelated?: () => void;
     onAcceptRequest?: () => void;
@@ -36,6 +38,8 @@ const NotificationDetailModal: React.FC<NotificationDetailModalProps> = ({
     showRequestActions = false,
     requestActionLoading = null,
     requestActionHandled = false,
+    acceptRequestLabel,
+    rejectRequestLabel,
     onClose,
     onOpenRelated,
     onAcceptRequest,
@@ -210,7 +214,7 @@ const NotificationDetailModal: React.FC<NotificationDetailModalProps> = ({
                                     {requestActionLoading === 'reject' ? (
                                         <Loader2 size={16} className="animate-spin" />
                                     ) : null}
-                                    {t('notifications.rejectPhotoRequest')}
+                                    {rejectRequestLabel ?? t('notifications.rejectPhotoRequest')}
                                 </button>
                                 <button
                                     type="button"
@@ -221,7 +225,7 @@ const NotificationDetailModal: React.FC<NotificationDetailModalProps> = ({
                                     {requestActionLoading === 'accept' ? (
                                         <Loader2 size={16} className="animate-spin" />
                                     ) : null}
-                                    {t('notifications.acceptPhotoRequest')}
+                                    {acceptRequestLabel ?? t('notifications.acceptPhotoRequest')}
                                 </button>
                             </>
                         ) : null}

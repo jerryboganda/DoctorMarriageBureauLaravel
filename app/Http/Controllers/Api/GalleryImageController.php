@@ -254,9 +254,9 @@ class GalleryImageController extends Controller
     public function image_view_request()
     {
         $my_gallery_image_view_requests = DB::table('view_gallery_images')
-            ->orderBy('id', 'desc')
+            ->orderBy('view_gallery_images.id', 'desc')
             ->where('user_id', auth()->id())
-            ->join('users', 'view_gallery_images.user_id', '=', 'users.id')
+            ->join('users', 'view_gallery_images.requested_by', '=', 'users.id')
             ->select('view_gallery_images.id')
             ->distinct()
             ->paginate(10);
