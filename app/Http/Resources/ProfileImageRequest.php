@@ -19,14 +19,19 @@ class ProfileImageRequest extends JsonResource
      */
     public function toArray($request)
     {
-        $view_profile_images = ViewProfilePicture::find($this->id);
+        $requestId = data_get($this->resource, 'id');
+        $view_profile_images = ViewProfilePicture::find($requestId);
+        if ($view_profile_images === null) {
+            return [];
+        }
+
         $user = User::where('id', $view_profile_images->requested_by)->first();
         if ($user != null) {
             $requestState = (int) $view_profile_images->status === 1 ? 'approved' : 'pending';
 
             return [
-                'id' => $this->id,
-                'profile_pic_view_request_id' => $this->id,
+                'id' => $requestId,
+                'profile_pic_view_request_id' => $requestId,
                 'requester_id' => $user->id,
                 'requested_by' => $user->id,
                 'owner_id' => $view_profile_images->user_id,
@@ -49,5 +54,7 @@ class ProfileImageRequest extends JsonResource
                 'profile_photo_exists' => ! empty($user->photo),
             ];
         }
+
+        return [];
     }
 }

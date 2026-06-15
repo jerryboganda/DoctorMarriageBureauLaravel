@@ -1966,16 +1966,6 @@ parameters:
 			path: app/Http/Resources/GalleryImage/RequestedGalleryImage.php
 
 		-
-			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\GalleryImageRequest\\:\\:\\$id\\.$#"
-			count: 2
-			path: app/Http/Resources/GalleryImageRequest.php
-
-		-
-			message: "#^Method App\\\\Http\\\\Resources\\\\GalleryImageRequest\\:\\:toArray\\(\\) should return array\\|Illuminate\\\\Contracts\\\\Support\\\\Arrayable\\|JsonSerializable but return statement is missing\\.$#"
-			count: 1
-			path: app/Http/Resources/GalleryImageRequest.php
-
-		-
 			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\GalleryImageResource\\:\\:\\$created_at\\.$#"
 			count: 1
 			path: app/Http/Resources/GalleryImageResource.php
@@ -2444,16 +2434,6 @@ parameters:
 			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Profile\\\\SubCasteResource\\:\\:\\$name\\.$#"
 			count: 1
 			path: app/Http/Resources/Profile/SubCasteResource.php
-
-		-
-			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\ProfileImageRequest\\:\\:\\$id\\.$#"
-			count: 2
-			path: app/Http/Resources/ProfileImageRequest.php
-
-		-
-			message: "#^Method App\\\\Http\\\\Resources\\\\ProfileImageRequest\\:\\:toArray\\(\\) should return array\\|Illuminate\\\\Contracts\\\\Support\\\\Arrayable\\|JsonSerializable but return statement is missing\\.$#"
-			count: 1
-			path: app/Http/Resources/ProfileImageRequest.php
 
 		-
 			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\PublicProfile\\\\AboutUser\\:\\:\\$member\\.$#"

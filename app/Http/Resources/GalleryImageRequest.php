@@ -19,15 +19,20 @@ class GalleryImageRequest extends JsonResource
      */
     public function toArray($request)
     {
-        $view_gallery_images = ViewGalleryImage::find($this->id);
+        $requestId = data_get($this->resource, 'id');
+        $view_gallery_images = ViewGalleryImage::find($requestId);
+        if ($view_gallery_images === null) {
+            return [];
+        }
+
         $user = User::where('id', $view_gallery_images->requested_by)->first();
         if ($user != null) {
             $galleryRequestInfo = MemberUtility::member_gallery_image_request_info($user->id);
             $requestState = (int) $view_gallery_images->status === 1 ? 'approved' : 'pending';
 
             return [
-                'id' => $this->id,
-                'gallery_image_view_request_id' => $this->id,
+                'id' => $requestId,
+                'gallery_image_view_request_id' => $requestId,
                 'requester_id' => $user->id,
                 'requested_by' => $user->id,
                 'owner_id' => $view_gallery_images->user_id,
@@ -47,5 +52,7 @@ class GalleryImageRequest extends JsonResource
                 'gallery_image_exists' => $galleryRequestInfo['gallery_image_exists'],
             ];
         }
+
+        return [];
     }
 }
