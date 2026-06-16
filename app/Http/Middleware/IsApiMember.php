@@ -56,8 +56,9 @@ class IsApiMember
             ], 403);
         }
 
-        // Check approved status, but allow limited communication routes to apply their own quotas.
-        if ($user->approved == 0 && ! $this->allowsUnverifiedCommunication($request)) {
+        // Check approved status, but allow specific onboarding/limited routes
+        // to handle unapproved members with their own validation.
+        if ($user->approved == 0 && ! $this->allowsUnapprovedMemberRoute($request)) {
             return response()->json([
                 'result' => false,
                 'status' => 'non_verified',
@@ -68,11 +69,12 @@ class IsApiMember
         return $next($request);
     }
 
-    private function allowsUnverifiedCommunication(Request $request): bool
+    private function allowsUnapprovedMemberRoute(Request $request): bool
     {
         $path = trim($request->path(), '/');
 
         return in_array($path, [
+            'api/upload-profile-picture',
             'api/member/chat-list',
             'api/member/chat-reply',
             'api/member/chat/old-messages',

@@ -4,7 +4,6 @@ namespace Tests\Feature\Api;
 
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Middleware\EmailVerifiedApi;
-use App\Http\Middleware\IsApiMember;
 use App\Http\Middleware\IsMember;
 use App\Http\Middleware\RequirePasswordChangeApi;
 use App\Models\Member;
@@ -28,7 +27,6 @@ class ProfilePhotoUploadTest extends TestCase
         $this->createTestSchema();
         $this->withoutMiddleware([
             EmailVerifiedApi::class,
-            IsApiMember::class,
             IsMember::class,
             EnsureEmailIsVerified::class,
             RequirePasswordChangeApi::class,
@@ -56,6 +54,44 @@ class ProfilePhotoUploadTest extends TestCase
             'user_id' => $user->id,
             'type' => 'image',
         ]);
+    }
+
+    public function test_unapproved_member_can_upload_profile_picture_during_onboarding(): void
+    {
+        $user = $this->createUser(['approved' => 0]);
+        Sanctum::actingAs($user);
+
+        $response = $this->post('/api/upload-profile-picture', [
+            'photo' => UploadedFile::fake()->image('onboarding-profile.jpg', 320, 320),
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('result', true);
+        $response->assertJsonPath('success', true);
+
+        $user->refresh();
+
+        $this->assertNotEmpty($user->photo);
+        $this->assertDatabaseHas('uploads', [
+            'id' => $user->photo,
+            'user_id' => $user->id,
+            'type' => 'image',
+        ]);
+    }
+
+    public function test_unapproved_member_is_still_blocked_from_unrelated_member_routes(): void
+    {
+        $user = $this->createUser(['approved' => 0]);
+        Sanctum::actingAs($user);
+
+        $response = $this->postJson('/api/update-device-token', [
+            'device_token' => 'test-device-token',
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('result', false);
+        $response->assertJsonPath('status', 'non_verified');
+        $response->assertJsonPath('message', 'User is not verified');
     }
 
     public function test_profile_picture_upload_returns_specific_validation_error(): void
