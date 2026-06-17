@@ -269,6 +269,12 @@ const Sidebar: React.FC<SidebarProps> = ({
                         active={currentView === 'profile'}
                         onClick={() => onNavigate('profile')}
                     />
+                    <NavItem
+                        icon={<ShieldCheck size={20} />}
+                        label={t('nav.privacyTrust')}
+                        active={currentView === 'settings'}
+                        onClick={() => onNavigate('settings')}
+                    />
                 </div>
 
                 <p className="px-4 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 mt-4">
@@ -299,18 +305,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                         sublabel={t('nav.referralSublabel')}
                         active={currentView === 'referral'}
                         onClick={() => onNavigate('referral')}
-                    />
-                </div>
-
-                <p className="px-4 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 mt-4">
-                    {t('nav.settingsHeader')}
-                </p>
-                <div className="space-y-1">
-                    <NavItem
-                        icon={<ShieldCheck size={20} />}
-                        label={t('nav.privacyTrust')}
-                        active={currentView === 'settings'}
-                        onClick={() => onNavigate('settings')}
                     />
                 </div>
             </nav>
