@@ -2,7 +2,7 @@
   "name": "marriagebureau",
   "version": "1.0.0",
   "private": true,
-  "description": "Doctor Marriage Bureau project root for the Laravel backend, admin frontend, user frontend, and mobile app.",
+  "description": "Single Hostinger Node.js entrypoint for Doctor Marriage Bureau frontends with API proxy.",
   "scripts": {
     "admin:install": "npm --prefix \"Admin Panel Frontend\" ci",
     "user:install": "npm --prefix \"New User Panel Frontend\" ci",
@@ -12,6 +12,12 @@
     "mobile:ci": "npm run mobile:install && npm --prefix \"DMB Mobile App\" run ci",
     "admin:build": "npm run admin:install && npm --prefix \"Admin Panel Frontend\" run build",
     "user:build": "npm run user:install && npm --prefix \"New User Panel Frontend\" run build",
-    "mobile:build:web": "npm run mobile:install && npm --prefix \"DMB Mobile App\" run build:web"
+    "mobile:build:web": "npm run mobile:install && npm --prefix \"DMB Mobile App\" run build:web",
+    "build": "npm run hostinger:build",
+    "hostinger:build": "npm run user:build && npm run admin:build",
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }
