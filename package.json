@@ -1,0 +1,14 @@
+{
+  "name": "marriagebureau",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Doctor Marriage Bureau project root for the Laravel backend, admin frontend, user frontend, and mobile app.",
+  "scripts": {
+    "admin:ci": "npm --prefix \"Admin Panel Frontend\" run ci",
+    "user:ci": "npm --prefix \"New User Panel Frontend\" run ci",
+    "mobile:ci": "npm --prefix \"DMB Mobile App\" run ci",
+    "admin:build": "npm --prefix \"Admin Panel Frontend\" run build",
+    "user:build": "npm --prefix \"New User Panel Frontend\" run build",
+    "mobile:build:web": "npm --prefix \"DMB Mobile App\" run build:web"
+  }
+}
