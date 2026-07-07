@@ -5,8 +5,8 @@ const path = require('node:path');
 const { URL } = require('node:url');
 
 const port = Number(process.env.PORT || process.env.NODE_PORT || 3000);
-const backendOrigin = process.env.DMB_API_ORIGIN || 'http://185.252.233.186:8086';
-const soketiOrigin = process.env.DMB_SOKETI_ORIGIN || 'http://185.252.233.186:6001';
+const backendOrigin = process.env.DMB_API_ORIGIN || '';
+const soketiOrigin = process.env.DMB_SOKETI_ORIGIN || '';
 
 const rootDir = __dirname;
 const userDist = path.join(rootDir, 'New User Panel Frontend', 'dist');
@@ -81,6 +81,7 @@ function serveFile(req, res, baseDir, urlPath, spaFallback = true) {
 }
 
 function proxy(req, res, targetOrigin) {
+  if (!targetOrigin) return send(res, 502, 'Backend origin is not configured');
   const target = new URL(req.url, targetOrigin);
   const headers = { ...req.headers, host: target.host };
   headers['x-forwarded-host'] = req.headers.host || '';
@@ -113,6 +114,7 @@ function proxy(req, res, targetOrigin) {
 }
 
 function proxyUpgrade(req, socket, head, targetOrigin) {
+  if (!targetOrigin) return socket.destroy();
   const target = new URL(req.url, targetOrigin);
   const transport = target.protocol === 'https:' ? https : http;
   const upstream = transport.request({

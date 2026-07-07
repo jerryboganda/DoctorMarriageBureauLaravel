@@ -1,0 +1,26 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    RewriteRule ^\.builds - [F,L]
+    RewriteRule ^\.env - [F,L]
+
+    RewriteRule ^admin-panel$ /admin-panel/ [R=308,L]
+    RewriteRule ^admin-panel/(.*)$ public/admin-panel/$1 [L]
+
+    RewriteRule ^api(/.*)?$ public/index.php [L]
+    RewriteRule ^sanctum(/.*)?$ public/index.php [L]
+    RewriteRule ^broadcasting(/.*)?$ public/index.php [L]
+    RewriteRule ^storage/(.*)$ public/storage/$1 [L]
+    RewriteRule ^uploads/(.*)$ public/uploads/$1 [L]
+    RewriteRule ^uploaded-files/(.*)$ public/uploaded-files/$1 [L]
+
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    RewriteCond %{DOCUMENT_ROOT}/public/user-panel/$1 -f
+    RewriteRule ^(.*)$ public/user-panel/$1 [L]
+
+    RewriteRule ^.*$ public/user-panel/index.html [L]
+</IfModule>
+Options -Indexes
