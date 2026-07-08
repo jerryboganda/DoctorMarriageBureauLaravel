@@ -11,6 +11,7 @@
 
     RewriteRule ^admin-panel(/.*)?$ /admin [R=302,L]
 
+    RewriteRule ^admin(/.*)?$ public/index.php [L]
     RewriteRule ^api(/.*)?$ public/index.php [L]
     RewriteRule ^sanctum(/.*)?$ public/index.php [L]
     RewriteRule ^broadcasting(/.*)?$ public/index.php [L]
