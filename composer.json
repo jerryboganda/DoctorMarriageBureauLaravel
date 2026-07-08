@@ -104,6 +104,7 @@
             "phpstan analyse --memory-limit=1G"
         ],
         "test:backend": [
+            "@php artisan route:clear",
             "@php artisan test"
         ],
         "ci:backend": [

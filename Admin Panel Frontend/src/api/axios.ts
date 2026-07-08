@@ -30,8 +30,8 @@ api.interceptors.response.use(
     (error) => {
         if (error?.response?.status === 401 || error?.response?.status === 403) {
             localStorage.removeItem('admin_auth_token');
-            if (window.location.pathname !== '/admin-react/login') {
-                window.location.href = '/admin-react/login';
+            if (window.location.pathname !== '/admin-panel/login') {
+                window.location.href = '/admin-panel/login';
             }
         }
         return Promise.reject(error);

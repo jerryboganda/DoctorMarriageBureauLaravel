@@ -16,7 +16,7 @@ export default function LoginPage() {
         setLoading(true);
         try {
             await login(email, password);
-            navigate('/admin-react/dashboard');
+            navigate('/admin-panel/dashboard');
         } catch (err: any) {
             setError(err?.response?.data?.message || err?.message || 'Login failed');
         } finally {
