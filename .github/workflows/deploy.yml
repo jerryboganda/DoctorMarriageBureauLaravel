@@ -120,4 +120,4 @@ jobs:
             /tmp/dmb-hostinger-artifact.tar.gz \
             "$HOSTINGER_USER@$HOSTINGER_HOST:$HOSTINGER_PATH/.builds/dmb-hostinger-artifact.tar.gz"
           ssh -i ~/.ssh/hostinger -p "${HOSTINGER_PORT:-65002}" "$HOSTINGER_USER@$HOSTINGER_HOST" \
-            "cd '$HOSTINGER_PATH' && bash deploy/hostinger-release.sh .builds/dmb-hostinger-artifact.tar.gz"
+            "cp '$HOSTINGER_PATH/deploy/hostinger-release.sh' /tmp/dmb-hostinger-release.sh && cd '$HOSTINGER_PATH' && bash /tmp/dmb-hostinger-release.sh .builds/dmb-hostinger-artifact.tar.gz"
