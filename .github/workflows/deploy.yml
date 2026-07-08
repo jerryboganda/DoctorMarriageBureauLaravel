@@ -91,8 +91,8 @@ jobs:
 
       - name: Configure SSH
         env:
-          HOSTINGER_SSH_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
-          HOSTINGER_HOST: ${{ secrets.HOSTINGER_HOST }}
+          HOSTINGER_SSH_KEY: ${{ secrets.HOSTINGER_SSH_KEY || secrets.DEPLOY_KEY }}
+          HOSTINGER_HOST: ${{ secrets.HOSTINGER_HOST || secrets.DEPLOY_HOST }}
           HOSTINGER_PORT: ${{ secrets.HOSTINGER_PORT }}
         run: |
           test -n "$HOSTINGER_SSH_KEY"
@@ -104,10 +104,10 @@ jobs:
 
       - name: Upload and release on Hostinger
         env:
-          HOSTINGER_HOST: ${{ secrets.HOSTINGER_HOST }}
+          HOSTINGER_HOST: ${{ secrets.HOSTINGER_HOST || secrets.DEPLOY_HOST }}
           HOSTINGER_PORT: ${{ secrets.HOSTINGER_PORT }}
-          HOSTINGER_USER: ${{ secrets.HOSTINGER_USER }}
-          HOSTINGER_PATH: ${{ secrets.HOSTINGER_PATH }}
+          HOSTINGER_USER: ${{ secrets.HOSTINGER_USER || secrets.DEPLOY_USER }}
+          HOSTINGER_PATH: ${{ secrets.HOSTINGER_PATH || secrets.DEPLOY_PATH }}
         run: |
           test -n "$HOSTINGER_USER"
           test -n "$HOSTINGER_PATH"
