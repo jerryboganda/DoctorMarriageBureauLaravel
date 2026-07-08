@@ -10,12 +10,20 @@ fi
 root="$(pwd)"
 timestamp="$(date +%Y%m%d%H%M%S)"
 release_dir="$root/.builds/release-$timestamp"
+preserved_env="$root/.builds/config/.env"
 
-mkdir -p "$root/.builds" "$release_dir"
+mkdir -p "$root/.builds" "$root/.builds/config" "$release_dir"
+if [ -f "$root/.env" ]; then
+  cp "$root/.env" "$preserved_env"
+fi
+
 tar -xzf "$artifact" -C "$release_dir"
 
-if [ -f "$root/.env" ] && [ ! -f "$release_dir/.env" ]; then
-  cp "$root/.env" "$release_dir/.env"
+if [ -f "$preserved_env" ]; then
+  cp "$preserved_env" "$release_dir/.env"
+elif [ ! -f "$release_dir/.env" ]; then
+  echo "Missing production .env; aborting before release copy." >&2
+  exit 1
 fi
 
 if [ -d "$root/vendor" ]; then
