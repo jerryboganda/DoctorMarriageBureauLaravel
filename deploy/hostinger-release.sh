@@ -85,7 +85,7 @@ for built_path in public/user-panel; do
   fi
 done
 
-rm -rf "$root/public/admin-panel"
+rm -rf "$root/public/admin-panel" "$root/Admin Panel Frontend"
 
 chmod 755 "$root/public" "$root/public/user-panel" "$root/bootstrap" "$root/bootstrap/cache" "$root/storage" 2>/dev/null || true
 find "$root/public/user-panel" -type d -exec chmod 755 {} \;
