@@ -1,14 +1,8 @@
 import axios from 'axios';
-
-const envUrl = import.meta.env.VITE_API_URL;
-let secureUrl = envUrl || '/api';
-
-if (secureUrl.startsWith('http') && !secureUrl.endsWith('/api')) {
-    secureUrl = secureUrl.replace(/\/$/, '') + '/api';
-}
+import { API_BASE_URL } from './apiOrigin';
 
 export const api = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL || secureUrl,
+    baseURL: API_BASE_URL,
     timeout: 20000,
     headers: {
         'X-Requested-With': 'XMLHttpRequest',

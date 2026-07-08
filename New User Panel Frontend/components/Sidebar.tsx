@@ -21,6 +21,7 @@ import { api } from '../utils/api';
 import { useAuthStore } from '../src/stores/authStore';
 import { compressImage } from '../utils/compression';
 import LanguageToggle from './LanguageToggle';
+import { resolveAssetUrl as resolveAvatarUrl } from '../utils/apiOrigin';
 
 interface SidebarProps {
     currentView: string;
@@ -29,22 +30,6 @@ interface SidebarProps {
     onUpgrade?: () => void;
     onCloseMobile?: () => void;
 }
-
-const API_BASE =
-    import.meta.env.VITE_API_BASE_URL?.replace('/api', '') ||
-    'https://api.doctormarriagebureau.com.pk';
-const DEFAULT_AVATAR = `${API_BASE}/assets/img/avatar-place.png`;
-
-const resolveAvatarUrl = (value?: string | null): string => {
-    const candidate = `${value ?? ''}`.trim();
-
-    if (!candidate) return DEFAULT_AVATAR;
-    if (candidate.startsWith('http://') || candidate.startsWith('https://')) return candidate;
-    if (candidate.startsWith('//')) return `https:${candidate}`;
-    if (candidate.startsWith('/')) return `${API_BASE}${candidate}`;
-
-    return `${API_BASE}/${candidate.replace(/^\/+/, '')}`;
-};
 
 const Sidebar: React.FC<SidebarProps> = ({
     currentView,

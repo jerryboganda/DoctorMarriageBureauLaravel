@@ -19,14 +19,12 @@ import { api } from '../utils/api';
 import ReportModal from './ReportModal';
 import { useTranslation } from 'react-i18next';
 import { normalizePositiveAge } from '../utils/age';
+import {
+    DEFAULT_AVATAR_URL as DEFAULT_AVATAR,
+    DEFAULT_FEMALE_AVATAR_URL as DEFAULT_FEMALE_AVATAR,
+    resolveAssetUrl,
+} from '../utils/apiOrigin';
 import { useAuthStore } from '../src/stores/authStore';
-
-// API base URL for assets
-const API_BASE =
-    import.meta.env.VITE_API_BASE_URL?.replace('/api', '') ||
-    'https://api.doctormarriagebureau.com.pk';
-const DEFAULT_AVATAR = `${API_BASE}/assets/img/avatar-place.png`;
-const DEFAULT_FEMALE_AVATAR = `${API_BASE}/assets/img/female-avatar-place.png`;
 
 const isFemaleProfile = (gender?: number | string | null): boolean => {
     const normalized = `${gender ?? ''}`.trim().toLowerCase();
@@ -84,11 +82,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ profile, interestId, onDeclin
     const fallbackAvatar = isFemaleProfile(displayProfile.gender)
         ? DEFAULT_FEMALE_AVATAR
         : DEFAULT_AVATAR;
-    let avatarUrl = displayProfile.avatarUrl || '';
-    // Use fallback if empty or invalid URL
-    if (!avatarUrl || (!avatarUrl.startsWith('http') && !avatarUrl.startsWith('/'))) {
-        avatarUrl = fallbackAvatar;
-    }
+    let avatarUrl = resolveAssetUrl(displayProfile.avatarUrl, fallbackAvatar);
     avatarUrl = swapAvatarForGender(avatarUrl, displayProfile.gender);
     const shouldBlurAvatar = Boolean(
         displayProfile.profilePhotoBlur &&

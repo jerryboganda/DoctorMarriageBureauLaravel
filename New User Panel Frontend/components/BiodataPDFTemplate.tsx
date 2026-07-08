@@ -13,28 +13,15 @@ import {
     UserCheck,
 } from 'lucide-react';
 import { calculateAgeFromDob } from '../utils/age';
+import {
+    DEFAULT_AVATAR_URL as DEFAULT_AVATAR,
+    DEFAULT_FEMALE_AVATAR_URL as DEFAULT_FEMALE_AVATAR,
+    resolveAssetUrl,
+} from '../utils/apiOrigin';
 
 interface BiodataPDFTemplateProps {
     userData: any;
 }
-
-const resolveAssetBase = () => {
-    const envBase = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
-
-    if (envBase) {
-        return envBase.replace(/\/api$/, '').replace(/\/$/, '');
-    }
-
-    if (typeof window !== 'undefined' && window.location?.origin) {
-        return window.location.origin;
-    }
-
-    return 'https://api.doctormarriagebureau.com.pk';
-};
-
-const API_BASE = resolveAssetBase();
-const DEFAULT_AVATAR = `${API_BASE}/assets/img/avatar-place.png`;
-const DEFAULT_FEMALE_AVATAR = `${API_BASE}/assets/img/female-avatar-place.png`;
 
 const humanize = (value: any) =>
     value
@@ -68,15 +55,7 @@ const BiodataPDFTemplate: React.FC<BiodataPDFTemplateProps> = ({ userData }) => 
     const gender = isFemale ? 'Female' : 'Male';
     const defaultAvatar = isFemale ? DEFAULT_FEMALE_AVATAR : DEFAULT_AVATAR;
     const rawPhoto = userData?.photo_url || userData?.photo;
-    const photoUrl =
-        typeof rawPhoto === 'string' &&
-        (rawPhoto.startsWith('http://') ||
-            rawPhoto.startsWith('https://') ||
-            rawPhoto.startsWith('/'))
-            ? rawPhoto.startsWith('/')
-                ? `${API_BASE}${rawPhoto}`
-                : rawPhoto
-            : defaultAvatar;
+    const photoUrl = resolveAssetUrl(rawPhoto, defaultAvatar);
     const shouldBlurPhoto = Boolean(userData?.profile_photo_blur && photoUrl !== defaultAvatar);
 
     const presentAddress = addresses?.find((a: any) => a.type === 'present') || addresses?.[0];

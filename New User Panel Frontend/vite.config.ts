@@ -33,6 +33,8 @@ export default defineConfig(({ mode }) => {
         },
         build: {
             chunkSizeWarningLimit: 700,
+            outDir: '../public/user-panel',
+            emptyOutDir: true,
             rollupOptions: {
                 output: {
                     manualChunks: {

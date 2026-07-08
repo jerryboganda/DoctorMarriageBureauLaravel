@@ -66,6 +66,13 @@ ecommerce.zip
 install.zip
 matrimonial_laravel.zip
 matrimonial420.zip
+/*.sql
+/*.tar.gz
+/*.zip
+/.builds/
+/public/user-panel/
+/storage/framework/cache/phpstan/
+/public/error_log
 
 # ---- IDE / Editor ----
 .idea/

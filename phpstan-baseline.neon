@@ -346,31 +346,6 @@ parameters:
 			path: app/Http/Controllers/Api/HomeController.php
 
 		-
-			message: "#^Variable \\$how_it_works_steps_icons might not be defined\\.$#"
-			count: 1
-			path: app/Http/Controllers/Api/HomeController.php
-
-		-
-			message: "#^Variable \\$how_it_works_steps_sub_titles might not be defined\\.$#"
-			count: 1
-			path: app/Http/Controllers/Api/HomeController.php
-
-		-
-			message: "#^Variable \\$how_it_works_steps_titles might not be defined\\.$#"
-			count: 1
-			path: app/Http/Controllers/Api/HomeController.php
-
-		-
-			message: "#^Variable \\$new_array might not be defined\\.$#"
-			count: 1
-			path: app/Http/Controllers/Api/HomeController.php
-
-		-
-			message: "#^Variable \\$steps might not be defined\\.$#"
-			count: 1
-			path: app/Http/Controllers/Api/HomeController.php
-
-		-
 			message: "#^Relation 'interestedby' is not found in App\\\\Models\\\\ExpressInterest model\\.$#"
 			count: 1
 			path: app/Http/Controllers/Api/InterestController.php
@@ -3128,34 +3103,34 @@ parameters:
 		-
 			message: "#^Relation 'addresses' is not found in App\\\\Models\\\\User model\\.$#"
 			count: 1
-			path: routes/api.php
+			path: app/Http/Controllers/Api/DashboardWidgetController.php
 
 		-
 			message: "#^Relation 'chats' is not found in App\\\\Models\\\\ChatThread model\\.$#"
 			count: 1
-			path: routes/api.php
+			path: app/Http/Controllers/Api/DashboardWidgetController.php
 
 		-
 			message: "#^Relation 'interestedby' is not found in App\\\\Models\\\\ExpressInterest model\\.$#"
 			count: 4
-			path: routes/api.php
+			path: app/Http/Controllers/Api/DashboardWidgetController.php
 
 		-
 			message: "#^Relation 'profileViewer' is not found in App\\\\Models\\\\ProfileViewer model\\.$#"
 			count: 2
-			path: routes/api.php
+			path: app/Http/Controllers/Api/DashboardWidgetController.php
 
 		-
 			message: "#^Relation 'receiver' is not found in App\\\\Models\\\\ChatThread model\\.$#"
 			count: 1
-			path: routes/api.php
+			path: app/Http/Controllers/Api/DashboardWidgetController.php
 
 		-
 			message: "#^Relation 'sender' is not found in App\\\\Models\\\\ChatThread model\\.$#"
 			count: 1
-			path: routes/api.php
+			path: app/Http/Controllers/Api/DashboardWidgetController.php
 
 		-
 			message: "#^Relation 'user' is not found in App\\\\Models\\\\HappyStory model\\.$#"
 			count: 1
-			path: routes/api.php
+			path: app/Http/Controllers/Api/DashboardWidgetController.php

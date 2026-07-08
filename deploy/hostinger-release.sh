@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+artifact="${1:-}"
+if [ -z "$artifact" ] || [ ! -f "$artifact" ]; then
+  echo "Usage: bash deploy/hostinger-release.sh <artifact.tar.gz>" >&2
+  exit 1
+fi
+
+root="$(pwd)"
+timestamp="$(date +%Y%m%d%H%M%S)"
+release_dir="$root/.builds/release-$timestamp"
+
+mkdir -p "$root/.builds" "$release_dir"
+tar -xzf "$artifact" -C "$release_dir"
+
+if [ -f "$root/.env" ] && [ ! -f "$release_dir/.env" ]; then
+  cp "$root/.env" "$release_dir/.env"
+fi
+
+if [ -d "$root/vendor" ]; then
+  rm -rf "$release_dir/vendor"
+  cp -a "$root/vendor" "$release_dir/vendor"
+fi
+
+if [ -d "$root/public/uploads" ]; then
+  mkdir -p "$release_dir/public"
+  rm -rf "$release_dir/public/uploads"
+  cp -a "$root/public/uploads" "$release_dir/public/uploads"
+fi
+
+if [ -d "$root/storage/app/public/uploads" ]; then
+  mkdir -p "$release_dir/storage/app/public"
+  rm -rf "$release_dir/storage/app/public/uploads"
+  cp -a "$root/storage/app/public/uploads" "$release_dir/storage/app/public/uploads"
+fi
+
+for built_path in public/user-panel public/admin-panel; do
+  if [ -d "$release_dir/$built_path" ]; then
+    rm -rf "$root/$built_path"
+  fi
+done
+
+if [ -d "$release_dir/public/user-panel/assets" ]; then
+  rm -rf "$root/assets"
+fi
+
+cp -a "$release_dir"/. "$root"/
+
+find "$root" -maxdepth 1 -type f \( \
+  -name '*.sql' -o \
+  -name '*.tar.gz' -o \
+  -name '*.zip' -o \
+  -name '_ide_helper.php' -o \
+  -name '_ide_helper_models.php' \
+  \) -delete
+rm -f "$root/public/error_log"
+
+composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+
+php artisan optimize:clear
+php artisan migrate --force
+if ! php artisan storage:link; then
+  if [ -d "$root/storage/app/public" ]; then
+    rm -rf "$root/public/storage"
+    mkdir -p "$root/public/storage"
+    cp -a "$root/storage/app/public"/. "$root/public/storage"/
+  fi
+fi
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+php artisan event:cache
+
+find "$root/.builds" -mindepth 1 -maxdepth 1 -type d -name 'release-*' | sort | head -n -3 | xargs -r rm -rf
+
+echo "Hostinger release completed: $timestamp"

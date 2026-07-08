@@ -5,6 +5,12 @@
 
     RewriteEngine On
 
+    RewriteRule (^|/)\.git - [F,L]
+    RewriteRule ^\.env - [F,L]
+    RewriteRule (^|/)\.builds(/|$) - [F,L]
+    RewriteRule \.(sql|sqlite|bak|backup|dump|log|tar|tar\.gz|tgz|zip|rar|7z)$ - [F,L,NC]
+    RewriteRule (^|/)(_ide_helper(_models)?\.php|composer\.(json|lock)|package(-lock)?\.json)$ - [F,L,NC]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
@@ -23,22 +29,37 @@
 # Disable index view
 Options -Indexes
 
-# Hide a specific file
-<Files .env>
-    Order allow,deny
-    Deny from all
-</Files>
+<IfModule mod_headers.c>
+    <FilesMatch "\.html$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+        Header set Pragma "no-cache"
+        Header set Expires "0"
+    </FilesMatch>
+    <FilesMatch "\.(?:css|js|mjs|woff2?|ttf|otf|eot|svg|png|jpe?g|gif|webp|avif|ico)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+</IfModule>
+
+<FilesMatch "(^\.env|\.sql$|\.sqlite$|\.bak$|\.backup$|\.dump$|\.log$|\.tar$|\.tar\.gz$|\.tgz$|\.zip$|\.rar$|\.7z$|_ide_helper(_models)?\.php$)">
+    Require all denied
+</FilesMatch>
 
 ## EXPIRES CACHING ##
 <IfModule mod_expires.c>
     ExpiresActive On
+    ExpiresByType text/html "access plus 0 seconds"
     ExpiresByType image/jpg "access plus 1 year"
     ExpiresByType image/jpeg "access plus 1 year"
     ExpiresByType image/gif "access plus 1 year"
     ExpiresByType image/png "access plus 1 year"
-    ExpiresByType text/css "access plus 1 month"
-    ExpiresByType text/x-javascript "access plus 1 month"
-    ExpiresByType application/x-shockwave-flash "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType image/avif "access plus 1 year"
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType text/javascript "access plus 1 year"
     ExpiresByType image/x-icon "access plus 1 year"
-    ExpiresDefault "access plus 1 days"
+    ExpiresByType font/woff "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresDefault "access plus 0 seconds"
 </IfModule>

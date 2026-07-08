@@ -8,6 +8,7 @@ use App\Models\HappyStory;
 use App\Services\HappyStoryService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Cache;
 
 class HappyStoryController extends Controller
 {
@@ -58,7 +59,8 @@ class HappyStoryController extends Controller
 
     public function happy_stories()
     {
-        $happy_stories = HappyStory::where('approved', 1)->latest()->paginate(12);
+        $page = request()->integer('page', 1);
+        $happy_stories = Cache::remember('api.static.happy_stories.page.'.$page, now()->addMinutes(30), fn () => HappyStory::where('approved', 1)->latest()->paginate(12));
 
         return HappyStoryResource::collection($happy_stories)->additional([
             'result' => true,
@@ -67,7 +69,7 @@ class HappyStoryController extends Controller
 
     public function story_details(Request $request)
     {
-        $happy_story = HappyStory::where('id', $request->story_id)->where('approved', 1)->first();
+        $happy_story = Cache::remember('api.static.happy_stories.detail.'.$request->story_id, now()->addMinutes(30), fn () => HappyStory::where('id', $request->story_id)->where('approved', 1)->first());
 
         return (new HappyStoryResource($happy_story))->additional([
             'result' => true,

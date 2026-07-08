@@ -19,101 +19,128 @@ use App\Models\User;
 use App\Notifications\EmailNotification;
 use ArrayIterator;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Notification;
 use Laravel\Sanctum\PersonalAccessToken;
 use MultipleIterator;
 
 class HomeController extends Controller
 {
+    private function rememberStatic(string $key, callable $callback)
+    {
+        return Cache::remember('api.static.home.'.$key, now()->addMinutes(30), $callback);
+    }
+
     public function home_slider()
     {
-        // Slider images
-        $slider_images = [];
-        $sliders = get_setting('show_homepage_slider') == 'on' && get_setting('home_slider_images') != null ?
-            json_decode(get_setting('home_slider_images'), true) : [];
-        foreach ($sliders as $key => $slider) {
-            $slider_data = [
-                'image' => get_setting('home_slider_images_small') != null
-                    ? uploaded_asset(json_decode(get_setting('home_slider_images_small'), true)[$key])
-                    : uploaded_asset($slider),
-            ];
-            $slider_images[] = $slider_data;
-        }
+        $slider_images = $this->rememberStatic('slider', function () {
+            $slider_images = [];
+            $sliders = get_setting('show_homepage_slider') == 'on' && get_setting('home_slider_images') != null ?
+                json_decode(get_setting('home_slider_images'), true) : [];
+            foreach ($sliders as $key => $slider) {
+                $slider_data = [
+                    'image' => get_setting('home_slider_images_small') != null
+                        ? uploaded_asset(json_decode(get_setting('home_slider_images_small'), true)[$key])
+                        : uploaded_asset($slider),
+                ];
+                $slider_images[] = $slider_data;
+            }
+
+            return $slider_images;
+        });
 
         return $this->response_data($slider_images);
     }
 
     public function home_banner()
     {
-        // banner
-        $banner = [];
-        $banner_imags = get_setting('show_home_banner1_section') == 'on' && get_setting('home_banner1_images') != null ?
-            json_decode(get_setting('home_banner1_images')) : [];
-        foreach ($banner_imags as $key => $value) {
-            $banner_data = [
-                'link' => json_decode(get_setting('home_banner1_links'), true)[$key],
-                'image' => uploaded_asset($value),
-            ];
-            $banner[] = $banner_data;
-        }
-        $data['banner'] = $banner;
+        $banner = $this->rememberStatic('banner', function () {
+            $banner = [];
+            $banner_imags = get_setting('show_home_banner1_section') == 'on' && get_setting('home_banner1_images') != null ?
+                json_decode(get_setting('home_banner1_images')) : [];
+            foreach ($banner_imags as $key => $value) {
+                $banner_data = [
+                    'link' => json_decode(get_setting('home_banner1_links'), true)[$key],
+                    'image' => uploaded_asset($value),
+                ];
+                $banner[] = $banner_data;
+            }
+
+            return $banner;
+        });
 
         return $this->response_data($banner);
     }
 
     public function home_how_it_works()
     {
-        // How It Works
-        $how_it_works = [];
-        if (get_setting('show_how_it_works_section') == 'on' && get_setting('how_it_works_steps_titles') != null) {
-            $how_it_works_title = get_setting('how_it_works_title') ?? '';
-            $how_it_works_sub_title = get_setting('how_it_works_sub_title') ?? '';
-            $how_it_works_steps_titles = [];
-            $how_it_works_steps_titles = json_decode(get_setting('how_it_works_steps_titles'));
+        $payload = $this->rememberStatic('how_it_works', function () {
+            $how_it_works = [];
+            if (get_setting('show_how_it_works_section') == 'on' && get_setting('how_it_works_steps_titles') != null) {
+                $how_it_works_steps_titles = json_decode(get_setting('how_it_works_steps_titles'));
 
-            foreach ($how_it_works_steps_titles as $key => $how_it_works_steps_title) {
-                $how_it_works_data = [
-                    'step' => $key + 1,
-                    'title' => $how_it_works_steps_title,
-                    'subtitle' => json_decode(get_setting('how_it_works_steps_sub_titles'), true)[$key],
-                    'icon' => uploaded_asset(json_decode(get_setting('how_it_works_steps_icons'), true)[$key]),
+                foreach ($how_it_works_steps_titles as $key => $how_it_works_steps_title) {
+                    $how_it_works_data = [
+                        'step' => $key + 1,
+                        'title' => $how_it_works_steps_title,
+                        'subtitle' => json_decode(get_setting('how_it_works_steps_sub_titles'), true)[$key],
+                        'icon' => uploaded_asset(json_decode(get_setting('how_it_works_steps_icons'), true)[$key]),
+                    ];
+                    $how_it_works[] = $how_it_works_data;
+                }
+
+                return [
+                    'enabled' => true,
+                    'items' => $how_it_works,
+                    'title' => get_setting('how_it_works_title') ?? '',
+                    'sub_title' => get_setting('how_it_works_sub_title') ?? '',
                 ];
-                $how_it_works[] = $how_it_works_data;
             }
 
-            return HowItWorksResource::collection($how_it_works)->additional([
-                'how_it_works_title' => $how_it_works_title,
-                'how_it_works_sub_title' => $how_it_works_sub_title,
+            return [
+                'enabled' => false,
+                'items' => $how_it_works,
+                'title' => '',
+                'sub_title' => '',
+            ];
+        });
+
+        if ($payload['enabled']) {
+            return HowItWorksResource::collection($payload['items'])->additional([
+                'how_it_works_title' => $payload['title'],
+                'how_it_works_sub_title' => $payload['sub_title'],
             ]);
         }
 
-        return $this->failure_data($how_it_works);
+        return $this->failure_data($payload['items']);
     }
 
     public function home_trusted_by_millions()
     {
-        // trusted by millions
-        $trusted_by_millions = [];
-        $homepage_best_features = get_setting('show_trusted_by_millions_section') == 'on' ?
-            json_decode(get_setting('homepage_best_features')) : [];
-        foreach ($homepage_best_features as $key => $homepage_best_feature) {
-            $homepage_best_feature_data = [
-                'title' => $homepage_best_feature,
-                'icon' => uploaded_asset(json_decode(get_setting('homepage_best_features_icons'), true)[$key]),
-            ];
-            $trusted_by_millions[] = $homepage_best_feature_data;
-        }
+        $trusted_by_millions = $this->rememberStatic('trusted_by_millions', function () {
+            $trusted_by_millions = [];
+            $homepage_best_features = get_setting('show_trusted_by_millions_section') == 'on' ?
+                json_decode(get_setting('homepage_best_features')) : [];
+            foreach ($homepage_best_features as $key => $homepage_best_feature) {
+                $homepage_best_feature_data = [
+                    'title' => $homepage_best_feature,
+                    'icon' => uploaded_asset(json_decode(get_setting('homepage_best_features_icons'), true)[$key]),
+                ];
+                $trusted_by_millions[] = $homepage_best_feature_data;
+            }
+
+            return $trusted_by_millions;
+        });
 
         return $this->response_data($trusted_by_millions);
     }
 
     public function home_happy_stories()
     {
-        // Happy Stories
-        $stories = HappyStory::where('approved', '1')
+        $stories = $this->rememberStatic('happy_stories', fn () => HappyStory::where('approved', '1')
             ->latest()
             ->limit(get_setting('max_happy_story_show_homepage'))
-            ->get();
+            ->get());
         $happy_stories = get_setting('show_happy_story_section') == 'on' ? (HappyStoryResource::collection($stories)) : [];
 
         return $this->response_data($happy_stories);
@@ -121,38 +148,42 @@ class HomeController extends Controller
 
     public function home_packages()
     {
-        // packages
-        $packages = get_setting('show_homapege_package_section') == 'on' ? (PackageResource::collection(Package::where('active', '1')->get())) : [];
+        $packages = get_setting('show_homapege_package_section') == 'on'
+            ? PackageResource::collection($this->rememberStatic('packages', fn () => Package::where('active', '1')->get()))
+            : [];
 
         return $this->response_data($packages);
     }
 
     public function home_reviews()
     {
-        // reviews
-        $reviews = [];
-        $homepage_reviews = get_setting('show_homepage_review_section') == 'on' && get_setting('homepage_reviews') != null ?
-            json_decode(get_setting('homepage_reviews')) : [];
-        if (count($homepage_reviews) > 0) {
-            $reviews['bg_image'] = uploaded_asset(get_setting('homepage_review_section_background_image'));
-            $reviews['items'] = [];
-            foreach ($homepage_reviews as $key => $review) {
-                $review_data = [
-                    'image' => uploaded_asset(json_decode(get_setting('homepage_reviewers_images'), true)[$key]) ?? static_asset('assets/img/placeholder.jpg'),
-                    'review' => $review,
-                ];
-                $reviews['items'][] = $review_data;
+        $reviews = $this->rememberStatic('reviews', function () {
+            $reviews = [];
+            $homepage_reviews = get_setting('show_homepage_review_section') == 'on' && get_setting('homepage_reviews') != null ?
+                json_decode(get_setting('homepage_reviews')) : [];
+            if (count($homepage_reviews) > 0) {
+                $reviews['bg_image'] = uploaded_asset(get_setting('homepage_review_section_background_image'));
+                $reviews['items'] = [];
+                foreach ($homepage_reviews as $key => $review) {
+                    $review_data = [
+                        'image' => uploaded_asset(json_decode(get_setting('homepage_reviewers_images'), true)[$key]) ?? static_asset('assets/img/placeholder.jpg'),
+                        'review' => $review,
+                    ];
+                    $reviews['items'][] = $review_data;
+                }
             }
-        }
+
+            return $reviews;
+        });
 
         return $reviews ? $this->response_data($reviews) : $this->failure_data(null);
     }
 
     public function home_blogs()
     {
-        // blogs
-        $blogs = get_setting('show_blog_section') == 'on' ?
-            (BlogResource::collection(Blog::latest()->active()->limit(get_setting('max_blog_show_homepage'))->get())) : [];
+        $blogs = get_setting('show_blog_section') == 'on'
+            ? BlogResource::collection($this->rememberStatic('blogs', fn () => Blog::latest()->active()->limit(get_setting('max_blog_show_homepage'))->get()))
+            : [];
 
         return $this->response_data($blogs);
     }
@@ -400,34 +431,42 @@ class HomeController extends Controller
     // app_info
     public function app_info()
     {
-        $how_it_works_steps = json_decode(get_setting('how_it_works_steps_titles'));
-        $step = 1;
-        foreach ($how_it_works_steps as $key => $how_it_works_steps_title) {
-            $steps[] = $step++;
-            $how_it_works_steps_titles[] = $how_it_works_steps_title;
-            $how_it_works_steps_sub_titles[] = json_decode(get_setting('how_it_works_steps_sub_titles'), true)[$key];
-            $how_it_works_steps_icons[] = uploaded_asset(json_decode(get_setting('how_it_works_steps_icons'), true)[$key]);
-        }
+        $data = $this->rememberStatic('app_info', function () {
+            $how_it_works_steps = json_decode(get_setting('how_it_works_steps_titles')) ?: [];
+            $step = 1;
+            $steps = [];
+            $how_it_works_steps_titles = [];
+            $how_it_works_steps_sub_titles = [];
+            $how_it_works_steps_icons = [];
+            foreach ($how_it_works_steps as $key => $how_it_works_steps_title) {
+                $steps[] = $step++;
+                $how_it_works_steps_titles[] = $how_it_works_steps_title;
+                $how_it_works_steps_sub_titles[] = json_decode(get_setting('how_it_works_steps_sub_titles'), true)[$key];
+                $how_it_works_steps_icons[] = uploaded_asset(json_decode(get_setting('how_it_works_steps_icons'), true)[$key]);
+            }
 
-        // Combine multiple arrays into single array
-        $keys = ['steps', 'how_it_works_steps_titles', 'how_it_works_steps_sub_titles', 'how_it_works_steps_icons'];
-        $how_it_works = [];
-        $mi = new MultipleIterator;
-        $mi->attachIterator(new ArrayIterator($steps));
-        $mi->attachIterator(new ArrayIterator($how_it_works_steps_titles));
-        $mi->attachIterator(new ArrayIterator($how_it_works_steps_sub_titles));
-        $mi->attachIterator(new ArrayIterator($how_it_works_steps_icons));
+            // Combine multiple arrays into single array
+            $keys = ['steps', 'how_it_works_steps_titles', 'how_it_works_steps_sub_titles', 'how_it_works_steps_icons'];
+            $how_it_works = [];
+            $mi = new MultipleIterator;
+            $mi->attachIterator(new ArrayIterator($steps));
+            $mi->attachIterator(new ArrayIterator($how_it_works_steps_titles));
+            $mi->attachIterator(new ArrayIterator($how_it_works_steps_sub_titles));
+            $mi->attachIterator(new ArrayIterator($how_it_works_steps_icons));
 
-        foreach ($mi as $value) {
-            $how_it_works[] = array_combine($keys, $value);
-        }
+            foreach ($mi as $value) {
+                $how_it_works[] = array_combine($keys, $value);
+            }
 
-        $data['website_name'] = get_setting('website_name');
-        $data['system_logo'] = uploaded_asset(get_setting('system_logo'));
+            $data['website_name'] = get_setting('website_name');
+            $data['system_logo'] = uploaded_asset(get_setting('system_logo'));
 
-        $data['how_it_works_title'] = get_setting('how_it_works_title');
-        $data['how_it_works_sub_title'] = get_setting('how_it_works_sub_title');
-        $data['how_it_works'] = $how_it_works;
+            $data['how_it_works_title'] = get_setting('how_it_works_title');
+            $data['how_it_works_sub_title'] = get_setting('how_it_works_sub_title');
+            $data['how_it_works'] = $how_it_works;
+
+            return $data;
+        });
 
         return $this->response_data($data);
     }
@@ -470,9 +509,13 @@ class HomeController extends Controller
 
     public function addon_check()
     {
-        $addons = [];
-        $addons['referral_system'] = addon_activation('referral_system') ? true : false;
-        $addons['support_tickets'] = addon_activation('support_tickets') ? true : false;
+        $addons = $this->rememberStatic('addon_check', function () {
+            $addons = [];
+            $addons['referral_system'] = addon_activation('referral_system') ? true : false;
+            $addons['support_tickets'] = addon_activation('support_tickets') ? true : false;
+
+            return $addons;
+        });
 
         return $this->response_data($addons);
     }
@@ -496,11 +539,15 @@ class HomeController extends Controller
         $features['member_min_age']           = get_setting('member_min_age') ?? "";
         $features['default_currency']         = \App\Models\Currency::findOrFail(get_setting('system_default_currency'))->symbol;
         */
-        $features = Setting::all();
-        $temp_array = [];
-        foreach ($features as $feature) {
-            $new_array[$feature->type] = $feature->value;
-        }
+        $new_array = $this->rememberStatic('feature_check', function () {
+            $features = Setting::all();
+            $new_array = [];
+            foreach ($features as $feature) {
+                $new_array[$feature->type] = $feature->value;
+            }
+
+            return $new_array;
+        });
 
         // dd($temp_array);
         return $this->response_data($new_array);

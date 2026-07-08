@@ -1,5 +1,6 @@
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
+import { ASSET_BASE_URL } from './apiOrigin';
 
 declare global {
     interface Window {
@@ -13,10 +14,7 @@ window.Pusher = Pusher;
 const pusherHost = import.meta.env.VITE_PUSHER_HOST;
 const pusherPort = import.meta.env.VITE_PUSHER_PORT;
 const pusherScheme = import.meta.env.VITE_PUSHER_SCHEME || 'https';
-const apiBase =
-    import.meta.env.VITE_API_BASE_URL ||
-    (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api$/, '') : '');
-const broadcastBase = apiBase.replace(/\/api\/?$/, '');
+const broadcastBase = ASSET_BASE_URL;
 
 /**
  * Create Echo instance with DYNAMIC auth headers.

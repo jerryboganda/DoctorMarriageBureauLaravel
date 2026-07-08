@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class CrudController extends BaseAdminController
 {
@@ -50,6 +51,7 @@ class CrudController extends BaseAdminController
             $item->{$key} = $value;
         }
         $item->save();
+        Cache::flush();
 
         return $this->ok($item->fresh(), 'Created successfully');
     }
@@ -75,6 +77,7 @@ class CrudController extends BaseAdminController
             $item->{$key} = $value;
         }
         $item->save();
+        Cache::flush();
 
         return $this->ok($item->fresh(), 'Updated successfully');
     }
@@ -84,6 +87,7 @@ class CrudController extends BaseAdminController
         $modelClass = $this->modelClass;
         $item = $modelClass::findOrFail($id);
         $item->delete();
+        Cache::flush();
 
         return $this->ok(null, 'Deleted successfully');
     }
@@ -97,6 +101,7 @@ class CrudController extends BaseAdminController
 
         $modelClass = $this->modelClass;
         $modelClass::whereIn('id', $ids)->delete();
+        Cache::flush();
 
         return $this->ok(null, 'Bulk delete completed');
     }

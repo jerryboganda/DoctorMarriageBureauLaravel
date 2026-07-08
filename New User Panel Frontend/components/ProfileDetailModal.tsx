@@ -41,12 +41,11 @@ import { BTN_TAP } from '../utils/motion';
 import { resolveInterestState } from '../utils/interestStatus';
 import { useAuthStore } from '../src/stores/authStore';
 import ReportModal from './ReportModal';
-
-const API_BASE =
-    import.meta.env.VITE_API_BASE_URL?.replace('/api', '') ||
-    'https://api.doctormarriagebureau.com.pk';
-const DEFAULT_AVATAR = `${API_BASE}/assets/img/avatar-place.png`;
-const DEFAULT_FEMALE_AVATAR = `${API_BASE}/assets/img/female-avatar-place.png`;
+import {
+    DEFAULT_AVATAR_URL as DEFAULT_AVATAR,
+    DEFAULT_FEMALE_AVATAR_URL as DEFAULT_FEMALE_AVATAR,
+    resolveAssetUrl,
+} from '../utils/apiOrigin';
 
 const isFemaleProfile = (gender?: number | string | null): boolean => {
     const normalized = `${gender ?? ''}`.trim().toLowerCase();
@@ -345,7 +344,10 @@ const ProfileDetailModal: React.FC<ProfileDetailModalProps> = ({
     const fallbackAvatar = isFemaleProfile(profileGender) ? DEFAULT_FEMALE_AVATAR : DEFAULT_AVATAR;
     const rawPhotoUrl =
         basicInfo?.photo || (initialAvatarLooksDefault ? '' : profile.avatarUrl) || fallbackAvatar;
-    const photoUrl = swapAvatarForGender(rawPhotoUrl, profileGender);
+    const photoUrl = swapAvatarForGender(
+        resolveAssetUrl(rawPhotoUrl, fallbackAvatar),
+        profileGender,
+    );
     const shouldBlurPhoto = Boolean(
         profilePhotoBlur &&
         currentUserId != null &&
