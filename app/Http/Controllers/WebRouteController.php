@@ -263,14 +263,4 @@ class WebRouteController extends Controller
             return 'Error: '.$e->getMessage();
         }
     }
-
-    public function adminReact()
-    {
-        $path = public_path('admin-panel/index.html');
-        if (! file_exists($path)) {
-            abort(404, 'Admin React build not found. Please run npm run build in Admin Panel Frontend.');
-        }
-
-        return response()->file($path);
-    }
 }

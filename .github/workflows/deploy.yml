@@ -39,7 +39,7 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-interaction --prefer-dist --no-progress --no-dev --optimize-autoloader
 
-      - name: Build user and admin panels
+      - name: Build user panel
         run: npm run hostinger:build
 
       - name: Create deploy archive
@@ -50,7 +50,6 @@ jobs:
             --exclude='.circleci' \
             --exclude='.builds' \
             --exclude='node_modules' \
-            --exclude='Admin Panel Frontend/node_modules' \
             --exclude='New User Panel Frontend/node_modules' \
             --exclude='DMB Mobile App' \
             --exclude='docker-compose.yml' \

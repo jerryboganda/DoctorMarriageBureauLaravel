@@ -10,7 +10,6 @@ const soketiOrigin = process.env.DMB_SOKETI_ORIGIN || '';
 
 const rootDir = __dirname;
 const userDist = path.join(rootDir, 'public', 'user-panel');
-const adminDist = path.join(rootDir, 'public', 'admin-panel');
 
 const mimeTypes = {
   '.html': 'text/html; charset=utf-8',
@@ -155,13 +154,9 @@ const server = http.createServer((req, res) => {
     return send(res, 200, 'ok', { 'Content-Type': 'text/plain; charset=utf-8' });
   }
 
-  if (urlPath === '/admin-panel') {
-    res.writeHead(308, { Location: '/admin-panel/' });
+  if (urlPath === '/admin-panel' || urlPath.startsWith('/admin-panel/')) {
+    res.writeHead(302, { Location: '/admin' });
     return res.end();
-  }
-
-  if (urlPath.startsWith('/admin-panel/')) {
-    return serveFile(req, res, adminDist, urlPath.replace(/^\/admin-panel\/?/, ''), true);
   }
 
   return serveFile(req, res, userDist, urlPath, true);

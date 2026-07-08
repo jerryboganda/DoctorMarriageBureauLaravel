@@ -31,12 +31,10 @@ export COMPOSE_DOCKER_CLI_BUILD=1
 
 REBUILD_APP=false
 REBUILD_FRONTEND=false
-REBUILD_ADMIN=false
 
 if [ "$CHANGED" = "all" ]; then
   REBUILD_APP=true
   REBUILD_FRONTEND=true
-  REBUILD_ADMIN=true
 else
   if echo "$CHANGED" | grep -qE '^(app/|config/|routes/|database/|deploy/Dockerfile|deploy/start\.sh|deploy/php/|composer\.(json|lock))'; then
     REBUILD_APP=true
@@ -44,15 +42,11 @@ else
   if echo "$CHANGED" | grep -qE '^New User Panel Frontend/'; then
     REBUILD_FRONTEND=true
   fi
-  if echo "$CHANGED" | grep -qE '^Admin Panel Frontend/'; then
-    REBUILD_ADMIN=true
-  fi
 fi
 
 BUILD_TARGETS=""
 $REBUILD_APP && BUILD_TARGETS="$BUILD_TARGETS app"
 $REBUILD_FRONTEND && BUILD_TARGETS="$BUILD_TARGETS frontend"
-$REBUILD_ADMIN && BUILD_TARGETS="$BUILD_TARGETS admin"
 BUILD_TARGETS=$(echo "$BUILD_TARGETS" | xargs)
 
 if [ -n "$BUILD_TARGETS" ]; then
@@ -62,7 +56,7 @@ else
   echo "==> No Docker build needed"
 fi
 
-docker compose up -d --no-build app web frontend admin soketi db
+docker compose up -d --no-build app web frontend soketi db
 
 if [ "$CHANGED" = "all" ] || echo "$CHANGED" | grep -q 'deploy/nginx.conf'; then
   echo "==> Restarting web (nginx config changed)"

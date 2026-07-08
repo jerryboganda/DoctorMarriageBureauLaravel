@@ -43,7 +43,7 @@ if [ -d "$root/storage/app/public/uploads" ]; then
   cp -a "$root/storage/app/public/uploads" "$release_dir/storage/app/public/uploads"
 fi
 
-for built_path in public/user-panel public/admin-panel; do
+for built_path in public/user-panel; do
   if [ -d "$release_dir/$built_path" ]; then
     rm -rf "$root/$built_path"
   fi
@@ -73,7 +73,7 @@ if [ ! -f "$root/vendor/autoload.php" ]; then
   exit 1
 fi
 
-for built_path in public/user-panel public/admin-panel; do
+for built_path in public/user-panel; do
   if [ ! -f "$root/$built_path/index.html" ] && [ -f "$release_dir/$built_path/index.html" ]; then
     rm -rf "$root/$built_path"
     mkdir -p "$root/$(dirname "$built_path")"
@@ -85,9 +85,11 @@ for built_path in public/user-panel public/admin-panel; do
   fi
 done
 
-chmod 755 "$root/public" "$root/public/user-panel" "$root/public/admin-panel" "$root/bootstrap" "$root/bootstrap/cache" "$root/storage" 2>/dev/null || true
-find "$root/public/user-panel" "$root/public/admin-panel" -type d -exec chmod 755 {} \;
-find "$root/public/user-panel" "$root/public/admin-panel" -type f -exec chmod 644 {} \;
+rm -rf "$root/public/admin-panel"
+
+chmod 755 "$root/public" "$root/public/user-panel" "$root/bootstrap" "$root/bootstrap/cache" "$root/storage" 2>/dev/null || true
+find "$root/public/user-panel" -type d -exec chmod 755 {} \;
+find "$root/public/user-panel" -type f -exec chmod 644 {} \;
 
 find "$root" -maxdepth 1 -type f \( \
   -name '*.sql' -o \
