@@ -1,8 +1,11 @@
 <?php
 
 /**
- * CircleCI Test Database Import Helper
- * Imports the baseline schema from matrimonial1.sql into the testing database
+ * CircleCI Test Database Import Helper.
+ *
+ * If a legacy baseline dump is present, import it before migrations. Hardened
+ * Hostinger deploy source excludes root SQL dumps, so a missing dump is valid
+ * and migrations will build the test schema from scratch.
  */
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
@@ -19,21 +22,24 @@ try {
     echo "Connecting to MySQL at $host...\n";
     $connection = new PDO("mysql:host=$host", $user, $password);
     $connection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    echo "[✓] Connected successfully\n";
+    echo "[ok] Connected successfully\n";
 
     echo "Recreating test database '$database'...\n";
     $connection->exec("DROP DATABASE IF EXISTS $database");
     $connection->exec("CREATE DATABASE $database CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
     $connection->exec("USE $database");
-    echo "[✓] Database recreation complete\n";
+    echo "[ok] Database recreation complete\n";
 
-    echo "Loading SQL baseline file...\n";
     if (! file_exists($sqlFile)) {
-        throw new Exception("Baseline SQL file not found: $sqlFile");
+        echo "No legacy SQL baseline found; migrations will build the schema.\n";
+        echo "=== Database preparation complete ===\n";
+
+        exit(0);
     }
 
+    echo "Loading SQL baseline file...\n";
     $sqlContent = file_get_contents($sqlFile);
-    echo '[✓] SQL baseline file loaded ('.strlen($sqlContent)." bytes)\n";
+    echo '[ok] SQL baseline file loaded ('.strlen($sqlContent)." bytes)\n";
 
     echo "Importing baseline schema...\n";
     $statements = [];
@@ -86,18 +92,18 @@ try {
                 $connection->exec($statement);
                 $count++;
             } catch (Exception $e) {
-                // Ignore warning errors on baseline creation
+                // Ignore warning errors on baseline creation.
             }
         }
     }
-    echo "[✓] Baseline import complete. Executed $count statements.\n";
+    echo "[ok] Baseline import complete. Executed $count statements.\n";
 
     echo "Healing schema drifts in baseline tables...\n";
     try {
         $connection->exec('ALTER TABLE `lifestyles` ADD COLUMN `property` VARCHAR(191) NULL DEFAULT NULL AFTER `living_with`');
         echo "  Added missing 'property' column to 'lifestyles' table.\n";
     } catch (Exception $e) {
-        // column already exists, ignore
+        // Column already exists, ignore.
     }
 
     echo "Pre-registering initial migrations to prevent creation conflicts...\n";
@@ -119,7 +125,6 @@ try {
 
     $stmt = $connection->prepare('INSERT INTO migrations (migration, batch) VALUES (:migration, 1)');
     foreach ($initialMigrations as $m) {
-        // Check if already registered first
         $check = $connection->prepare('SELECT COUNT(*) FROM migrations WHERE migration = :m');
         $check->execute([':m' => $m]);
         if ($check->fetchColumn() == 0) {
@@ -127,9 +132,9 @@ try {
             echo "  Registered: $m\n";
         }
     }
-    echo "[✓] Migration pre-registration complete\n";
+    echo "[ok] Migration pre-registration complete\n";
 
 } catch (Exception $e) {
-    echo '[✗] Error: '.$e->getMessage()."\n";
+    echo '[error] '.$e->getMessage()."\n";
     exit(1);
 }
