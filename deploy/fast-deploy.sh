@@ -7,7 +7,6 @@ set -euo pipefail
 BACKEND="false"
 COMPOSER_LOCK="false"
 FRONTEND="false"
-ADMIN="false"
 APP_DOCKERFILE="false"
 NGINX="false"
 COMPOSE_CHANGED="false"
@@ -17,7 +16,6 @@ for arg in "$@"; do
     --backend=*)       BACKEND="${arg#*=}" ;;
     --composer-lock=*) COMPOSER_LOCK="${arg#*=}" ;;
     --frontend=*)      FRONTEND="${arg#*=}" ;;
-    --admin=*)         ADMIN="${arg#*=}" ;;
     --app-dockerfile=*)APP_DOCKERFILE="${arg#*=}" ;;
     --nginx=*)         NGINX="${arg#*=}" ;;
     --compose=*)       COMPOSE_CHANGED="${arg#*=}" ;;
@@ -32,7 +30,7 @@ echo "╔═══════════════════════�
 echo "║           Doctor Marriage Bureau — Deploy            ║"
 echo "╚══════════════════════════════════════════════════════╝"
 echo "  backend=$BACKEND  composer_lock=$COMPOSER_LOCK"
-echo "  frontend=$FRONTEND  admin=$ADMIN"
+echo "  frontend=$FRONTEND"
 echo "  app_dockerfile=$APP_DOCKERFILE  nginx=$NGINX  compose=$COMPOSE_CHANGED"
 echo ""
 
@@ -82,14 +80,6 @@ if [ "$FRONTEND" = "true" ]; then
   echo "[frontend] Source changed — rebuilding image..."
   DOCKER_BUILDKIT=1 $DC build frontend
   $DC up -d frontend
-  DEPLOYED=1
-fi
-
-# ── Admin Panel Frontend ──────────────────────────────────────────────────────
-if [ "$ADMIN" = "true" ]; then
-  echo "[admin] Source changed — rebuilding image..."
-  DOCKER_BUILDKIT=1 $DC build admin
-  $DC up -d admin
   DEPLOYED=1
 fi
 

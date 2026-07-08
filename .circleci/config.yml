@@ -153,12 +153,6 @@ jobs:
             php artisan migrate --force
             php artisan test --testsuite=Feature --filter=BackendApiRegressionTest
 
-  admin_frontend_quality:
-    executor: node_lts
-    steps:
-      - frontend_quality_steps:
-          path: Admin Panel Frontend
-
   user_frontend_quality:
     executor: node_lts
     steps:
@@ -170,5 +164,4 @@ workflows:
     jobs:
       - backend_quality
       - backend_mysql_smoke
-      - admin_frontend_quality
       - user_frontend_quality

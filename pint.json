@@ -3,7 +3,6 @@
   "exclude": [
     "vendor",
     "node_modules",
-    "Admin Panel Frontend/node_modules",
     "New User Panel Frontend/node_modules",
     "DMB Mobile App/node_modules",
     "vendor_local_bak",

@@ -406,7 +406,4 @@ Route::get('/match_profiles', 'ProfileMatchController@match_profiles')->name('ma
 Route::get('/migrate/products/', 'ProfileMatchController@migrate_profiles');
 
 // Custom page
-Route::get('/admin-panel/{any?}', [WebRouteController::class, 'adminReact'])->where('any', '.*');
-Route::get('/admin-react/{any?}', [WebRouteController::class, 'adminReact'])->where('any', '.*');
-
 Route::get('/{slug}', 'PageController@show_custom_page')->name('custom-pages.show_custom_page');

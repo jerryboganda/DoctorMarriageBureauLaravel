@@ -1,1 +1,0 @@
-import{j as a}from"./react-B4F_N9ug.js";function r({children:t}){return a.jsx("div",{className:"min-h-screen bg-gradient-to-br from-slate-100 via-teal-50 to-cyan-100",children:t})}export{r as default};

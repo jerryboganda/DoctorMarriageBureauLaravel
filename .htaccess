@@ -9,11 +9,7 @@
     RewriteRule \.(sql|sql\.gz|sqlite|bak|backup|dump|log|tar|tar\.gz|tgz|gz|zip|rar|7z)$ - [F,L,NC]
     RewriteRule (^|/)(_ide_helper(_models)?\.php|composer\.(json|lock)|package(-lock)?\.json)$ - [F,L,NC]
 
-    RewriteRule ^admin-panel$ /admin-panel/ [R=308,L]
-    RewriteCond %{DOCUMENT_ROOT}/public/admin-panel/$1 -f [OR]
-    RewriteCond %{DOCUMENT_ROOT}/public/admin-panel/$1 -d
-    RewriteRule ^admin-panel/(.*)$ public/admin-panel/$1 [L]
-    RewriteRule ^admin-panel/.*$ public/admin-panel/index.html [L]
+    RewriteRule ^admin-panel(/.*)?$ /admin [R=302,L]
 
     RewriteRule ^api(/.*)?$ public/index.php [L]
     RewriteRule ^sanctum(/.*)?$ public/index.php [L]
