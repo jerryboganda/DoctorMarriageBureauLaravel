@@ -27,5 +27,19 @@ export default defineConfig({
         chunkSizeWarningLimit: 900,
         outDir: '../public/admin-panel',
         emptyOutDir: true,
+        rollupOptions: {
+            output: {
+                manualChunks(id) {
+                    if (!id.includes('node_modules')) return undefined;
+                    if (id.includes('/react/') || id.includes('/react-dom/')) return 'react';
+                    if (id.includes('/react-router-dom/')) return 'router';
+                    if (id.includes('/lucide-react/')) return 'icons';
+                    if (id.includes('/zustand/')) return 'state';
+                    if (id.includes('/react-hook-form/')) return 'forms';
+                    if (id.includes('/react-hot-toast/')) return 'notifications';
+                    return undefined;
+                },
+            },
+        },
     },
 });

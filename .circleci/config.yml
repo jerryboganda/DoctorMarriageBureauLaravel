@@ -1,8 +1,5 @@
 version: 2.1
 
-# ─────────────────────────────────────────────
-#  EXECUTORS
-# ─────────────────────────────────────────────
 executors:
   php_cli:
     docker:
@@ -32,14 +29,11 @@ executors:
       - image: cimg/node:22.14
     resource_class: small
 
-# ─────────────────────────────────────────────
-#  REUSABLE COMMANDS
-# ─────────────────────────────────────────────
 commands:
   install_php_system_deps:
     steps:
       - run:
-          name: Install PHP system dependencies & Composer
+          name: Install PHP system dependencies and Composer
           command: |
             apt-get update -qq
             apt-get install -y --no-install-recommends \
@@ -87,9 +81,6 @@ commands:
     parameters:
       path:
         type: string
-      build_command:
-        type: string
-        default: npm run build
     steps:
       - checkout
       - npm_ci:
@@ -109,17 +100,9 @@ commands:
       - run:
           name: Build
           working_directory: << parameters.path >>
-          command: << parameters.build_command >>
+          command: npm run build
 
-# ─────────────────────────────────────────────
-#  JOBS
-# ─────────────────────────────────────────────
 jobs:
-
-  # ── GATE JOB ──────────────────────────────
-  # The ONLY job that blocks production deploy.
-  # Fast: PHP lint + PHPStan + unit tests (SQLite in-memory, no DB spin-up).
-  # Typical runtime: 2-4 minutes.
   backend_quality:
     executor: php_cli
     steps:
@@ -130,17 +113,13 @@ jobs:
           command: cp .env.example .env
       - composer_install
       - run:
-          name: Generate app key & discover packages
+          name: Generate app key and discover packages
           command: |
             php artisan key:generate --no-interaction
             php artisan package:discover
       - run:
-          name: Backend CI (lint + analyse + tests)
+          name: Backend CI
           command: composer ci:backend
-
-  # ── NON-BLOCKING JOBS ──────────────────────
-  # These run in parallel for visibility and catch regressions,
-  # but they do NOT block the production deploy.
 
   backend_mysql_smoke:
     executor: php_cli_mysql
@@ -152,7 +131,7 @@ jobs:
           command: cp .env.example .env
       - composer_install
       - run:
-          name: Generate app key & discover packages
+          name: Generate app key and discover packages
           command: |
             php artisan key:generate --no-interaction
             php artisan package:discover
@@ -169,7 +148,7 @@ jobs:
           name: Import baseline schema
           command: php ci_import_test_schema.php
       - run:
-          name: Migrate + regression smoke
+          name: Migrate and smoke test
           command: |
             php artisan migrate --force
             php artisan test --testsuite=Feature --filter=BackendApiRegressionTest
@@ -186,89 +165,10 @@ jobs:
       - frontend_quality_steps:
           path: New User Panel Frontend
 
-  mobile_web_quality:
-    executor: node_lts
-    steps:
-      - frontend_quality_steps:
-          path: DMB Mobile App
-          build_command: npm run build:web
-
-  # ── DEPLOY ────────────────────────────────
-  # Runs immediately after backend_quality passes on main.
-  # Uses smart path-based logic on the VPS: only rebuilds
-  # Docker services whose source files actually changed.
-  deploy_production:
-    machine:
-      image: ubuntu-2404:current
-    resource_class: medium
-    steps:
-      - checkout
-
-      - add_ssh_keys
-
-      - run:
-          name: Add VPS host key
-          command: |
-            if [ -z "$VPS_HOST" ]; then echo "VPS_HOST is required"; exit 1; fi
-            mkdir -p ~/.ssh
-            ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts
-
-      - run:
-          name: Transfer code bundle to VPS
-          command: |
-            if [ -z "$VPS_HOST" ]; then echo "VPS_HOST is required"; exit 1; fi
-            if [ -z "$VPS_USER" ]; then echo "VPS_USER is required"; exit 1; fi
-            git bundle create /tmp/dmb-main.bundle HEAD
-            scp /tmp/dmb-main.bundle "$VPS_USER@$VPS_HOST:/tmp/dmb-main.bundle"
-
-      - run:
-          name: Deploy on VPS
-          no_output_timeout: 20m
-          command: |
-            if [ -z "$VPS_HOST" ]; then echo "VPS_HOST is required"; exit 1; fi
-            if [ -z "$VPS_USER" ]; then echo "VPS_USER is required"; exit 1; fi
-            if [ -z "$DEPLOY_PATH" ]; then echo "DEPLOY_PATH is required"; exit 1; fi
-            scp deploy/circleci-remote-deploy.sh "$VPS_USER@$VPS_HOST:/tmp/dmb-circleci-remote-deploy.sh"
-            ssh "$VPS_USER@$VPS_HOST" "DEPLOY_PATH='$DEPLOY_PATH' bash /tmp/dmb-circleci-remote-deploy.sh"
-
-      - run:
-          name: Production health check
-          command: |
-            echo "Waiting 15s for services to stabilise..."
-            sleep 15
-            curl -fsS --retry 3 --retry-delay 5 -o /dev/null \
-              https://api.doctormarriagebureau.com.pk/
-            curl -fsS --retry 3 --retry-delay 5 -o /dev/null \
-              https://api.doctormarriagebureau.com.pk/api/health
-            curl -fsS --retry 3 --retry-delay 5 -o /dev/null \
-              https://api.doctormarriagebureau.com.pk/admin
-            curl -fsS --retry 3 --retry-delay 5 -o /dev/null \
-              https://api.doctormarriagebureau.com.pk/admin-react/login
-            curl -fsS --retry 3 --retry-delay 5 -o /dev/null \
-              https://panel.doctormarriagebureau.com.pk/
-            curl -fsS --retry 3 --retry-delay 5 -o /dev/null \
-              https://soketi.polytronx.com/
-            echo "==> All production endpoints healthy"
-
-# ─────────────────────────────────────────────
-#  WORKFLOW
-# ─────────────────────────────────────────────
 workflows:
-  quality_and_deploy:
+  quality:
     jobs:
-      # ── Sole blocking gate for deploy ──────
       - backend_quality
-
-      # ── Deploy: fires as soon as backend_quality passes on main ──
-      - deploy_production:
-          requires:
-            - backend_quality
-          filters:
-            branches:
-              only: main
-
-      # ── Non-blocking jobs: run in parallel for signal, never delay deploy ──
       - backend_mysql_smoke
       - admin_frontend_quality
       - user_frontend_quality
-      - mobile_web_quality

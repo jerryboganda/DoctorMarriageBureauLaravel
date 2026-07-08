@@ -24,59 +24,65 @@ use App\Models\Religion;
 use App\Models\Sect;
 use App\Models\State;
 use App\Models\SubCaste;
+use Illuminate\Support\Facades\Cache;
 
 class ProfileDropdownController extends Controller
 {
+    private function remember(string $key, callable $callback)
+    {
+        return Cache::remember('api.reference.'.$key, now()->addDay(), $callback);
+    }
+
     public function profile_dropdown()
     {
-        $data['onbehalf_list'] = OnBehalfResource::collection(OnBehalf::latest()->get());
-        $data['maritial_status'] = MaritialStatusResource::collection(MaritalStatus::latest()->get());
-        $data['language_list'] = LanguageResource::collection(MemberLanguage::all());
-        $data['religion_list'] = ReligionResource::collection(Religion::all());
-        $data['family_value_list'] = FamilyValuesResource::collection(FamilyValue::all());
-        $data['country_list'] = CountryResource::collection(Country::where('status', 1)->get());
+        $data['onbehalf_list'] = OnBehalfResource::collection($this->remember('onbehalf_list', fn () => OnBehalf::latest()->get()));
+        $data['maritial_status'] = MaritialStatusResource::collection($this->remember('maritial_status', fn () => MaritalStatus::latest()->get()));
+        $data['language_list'] = LanguageResource::collection($this->remember('language_list', fn () => MemberLanguage::all()));
+        $data['religion_list'] = ReligionResource::collection($this->remember('religion_list', fn () => Religion::all()));
+        $data['family_value_list'] = FamilyValuesResource::collection($this->remember('family_value_list', fn () => FamilyValue::all()));
+        $data['country_list'] = CountryResource::collection($this->remember('country_list', fn () => Country::where('status', 1)->get()));
 
         return $this->response_data($data);
     }
 
     public function onbehalf_list()
     {
-        return OnBehalfResource::collection(OnBehalf::latest()->get());
+        return OnBehalfResource::collection($this->remember('onbehalf_list', fn () => OnBehalf::latest()->get()));
     }
 
     public function maritial_status()
     {
-        return MaritialStatusResource::collection(MaritalStatus::latest()->get());
+        return MaritialStatusResource::collection($this->remember('maritial_status', fn () => MaritalStatus::latest()->get()));
     }
 
     public function country_list()
     {
-        return CountryResource::collection(Country::where('status', 1)->get());
+        return CountryResource::collection($this->remember('country_list', fn () => Country::where('status', 1)->get()));
     }
 
     public function state_list($id)
     {
-        return StateResource::collection(State::where('country_id', $id)->get());
+        return StateResource::collection($this->remember('state_list.'.$id, fn () => State::where('country_id', $id)->get()));
     }
 
     public function city_list($id)
     {
-        return CityResource::collection(City::where('state_id', $id)->get());
+        return CityResource::collection($this->remember('city_list.'.$id, fn () => City::where('state_id', $id)->get()));
     }
 
     public function language_list()
     {
-        return LanguageResource::collection(MemberLanguage::all());
+        return LanguageResource::collection($this->remember('language_list', fn () => MemberLanguage::all()));
     }
 
     public function religion_list()
     {
-        return ReligionResource::collection(Religion::all());
+        return ReligionResource::collection($this->remember('religion_list', fn () => Religion::all()));
     }
 
     public function sect_list()
     {
-        return SectResource::collection(Sect::orderBy('name')->get());
+        return SectResource::collection($this->remember('sect_list', fn () => Sect::orderBy('name')->get()));
     }
 
     public function caste_list($id = null)
@@ -86,16 +92,18 @@ class ProfileDropdownController extends Controller
             $query->where('religion_id', $id);
         }
 
-        return CasteResource::collection($query->orderBy('name')->get());
+        $cacheKey = 'caste_list.'.(($id !== null && $id !== '') ? $id : 'all');
+
+        return CasteResource::collection($this->remember($cacheKey, fn () => $query->orderBy('name')->get()));
     }
 
     public function sub_caste_list($id)
     {
-        return SubCasteResource::collection(SubCaste::where('caste_id', $id)->get());
+        return SubCasteResource::collection($this->remember('sub_caste_list.'.$id, fn () => SubCaste::where('caste_id', $id)->get()));
     }
 
     public function family_value_list()
     {
-        return FamilyValuesResource::collection(FamilyValue::all());
+        return FamilyValuesResource::collection($this->remember('family_value_list', fn () => FamilyValue::all()));
     }
 }

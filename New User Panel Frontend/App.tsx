@@ -21,6 +21,10 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { PAGE_VARIANTS } from './utils/motion';
 import { useAuthStore } from './src/stores/authStore';
 import { api } from './utils/api';
+import {
+    DEFAULT_AVATAR_URL as DEFAULT_AVATAR,
+    resolveAssetUrl as resolveAvatarUrl,
+} from './utils/apiOrigin';
 import { CanonicalInterestState } from './utils/interestStatus';
 import { normalizePositiveAge } from './utils/age';
 
@@ -93,10 +97,6 @@ const AuthModal = lazy(lazyRetry(() => import('./components/AuthModal')));
 const WelcomeScreen = lazy(lazyRetry(() => import('./components/WelcomeScreen')));
 const ProfileDetailModal = lazy(lazyRetry(() => import('./components/ProfileDetailModal')));
 const ReferralPopupModal = lazy(lazyRetry(() => import('./components/ReferralPopupModal')));
-const API_BASE =
-    import.meta.env.VITE_API_BASE_URL?.replace('/api', '') ||
-    'https://api.doctormarriagebureau.com.pk';
-const DEFAULT_AVATAR = `${API_BASE}/assets/img/avatar-place.png`;
 
 const buildNotificationProfileTarget = (profileId: string): ProfileMatch => ({
     id: profileId,
@@ -109,15 +109,6 @@ const buildNotificationProfileTarget = (profileId: string): ProfileMatch => ({
     avatarUrl: DEFAULT_AVATAR,
     isVerified: false,
 });
-
-const resolveAvatarUrl = (value?: string | null): string => {
-    const candidate = `${value ?? ''}`.trim();
-    if (!candidate) return DEFAULT_AVATAR;
-    if (candidate.startsWith('http://') || candidate.startsWith('https://')) return candidate;
-    if (candidate.startsWith('//')) return `https:${candidate}`;
-    if (candidate.startsWith('/')) return `${API_BASE}${candidate}`;
-    return `${API_BASE}/${candidate.replace(/^\/+/, '')}`;
-};
 
 const App: React.FC = () => {
     const { isAuthenticated, isLoading, checkAuth, logout, user } = useAuthStore();

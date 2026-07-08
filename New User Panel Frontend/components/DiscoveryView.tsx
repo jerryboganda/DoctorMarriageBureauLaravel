@@ -45,13 +45,11 @@ import {
     MediaAccessSnapshot,
     resolveMediaAccessBundle,
 } from '../utils/mediaAccess';
-
-// API base URL for assets
-const API_BASE =
-    import.meta.env.VITE_API_BASE_URL?.replace('/api', '') ||
-    'https://api.doctormarriagebureau.com.pk';
-const DEFAULT_AVATAR = `${API_BASE}/assets/img/avatar-place.png`;
-const DEFAULT_FEMALE_AVATAR = `${API_BASE}/assets/img/female-avatar-place.png`;
+import {
+    DEFAULT_AVATAR_URL as DEFAULT_AVATAR,
+    DEFAULT_FEMALE_AVATAR_URL as DEFAULT_FEMALE_AVATAR,
+    resolveAssetUrl as resolveAvatarUrl,
+} from '../utils/apiOrigin';
 
 const isFemaleProfile = (gender?: number | string | null): boolean => {
     const normalized = `${gender ?? ''}`.trim().toLowerCase();
@@ -68,15 +66,6 @@ const swapAvatarForGender = (url: string, gender?: number | string | null): stri
         return url.replace('avatar-place.png', 'female-avatar-place.png');
     }
     return url;
-};
-
-const resolveAvatarUrl = (value?: string | null): string => {
-    const candidate = `${value ?? ''}`.trim();
-    if (!candidate) return DEFAULT_AVATAR;
-    if (candidate.startsWith('http://') || candidate.startsWith('https://')) return candidate;
-    if (candidate.startsWith('//')) return `https:${candidate}`;
-    if (candidate.startsWith('/')) return `${API_BASE}${candidate}`;
-    return `${API_BASE}/${candidate.replace(/^\/+/, '')}`;
 };
 
 const unwrapList = <T,>(payload: any): T[] => {

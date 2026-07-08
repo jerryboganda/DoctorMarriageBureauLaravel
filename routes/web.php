@@ -46,12 +46,7 @@ use App\Http\Controllers\ViewContactController;
 use App\Http\Controllers\ViewGalleryImageController;
 use App\Http\Controllers\ViewProfilePictureController;
 use App\Http\Controllers\WalletController;
-use App\Models\ChatThread;
-use App\Models\ExpressInterest;
-use App\Models\IgnoredUser;
-use App\Services\InterestService;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Http\Request;
+use App\Http\Controllers\WebRouteController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -74,13 +69,9 @@ Route::controller(DemoController::class)->group(function () {
 Auth::routes();
 
 // Password reset routes - ensure correct routing
-Route::get('/password/reset', function () {
-    return view('auth.passwords.email');
-})->name('password.request');
+Route::get('/password/reset', [WebRouteController::class, 'passwordReset'])->name('password.request');
 
-Route::get('/password/email', function () {
-    return view('auth.passwords.email');
-})->name('password.email.form');
+Route::get('/password/email', [WebRouteController::class, 'passwordEmailForm'])->name('password.email.form');
 
 Route::post('/password/email', [ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
 
@@ -100,9 +91,7 @@ Route::post('/verify-email-code', [AuthController::class, 'verifyEmailCode']);
 Route::controller(VerificationController::class)->group(function () {
     Route::get('/email_change/callback', 'email_change_callback')->name('email_change.callback');
     // Show reset password form (GET) to avoid 405 after POST validation errors
-    Route::get('/password/reset/email', function () {
-        return view('auth.passwords.reset');
-    })->name('password.reset.form');
+    Route::get('/password/reset/email', [WebRouteController::class, 'passwordResetEmailForm'])->name('password.reset.form');
     Route::post('/password/reset/email/submit', 'reset_password_with_code')->name('password.update.email_code');
     Route::get('/users/login', 'login')->name('user.login');
     Route::get('/happy-stories', 'happy_stories')->name('happy_stories');
@@ -110,9 +99,7 @@ Route::controller(VerificationController::class)->group(function () {
 });
 
 // Uploader
-Route::get('/refresh-csrf', function () {
-    return csrf_token();
-});
+Route::get('/refresh-csrf', [WebRouteController::class, 'refreshCsrf']);
 
 Route::controller(AizUploadController::class)->group(function () {
     Route::post('/aiz-uploader', 'show_uploader');
@@ -140,9 +127,7 @@ Route::post('/language', [LanguageController::class, 'changeLanguage'])->name('l
 Route::get('/packages', [PackageController::class, 'select_package'])->name('packages');
 
 // Email verification notice (must exist as it's referenced by Laravel auth)
-Route::get('/email/verify', function () {
-    return response()->json(['message' => 'Please verify your email address.'], 200);
-})->name('verification.notice')->middleware('auth');
+Route::get('/email/verify', [WebRouteController::class, 'verificationNotice'])->name('verification.notice')->middleware('auth');
 
 Route::group(['middleware' => ['auth']], function () {
     Route::post('/send-email-verification', [AuthController::class, 'sendEmailVerification']);
@@ -158,243 +143,19 @@ Route::controller(BlogController::class)->group(function () {
 
 Route::group(['middleware' => ['member', 'verified']], function () {
     // Ignore User API
-    Route::post('/legacy-api/ignore-user', function (Request $request) {
-        try {
-            $user = $request->user();
-            $targetUserId = $request->user_id;
-
-            // Add to ignored users
-            IgnoredUser::create([
-                'user_id' => $targetUserId,
-                'ignored_by' => $user->id,
-            ]);
-
-            return response()->json(['success' => true]);
-        } catch (Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
-        }
-    });
+    Route::post('/legacy-api/ignore-user', [WebRouteController::class, 'legacyIgnoreUser']);
 
     // Accept Interest API
-    Route::post('/legacy-api/interest/accept', function (Request $request) {
-        try {
-            if (! auth()->check()) {
-                return response()->json(['success' => false, 'message' => 'User not authenticated'], 401);
-            }
-
-            $user = auth()->user();
-            $interestId = $request->interest_id;
-
-            $interest = ExpressInterest::find($interestId);
-            if (! $interest) {
-                return response()->json(['success' => false, 'message' => 'Proposal request not found'], 404);
-            }
-
-            // Check if user owns this interest
-            if ($interest->user_id != $user->id) {
-                return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
-            }
-
-            $interest->status = 1;
-            if ($interest->save()) {
-                // Create chat thread if it doesn't exist
-                $existing_chat_thread = ChatThread::where(function ($query) use ($interest) {
-                    $query->where('sender_user_id', $interest->interested_by)->where('receiver_user_id', $interest->user_id);
-                })->orWhere(function ($query) use ($interest) {
-                    $query->where('receiver_user_id', $interest->interested_by)->where('sender_user_id', $interest->user_id);
-                })->first();
-
-                if ($existing_chat_thread == null) {
-                    $chat_thread = new ChatThread;
-                    $chat_thread->thread_code = $interest->interested_by.date('Ymd').$interest->user_id;
-                    $chat_thread->sender_user_id = $interest->interested_by;
-                    $chat_thread->receiver_user_id = $interest->user_id;
-                    $chat_thread->save();
-                }
-
-                return response()->json(['success' => true, 'message' => 'Proposal accepted successfully']);
-            } else {
-                return response()->json(['success' => false, 'message' => 'Failed to accept proposal'], 500);
-            }
-        } catch (Exception $e) {
-            Log::error('Error accepting interest: '.$e->getMessage());
-
-            return response()->json(['success' => false, 'message' => 'Internal server error'], 500);
-        }
-    });
+    Route::post('/legacy-api/interest/accept', [WebRouteController::class, 'legacyAcceptInterest']);
 
     // Decline Interest API
-    Route::post('/legacy-api/interest/decline', function (Request $request) {
-        try {
-            if (! auth()->check()) {
-                return response()->json(['success' => false, 'message' => 'User not authenticated'], 401);
-            }
-
-            $user = auth()->user();
-            $interestId = $request->interest_id;
-
-            $interest = ExpressInterest::find($interestId);
-            if (! $interest) {
-                return response()->json(['success' => false, 'message' => 'Proposal request not found'], 404);
-            }
-
-            // Check if user owns this interest
-            if ($interest->user_id != $user->id) {
-                return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
-            }
-
-            if (ExpressInterest::destroy($interestId)) {
-                return response()->json(['success' => true, 'message' => 'Proposal declined successfully']);
-            } else {
-                return response()->json(['success' => false, 'message' => 'Failed to decline proposal'], 500);
-            }
-        } catch (Exception $e) {
-            Log::error('Error declining interest: '.$e->getMessage());
-
-            return response()->json(['success' => false, 'message' => 'Internal server error'], 500);
-        }
-    });
+    Route::post('/legacy-api/interest/decline', [WebRouteController::class, 'legacyDeclineInterest']);
 
     // Check Interest Status API
-    Route::get('/legacy-api/check-interest-status/{userId}', function (Request $request, $userId) {
-        try {
-            if (! auth()->check()) {
-                return response()->json(['success' => false, 'message' => 'User not authenticated'], 401);
-            }
-
-            $user = auth()->user();
-
-            // Check if current user has already sent interest to this user
-            $sentInterest = ExpressInterest::where('interested_by', $user->id)
-                ->where('user_id', $userId)
-                ->first();
-
-            // Check if this user has sent interest to current user
-            $receivedInterest = ExpressInterest::where('user_id', $user->id)
-                ->where('interested_by', $userId)
-                ->first();
-
-            $status = 'none';
-            $buttonText = 'Send Proposal';
-            $buttonClass = 'btn-send-interest';
-
-            if ($sentInterest) {
-                if ($sentInterest->status == 1) {
-                    $status = 'accepted';
-                    $buttonText = 'Proposal Accepted';
-                    $buttonClass = 'btn-interest-accepted';
-                } else {
-                    $status = 'sent';
-                    $buttonText = 'Proposal Sent';
-                    $buttonClass = 'btn-interest-sent';
-                }
-            } elseif ($receivedInterest) {
-                if ($receivedInterest->status == 1) {
-                    $status = 'mutual';
-                    $buttonText = 'Mutual Proposal';
-                    $buttonClass = 'btn-mutual-interest';
-                } else {
-                    $status = 'received';
-                    $buttonText = 'Reply to Proposal';
-                    $buttonClass = 'btn-respond-interest';
-                }
-            }
-
-            return response()->json([
-                'success' => true,
-                'status' => $status,
-                'button_text' => $buttonText,
-                'button_class' => $buttonClass,
-            ]);
-        } catch (Exception $e) {
-            Log::error('Error checking interest status: '.$e->getMessage());
-
-            return response()->json(['success' => false, 'message' => 'Internal server error'], 500);
-        }
-    });
+    Route::get('/legacy-api/check-interest-status/{userId}', [WebRouteController::class, 'legacyCheckInterestStatus']);
 
     // Express Interest API
-    Route::post('/legacy-api/express-interest', function (Request $request) {
-        try {
-            if (! auth()->check()) {
-                return response()->json(['success' => false, 'message' => 'User not authenticated'], 401);
-            }
-
-            $user = auth()->user();
-            $targetUserId = $request->user_id;
-
-            $existingInterest = ExpressInterest::where('user_id', $targetUserId)
-                ->where('interested_by', $user->id)
-                ->first();
-
-            if ($existingInterest) {
-                return response()->json(['success' => false, 'message' => 'Proposal already sent']);
-            }
-
-            // Check if user is trying to send interest to themselves
-            if ($targetUserId == $user->id) {
-                return response()->json(['success' => false, 'message' => 'Cannot send proposal to yourself']);
-            }
-
-            $result = (new InterestService)->store($targetUserId);
-
-            if (is_array($result) && ($result['success'] ?? false)) {
-                return response()->json(['success' => true, 'message' => 'Proposal sent successfully']);
-            }
-
-            $payload = is_array($result) ? $result : [];
-
-            return response()->json([
-                'success' => false,
-                'result' => false,
-                'status' => $payload['status'] ?? null,
-                'code' => $payload['code'] ?? null,
-                'error_code' => $payload['error_code'] ?? 'unknown',
-                'limit_type' => $payload['limit_type'] ?? null,
-                'free_limit' => $payload['free_limit'] ?? null,
-                'used' => $payload['used'] ?? null,
-                'message' => $payload['message'] ?? 'Failed to send proposal',
-            ], $payload['http_status'] ?? 200);
-        } catch (Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
-        }
-    });
-
-    // Accept Interest API
-    Route::post('/legacy-api/interest/accept', function (Request $request) {
-        try {
-            $interestId = $request->interest_id;
-            $interest = ExpressInterest::find($interestId);
-
-            if ($interest) {
-                $interest->update(['status' => 1]); // Accepted
-
-                return response()->json(['success' => true]);
-            }
-
-            return response()->json(['success' => false, 'message' => 'Proposal request not found']);
-        } catch (Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
-        }
-    });
-
-    // Decline Interest API
-    Route::post('/legacy-api/interest/decline', function (Request $request) {
-        try {
-            $interestId = $request->interest_id;
-            $interest = ExpressInterest::find($interestId);
-
-            if ($interest) {
-                $interest->update(['status' => 2]); // Declined
-
-                return response()->json(['success' => true]);
-            }
-
-            return response()->json(['success' => false, 'message' => 'Proposal request not found']);
-        } catch (Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
-        }
-    });
+    Route::post('/legacy-api/express-interest', [WebRouteController::class, 'legacyExpressInterest']);
 
 });
 
@@ -404,9 +165,7 @@ Route::group(['middleware' => ['verified']], function () {
         Route::get('/member/verification', 'verification_form')->name('member.verification');
         Route::post('/member/verification-info/store', 'verification_info_store')->name('member.verification_info.store');
     });
-    Route::get('/dashboard', function () {
-        return redirect(rtrim(env('FRONTEND_URL', env('APP_URL', 'http://localhost')), '/'));
-    })->name('dashboard');
+    Route::get('/dashboard', [WebRouteController::class, 'dashboardRedirect'])->name('dashboard');
 });
 
 Route::group(['middleware' => ['member', 'verified']], function () {
@@ -449,9 +208,7 @@ Route::group(['middleware' => ['member', 'verified']], function () {
     Route::resource('/gallery-image', GalleryImageController::class);
     Route::get('/gallery_image/destroy/{id}', [GalleryImageController::class, 'destroy'])->name('gallery_image.destroy');
     // Redirect create to index since we merged the functionality
-    Route::get('/gallery-image/create', function () {
-        return redirect()->route('gallery-image.index');
-    });
+    Route::get('/gallery-image/create', [WebRouteController::class, 'galleryImageCreateRedirect']);
 
     // Express Interest
     Route::resource('/express-interest', ExpressInterestController::class);
@@ -524,36 +281,9 @@ Route::group(['middleware' => ['member', 'verified']], function () {
     Route::get('/matched-profiles', [ProfileMatchController::class, 'myMatchedProfiles'])->name('my_matched_profiles');
 });
 
-Route::get('/registration-success', function () {
-    return view('frontend.registration_success');
-})->name('registration.success')->middleware('auth');
+Route::get('/registration-success', [WebRouteController::class, 'registrationSuccess'])->name('registration.success')->middleware('auth');
 
-Route::get('/run-manual-migration', function () {
-    try {
-        if (! Schema::hasColumn('members', 'medical_license_number')) {
-            Schema::table('members', function (Blueprint $table) {
-                $table->string('medical_license_number')->nullable()->after('introduction');
-            });
-            echo 'Added medical_license_number<br>';
-        }
-        if (! Schema::hasColumn('members', 'specialization')) {
-            Schema::table('members', function (Blueprint $table) {
-                $table->string('specialization')->nullable()->after('medical_license_number');
-            });
-            echo 'Added specialization<br>';
-        }
-        if (! Schema::hasColumn('members', 'verification_document')) {
-            Schema::table('members', function (Blueprint $table) {
-                $table->string('verification_document')->nullable()->after('specialization');
-            });
-            echo 'Added verification_document<br>';
-        }
-
-        return 'Migration checks completed.';
-    } catch (Exception $e) {
-        return 'Error: '.$e->getMessage();
-    }
-});
+Route::get('/run-manual-migration', [WebRouteController::class, 'runManualMigration']);
 
 Route::group(['middleware' => ['auth']], function () {
 
@@ -676,13 +406,6 @@ Route::get('/match_profiles', 'ProfileMatchController@match_profiles')->name('ma
 Route::get('/migrate/products/', 'ProfileMatchController@migrate_profiles');
 
 // Custom page
-Route::get('/admin-react/{any?}', function () {
-    $path = public_path('admin-panel/index.html');
-    if (! file_exists($path)) {
-        abort(404, 'Admin React build not found. Please run npm run build in Admin Panel Frontend.');
-    }
-
-    return response()->file($path);
-})->where('any', '.*');
+Route::get('/admin-react/{any?}', [WebRouteController::class, 'adminReact'])->where('any', '.*');
 
 Route::get('/{slug}', 'PageController@show_custom_page')->name('custom-pages.show_custom_page');

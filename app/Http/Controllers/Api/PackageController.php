@@ -16,6 +16,7 @@ use App\Services\CouponService;
 use App\Services\ReferralService;
 use App\Utility\EmailUtility;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Notification;
 use Kutia\Larafirebase\Facades\Larafirebase;
 
@@ -23,7 +24,7 @@ class PackageController extends Controller
 {
     public function active_packages()
     {
-        $packages = Package::where('active', '1')->get();
+        $packages = Cache::remember('api.static.packages.active', now()->addMinutes(30), fn () => Package::where('active', '1')->get());
 
         return PackageResource::collection($packages)->additional([
             'result' => true,

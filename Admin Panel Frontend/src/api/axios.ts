@@ -1,7 +1,14 @@
 import axios from 'axios';
 
+const configuredBaseUrl = `${import.meta.env.VITE_API_BASE_URL || ''}`.replace(/\/+$/, '');
+const baseURL = configuredBaseUrl
+    ? configuredBaseUrl.endsWith('/admin')
+        ? configuredBaseUrl
+        : `${configuredBaseUrl.replace(/\/api$/, '')}/api/admin`
+    : '/api/admin';
+
 export const api = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL || '/api/admin',
+    baseURL,
     timeout: 30000,
     headers: {
         Accept: 'application/json',

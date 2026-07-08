@@ -9,7 +9,7 @@ const backendOrigin = process.env.DMB_API_ORIGIN || '';
 const soketiOrigin = process.env.DMB_SOKETI_ORIGIN || '';
 
 const rootDir = __dirname;
-const userDist = path.join(rootDir, 'New User Panel Frontend', 'dist');
+const userDist = path.join(rootDir, 'public', 'user-panel');
 const adminDist = path.join(rootDir, 'public', 'admin-panel');
 
 const mimeTypes = {
