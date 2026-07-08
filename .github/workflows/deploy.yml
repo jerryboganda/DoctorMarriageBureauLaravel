@@ -48,6 +48,7 @@ jobs:
             --exclude='.git' \
             --exclude='.github' \
             --exclude='.circleci' \
+            --exclude='.builds' \
             --exclude='node_modules' \
             --exclude='Admin Panel Frontend/node_modules' \
             --exclude='New User Panel Frontend/node_modules' \
