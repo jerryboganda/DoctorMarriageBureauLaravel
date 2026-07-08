@@ -17,9 +17,9 @@ class AdminRoutesSmokeTest extends TestCase
         $this->get('/admin/login')->assertOk();
     }
 
-    public function test_admin_react_route_serves_shell_without_500(): void
+    public function test_admin_panel_route_serves_shell_without_500(): void
     {
-        $response = $this->get('/admin-react/login');
+        $response = $this->get('/admin-panel/login');
 
         $response->assertOk();
         $response->assertHeader('content-type', 'text/html; charset=UTF-8');

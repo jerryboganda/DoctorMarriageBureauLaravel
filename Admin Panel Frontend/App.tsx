@@ -15,7 +15,7 @@ function RequireAuth({ children }: { children: JSX.Element }) {
     const authenticated = useAuthStore((s) => s.authenticated);
 
     if (loading) return <LoadingSpinner />;
-    if (!authenticated) return <Navigate to="/admin-react/login" replace />;
+    if (!authenticated) return <Navigate to="/admin-panel/login" replace />;
     return children;
 }
 
@@ -30,7 +30,7 @@ export default function App() {
         <Suspense fallback={<LoadingSpinner />}>
             <Routes>
                 <Route
-                    path="/admin-react/login"
+                    path="/admin-panel/login"
                     element={
                         <BlankLayout>
                             <LoginPage />
@@ -39,28 +39,28 @@ export default function App() {
                 />
 
                 <Route
-                    path="/admin-react"
+                    path="/admin-panel"
                     element={
                         <RequireAuth>
                             <AdminLayout />
                         </RequireAuth>
                     }
                 >
-                    <Route index element={<Navigate to="/admin-react/dashboard" replace />} />
+                    <Route index element={<Navigate to="/admin-panel/dashboard" replace />} />
                     <Route path="dashboard" element={<DashboardPage />} />
                     {menuItems
-                        .filter((m) => m.path !== '/admin-react/dashboard')
+                        .filter((m) => m.path !== '/admin-panel/dashboard')
                         .map((m) => (
                             <Route
                                 key={m.path}
-                                path={m.path.replace('/admin-react/', '')}
+                                path={m.path.replace('/admin-panel/', '')}
                                 element={<ModulePage />}
                             />
                         ))}
                     <Route path="*" element={<ModulePage />} />
                 </Route>
 
-                <Route path="*" element={<Navigate to="/admin-react/login" replace />} />
+                <Route path="*" element={<Navigate to="/admin-panel/login" replace />} />
             </Routes>
         </Suspense>
     );

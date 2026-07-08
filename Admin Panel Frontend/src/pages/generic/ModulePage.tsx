@@ -18,7 +18,7 @@ type ModuleConfig = {
 };
 
 const moduleConfigs: Record<string, ModuleConfig> = {
-    '/admin-react/members': {
+    '/admin-panel/members': {
         kind: 'resource',
         title: 'Members',
         endpoint: '/members',
@@ -33,175 +33,175 @@ const moduleConfigs: Record<string, ModuleConfig> = {
             gender: 'male',
         },
     },
-    '/admin-react/members/bulk-upload': {
+    '/admin-panel/members/bulk-upload': {
         kind: 'action',
         title: 'Bulk Member Upload',
         endpoint: '/members/bulk-upload',
         createDefaults: { bulk_file: '' },
     },
-    '/admin-react/religions': {
+    '/admin-panel/religions': {
         kind: 'resource',
         title: 'Religions',
         endpoint: '/religions',
         createDefaults: { name: '' },
     },
-    '/admin-react/sects': {
+    '/admin-panel/sects': {
         kind: 'resource',
         title: 'Sects',
         endpoint: '/sects',
         createDefaults: { name: '' },
     },
-    '/admin-react/castes': {
+    '/admin-panel/castes': {
         kind: 'resource',
         title: 'Castes',
         endpoint: '/castes',
         createDefaults: { name: '', religion_id: '' },
     },
-    '/admin-react/sub-castes': {
+    '/admin-panel/sub-castes': {
         kind: 'resource',
         title: 'Sub-Castes',
         endpoint: '/sub-castes',
         createDefaults: { name: '', caste_id: '' },
     },
-    '/admin-react/member-languages': {
+    '/admin-panel/member-languages': {
         kind: 'resource',
         title: 'Member Languages',
         endpoint: '/member-languages',
         createDefaults: { name: '' },
     },
-    '/admin-react/countries': {
+    '/admin-panel/countries': {
         kind: 'resource',
         title: 'Countries',
         endpoint: '/countries',
         createDefaults: { code: '', name: '', status: 1 },
     },
-    '/admin-react/states': {
+    '/admin-panel/states': {
         kind: 'resource',
         title: 'States',
         endpoint: '/states',
         createDefaults: { name: '', country_id: '' },
     },
-    '/admin-react/cities': {
+    '/admin-panel/cities': {
         kind: 'resource',
         title: 'Cities',
         endpoint: '/cities',
         createDefaults: { name: '', state_id: '' },
     },
-    '/admin-react/family-status': {
+    '/admin-panel/family-status': {
         kind: 'resource',
         title: 'Family Status',
         endpoint: '/family-status',
         createDefaults: { name: '' },
     },
-    '/admin-react/family-values': {
+    '/admin-panel/family-values': {
         kind: 'resource',
         title: 'Family Values',
         endpoint: '/family-values',
         createDefaults: { name: '' },
     },
-    '/admin-react/on-behalf': {
+    '/admin-panel/on-behalf': {
         kind: 'resource',
         title: 'On Behalf',
         endpoint: '/on-behalf',
         createDefaults: { name: '' },
     },
-    '/admin-react/marital-statuses': {
+    '/admin-panel/marital-statuses': {
         kind: 'resource',
         title: 'Marital Statuses',
         endpoint: '/marital-statuses',
         createDefaults: { name: '' },
     },
-    '/admin-react/annual-salaries': {
+    '/admin-panel/annual-salaries': {
         kind: 'resource',
         title: 'Annual Salaries',
         endpoint: '/annual-salaries',
         createDefaults: { name: '' },
     },
-    '/admin-react/job-titles': {
+    '/admin-panel/job-titles': {
         kind: 'resource',
         title: 'Job Titles',
         endpoint: '/job-titles',
         createDefaults: { name: '' },
     },
-    '/admin-react/specialities': {
+    '/admin-panel/specialities': {
         kind: 'resource',
         title: 'Specialities',
         endpoint: '/specialities',
         createDefaults: { name: '' },
     },
-    '/admin-react/profile-option-values': {
+    '/admin-panel/profile-option-values': {
         kind: 'resource',
         title: 'Profile Option Values',
         endpoint: '/profile-option-values',
         createDefaults: { name: '', field_name: '', active: 1 },
     },
-    '/admin-react/additional-attributes': {
+    '/admin-panel/additional-attributes': {
         kind: 'resource',
         title: 'Additional Attributes',
         endpoint: '/additional-attributes',
         createDefaults: { name: '', status: 1 },
     },
-    '/admin-react/packages': {
+    '/admin-panel/packages': {
         kind: 'resource',
         title: 'Packages',
         endpoint: '/packages',
         createDefaults: { name: '', price: '', active: 1 },
     },
-    '/admin-react/blogs': {
+    '/admin-panel/blogs': {
         kind: 'resource',
         title: 'Blogs',
         endpoint: '/blogs',
         createDefaults: { title: '', category_id: '', status: 1, content: '' },
     },
-    '/admin-react/blog-categories': {
+    '/admin-panel/blog-categories': {
         kind: 'resource',
         title: 'Blog Categories',
         endpoint: '/blog-categories',
         createDefaults: { name: '' },
     },
-    '/admin-react/happy-stories': {
+    '/admin-panel/happy-stories': {
         kind: 'resource',
         title: 'Happy Stories',
         endpoint: '/happy-stories',
         createDefaults: { title: '', partner_name: '', details: '', approved: 0 },
     },
-    '/admin-react/manual-payment-methods': {
+    '/admin-panel/manual-payment-methods': {
         kind: 'resource',
         title: 'Manual Payment Methods',
         endpoint: '/manual-payment-methods',
         createDefaults: { heading: '', description: '' },
     },
-    '/admin-react/custom-pages': {
+    '/admin-panel/custom-pages': {
         kind: 'resource',
         title: 'Custom Pages',
         endpoint: '/custom-pages',
         createDefaults: { title: '', slug: '', content: '' },
     },
-    '/admin-react/languages': {
+    '/admin-panel/languages': {
         kind: 'resource',
         title: 'Languages',
         endpoint: '/languages',
         createDefaults: { name: '', code: '', rtl: 0 },
     },
-    '/admin-react/currencies': {
+    '/admin-panel/currencies': {
         kind: 'resource',
         title: 'Currencies',
         endpoint: '/currencies',
         createDefaults: { name: '', code: '', symbol: '', exchange_rate: 1, status: 1 },
     },
-    '/admin-react/staffs': {
+    '/admin-panel/staffs': {
         kind: 'resource',
         title: 'Staffs',
         endpoint: '/staffs',
         createDefaults: { user_id: '', role_id: '' },
     },
-    '/admin-react/roles': {
+    '/admin-panel/roles': {
         kind: 'resource',
         title: 'Roles',
         endpoint: '/roles',
         createDefaults: { name: '' },
     },
-    '/admin-react/email-templates': {
+    '/admin-panel/email-templates': {
         kind: 'resource',
         title: 'Email Templates',
         endpoint: '/email-templates',
@@ -210,219 +210,219 @@ const moduleConfigs: Record<string, ModuleConfig> = {
         allowDelete: false,
     },
 
-    '/admin-react/members/deleted': {
+    '/admin-panel/members/deleted': {
         kind: 'list',
         title: 'Deleted Members',
         endpoint: '/members/deleted',
         readonly: false,
         allowDelete: false,
     },
-    '/admin-react/members/reported': {
+    '/admin-panel/members/reported': {
         kind: 'list',
         title: 'Reported Members',
         endpoint: '/members/reported',
         readonly: false,
         allowDelete: true,
     },
-    '/admin-react/members/verification-requests': {
+    '/admin-panel/members/verification-requests': {
         kind: 'list',
         title: 'Verification Requests',
         endpoint: '/members/verification-requests',
         readonly: false,
         allowDelete: false,
     },
-    '/admin-react/members/unapproved-pictures': {
+    '/admin-panel/members/unapproved-pictures': {
         kind: 'list',
         title: 'Unapproved Pictures',
         endpoint: '/members/unapproved-pictures',
         readonly: false,
         allowDelete: false,
     },
-    '/admin-react/package-payments': {
+    '/admin-panel/package-payments': {
         kind: 'list',
         title: 'Package Payments',
         endpoint: '/package-payments',
         readonly: false,
         allowDelete: false,
     },
-    '/admin-react/wallet/transactions': {
+    '/admin-panel/wallet/transactions': {
         kind: 'list',
         title: 'Wallet Transactions',
         endpoint: '/wallet/transactions',
         readonly: true,
     },
-    '/admin-react/wallet/manual-requests': {
+    '/admin-panel/wallet/manual-requests': {
         kind: 'list',
         title: 'Wallet Manual Requests',
         endpoint: '/wallet/manual-requests',
         readonly: false,
         allowDelete: false,
     },
-    '/admin-react/wallet/payment-detail': {
+    '/admin-panel/wallet/payment-detail': {
         kind: 'single',
         title: 'Wallet Payment Detail',
         endpoint: '/wallet/payment',
         readonly: true,
     },
-    '/admin-react/contact-us': {
+    '/admin-panel/contact-us': {
         kind: 'list',
         title: 'Contact Us',
         endpoint: '/contact-us',
         allowDelete: true,
     },
-    '/admin-react/support/active': {
+    '/admin-panel/support/active': {
         kind: 'list',
         title: 'Support Active Tickets',
         endpoint: '/support-tickets/active',
         readonly: true,
     },
-    '/admin-react/support/my': {
+    '/admin-panel/support/my': {
         kind: 'list',
         title: 'My Tickets',
         endpoint: '/support-tickets/my',
         readonly: true,
     },
-    '/admin-react/support/solved': {
+    '/admin-panel/support/solved': {
         kind: 'list',
         title: 'Solved Tickets',
         endpoint: '/support-tickets/solved',
         readonly: true,
     },
-    '/admin-react/uploaded-files': {
+    '/admin-panel/uploaded-files': {
         kind: 'list',
         title: 'Uploaded Files',
         endpoint: '/uploaded-files',
         allowDelete: true,
     },
-    '/admin-react/notifications': {
+    '/admin-panel/notifications': {
         kind: 'list',
         title: 'Notifications',
         endpoint: '/notifications',
         readonly: true,
     },
-    '/admin-react/addons': { kind: 'list', title: 'Addons', endpoint: '/addons', readonly: true },
-    '/admin-react/referral/dashboard': {
+    '/admin-panel/addons': { kind: 'list', title: 'Addons', endpoint: '/addons', readonly: true },
+    '/admin-panel/referral/dashboard': {
         kind: 'single',
         title: 'Referral Dashboard',
         endpoint: '/referral/dashboard',
         readonly: true,
     },
-    '/admin-react/referral/rules': {
+    '/admin-panel/referral/rules': {
         kind: 'resource',
         title: 'Referral Rules',
         endpoint: '/referral/rules',
         createDefaults: { name: '', trigger_threshold: 1, is_active: 1 },
     },
-    '/admin-react/referral/referrals': {
+    '/admin-panel/referral/referrals': {
         kind: 'list',
         title: 'Referrals',
         endpoint: '/referral/referrals',
         readonly: true,
     },
-    '/admin-react/referral/rewards': {
+    '/admin-panel/referral/rewards': {
         kind: 'list',
         title: 'Referral Rewards',
         endpoint: '/referral/rewards',
         readonly: true,
     },
-    '/admin-react/referral/audit-logs': {
+    '/admin-panel/referral/audit-logs': {
         kind: 'list',
         title: 'Referral Audit Logs',
         endpoint: '/referral/audit-logs',
         readonly: true,
     },
 
-    '/admin-react/settings/general': {
+    '/admin-panel/settings/general': {
         kind: 'single',
         title: 'General Settings',
         endpoint: '/settings/general',
         saveEndpoint: '/settings/general',
     },
-    '/admin-react/settings/smtp': {
+    '/admin-panel/settings/smtp': {
         kind: 'single',
         title: 'SMTP Settings',
         endpoint: '/settings/smtp',
         saveEndpoint: '/settings/smtp',
     },
-    '/admin-react/settings/payment-methods': {
+    '/admin-panel/settings/payment-methods': {
         kind: 'single',
         title: 'Payment Methods',
         endpoint: '/settings/payment-methods',
         saveEndpoint: '/settings/payment-methods',
     },
-    '/admin-react/settings/third-party': {
+    '/admin-panel/settings/third-party': {
         kind: 'single',
         title: 'Third Party Settings',
         endpoint: '/settings/third-party',
         saveEndpoint: '/settings/third-party',
     },
-    '/admin-react/settings/social-login': {
+    '/admin-panel/settings/social-login': {
         kind: 'single',
         title: 'Social Login Settings',
         endpoint: '/settings/social-login',
         saveEndpoint: '/settings/social-login',
     },
-    '/admin-react/settings/fcm': {
+    '/admin-panel/settings/fcm': {
         kind: 'single',
         title: 'FCM Settings',
         endpoint: '/settings/fcm',
         saveEndpoint: '/settings/fcm',
     },
-    '/admin-react/settings/verification-form': {
+    '/admin-panel/settings/verification-form': {
         kind: 'single',
         title: 'Verification Form Settings',
         endpoint: '/settings/verification-form',
         saveEndpoint: '/settings/verification-form',
     },
-    '/admin-react/settings/profile-sections': {
+    '/admin-panel/settings/profile-sections': {
         kind: 'single',
         title: 'Profile Sections Settings',
         endpoint: '/settings/profile-sections',
         saveEndpoint: '/settings/profile-sections',
     },
-    '/admin-react/settings/activation': {
+    '/admin-panel/settings/activation': {
         kind: 'single',
         title: 'Activation Settings',
         endpoint: '/settings/general',
         saveEndpoint: '/settings/activation',
     },
-    '/admin-react/website/header': {
+    '/admin-panel/website/header': {
         kind: 'single',
         title: 'Website Header',
         endpoint: '/website/header',
         saveEndpoint: '/website/header',
     },
-    '/admin-react/website/footer': {
+    '/admin-panel/website/footer': {
         kind: 'single',
         title: 'Website Footer',
         endpoint: '/website/footer',
         saveEndpoint: '/website/footer',
     },
-    '/admin-react/website/appearances': {
+    '/admin-panel/website/appearances': {
         kind: 'single',
         title: 'Website Appearances',
         endpoint: '/website/appearances',
         saveEndpoint: '/website/appearances',
     },
-    '/admin-react/referral/settings': {
+    '/admin-panel/referral/settings': {
         kind: 'single',
         title: 'Referral Settings',
         endpoint: '/referral/settings',
         saveEndpoint: '/referral/settings',
     },
-    '/admin-react/support/settings': {
+    '/admin-panel/support/settings': {
         kind: 'single',
         title: 'Support Settings',
         endpoint: '/support-settings',
         saveEndpoint: '/support-settings',
     },
-    '/admin-react/profile-reminders': {
+    '/admin-panel/profile-reminders': {
         kind: 'single',
         title: 'Profile Reminders',
         endpoint: '/profile-reminders',
         saveEndpoint: '/profile-reminders/update',
     },
-    '/admin-react/bulk-notifications': {
+    '/admin-panel/bulk-notifications': {
         kind: 'action',
         title: 'Bulk Notifications',
         endpoint: '/bulk-notifications/send',
@@ -532,7 +532,7 @@ function inferFormFields(data: Record<string, unknown>): string[] {
 }
 
 function resolveConfig(pathname: string) {
-    if (moduleConfigs[pathname] && pathname !== '/admin-react/wallet/payment-detail') {
+    if (moduleConfigs[pathname] && pathname !== '/admin-panel/wallet/payment-detail') {
         return {
             config: moduleConfigs[pathname],
             mode: 'base' as const,
@@ -563,34 +563,34 @@ function resolveConfig(pathname: string) {
         basePath: string;
     }> = [
         {
-            regex: /^\/admin-react\/package-payments\/(\d+)$/,
-            config: moduleConfigs['/admin-react/package-payments'],
+            regex: /^\/admin-panel\/package-payments\/(\d+)$/,
+            config: moduleConfigs['/admin-panel/package-payments'],
             mode: 'view',
-            basePath: '/admin-react/package-payments',
+            basePath: '/admin-panel/package-payments',
         },
         {
-            regex: /^\/admin-react\/wallet\/payment\/(\d+)$/,
-            config: moduleConfigs['/admin-react/wallet/payment-detail'],
+            regex: /^\/admin-panel\/wallet\/payment\/(\d+)$/,
+            config: moduleConfigs['/admin-panel/wallet/payment-detail'],
             mode: 'view',
-            basePath: '/admin-react/wallet/transactions',
+            basePath: '/admin-panel/wallet/transactions',
         },
         {
-            regex: /^\/admin-react\/contact-us\/(\d+)$/,
-            config: moduleConfigs['/admin-react/contact-us'],
+            regex: /^\/admin-panel\/contact-us\/(\d+)$/,
+            config: moduleConfigs['/admin-panel/contact-us'],
             mode: 'view',
-            basePath: '/admin-react/contact-us',
+            basePath: '/admin-panel/contact-us',
         },
         {
-            regex: /^\/admin-react\/manual-payment-methods\/(\d+)\/edit$/,
-            config: moduleConfigs['/admin-react/manual-payment-methods'],
+            regex: /^\/admin-panel\/manual-payment-methods\/(\d+)\/edit$/,
+            config: moduleConfigs['/admin-panel/manual-payment-methods'],
             mode: 'view',
-            basePath: '/admin-react/manual-payment-methods',
+            basePath: '/admin-panel/manual-payment-methods',
         },
         {
-            regex: /^\/admin-react\/custom-pages\/(\d+)\/edit$/,
-            config: moduleConfigs['/admin-react/custom-pages'],
+            regex: /^\/admin-panel\/custom-pages\/(\d+)\/edit$/,
+            config: moduleConfigs['/admin-panel/custom-pages'],
             mode: 'view',
-            basePath: '/admin-react/custom-pages',
+            basePath: '/admin-panel/custom-pages',
         },
     ];
 
@@ -1192,7 +1192,7 @@ export default function ModulePage() {
                                                                 <>
                                                                     <Link
                                                                         className="rounded border border-slate-300 px-2 py-1 text-xs"
-                                                                        to={`/admin-react/wallet/payment/${rowId}`}
+                                                                        to={`/admin-panel/wallet/payment/${rowId}`}
                                                                     >
                                                                         View
                                                                     </Link>
