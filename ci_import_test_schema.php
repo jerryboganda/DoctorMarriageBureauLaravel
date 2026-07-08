@@ -17,6 +17,7 @@ $user = 'root';
 $password = 'root';
 $database = 'dmb_test';
 $sqlFile = __DIR__.'/matrimonial1.sql';
+$compressedSqlFile = __DIR__.'/tests/fixtures/ci/matrimonial1.sql.gz';
 
 try {
     echo "Connecting to MySQL at $host...\n";
@@ -30,15 +31,22 @@ try {
     $connection->exec("USE $database");
     echo "[ok] Database recreation complete\n";
 
-    if (! file_exists($sqlFile)) {
+    echo "Loading SQL baseline file...\n";
+    if (file_exists($sqlFile)) {
+        $sqlContent = file_get_contents($sqlFile);
+    } elseif (file_exists($compressedSqlFile)) {
+        $sqlContent = gzdecode(file_get_contents($compressedSqlFile));
+    } else {
         echo "No legacy SQL baseline found; migrations will build the schema.\n";
         echo "=== Database preparation complete ===\n";
 
         exit(0);
     }
 
-    echo "Loading SQL baseline file...\n";
-    $sqlContent = file_get_contents($sqlFile);
+    if ($sqlContent === false) {
+        throw new Exception('Unable to read SQL baseline content.');
+    }
+
     echo '[ok] SQL baseline file loaded ('.strlen($sqlContent)." bytes)\n";
 
     echo "Importing baseline schema...\n";

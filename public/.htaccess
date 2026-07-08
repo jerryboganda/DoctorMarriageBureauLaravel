@@ -8,7 +8,7 @@
     RewriteRule (^|/)\.git - [F,L]
     RewriteRule ^\.env - [F,L]
     RewriteRule (^|/)\.builds(/|$) - [F,L]
-    RewriteRule \.(sql|sqlite|bak|backup|dump|log|tar|tar\.gz|tgz|zip|rar|7z)$ - [F,L,NC]
+    RewriteRule \.(sql|sql\.gz|sqlite|bak|backup|dump|log|tar|tar\.gz|tgz|gz|zip|rar|7z)$ - [F,L,NC]
     RewriteRule (^|/)(_ide_helper(_models)?\.php|composer\.(json|lock)|package(-lock)?\.json)$ - [F,L,NC]
 
     # Handle Authorization Header
@@ -40,7 +40,7 @@ Options -Indexes
     </FilesMatch>
 </IfModule>
 
-<FilesMatch "(^\.env|\.sql$|\.sqlite$|\.bak$|\.backup$|\.dump$|\.log$|\.tar$|\.tar\.gz$|\.tgz$|\.zip$|\.rar$|\.7z$|_ide_helper(_models)?\.php$)">
+<FilesMatch "(^\.env|\.sql$|\.sql\.gz$|\.sqlite$|\.bak$|\.backup$|\.dump$|\.log$|\.tar$|\.tar\.gz$|\.tgz$|\.gz$|\.zip$|\.rar$|\.7z$|_ide_helper(_models)?\.php$)">
     Require all denied
 </FilesMatch>
 
