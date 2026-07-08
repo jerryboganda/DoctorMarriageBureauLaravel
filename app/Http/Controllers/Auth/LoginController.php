@@ -217,18 +217,18 @@ class LoginController extends Controller
         }
     }
 
-    public function authenticated()
+    protected function authenticated(Request $request, $user)
     {
-        if (auth()->user()->user_type == 'admin' || auth()->user()->user_type == 'staff') {
+        if ($user->user_type == 'admin' || $user->user_type == 'staff') {
             // License validation bypass - external activation check disabled for self-hosted environment
             // CoreComponentRepository::instantiateShopRepository();
             return redirect()->route('admin.dashboard');
 
         } else {
-            if (auth()->user()->must_change_password == 1) {
+            if ($user->must_change_password == 1) {
                 return redirect()->route('member.change_password');
             }
-            if (auth()->user()->email_verified_at == null) {
+            if ($user->email_verified_at == null) {
                 return redirect()->route('otp.initiation');
             }
             if (session('link') != null) {

@@ -221,6 +221,11 @@ class WebRouteController extends Controller
 
     public function dashboardRedirect()
     {
+        $user = auth()->user();
+        if ($user && in_array($user->user_type, ['admin', 'staff'], true)) {
+            return redirect()->route('admin.dashboard');
+        }
+
         return redirect(rtrim(env('FRONTEND_URL', env('APP_URL', 'http://localhost')), '/'));
     }
 

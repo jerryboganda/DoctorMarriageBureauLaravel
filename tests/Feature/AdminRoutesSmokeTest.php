@@ -34,6 +34,26 @@ class AdminRoutesSmokeTest extends TestCase
         $this->assertContains($response->getStatusCode(), [401, 403]);
     }
 
+    public function test_authenticated_admin_dashboard_alias_does_not_enter_user_panel(): void
+    {
+        $this->createMinimalUsersTable();
+
+        $admin = User::query()->create([
+            'first_name' => 'Admin',
+            'last_name' => 'User',
+            'name' => 'Admin User',
+            'email' => 'admin-dashboard@example.test',
+            'email_verified_at' => now(),
+            'password' => Hash::make('password'),
+            'user_type' => 'admin',
+            'photo' => null,
+        ]);
+
+        $this->actingAs($admin)
+            ->get('/dashboard')
+            ->assertRedirect(route('admin.dashboard'));
+    }
+
     public function test_admin_notification_header_handles_cast_array_payloads(): void
     {
         $this->createMinimalUsersTable();
@@ -81,6 +101,7 @@ class AdminRoutesSmokeTest extends TestCase
             $table->string('last_name')->nullable();
             $table->string('name')->nullable();
             $table->string('email')->unique();
+            $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->string('user_type')->default('member');
             $table->unsignedBigInteger('photo')->nullable();
