@@ -91,9 +91,15 @@ class HomeController extends Controller
     {
         if (auth()->user() != null && (auth()->user()->user_type == 'admin' || auth()->user()->user_type == 'staff')) {
             return redirect()->route('admin.dashboard');
-        } else {
-            return view('admin.auth.login');
         }
+
+        if (auth()->user() != null) {
+            auth()->guard()->logout();
+            request()->session()->invalidate();
+            request()->session()->regenerateToken();
+        }
+
+        return view('admin.auth.login');
     }
 
     public function login()

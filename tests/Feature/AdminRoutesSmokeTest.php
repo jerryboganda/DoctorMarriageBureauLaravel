@@ -54,6 +54,29 @@ class AdminRoutesSmokeTest extends TestCase
             ->assertRedirect(route('admin.dashboard'));
     }
 
+    public function test_member_session_is_cleared_before_admin_login_form(): void
+    {
+        $this->createMinimalUsersTable();
+
+        $member = User::query()->create([
+            'first_name' => 'Member',
+            'last_name' => 'User',
+            'name' => 'Member User',
+            'email' => 'member-admin-login@example.test',
+            'email_verified_at' => now(),
+            'password' => Hash::make('password'),
+            'user_type' => 'member',
+            'photo' => null,
+        ]);
+
+        $this->actingAs($member)
+            ->get('/admin')
+            ->assertOk()
+            ->assertSee('DMB Control Center');
+
+        $this->assertGuest();
+    }
+
     public function test_admin_notification_header_handles_cast_array_payloads(): void
     {
         $this->createMinimalUsersTable();
