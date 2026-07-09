@@ -12,6 +12,13 @@
     RewriteRule ^admin-panel(/.*)?$ /admin [R=302,L]
 
     RewriteRule ^admin(/.*)?$ public/index.php [L]
+    RewriteRule ^login$ public/index.php [L]
+    RewriteRule ^logout$ public/index.php [L]
+    RewriteRule ^password(/.*)?$ public/index.php [L]
+    RewriteRule ^email(/.*)?$ public/index.php [L]
+    RewriteRule ^verification(/.*)?$ public/index.php [L]
+    RewriteRule ^social-login(/.*)?$ public/index.php [L]
+    RewriteRule ^users/login$ public/index.php [L]
     RewriteRule ^api(/.*)?$ public/index.php [L]
     RewriteRule ^sanctum(/.*)?$ public/index.php [L]
     RewriteRule ^broadcasting(/.*)?$ public/index.php [L]
