@@ -77,6 +77,16 @@ class AdminRoutesSmokeTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_laravel_login_route_handles_admin_form_posts(): void
+    {
+        $response = $this->post('/login', [
+            'email' => 'invalid@example.test',
+            'password' => 'wrong-password',
+        ]);
+
+        $this->assertNotSame(200, $response->getStatusCode());
+    }
+
     public function test_admin_notification_header_handles_cast_array_payloads(): void
     {
         $this->createMinimalUsersTable();
