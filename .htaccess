@@ -26,6 +26,10 @@
     RewriteRule ^uploads/(.*)$ public/uploads/$1 [L]
     RewriteRule ^uploaded-files/(.*)$ public/uploaded-files/$1 [L]
 
+    RewriteCond %{DOCUMENT_ROOT}/public/$1 -f [OR]
+    RewriteCond %{DOCUMENT_ROOT}/public/$1 -d
+    RewriteRule ^(.+)$ public/$1 [L]
+
     RewriteRule ^$ public/user-panel/index.html [L]
 
     RewriteCond %{REQUEST_FILENAME} -f [OR]
