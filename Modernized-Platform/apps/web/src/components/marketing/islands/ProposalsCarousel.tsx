@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import type { ProposalProfile } from '../../types/proposal';
 import { Stethoscope, MapPin, GraduationCap, ShieldCheck, ChevronLeft, ChevronRight, Lock, HeartHandshake, User } from 'lucide-react';
-import { isFemaleGender, normalizeGender } from '../../lib/gender';
-import { api } from '../../lib/api/client';
-import { errorMessage } from '../../lib/dashboard/common';
+import { isFemaleGender, normalizeGender } from '../../../lib/gender';
+import { api } from '../../../lib/api/client';
+import { errorMessage } from '../../../lib/dashboard/common';
 
 export default function ProposalsCarousel() {
   const [proposals, setProposals] = useState<ProposalProfile[]>([]);
