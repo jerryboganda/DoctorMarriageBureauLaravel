@@ -102,8 +102,15 @@ import {
         <button id="btn-close-slip-modal" class="p-1 text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
       </div>
 
-      <div class="h-80 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center">
-        <img id="modal-slip-img" src="" alt="Payment proof" class="w-full h-full object-contain" />
+      <div class="h-80 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center relative">
+        <img id="modal-slip-img" src="" alt="Payment proof" class="w-full h-full object-contain hidden" onerror="this.style.display='none';var f=document.getElementById('modal-slip-fallback');if(f)f.style.display='flex';" onload="this.style.display='block';var f=document.getElementById('modal-slip-fallback');if(f)f.style.display='none';" />
+        <div id="modal-slip-fallback" class="absolute inset-0 flex flex-col items-center justify-center gap-2 p-6 text-center">
+          <div class="w-14 h-14 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          </div>
+          <p class="text-sm font-semibold text-slate-600">No slip image available</p>
+          <p class="text-xs text-slate-400">The candidate did not upload a readable file or it was removed. Check transaction ref below.</p>
+        </div>
       </div>
 
       <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-1 text-xs">
@@ -168,7 +175,7 @@ import {
       <tr class="hover:bg-slate-50/80 transition-colors">
         <td class="py-3.5 px-4">
           <div class="flex items-center gap-3">
-            <img src="${p.avatar}" class="w-9 h-9 rounded-xl object-cover border border-slate-200" alt="${p.doctor_name}" />
+            <img src="${p.avatar || '/assets/img/avatar-place.png'}" onerror="this.src='/assets/img/avatar-place.png';this.onerror=null;" class="w-9 h-9 rounded-xl object-cover border border-slate-200 bg-slate-100" alt="${p.doctor_name}" />
             <div>
               <a href="/admin/doctors/${p.doctor_id}/" class="font-bold text-navy-900 hover:text-brand-600 transition-colors">
                 ${p.doctor_name}
@@ -282,8 +289,20 @@ import {
 
             if (title) title.textContent = `${item.doctor_name} — Rs ${item.amount_pkr.toLocaleString()}`;
             if (sub) sub.textContent = `${item.package_name} • ${item.payment_method}`;
-            if (img) img.src = item.proof_image;
-            if (trx) trx.textContent = item.transaction_id;
+            if (img) {
+              const fb = document.getElementById('modal-slip-fallback') as HTMLElement | null;
+              const raw = (item.proof_image || '').trim();
+              if (!raw) {
+                img.style.display = 'none';
+                img.removeAttribute('src');
+                if (fb) fb.style.display = 'flex';
+              } else {
+                if (fb) fb.style.display = 'none';
+                img.style.display = 'block';
+                img.src = raw;
+              }
+            }
+            if (trx) trx.textContent = item.transaction_id || '—';
             if (notes) notes.textContent = item.admin_notes || 'Deposit slip uploaded.';
 
             modal?.classList.remove('hidden');

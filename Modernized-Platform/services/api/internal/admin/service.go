@@ -786,6 +786,7 @@ func (s *Service) ListPayments(ctx context.Context) ([]AdminPayment, error) {
 		return []AdminPayment{}, nil
 	}
 	avatarSQL := assets.PhotoSQLWithUserFallback("u.photo", "u.id")
+	proofSQL := assets.PhotoSQL("pp.custom_payment_proof")
 	query := `
 	SELECT
 		pp.id,
@@ -798,7 +799,7 @@ func (s *Service) ListPayments(ctx context.Context) ([]AdminPayment, error) {
 		COALESCE(pp.amount,0),
 		COALESCE(pp.payment_method,''),
 		COALESCE(pp.custom_payment_transaction_id, COALESCE(pp.payment_code,'')),
-		COALESCE(pp.custom_payment_proof,''),
+		` + proofSQL + `,
 		CASE WHEN pp.payment_status IN ('completed','approved') THEN 'approved' WHEN pp.payment_status IN ('rejected','failed') THEN 'rejected' ELSE 'pending' END,
 		pp.created_at,
 		COALESCE(pp.custom_payment_details,''),
