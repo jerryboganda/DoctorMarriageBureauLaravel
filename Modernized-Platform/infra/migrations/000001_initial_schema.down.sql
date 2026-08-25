@@ -1,0 +1,132 @@
+-- ============================================================================
+-- Doctor Marriage Bureau (DMB) — Modernized Platform Relational Schema
+-- Target: PostgreSQL 16 (Alpine)
+-- Down Migration: Drop all domain tables in reverse dependency order
+-- ============================================================================
+
+-- 10. CMS, SUPPORT & SYSTEM SETTINGS
+DROP TABLE IF EXISTS uploads CASCADE;
+DROP TABLE IF EXISTS contact_us CASCADE;
+DROP TABLE IF EXISTS email_templates CASCADE;
+DROP TABLE IF EXISTS settings CASCADE;
+DROP TABLE IF EXISTS pages CASCADE;
+DROP TABLE IF EXISTS support_ticket_replies CASCADE;
+DROP TABLE IF EXISTS support_tickets CASCADE;
+DROP TABLE IF EXISTS support_categories CASCADE;
+DROP TABLE IF EXISTS blogs CASCADE;
+DROP TABLE IF EXISTS blog_categories CASCADE;
+
+-- 9. REFERRAL & AFFILIATE ENGINE
+DROP TABLE IF EXISTS referral_audit_logs CASCADE;
+DROP TABLE IF EXISTS referral_rewards CASCADE;
+DROP TABLE IF EXISTS referrals CASCADE;
+DROP TABLE IF EXISTS referral_codes CASCADE;
+DROP TABLE IF EXISTS referral_settings CASCADE;
+DROP TABLE IF EXISTS referral_rules CASCADE;
+
+-- 8. REALTIME MESSAGING, NOTIFICATIONS & COMMUNITY
+DROP TABLE IF EXISTS happy_stories CASCADE;
+DROP TABLE IF EXISTS community_memberships CASCADE;
+DROP TABLE IF EXISTS communities CASCADE;
+DROP TABLE IF EXISTS bulk_notification_logs CASCADE;
+DROP TABLE IF EXISTS notifications CASCADE;
+DROP TABLE IF EXISTS chats CASCADE;
+DROP TABLE IF EXISTS chat_threads CASCADE;
+
+-- 7. COURTSHIP PROGRESSION PIPELINE
+DROP TABLE IF EXISTS progression_settings CASCADE;
+DROP TABLE IF EXISTS progression_budget_items CASCADE;
+DROP TABLE IF EXISTS progression_venues CASCADE;
+DROP TABLE IF EXISTS progression_notes CASCADE;
+DROP TABLE IF EXISTS progression_checklist_items CASCADE;
+DROP TABLE IF EXISTS progression_events CASCADE;
+DROP TABLE IF EXISTS member_progressions CASCADE;
+DROP TABLE IF EXISTS progression_stages CASCADE;
+
+-- 6. DISCOVERY, INTERACTIONS, PHOTOS & MATCHES
+DROP TABLE IF EXISTS gallery_images CASCADE;
+DROP TABLE IF EXISTS view_contacts CASCADE;
+DROP TABLE IF EXISTS view_gallery_images CASCADE;
+DROP TABLE IF EXISTS view_profile_pictures CASCADE;
+DROP TABLE IF EXISTS profile_matches CASCADE;
+DROP TABLE IF EXISTS profile_viewers CASCADE;
+DROP TABLE IF EXISTS reported_users CASCADE;
+DROP TABLE IF EXISTS ignored_users CASCADE;
+DROP TABLE IF EXISTS shortlists CASCADE;
+DROP TABLE IF EXISTS express_interests CASCADE;
+DROP TABLE IF EXISTS partner_preference_priorities CASCADE;
+DROP TABLE IF EXISTS partner_expectations CASCADE;
+
+-- 5. FAMILY PORTAL DOMAIN
+DROP TABLE IF EXISTS family_approvals CASCADE;
+DROP TABLE IF EXISTS family_photos CASCADE;
+DROP TABLE IF EXISTS family_guardians CASCADE;
+DROP TABLE IF EXISTS families CASCADE;
+
+-- 4. MEMBER PROFILES & DEMOGRAPHICS
+DROP TABLE IF EXISTS profile_completion_reminder_logs CASCADE;
+DROP TABLE IF EXISTS profile_completion_reminder_settings CASCADE;
+DROP TABLE IF EXISTS additional_member_infos CASCADE;
+DROP TABLE IF EXISTS additional_attributes CASCADE;
+DROP TABLE IF EXISTS hobbies CASCADE;
+DROP TABLE IF EXISTS attitudes CASCADE;
+DROP TABLE IF EXISTS astrologies CASCADE;
+DROP TABLE IF EXISTS recidencies CASCADE;
+DROP TABLE IF EXISTS addresses CASCADE;
+DROP TABLE IF EXISTS education CASCADE;
+DROP TABLE IF EXISTS careers CASCADE;
+DROP TABLE IF EXISTS lifestyles CASCADE;
+DROP TABLE IF EXISTS spiritual_backgrounds CASCADE;
+DROP TABLE IF EXISTS physical_attributes CASCADE;
+DROP TABLE IF EXISTS ownership_transfers CASCADE;
+DROP TABLE IF EXISTS profile_managers CASCADE;
+DROP TABLE IF EXISTS members CASCADE;
+
+-- 3. PACKAGES, BILLING, COUPONS & WALLETS
+DROP TABLE IF EXISTS transactions CASCADE;
+DROP TABLE IF EXISTS wallet_withdraw_requests CASCADE;
+DROP TABLE IF EXISTS wallets CASCADE;
+DROP TABLE IF EXISTS coupon_redemptions CASCADE;
+DROP TABLE IF EXISTS addon_purchases CASCADE;
+DROP TABLE IF EXISTS addon_products CASCADE;
+DROP TABLE IF EXISTS package_payments CASCADE;
+DROP TABLE IF EXISTS manual_payment_methods CASCADE;
+DROP TABLE IF EXISTS coupons CASCADE;
+DROP TABLE IF EXISTS packages CASCADE;
+
+-- 2. USERS, AUTH & SECURITY SUBSYSTEM
+DROP TABLE IF EXISTS staff CASCADE;
+DROP TABLE IF EXISTS failed_jobs CASCADE;
+DROP TABLE IF EXISTS personal_access_tokens CASCADE;
+DROP TABLE IF EXISTS password_resets CASCADE;
+DROP TABLE IF EXISTS verification_codes CASCADE;
+DROP TABLE IF EXISTS user_notification_preferences CASCADE;
+DROP TABLE IF EXISTS profile_audit_logs CASCADE;
+DROP TABLE IF EXISTS field_visibility_settings CASCADE;
+DROP TABLE IF EXISTS step_up_auth_tokens CASCADE;
+DROP TABLE IF EXISTS account_recovery_requests CASCADE;
+DROP TABLE IF EXISTS trusted_contacts CASCADE;
+DROP TABLE IF EXISTS user_two_factor_settings CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+
+-- 1. TAXONOMY & MASTER LOOKUP TABLES
+DROP TABLE IF EXISTS profile_option_values CASCADE;
+DROP TABLE IF EXISTS permissions CASCADE;
+DROP TABLE IF EXISTS roles CASCADE;
+DROP TABLE IF EXISTS currencies CASCADE;
+DROP TABLE IF EXISTS annual_salary_ranges CASCADE;
+DROP TABLE IF EXISTS on_behalfs CASCADE;
+DROP TABLE IF EXISTS family_statuses CASCADE;
+DROP TABLE IF EXISTS family_values CASCADE;
+DROP TABLE IF EXISTS member_languages CASCADE;
+DROP TABLE IF EXISTS languages CASCADE;
+DROP TABLE IF EXISTS marital_statuses CASCADE;
+DROP TABLE IF EXISTS job_titles CASCADE;
+DROP TABLE IF EXISTS specialities CASCADE;
+DROP TABLE IF EXISTS sub_castes CASCADE;
+DROP TABLE IF EXISTS castes CASCADE;
+DROP TABLE IF EXISTS sects CASCADE;
+DROP TABLE IF EXISTS religions CASCADE;
+DROP TABLE IF EXISTS cities CASCADE;
+DROP TABLE IF EXISTS states CASCADE;
+DROP TABLE IF EXISTS countries CASCADE;

@@ -1,0 +1,555 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { 
+  Users, 
+  Search, 
+  Filter, 
+  Plus, 
+  Download, 
+  ShieldCheck, 
+  ShieldAlert, 
+  MoreVertical, 
+  Eye, 
+  Ban, 
+  Trash2, 
+  CheckCircle2, 
+  ExternalLink,
+  ChevronRight,
+  UserCheck
+} from 'lucide-react';
+---
+
+<AdminLayout title="Doctor Directory — DMB Admin Console" activePath="/admin/doctors/">
+  
+  <!-- Header Bar -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-1">
+        <a href="/admin/" class="hover:text-navy-900 transition-colors">Admin</a>
+        <ChevronRight className="w-3 h-3" />
+        <span class="text-navy-900 font-bold">Doctor Directory</span>
+      </div>
+      <h1 class="text-2xl sm:text-3xl font-black text-navy-900 tracking-tight">Doctor Management</h1>
+      <p class="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
+        Search, inspect medical credentials, manage PMDC verifications, and configure subscription tiers.
+      </p>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex items-center gap-2.5">
+      <button 
+        id="btn-export-csv" 
+        class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 transition-all shadow-sm"
+      >
+        <Download className="w-4 h-4 text-slate-500" />
+        <span>Export CSV</span>
+      </button>
+
+      <button 
+        id="btn-open-add-doctor" 
+        class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold bg-brand-500 text-white hover:bg-brand-600 shadow-md shadow-brand-500/20 transition-all"
+      >
+        <Plus className="w-4 h-4" />
+        <span>Add Doctor</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Filter & Search Control Panel -->
+  <div class="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-4">
+    
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+      <!-- Search Input -->
+      <div class="lg:col-span-2 relative">
+        <input 
+          type="text" 
+          id="filter-search" 
+          placeholder="Search by name, PMDC number, email, phone, or hospital..." 
+          class="w-full pl-9 pr-4 py-2 rounded-xl text-xs bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none text-slate-900 transition-all"
+        />
+        <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+      </div>
+
+      <!-- Specialty Filter -->
+      <div>
+        <select 
+          id="filter-specialty" 
+          class="w-full py-2 px-3 rounded-xl text-xs bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none text-slate-900"
+        >
+          <option value="">All Specialties</option>
+          <option value="Cardiologist">Cardiology</option>
+          <option value="Dermatologist">Dermatology</option>
+          <option value="Surgeon">Surgery</option>
+          <option value="Pulmonologist">Pulmonology</option>
+          <option value="Radiologist">Radiology</option>
+          <option value="Gynecologist">Gynecology</option>
+          <option value="General Practitioner">General Practitioner</option>
+        </select>
+      </div>
+
+      <!-- PMDC Status Filter -->
+      <div>
+        <select 
+          id="filter-pmdc" 
+          class="w-full py-2 px-3 rounded-xl text-xs bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none text-slate-900"
+        >
+          <option value="">PMDC Status: All</option>
+          <option value="verified">Verified Badge</option>
+          <option value="pending">Pending Review</option>
+          <option value="rejected">Rejected</option>
+          <option value="unverified">Unverified</option>
+        </select>
+      </div>
+
+      <!-- Package Tier Filter -->
+      <div>
+        <select 
+          id="filter-package" 
+          class="w-full py-2 px-3 rounded-xl text-xs bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none text-slate-900"
+        >
+          <option value="">All Packages</option>
+          <option value="Free">Free Doctor</option>
+          <option value="Gold">Gold Consultant</option>
+          <option value="VIP">VIP Platinum</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Active Summary Chips -->
+    <div class="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100">
+      <div>
+        Showing <span id="filtered-count" class="font-bold text-navy-900">0</span> doctors
+      </div>
+      <button 
+        id="btn-reset-filters" 
+        class="text-brand-600 hover:text-brand-700 font-bold"
+      >
+        Reset Filters
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Doctors Data Table -->
+  <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs">
+        <thead class="bg-slate-50 border-b border-slate-200/80 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
+          <tr>
+            <th class="py-3.5 px-4">Doctor Profile</th>
+            <th class="py-3.5 px-4">Medical Specialty & Hospital</th>
+            <th class="py-3.5 px-4">PMDC Number & Badge</th>
+            <th class="py-3.5 px-4">Package Tier</th>
+            <th class="py-3.5 px-4">Account Status</th>
+            <th class="py-3.5 px-4 text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="doctors-tbody" class="divide-y divide-slate-100 font-medium">
+          <!-- Populated by JavaScript -->
+          <tr>
+            <td colspan="6" class="py-12 text-center text-slate-400">Loading doctor profiles...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Add Doctor Modal (Dialog) -->
+  <div 
+    id="modal-add-doctor" 
+    class="fixed inset-0 z-50 bg-navy-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden"
+  >
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-5">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+        <div>
+          <h3 class="text-lg font-black text-navy-900">Register New Doctor</h3>
+          <p class="text-xs text-slate-500">Add a verified medical profile directly into the system.</p>
+        </div>
+        <button id="btn-close-modal" class="p-1 text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+      </div>
+
+      <form id="form-add-doctor" class="space-y-4 text-xs">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">First Name *</label>
+            <input type="text" name="first_name" required placeholder="e.g. Faisal" class="w-full p-2.5 rounded-xl border border-slate-200 focus:border-brand-500 outline-none" />
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Last Name *</label>
+            <input type="text" name="last_name" required placeholder="e.g. Maqsood" class="w-full p-2.5 rounded-xl border border-slate-200 focus:border-brand-500 outline-none" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Official Email *</label>
+            <input type="email" name="email" required placeholder="doctor@hospital.org" class="w-full p-2.5 rounded-xl border border-slate-200 focus:border-brand-500 outline-none" />
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Phone Number *</label>
+            <input type="tel" name="phone" required placeholder="03001234567" class="w-full p-2.5 rounded-xl border border-slate-200 focus:border-brand-500 outline-none" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Gender *</label>
+            <select name="gender" class="w-full p-2.5 rounded-xl border border-slate-200 focus:border-brand-500 outline-none">
+              <option value="male">Male Doctor</option>
+              <option value="female">Female Doctor</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Age *</label>
+            <input type="number" name="age" value="29" min="23" max="70" class="w-full p-2.5 rounded-xl border border-slate-200 focus:border-brand-500 outline-none" />
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">City *</label>
+            <input type="text" name="city_name" value="Lahore" required class="w-full p-2.5 rounded-xl border border-slate-200 focus:border-brand-500 outline-none" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Medical Degree & Qualifications *</label>
+            <input type="text" name="degree" required placeholder="e.g. MBBS, FCPS Cardiology" class="w-full p-2.5 rounded-xl border border-slate-200 focus:border-brand-500 outline-none" />
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Specialty *</label>
+            <input type="text" name="speciality" required placeholder="e.g. Consultant Cardiologist" class="w-full p-2.5 rounded-xl border border-slate-200 focus:border-brand-500 outline-none" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Hospital / Clinic *</label>
+            <input type="text" name="hospital" required placeholder="e.g. Punjab Institute of Cardiology" class="w-full p-2.5 rounded-xl border border-slate-200 focus:border-brand-500 outline-none" />
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">PMDC / PMC Reg. Number *</label>
+            <input type="text" name="pmdc_number" required placeholder="e.g. PMC-94821-P" class="w-full p-2.5 rounded-xl border border-slate-200 focus:border-brand-500 outline-none" />
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+          <button type="button" id="btn-cancel-modal" class="px-4 py-2.5 rounded-xl border border-slate-200 font-bold text-slate-700 hover:bg-slate-50">
+            Cancel
+          </button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 font-bold text-white shadow-md shadow-brand-500/20">
+            Create Doctor Profile
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</AdminLayout>
+
+<script>
+  import { AdminStore, type AdminDoctor } from '../../../lib/api/admin';
+  import { showToast } from '../../../lib/toast';
+
+  let currentDoctors: AdminDoctor[] = [];
+  let doctorsCache: AdminDoctor[] = [];
+
+  async function renderTable(doctors: AdminDoctor[]) {
+    const tbody = document.getElementById('doctors-tbody');
+    const countEl = document.getElementById('filtered-count');
+    if (countEl) countEl.textContent = String(doctors.length);
+
+    if (!tbody) return;
+
+    if (doctors.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6" class="py-12 text-center text-slate-500">
+            No live data — no doctors matched the filter criteria.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = doctors.map(d => `
+      <tr class="hover:bg-slate-50/80 transition-colors group">
+        <td class="py-3.5 px-4">
+          <div class="flex items-center gap-3">
+            <div class="relative">
+              <img src="${d.avatar}" class="w-10 h-10 rounded-xl object-cover border border-slate-200" alt="${d.name}" />
+              <span class="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
+                d.status === 'active' ? 'bg-emerald-500' : 'bg-rose-500'
+              }"></span>
+            </div>
+            <div>
+              <a href="/admin/doctors/${d.id}/" class="font-bold text-navy-900 hover:text-brand-600 transition-colors text-sm flex items-center gap-1.5">
+                ${d.name}
+              </a>
+              <div class="text-[11px] text-slate-400 flex items-center gap-2">
+                <span>${d.age} yrs • ${d.gender === 'male' ? 'Male' : 'Female'}</span>
+                <span>•</span>
+                <span>${d.city_name}</span>
+              </div>
+            </div>
+          </div>
+        </td>
+        <td class="py-3.5 px-4 text-slate-700">
+          <p class="font-bold text-navy-900">${d.speciality}</p>
+          <p class="text-[11px] text-slate-500">${d.hospital}</p>
+        </td>
+        <td class="py-3.5 px-4">
+          <div class="space-y-1">
+            <span class="font-mono text-xs font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 inline-block">
+              ${d.pmdc_number}
+            </span>
+            <div>
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                d.pmdc_status === 'verified' 
+                  ? 'bg-emerald-100 text-emerald-700' 
+                  : d.pmdc_status === 'pending'
+                  ? 'bg-amber-100 text-amber-700 animate-pulse'
+                  : d.pmdc_status === 'rejected'
+                  ? 'bg-rose-100 text-rose-700'
+                  : 'bg-slate-100 text-slate-600'
+              }">
+                ${d.pmdc_status === 'verified' ? '✓ PMDC VERIFIED' : d.pmdc_status.toUpperCase()}
+              </span>
+            </div>
+          </div>
+        </td>
+        <td class="py-3.5 px-4">
+          <span class="inline-block px-2.5 py-1 rounded-lg text-[11px] font-bold ${
+            d.package_name.includes('VIP') 
+              ? 'bg-rose-50 text-rose-700 border border-rose-200' 
+              : d.package_name.includes('Gold') 
+              ? 'bg-amber-50 text-amber-700 border border-amber-200'
+              : 'bg-slate-100 text-slate-700'
+          }">
+            ${d.package_name}
+          </span>
+        </td>
+        <td class="py-3.5 px-4">
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${
+            d.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
+          }">
+            ${d.status.toUpperCase()}
+          </span>
+        </td>
+        <td class="py-3.5 px-4 text-right">
+          <div class="flex items-center justify-end gap-1.5">
+            <a 
+              href="/admin/doctors/${d.id}/" 
+              class="px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-navy-900 text-white hover:bg-navy-800 transition-colors flex items-center gap-1 shadow-sm"
+            >
+              <span>Dossier</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </a>
+            <button 
+              data-action="toggle-status" 
+              data-id="${d.id}"
+              class="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
+              title="${d.status === 'active' ? 'Suspend Account' : 'Reactivate Account'}"
+            >
+              <Ban className="w-4 h-4 ${d.status === 'suspended' ? 'text-emerald-600' : 'text-slate-400'}" />
+            </button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+
+    // Bind event handlers (re-bound after render)
+    document.querySelectorAll('[data-action="toggle-status"]').forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        const id = Number((e.currentTarget as HTMLElement).getAttribute('data-id'));
+        const doc = doctorsCache.find(d => d.id === id);
+        if (doc) {
+          const newStatus = doc.status === 'active' ? 'suspended' : 'active';
+          try {
+            await AdminStore.updateDoctorStatus(id, newStatus);
+            doc.status = newStatus;
+            showToast({
+              title: `Doctor Account ${newStatus === 'active' ? 'Reactivated' : 'Suspended'}`,
+              message: `${doc.name}'s account is now ${newStatus}.`,
+              type: 'info'
+            });
+            await applyFilters();
+          } catch (err: any) {
+            showToast({ title: 'Status update failed', message: err?.response?.data?.message || err?.message || 'Failed to update doctor status.', type: 'error' });
+          }
+        }
+      });
+    });
+  }
+
+  async function applyFilters() {
+    const searchVal = (document.getElementById('filter-search') as HTMLInputElement)?.value.toLowerCase().trim() || '';
+    const specVal = (document.getElementById('filter-specialty') as HTMLSelectElement)?.value || '';
+    const pmdcVal = (document.getElementById('filter-pmdc') as HTMLSelectElement)?.value || '';
+    const pkgVal = (document.getElementById('filter-package') as HTMLSelectElement)?.value || '';
+
+    const tbody = document.getElementById('doctors-tbody');
+    // Ensure live data is fetched once and cached
+    if (!doctorsCache.length) {
+      if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="py-12 text-center text-slate-400">Loading live doctors from API...</td></tr>';
+      try {
+        const live = await AdminStore.getDoctors();
+        doctorsCache = live;
+      } catch (err: any) {
+        if (tbody) tbody.innerHTML = `<tr><td colspan="6" class="py-12 text-center text-rose-600">${err?.response?.data?.message || err?.message || 'Failed to load live doctors. Please retry.'}</td></tr>`;
+        const countEl = document.getElementById('filtered-count');
+        if (countEl) countEl.textContent = '0';
+        showToast({ title: 'Failed to load doctors', message: err?.response?.data?.message || err?.message || 'Failed to load live doctors.', type: 'error' });
+        return;
+      }
+    }
+
+    currentDoctors = doctorsCache;
+
+    const filtered = currentDoctors.filter(d => {
+      const matchSearch = !searchVal || 
+        d.name.toLowerCase().includes(searchVal) ||
+        d.email.toLowerCase().includes(searchVal) ||
+        d.pmdc_number.toLowerCase().includes(searchVal) ||
+        d.hospital.toLowerCase().includes(searchVal) ||
+        d.phone.includes(searchVal);
+
+      const matchSpec = !specVal || d.speciality.toLowerCase().includes(specVal.toLowerCase());
+      const matchPmdc = !pmdcVal || d.pmdc_status === pmdcVal;
+      const matchPkg = !pkgVal || d.package_name.toLowerCase().includes(pkgVal.toLowerCase());
+
+      return matchSearch && matchSpec && matchPmdc && matchPkg;
+    });
+
+    await renderTable(filtered);
+  }
+
+  async function initDoctorDirectory() {
+    // Read URL query parameter for search if present
+    const urlParams = new URLSearchParams(window.location.search);
+    const searchParam = urlParams.get('search');
+    const searchInput = document.getElementById('filter-search') as HTMLInputElement | null;
+    if (searchParam && searchInput) {
+      searchInput.value = searchParam;
+    }
+
+    document.getElementById('filter-search')?.addEventListener('input', () => { void applyFilters(); });
+    document.getElementById('filter-specialty')?.addEventListener('change', () => { void applyFilters(); });
+    document.getElementById('filter-pmdc')?.addEventListener('change', () => { void applyFilters(); });
+    document.getElementById('filter-package')?.addEventListener('change', () => { void applyFilters(); });
+
+    document.getElementById('btn-reset-filters')?.addEventListener('click', async () => {
+      (document.getElementById('filter-search') as HTMLInputElement).value = '';
+      (document.getElementById('filter-specialty') as HTMLSelectElement).value = '';
+      (document.getElementById('filter-pmdc') as HTMLSelectElement).value = '';
+      (document.getElementById('filter-package') as HTMLSelectElement).value = '';
+      await applyFilters();
+    });
+
+    // CSV Export (live)
+    document.getElementById('btn-export-csv')?.addEventListener('click', async () => {
+      try {
+        const docs = doctorsCache.length ? doctorsCache : await AdminStore.getDoctors();
+        if (!docs.length) {
+          showToast({ title: 'No live data', message: 'No doctors to export.', type: 'warning' });
+          return;
+        }
+        const headers = ['ID', 'Name', 'Email', 'Phone', 'Specialty', 'Hospital', 'City', 'PMDC Number', 'PMDC Status', 'Package', 'Account Status'];
+        const rows = docs.map(d => [
+          d.id,
+          `"${d.name}"`,
+          d.email,
+          d.phone,
+          `"${d.speciality}"`,
+          `"${d.hospital}"`,
+          d.city_name,
+          d.pmdc_number,
+          d.pmdc_status,
+          `"${d.package_name}"`,
+          d.status
+        ]);
+        const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', `dmb_doctors_export_${new Date().toISOString().slice(0, 10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast({
+          title: 'Export Completed',
+          message: 'Doctor registry exported to CSV successfully.',
+          type: 'info'
+        });
+      } catch (err: any) {
+        showToast({ title: 'Export failed', message: err?.response?.data?.message || err?.message || 'Failed to export CSV.', type: 'error' });
+      }
+    });
+
+    // Modal Add Doctor
+    const modal = document.getElementById('modal-add-doctor');
+    const openBtn = document.getElementById('btn-open-add-doctor');
+    const closeBtn = document.getElementById('btn-close-modal');
+    const cancelBtn = document.getElementById('btn-cancel-modal');
+    const form = document.getElementById('form-add-doctor') as HTMLFormElement;
+
+    openBtn?.addEventListener('click', () => modal?.classList.remove('hidden'));
+    closeBtn?.addEventListener('click', () => modal?.classList.add('hidden'));
+    cancelBtn?.addEventListener('click', () => modal?.classList.add('hidden'));
+
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(form);
+
+      const newDoc: AdminDoctor = {
+        id: 0,
+        user_id: 0,
+        name: `Dr. ${fd.get('first_name')} ${fd.get('last_name')}`,
+        first_name: String(fd.get('first_name')),
+        last_name: String(fd.get('last_name')),
+        email: String(fd.get('email')),
+        phone: String(fd.get('phone')),
+        gender: fd.get('gender') as 'male' | 'female',
+        age: Number(fd.get('age')),
+        degree: String(fd.get('degree')),
+        speciality: String(fd.get('speciality')),
+        hospital: String(fd.get('hospital')),
+        city_name: String(fd.get('city_name')),
+        country_name: 'Pakistan',
+        pmdc_number: String(fd.get('pmdc_number')),
+        pmdc_status: 'verified',
+        package_id: 2,
+        package_name: 'Gold Consultant',
+        status: 'active',
+        photo_approved: true,
+        avatar: fd.get('gender') === 'male' ? '/doctors/doctor1.png' : '/doctors/doctor2.png',
+        created_at: new Date().toISOString().slice(0, 10),
+        last_active: 'Just now',
+        marital_status: 'Never Married',
+        religion: 'Muslim - Sunni',
+        caste: 'Doctor Family',
+        height_cm: 175,
+        about: 'Registered medical doctor profile.'
+      };
+
+      try {
+        await AdminStore.saveDoctor(newDoc);
+        modal?.classList.add('hidden');
+        form.reset();
+        showToast({
+          title: 'Doctor Registered',
+          message: `${newDoc.name} has been added with verified credentials.`,
+          type: 'verification'
+        });
+        // Invalidate cache and reload live data
+        doctorsCache = [];
+        await applyFilters();
+      } catch (err: any) {
+        showToast({ title: 'Create failed', message: err?.response?.data?.message || err?.message || 'Failed to create doctor.', type: 'error' });
+      }
+    });
+
+    await applyFilters();
+  }
+
+  document.addEventListener('DOMContentLoaded', initDoctorDirectory);
+  document.addEventListener('astro:page-load', initDoctorDirectory);
+</script>

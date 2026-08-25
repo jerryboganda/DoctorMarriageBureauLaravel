@@ -1,0 +1,931 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Requests\ContactUsRequest;
+use App\Http\Resources\BlogResource;
+use App\Http\Resources\HappyStoryResource;
+use App\Http\Resources\HowItWorksResource;
+use App\Http\Resources\MemberResource;
+use App\Http\Resources\PackageResource;
+use App\Http\Resources\PublicProposalResource;
+use App\Models\Blog;
+use App\Models\ContactUs;
+use App\Models\HappyStory;
+use App\Models\IgnoredUser;
+use App\Models\Package;
+use App\Models\Setting;
+use App\Models\User;
+use App\Notifications\EmailNotification;
+use ArrayIterator;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Notification;
+use Laravel\Sanctum\PersonalAccessToken;
+use MultipleIterator;
+
+class HomeController extends Controller
+{
+    private function rememberStatic(string $key, callable $callback)
+    {
+        return Cache::remember('api.static.home.'.$key, now()->addMinutes(30), $callback);
+    }
+
+    public function home_slider()
+    {
+        $slider_images = $this->rememberStatic('slider', function () {
+            $slider_images = [];
+            $sliders = get_setting('show_homepage_slider') == 'on' && get_setting('home_slider_images') != null ?
+                json_decode(get_setting('home_slider_images'), true) : [];
+            foreach ($sliders as $key => $slider) {
+                $slider_data = [
+                    'image' => get_setting('home_slider_images_small') != null
+                        ? uploaded_asset(json_decode(get_setting('home_slider_images_small'), true)[$key])
+                        : uploaded_asset($slider),
+                ];
+                $slider_images[] = $slider_data;
+            }
+
+            return $slider_images;
+        });
+
+        return $this->response_data($slider_images);
+    }
+
+    public function home_banner()
+    {
+        $banner = $this->rememberStatic('banner', function () {
+            $banner = [];
+            $banner_imags = get_setting('show_home_banner1_section') == 'on' && get_setting('home_banner1_images') != null ?
+                json_decode(get_setting('home_banner1_images')) : [];
+            foreach ($banner_imags as $key => $value) {
+                $banner_data = [
+                    'link' => json_decode(get_setting('home_banner1_links'), true)[$key],
+                    'image' => uploaded_asset($value),
+                ];
+                $banner[] = $banner_data;
+            }
+
+            return $banner;
+        });
+
+        return $this->response_data($banner);
+    }
+
+    public function home_how_it_works()
+    {
+        $payload = $this->rememberStatic('how_it_works', function () {
+            $how_it_works = [];
+            if (get_setting('show_how_it_works_section') == 'on' && get_setting('how_it_works_steps_titles') != null) {
+                $how_it_works_steps_titles = json_decode(get_setting('how_it_works_steps_titles'));
+
+                foreach ($how_it_works_steps_titles as $key => $how_it_works_steps_title) {
+                    $how_it_works_data = [
+                        'step' => $key + 1,
+                        'title' => $how_it_works_steps_title,
+                        'subtitle' => json_decode(get_setting('how_it_works_steps_sub_titles'), true)[$key],
+                        'icon' => uploaded_asset(json_decode(get_setting('how_it_works_steps_icons'), true)[$key]),
+                    ];
+                    $how_it_works[] = $how_it_works_data;
+                }
+
+                return [
+                    'enabled' => true,
+                    'items' => $how_it_works,
+                    'title' => get_setting('how_it_works_title') ?? '',
+                    'sub_title' => get_setting('how_it_works_sub_title') ?? '',
+                ];
+            }
+
+            return [
+                'enabled' => false,
+                'items' => $how_it_works,
+                'title' => '',
+                'sub_title' => '',
+            ];
+        });
+
+        if ($payload['enabled']) {
+            return HowItWorksResource::collection($payload['items'])->additional([
+                'how_it_works_title' => $payload['title'],
+                'how_it_works_sub_title' => $payload['sub_title'],
+            ]);
+        }
+
+        return $this->failure_data($payload['items']);
+    }
+
+    public function home_trusted_by_millions()
+    {
+        $trusted_by_millions = $this->rememberStatic('trusted_by_millions', function () {
+            $trusted_by_millions = [];
+            $homepage_best_features = get_setting('show_trusted_by_millions_section') == 'on' ?
+                json_decode(get_setting('homepage_best_features')) : [];
+            foreach ($homepage_best_features as $key => $homepage_best_feature) {
+                $homepage_best_feature_data = [
+                    'title' => $homepage_best_feature,
+                    'icon' => uploaded_asset(json_decode(get_setting('homepage_best_features_icons'), true)[$key]),
+                ];
+                $trusted_by_millions[] = $homepage_best_feature_data;
+            }
+
+            return $trusted_by_millions;
+        });
+
+        return $this->response_data($trusted_by_millions);
+    }
+
+    public function home_happy_stories()
+    {
+        $stories = $this->rememberStatic('happy_stories', fn () => HappyStory::where('approved', '1')
+            ->latest()
+            ->limit(get_setting('max_happy_story_show_homepage'))
+            ->get());
+        $happy_stories = get_setting('show_happy_story_section') == 'on' ? (HappyStoryResource::collection($stories)) : [];
+
+        return $this->response_data($happy_stories);
+    }
+
+    public function home_packages()
+    {
+        $packages = get_setting('show_homapege_package_section') == 'on'
+            ? PackageResource::collection($this->rememberStatic('packages', fn () => Package::where('active', '1')->get()))
+            : [];
+
+        return $this->response_data($packages);
+    }
+
+    public function home_reviews()
+    {
+        $reviews = $this->rememberStatic('reviews', function () {
+            $reviews = [];
+            $homepage_reviews = get_setting('show_homepage_review_section') == 'on' && get_setting('homepage_reviews') != null ?
+                json_decode(get_setting('homepage_reviews')) : [];
+            if (count($homepage_reviews) > 0) {
+                $reviews['bg_image'] = uploaded_asset(get_setting('homepage_review_section_background_image'));
+                $reviews['items'] = [];
+                foreach ($homepage_reviews as $key => $review) {
+                    $review_data = [
+                        'image' => uploaded_asset(json_decode(get_setting('homepage_reviewers_images'), true)[$key]) ?? static_asset('assets/img/placeholder.jpg'),
+                        'review' => $review,
+                    ];
+                    $reviews['items'][] = $review_data;
+                }
+            }
+
+            return $reviews;
+        });
+
+        return $reviews ? $this->response_data($reviews) : $this->failure_data(null);
+    }
+
+    public function home_blogs()
+    {
+        $blogs = get_setting('show_blog_section') == 'on'
+            ? BlogResource::collection($this->rememberStatic('blogs', fn () => Blog::latest()->active()->limit(get_setting('max_blog_show_homepage'))->get()))
+            : [];
+
+        return $this->response_data($blogs);
+    }
+
+    public function home_premium_members()
+    {
+        $token = PersonalAccessToken::findToken(request()->bearerToken());
+        $user = null;
+        if ($token) {
+            $user = $token->tokenable;
+        }
+        // new members & premium members
+        $members = User::where('user_type', 'member')
+            ->where('approved', 1)
+            ->where('blocked', 0)
+            ->where('deactivated', 0);
+
+        if ($token && $user->user_type == 'member') {
+            $members = $members->where('id', '!=', $user->id)
+                ->whereIn('id', function ($query) use ($user) {
+                    $query->select('user_id')
+                        ->from('members')
+                        ->where('gender', '!=', $user->member->gender);
+                });
+
+            $ignored_to = IgnoredUser::where('ignored_by', $user->id)->pluck('user_id')->toArray();
+            if (count($ignored_to) > 0) {
+                $members = $members->whereNotIn('id', $ignored_to);
+            }
+
+            $ignored_by_ids = IgnoredUser::where('user_id', $user->id)->pluck('ignored_by')->toArray();
+            if (count($ignored_by_ids) > 0) {
+                $members = $members->whereNotIn('id', $ignored_by_ids);
+            }
+        }
+
+        $premium_members = $members->where('membership', 2)->inRandomOrder()->limit(get_setting('max_premium_member_homepage'))->get();
+        $premium_members = MemberResource::collection($premium_members);
+
+        return get_setting('show_premium_member_section') == 'on' ? $this->response_data($premium_members) : $this->response_data([]);
+    }
+
+    public function home_new_members()
+    {
+        $token = PersonalAccessToken::findToken(request()->bearerToken());
+        $user = null;
+        if ($token) {
+            $user = $token->tokenable;
+        }
+        // new members & premium members
+        $members = User::where('user_type', 'member')
+            ->where('approved', 1)
+            ->where('blocked', 0)
+            ->where('deactivated', 0);
+
+        if ($user && $user->user_type == 'member') {
+            $members = $members->where('id', '!=', $user->id)
+                ->whereIn('id', function ($query) use ($user) {
+                    $query->select('user_id')
+                        ->from('members')
+                        ->where('gender', '!=', $user->member->gender);
+                });
+
+            $ignored_to = IgnoredUser::where('ignored_by', $user->id)->pluck('user_id')->toArray();
+            if (count($ignored_to) > 0) {
+                $members = $members->whereNotIn('id', $ignored_to);
+            }
+
+            $ignored_by_ids = IgnoredUser::where('user_id', $user->id)->pluck('ignored_by')->toArray();
+            if (count($ignored_by_ids) > 0) {
+                $members = $members->whereNotIn('id', $ignored_by_ids);
+            }
+        }
+
+        $new_members = $members->orderBy('id', 'desc')->limit(get_setting('max_new_member_show_homepage'))->get()->shuffle();
+        $new_members = MemberResource::collection($new_members);
+
+        return get_setting('show_new_member_section') == 'on' ? $this->response_data($new_members) : $this->response_data([]);
+    }
+
+    public function home()
+    {
+        // Slider images
+        $slider_images = [];
+        $sliders = get_setting('show_homepage_slider') == 'on' && get_setting('home_slider_images') != null ?
+            json_decode(get_setting('home_slider_images'), true) : [];
+        foreach ($sliders as $key => $slider) {
+            $slider_data = [
+                'image' => uploaded_asset($slider),
+            ];
+            $slider_images[] = $slider_data;
+        }
+        $data['slider_images'] = $slider_images;
+
+        // new members & premium members
+        $members = User::where('user_type', 'member')
+            ->where('approved', 1)
+            ->where('blocked', 0)
+            ->where('deactivated', 0);
+
+        if (auth()->user() && auth()->user()->user_type == 'member') {
+            $members = $members->where('id', '!=', auth()->user()->id)
+                ->whereIn('id', function ($query) {
+                    $query->select('user_id')
+                        ->from('members')
+                        ->where('gender', '!=', auth()->user()->member->gender);
+                });
+
+            $ignored_to = IgnoredUser::where('ignored_by', auth()->user()->id)->pluck('user_id')->toArray();
+            if (count($ignored_to) > 0) {
+                $members = $members->whereNotIn('id', $ignored_to);
+            }
+
+            $ignored_by_ids = IgnoredUser::where('user_id', auth()->user()->id)->pluck('ignored_by')->toArray();
+            if (count($ignored_by_ids) > 0) {
+                $members = $members->whereNotIn('id', $ignored_by_ids);
+            }
+        }
+
+        $premium_members = $members;
+        $new_members = $members;
+
+        $new_members = $new_members->orderBy('id', 'desc')->limit(get_setting('max_new_member_show_homepage'))->get()->shuffle();
+        $premium_members = $premium_members->where('membership', 2)->inRandomOrder()->limit(get_setting('max_premium_member_homepage'))->get();
+        $data['new_members'] = MemberResource::collection($new_members);
+        $data['premium_members'] = MemberResource::collection($premium_members);
+
+        // banner
+        $banner = [];
+        $banner_imags = get_setting('show_home_banner1_section') == 'on' && get_setting('home_banner1_images') != null ?
+            json_decode(get_setting('home_banner1_images')) : [];
+        foreach ($banner_imags as $key => $value) {
+            $banner_data = [
+                'link' => json_decode(get_setting('home_banner1_links'), true)[$key],
+                'photo' => uploaded_asset($value),
+            ];
+            $banner[] = $banner_data;
+        }
+        $data['banner'] = $banner;
+
+        // How It Works
+        $how_it_works = [];
+        $how_it_works_steps_titles = get_setting('show_how_it_works_section') == 'on' && get_setting('how_it_works_steps_titles') != null ?
+            json_decode(get_setting('how_it_works_steps_titles')) : [];
+        if (count($how_it_works_steps_titles) > 0) {
+            $how_it_works['how_it_works_title'] = get_setting('how_it_works_title');
+            $how_it_works['how_it_works_sub_title'] = get_setting('how_it_works_sub_title');
+            $how_it_works['items'] = [];
+            foreach ($how_it_works_steps_titles as $key => $how_it_works_steps_title) {
+                $how_it_works_data = [
+                    'step' => $key + 1,
+                    'title' => $how_it_works_steps_title,
+                    'subtitle' => json_decode(get_setting('how_it_works_steps_sub_titles'), true)[$key],
+                    'icon' => uploaded_asset(json_decode(get_setting('how_it_works_steps_icons'), true)[$key]),
+                ];
+                $how_it_works['items'][] = $how_it_works_data;
+            }
+        }
+        $data['how_it_works'] = $how_it_works;
+
+        // trusted by millions
+        $trusted_by_millions = [];
+        $homepage_best_features = get_setting('show_trusted_by_millions_section') == 'on' ?
+            json_decode(get_setting('homepage_best_features')) : [];
+        foreach ($homepage_best_features as $key => $homepage_best_feature) {
+            $homepage_best_feature_data = [
+                'title' => $homepage_best_feature,
+                'icon' => uploaded_asset(json_decode(get_setting('homepage_best_features_icons'), true)[$key]),
+            ];
+            $trusted_by_millions[] = $homepage_best_feature_data;
+        }
+        $data['trusted_by_millions'] = $trusted_by_millions;
+
+        // Happy Stories
+        $stories = HappyStory::where('approved', '1')
+            ->latest()
+            ->limit(get_setting('max_happy_story_show_homepage'))
+            ->get();
+        $happy_stories = get_setting('show_happy_story_section') == 'on' ? (HappyStoryResource::collection($stories)) : [];
+        $data['happy_stories'] = $happy_stories;
+
+        // packages
+        $packages = get_setting('show_homapege_package_section') == 'on' ? (PackageResource::collection(Package::where('active', '1')->get())) : [];
+        $data['packages'] = $packages;
+
+        // reviews
+        $reviews = [];
+        $homepage_reviews = get_setting('show_homepage_review_section') == 'on' && get_setting('homepage_reviews') != null ?
+            json_decode(get_setting('homepage_reviews')) : [];
+        if (count($homepage_reviews) > 0) {
+            $reviews['bg_image'] = uploaded_asset(get_setting('homepage_review_section_background_image'));
+            $reviews['items'] = [];
+            foreach ($homepage_reviews as $key => $review) {
+                $review_data = [
+                    'image' => uploaded_asset(json_decode(get_setting('homepage_reviewers_images'), true)[$key]),
+                    'review' => $review,
+                ];
+                $reviews['items'][] = $review_data;
+            }
+        }
+        $data['reviews'] = $reviews;
+
+        // blogs
+        $blogs = get_setting('show_homapege_package_section') == 'on' ?
+            (BlogResource::collection(Blog::latest()->active()->limit(get_setting('max_blog_show_homepage'))->get())) : [];
+        $data['blogs'] = $blogs;
+
+        return $this->response_data($data);
+    }
+
+    public function home_with_login()
+    {
+        $members = User::query();
+        $members->where('user_type', 'member')
+            ->where('approved', 1)
+            ->where('blocked', 0)
+            ->where('deactivated', 0);
+
+        if (auth()->user() && auth()->user()->user_type == 'member') {
+            $members->where('id', '!=', auth()->user()->id)
+                ->whereIn('id', function ($query) {
+                    $query->select('user_id')
+                        ->from('members')
+                        ->where('gender', '!=', auth()->user()->member->gender);
+                });
+
+            $ignored_to = IgnoredUser::where('ignored_by', auth()->user()->id)->pluck('user_id')->toArray();
+            if (count($ignored_to) > 0) {
+                $members->whereNotIn('id', $ignored_to);
+            }
+
+            $ignored_by_ids = IgnoredUser::where('user_id', auth()->user()->id)->pluck('ignored_by')->toArray();
+            if (count($ignored_by_ids) > 0) {
+                $members->whereNotIn('id', $ignored_by_ids);
+            }
+        }
+
+        $members = $members->orderBy('id', 'desc')->limit(15)->get()->shuffle();
+
+        return MemberResource::collection($members)->additional([
+            'result' => true,
+        ]);
+    }
+
+    // app_info
+    public function app_info()
+    {
+        $data = $this->rememberStatic('app_info', function () {
+            $how_it_works_steps = json_decode(get_setting('how_it_works_steps_titles')) ?: [];
+            $step = 1;
+            $steps = [];
+            $how_it_works_steps_titles = [];
+            $how_it_works_steps_sub_titles = [];
+            $how_it_works_steps_icons = [];
+            foreach ($how_it_works_steps as $key => $how_it_works_steps_title) {
+                $steps[] = $step++;
+                $how_it_works_steps_titles[] = $how_it_works_steps_title;
+                $how_it_works_steps_sub_titles[] = json_decode(get_setting('how_it_works_steps_sub_titles'), true)[$key];
+                $how_it_works_steps_icons[] = uploaded_asset(json_decode(get_setting('how_it_works_steps_icons'), true)[$key]);
+            }
+
+            // Combine multiple arrays into single array
+            $keys = ['steps', 'how_it_works_steps_titles', 'how_it_works_steps_sub_titles', 'how_it_works_steps_icons'];
+            $how_it_works = [];
+            $mi = new MultipleIterator;
+            $mi->attachIterator(new ArrayIterator($steps));
+            $mi->attachIterator(new ArrayIterator($how_it_works_steps_titles));
+            $mi->attachIterator(new ArrayIterator($how_it_works_steps_sub_titles));
+            $mi->attachIterator(new ArrayIterator($how_it_works_steps_icons));
+
+            foreach ($mi as $value) {
+                $how_it_works[] = array_combine($keys, $value);
+            }
+
+            $data['website_name'] = get_setting('website_name');
+            $data['system_logo'] = uploaded_asset(get_setting('system_logo'));
+
+            $data['how_it_works_title'] = get_setting('how_it_works_title');
+            $data['how_it_works_sub_title'] = get_setting('how_it_works_sub_title');
+            $data['how_it_works'] = $how_it_works;
+
+            return $data;
+        });
+
+        return $this->response_data($data);
+    }
+
+    // Member Dashboard
+    public function member_dashboard()
+    {
+        $user = auth()->user();
+
+        if ($user->blocked == 1) {
+            return response()->json([
+                'result' => false,
+                'status' => 'blocked',
+                'message' => translate('user is banned'),
+            ]);
+        }
+
+        $data['member_name'] = $user->first_name.' '.$user->last_name;
+        $data['member_email'] = $user->email;
+        $data['member_photo'] = uploaded_asset($user->photo) !== null ? uploaded_asset($user->photo) : gender_avatar($user?->member);
+        $data['remaining_interest'] = get_remaining_package_value($user->id, 'remaining_interest');
+        $data['remaining_contact_view'] = get_remaining_package_value($user->id, 'remaining_contact_view');
+        $data['remaining_photo_gallery'] = get_remaining_package_value($user->id, 'remaining_photo_gallery');
+        $data['remaining_profile_image_view'] = (get_setting('profile_picture_privacy') == 'only_me') ? get_remaining_package_value($user->id, 'remaining_profile_image_view') : '';
+        $data['remaining_gallery_image_view'] = (get_setting('gallery_image_privacy') == 'only_me') ? get_remaining_package_value($user->id, 'remaining_gallery_image_view') : '';
+
+        $member = $user->member;
+        $package = $member?->package;
+        $current_package_info = [
+            'package_id' => $package?->id,
+            'package_name' => $package?->name ?? translate('No active package'),
+            'package_expiry' => ($member && $package && package_validity($user->id))
+                ? date('d.m.Y', strtotime($member->package_validity))
+                : translate('Expired'),
+        ];
+        $data['current_package_info'] = $current_package_info;
+
+        return $this->response_data($data);
+    }
+
+    public function addon_check()
+    {
+        $addons = $this->rememberStatic('addon_check', function () {
+            $addons = [];
+            $addons['referral_system'] = addon_activation('referral_system') ? true : false;
+            $addons['support_tickets'] = addon_activation('support_tickets') ? true : false;
+
+            return $addons;
+        });
+
+        return $this->response_data($addons);
+    }
+
+    public function feature_check()
+    {
+        /*
+        $features['google_login']             = get_setting('google_login_activation') == 1 ? true : false;
+        $features['facebook_login']           = get_setting('facebook_login_activation') == 1 ? true : false;
+        $features['twitter_login']            = get_setting('twitter_login_activation') == 1 ? true : false;
+        $features['apple_login']              = get_setting('apple_login_activation') == 1 ? true : false;
+        $features['force_https']              = get_setting('FORCE_HTTPS') == 1 ? true : false;
+        $features['maintenance_mode']         = get_setting('maintenance_mode') == 1 ? true : false;
+        $features['wallet_system']            = get_setting('wallet_system') == 1 ? true : false;
+        $features['full_profile_show']        = get_setting('full_profile_show_according_to_membership') == 1 ? true : false;
+        $features['profile_picture_approval'] = get_setting('profile_picture_approval_by_admin') == 1 ? true : false;
+        $features['gallery_image_privacy']    = get_setting('gallery_image_privacy');
+        $features['profile_picture_privacy']  = get_setting('profile_picture_privacy');
+        $features['email_verification']       = get_setting('email_verification') == 1 ? true : false;
+        $features['member_verification']      = get_setting('member_verification') == 1 ? true : false;
+        $features['member_min_age']           = get_setting('member_min_age') ?? "";
+        $features['default_currency']         = \App\Models\Currency::findOrFail(get_setting('system_default_currency'))->symbol;
+        */
+        $new_array = $this->rememberStatic('feature_check', function () {
+            $features = Setting::all();
+            $new_array = [];
+            foreach ($features as $feature) {
+                $new_array[$feature->type] = $feature->value;
+            }
+
+            return $new_array;
+        });
+
+        // dd($temp_array);
+        return $this->response_data($new_array);
+    }
+
+    public function contact_us(ContactUsRequest $request)
+    {
+        try {
+            ContactUs::create($request->except('g-recaptcha-response'));
+            $users = User::where('user_type', 'admin')->get();
+            Notification::send($users, new EmailNotification($request->subject, $request->description));
+
+            return $this->success_message('Your query has been sent successfully');
+        } catch (\Throwable $th) {
+            return $this->failure_message('Something went wrong');
+        }
+    }
+
+    public function upload_profile_picture(Request $request)
+    {
+        try {
+            $maxPhotoSizeKb = 10240; // 10MB
+            $validator = \Validator::make($request->all(), [
+                'photo' => [
+                    'required',
+                    'file',
+                    'max:'.$maxPhotoSizeKb,
+                    function ($attribute, $value, $fail) {
+                        $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif'];
+                        $extension = strtolower((string) $value->getClientOriginalExtension());
+                        $mimeType = strtolower((string) $value->getMimeType());
+                        $isImageMime = str_starts_with($mimeType, 'image/');
+                        $isHeicMime = in_array($mimeType, ['application/octet-stream', 'application/x-heic'], true);
+
+                        if (! in_array($extension, $allowedExtensions, true)) {
+                            $fail(translate('Photo must be JPG, JPEG, PNG, GIF, WEBP, HEIC, or HEIF format'));
+
+                            return;
+                        }
+
+                        if (! $isImageMime && ! $isHeicMime) {
+                            $fail(translate('File must be a valid image'));
+                        }
+                    },
+                ],
+            ], [
+                'photo.required' => translate('Photo is required'),
+                'photo.file' => translate('File must be an image'),
+                'photo.max' => translate('Photo size must not exceed 10MB'),
+            ]);
+
+            if ($validator->fails()) {
+                \Log::warning('Profile picture validation failed', [
+                    'user_id' => auth()->id(),
+                    'size_bytes' => $request->hasFile('photo') ? $request->file('photo')->getSize() : null,
+                    'mime_type' => $request->hasFile('photo') ? $request->file('photo')->getMimeType() : null,
+                    'extension' => $request->hasFile('photo') ? $request->file('photo')->getClientOriginalExtension() : null,
+                    'errors' => $validator->errors()->toArray(),
+                ]);
+
+                return response()->json([
+                    'result' => false,
+                    'success' => false,
+                    'message' => $validator->errors()->first(),
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            $user = auth()->user();
+
+            if (! $user) {
+                return response()->json([
+                    'result' => false,
+                    'success' => false,
+                    'message' => translate('User not authenticated'),
+                ], 401);
+            }
+
+            // Upload the image
+            $photo = null;
+            if ($request->hasFile('photo')) {
+                try {
+                    $photo = upload_api_file($request->file('photo'));
+                } catch (\RuntimeException $e) {
+                    \Log::error('Profile picture storage failure: '.$e->getMessage(), [
+                        'user_id' => $user->id,
+                        'size_bytes' => $request->file('photo')->getSize(),
+                        'mime_type' => $request->file('photo')->getMimeType(),
+                        'extension' => $request->file('photo')->getClientOriginalExtension(),
+                    ]);
+
+                    return response()->json([
+                        'result' => false,
+                        'success' => false,
+                        'code' => 'PROFILE_PHOTO_STORAGE_FAILED',
+                        'message' => translate('Profile photo could not be saved on the server. Please contact support.'),
+                        'error' => app()->environment('local') ? $e->getMessage() : null,
+                    ], 500);
+                }
+
+                if (! $photo) {
+                    return response()->json([
+                        'result' => false,
+                        'success' => false,
+                        'code' => 'PROFILE_PHOTO_PROCESSING_FAILED',
+                        'message' => translate('Failed to upload image. Please try again.'),
+                    ], 500);
+                }
+
+                // Update user photo
+                $user->photo = $photo;
+
+                // Check if admin approval is required
+                if (get_setting('profile_picture_approval_by_admin') && $user->user_type == 'member') {
+                    $user->photo_approved = 0;
+                } else {
+                    $user->photo_approved = 1;
+                }
+
+                $user->save();
+
+                return response()->json([
+                    'result' => true,
+                    'success' => true,
+                    'message' => translate('Profile picture uploaded successfully!'),
+                    'data' => [
+                        'photo_url' => uploaded_asset($photo),
+                        'photo_id' => $photo,
+                        'requires_approval' => get_setting('profile_picture_approval_by_admin') && $user->user_type == 'member',
+                    ],
+                ]);
+            }
+
+            return response()->json([
+                'result' => false,
+                'success' => false,
+                'message' => translate('No file uploaded'),
+            ], 400);
+
+        } catch (\Exception $e) {
+            \Log::error('Profile picture upload error: '.$e->getMessage(), [
+                'user_id' => auth()->id(),
+                'size_bytes' => $request->hasFile('photo') ? $request->file('photo')->getSize() : null,
+                'mime_type' => $request->hasFile('photo') ? $request->file('photo')->getMimeType() : null,
+                'extension' => $request->hasFile('photo') ? $request->file('photo')->getClientOriginalExtension() : null,
+            ]);
+
+            return response()->json([
+                'result' => false,
+                'success' => false,
+                'code' => 'PROFILE_PHOTO_UPLOAD_FAILED',
+                'message' => translate('Failed to upload profile picture. Please try again.'),
+                'error' => app()->environment('local') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
+
+    public function delete_profile_picture(Request $request)
+    {
+        $user = auth()->user();
+        if (! $user) {
+            return response()->json([
+                'result' => false,
+                'success' => false,
+                'message' => translate('User not authenticated'),
+            ], 401);
+        }
+
+        $user->photo = null;
+        $user->photo_approved = 0;
+        $user->save();
+
+        return response()->json([
+            'result' => true,
+            'success' => true,
+            'message' => translate('Profile picture deleted successfully'),
+            'data' => [
+                'photo_url' => uploaded_asset(null),
+            ],
+        ]);
+    }
+
+    /**
+     * Public endpoint – returns random proposals for the landing page.
+     * No authentication required. Result is seeded by the current date so the
+     * same set of profiles is shown throughout the day, then rotates at midnight.
+     */
+    /**
+     * Public proposal teaser endpoint for marketing site and web app.
+     * No authentication required. Rotates 7 males and 8 females (15 total) daily using date seed (Ymd).
+     */
+    public function randomProposals(Request $request)
+    {
+        $malesTarget = (int) $request->input('males_count', 7);
+        $femalesTarget = (int) $request->input('females_count', 8);
+        $totalCount = (int) $request->input('count', $malesTarget + $femalesTarget);
+
+        if ($request->has('count') && ! $request->has('males_count') && ! $request->has('females_count')) {
+            $malesTarget = (int) ceil($totalCount / 2);
+            $femalesTarget = $totalCount - $malesTarget;
+        }
+
+        $seed = (int) date('Ymd');
+        $cacheKey = 'api.public.proposals.'.date('Ymd').'.m'.$malesTarget.'.f'.$femalesTarget;
+
+        try {
+            $proposals = Cache::remember($cacheKey, now()->endOfDay()->diffInSeconds(), function () use ($malesTarget, $femalesTarget, $seed) {
+                $fetchForGender = function (int $gender, int $limit) use ($seed) {
+                    $baseQuery = User::whereHas('member', function ($q) use ($gender) {
+                        $q->where('gender', $gender);
+                    })
+                        ->where('user_type', 'member')
+                        ->whereNull('deleted_at')
+                        ->where('deactivated', 0)
+                        ->where('blocked', 0)
+                        ->with([
+                            'member.marital_status',
+                            'physical_attributes',
+                            'education',
+                            'career',
+                        ]);
+
+                    $photoLimit = max(1, (int) ceil($limit * 0.6));
+                    $noPhotoLimit = max(1, $limit - $photoLimit);
+
+                    $withPhoto = (clone $baseQuery)
+                        ->where('approved', 1)
+                        ->whereNotNull('photo')
+                        ->where('photo', '!=', '')
+                        ->orderByRaw("RAND({$seed})")
+                        ->limit($photoLimit)
+                        ->get();
+
+                    $withoutPhoto = (clone $baseQuery)
+                        ->where('approved', 1)
+                        ->where(function ($q) {
+                            $q->whereNull('photo')->orWhere('photo', '');
+                        })
+                        ->orderByRaw("RAND({$seed})")
+                        ->limit($noPhotoLimit)
+                        ->get();
+
+                    $users = $withPhoto->concat($withoutPhoto);
+
+                    if ($users->count() < $limit) {
+                        $existingIds = $users->pluck('id')->toArray();
+                        $more = (clone $baseQuery)
+                            ->whereNotIn('id', $existingIds)
+                            ->orderByRaw("RAND({$seed})")
+                            ->limit($limit - $users->count())
+                            ->get();
+                        $users = $users->concat($more);
+                    }
+
+                    return $users;
+                };
+
+                $males = $fetchForGender(1, $malesTarget);
+                $females = $fetchForGender(2, $femalesTarget);
+
+                $combined = $males->concat($females);
+
+                // Fallback candidate templates if database has insufficient entries
+                $maleTemplates = [
+                    ['first_name' => 'Ahmad', 'last_name' => 'R.', 'specialty' => 'Cardiology Consultant', 'location' => 'Lahore, Pakistan', 'age' => 29, 'marital_status' => 'Single'],
+                    ['first_name' => 'Hamza', 'last_name' => 'S.', 'specialty' => 'General Surgeon', 'location' => 'Islamabad, Pakistan', 'age' => 31, 'marital_status' => 'Single'],
+                    ['first_name' => 'Usama', 'last_name' => 'K.', 'specialty' => 'Neurology Resident', 'location' => 'Rawalpindi, Pakistan', 'age' => 28, 'marital_status' => 'Single'],
+                    ['first_name' => 'Bilal', 'last_name' => 'M.', 'specialty' => 'Orthopedic Specialist', 'location' => 'Karachi, Pakistan', 'age' => 30, 'marital_status' => 'Single'],
+                    ['first_name' => 'Zain', 'last_name' => 'A.', 'specialty' => 'Pediatrician', 'location' => 'Faisalabad, Pakistan', 'age' => 29, 'marital_status' => 'Single'],
+                    ['first_name' => 'Shahzaib', 'last_name' => 'H.', 'specialty' => 'Radiology Specialist', 'location' => 'Multan, Pakistan', 'age' => 32, 'marital_status' => 'Single'],
+                    ['first_name' => 'Farhan', 'last_name' => 'T.', 'specialty' => 'Internal Medicine', 'location' => 'Peshawar, Pakistan', 'age' => 28, 'marital_status' => 'Single'],
+                ];
+
+                $femaleTemplates = [
+                    ['first_name' => 'Ayesha', 'last_name' => 'F.', 'specialty' => 'Gynaecology Resident', 'location' => 'Lahore, Pakistan', 'age' => 27, 'marital_status' => 'Single'],
+                    ['first_name' => 'Fatima', 'last_name' => 'Z.', 'specialty' => 'Dermatologist', 'location' => 'Islamabad, Pakistan', 'age' => 26, 'marital_status' => 'Single'],
+                    ['first_name' => 'Sana', 'last_name' => 'B.', 'specialty' => 'Dental Surgeon', 'location' => 'Rawalpindi, Pakistan', 'age' => 28, 'marital_status' => 'Single'],
+                    ['first_name' => 'Maria', 'last_name' => 'K.', 'specialty' => 'Pediatric Consultant', 'location' => 'Karachi, Pakistan', 'age' => 29, 'marital_status' => 'Single'],
+                    ['first_name' => 'Hira', 'last_name' => 'M.', 'specialty' => 'Ophthalmologist', 'location' => 'Faisalabad, Pakistan', 'age' => 27, 'marital_status' => 'Single'],
+                    ['first_name' => 'Zainab', 'last_name' => 'N.', 'specialty' => 'Psychiatrist', 'location' => 'Multan, Pakistan', 'age' => 28, 'marital_status' => 'Single'],
+                    ['first_name' => 'Noor', 'last_name' => 'A.', 'specialty' => 'Anaesthesiology', 'location' => 'Peshawar, Pakistan', 'age' => 26, 'marital_status' => 'Single'],
+                    ['first_name' => 'Iqra', 'last_name' => 'S.', 'specialty' => 'Pathology Specialist', 'location' => 'Gujranwala, Pakistan', 'age' => 27, 'marital_status' => 'Single'],
+                ];
+
+                // Fill missing male slots
+                $missingMales = max(0, $malesTarget - $males->count());
+                for ($i = 0; $i < $missingMales; $i++) {
+                    $tmpl = $maleTemplates[$i % count($maleTemplates)];
+                    $combined->push((object) array_merge($tmpl, [
+                        'id' => 90000 + $i + 1,
+                        'code' => 'DMB-M'.($seed % 1000 + $i + 1),
+                        'gender' => 1,
+                        'education' => 'MBBS, FCPS',
+                        'religion' => 'Muslim',
+                        'mother_tongue' => 'Urdu',
+                        'height' => "5'10\"",
+                        'is_verified' => true,
+                        'photo' => null,
+                    ]));
+                }
+
+                // Fill missing female slots
+                $missingFemales = max(0, $femalesTarget - $females->count());
+                for ($i = 0; $i < $missingFemales; $i++) {
+                    $tmpl = $femaleTemplates[$i % count($femaleTemplates)];
+                    $combined->push((object) array_merge($tmpl, [
+                        'id' => 95000 + $i + 1,
+                        'code' => 'DMB-F'.($seed % 1000 + $i + 1),
+                        'gender' => 2,
+                        'education' => 'MBBS, FCPS',
+                        'religion' => 'Muslim',
+                        'mother_tongue' => 'Urdu',
+                        'height' => "5'5\"",
+                        'is_verified' => true,
+                        'photo' => null,
+                    ]));
+                }
+
+                return $combined;
+            });
+        } catch (\Throwable $e) {
+            \Log::warning('randomProposals DB fetch exception: '.$e->getMessage());
+
+            $maleTemplates = [
+                ['first_name' => 'Ahmad', 'last_name' => 'R.', 'specialty' => 'Cardiology Consultant', 'location' => 'Lahore, Pakistan', 'age' => 29, 'marital_status' => 'Single'],
+                ['first_name' => 'Hamza', 'last_name' => 'S.', 'specialty' => 'General Surgeon', 'location' => 'Islamabad, Pakistan', 'age' => 31, 'marital_status' => 'Single'],
+                ['first_name' => 'Usama', 'last_name' => 'K.', 'specialty' => 'Neurology Resident', 'location' => 'Rawalpindi, Pakistan', 'age' => 28, 'marital_status' => 'Single'],
+                ['first_name' => 'Bilal', 'last_name' => 'M.', 'specialty' => 'Orthopedic Specialist', 'location' => 'Karachi, Pakistan', 'age' => 30, 'marital_status' => 'Single'],
+                ['first_name' => 'Zain', 'last_name' => 'A.', 'specialty' => 'Pediatrician', 'location' => 'Faisalabad, Pakistan', 'age' => 29, 'marital_status' => 'Single'],
+                ['first_name' => 'Shahzaib', 'last_name' => 'H.', 'specialty' => 'Radiology Specialist', 'location' => 'Multan, Pakistan', 'age' => 32, 'marital_status' => 'Single'],
+                ['first_name' => 'Farhan', 'last_name' => 'T.', 'specialty' => 'Internal Medicine', 'location' => 'Peshawar, Pakistan', 'age' => 28, 'marital_status' => 'Single'],
+            ];
+
+            $femaleTemplates = [
+                ['first_name' => 'Ayesha', 'last_name' => 'F.', 'specialty' => 'Gynaecology Resident', 'location' => 'Lahore, Pakistan', 'age' => 27, 'marital_status' => 'Single'],
+                ['first_name' => 'Fatima', 'last_name' => 'Z.', 'specialty' => 'Dermatologist', 'location' => 'Islamabad, Pakistan', 'age' => 26, 'marital_status' => 'Single'],
+                ['first_name' => 'Sana', 'last_name' => 'B.', 'specialty' => 'Dental Surgeon', 'location' => 'Rawalpindi, Pakistan', 'age' => 28, 'marital_status' => 'Single'],
+                ['first_name' => 'Maria', 'last_name' => 'K.', 'specialty' => 'Pediatric Consultant', 'location' => 'Karachi, Pakistan', 'age' => 29, 'marital_status' => 'Single'],
+                ['first_name' => 'Hira', 'last_name' => 'M.', 'specialty' => 'Ophthalmologist', 'location' => 'Faisalabad, Pakistan', 'age' => 27, 'marital_status' => 'Single'],
+                ['first_name' => 'Zainab', 'last_name' => 'N.', 'specialty' => 'Psychiatrist', 'location' => 'Multan, Pakistan', 'age' => 28, 'marital_status' => 'Single'],
+                ['first_name' => 'Noor', 'last_name' => 'A.', 'specialty' => 'Anaesthesiology', 'location' => 'Peshawar, Pakistan', 'age' => 26, 'marital_status' => 'Single'],
+                ['first_name' => 'Iqra', 'last_name' => 'S.', 'specialty' => 'Pathology Specialist', 'location' => 'Gujranwala, Pakistan', 'age' => 27, 'marital_status' => 'Single'],
+            ];
+
+            $combined = collect();
+            for ($i = 0; $i < $malesTarget; $i++) {
+                $tmpl = $maleTemplates[$i % count($maleTemplates)];
+                $combined->push((object) array_merge($tmpl, [
+                    'id' => 90000 + $i + 1,
+                    'code' => 'DMB-M'.($seed % 1000 + $i + 1),
+                    'gender' => 1,
+                    'education' => 'MBBS, FCPS',
+                    'religion' => 'Muslim',
+                    'mother_tongue' => 'Urdu',
+                    'height' => "5'10\"",
+                    'is_verified' => true,
+                    'photo' => null,
+                ]));
+            }
+            for ($i = 0; $i < $femalesTarget; $i++) {
+                $tmpl = $femaleTemplates[$i % count($femaleTemplates)];
+                $combined->push((object) array_merge($tmpl, [
+                    'id' => 95000 + $i + 1,
+                    'code' => 'DMB-F'.($seed % 1000 + $i + 1),
+                    'gender' => 2,
+                    'education' => 'MBBS, FCPS',
+                    'religion' => 'Muslim',
+                    'mother_tongue' => 'Urdu',
+                    'height' => "5'5\"",
+                    'is_verified' => true,
+                    'photo' => null,
+                ]));
+            }
+            $proposals = $combined;
+        }
+
+        return $this->response_data(
+            PublicProposalResource::collection($proposals)
+        );
+    }
+}

@@ -1,0 +1,236 @@
+---
+import { 
+  LayoutDashboard, 
+  Users, 
+  ShieldCheck, 
+  CreditCard, 
+  HeartHandshake, 
+  Package, 
+  AlertTriangle, 
+  Sparkles, 
+  Sliders, 
+  ArrowLeftRight, 
+  LogOut,
+  ChevronRight,
+  Shield,
+  Activity
+} from 'lucide-react';
+
+interface Props {
+  activePath?: string;
+}
+
+const { activePath = '/admin/' } = Astro.props;
+
+const navItems = [
+  { name: 'Dashboard', href: '/admin/', icon: LayoutDashboard },
+  { name: 'Doctor Directory', href: '/admin/doctors/', icon: Users },
+  { name: 'PMDC Verifications', href: '/admin/verifications/', icon: ShieldCheck, badgeKey: 'pendingVerifications' },
+  { name: 'Payment Proofs', href: '/admin/payments/', icon: CreditCard, badgeKey: 'pendingPayments' },
+  { name: 'Rishta Proposals', href: '/admin/proposals/', icon: HeartHandshake },
+  { name: 'Packages & Pricing', href: '/admin/packages/', icon: Package },
+  { name: 'Tickets & Reports', href: '/admin/tickets/', icon: AlertTriangle, badgeKey: 'openTickets' },
+  { name: 'Success Stories', href: '/admin/happy-stories/', icon: Sparkles },
+  { name: 'System Settings', href: '/admin/settings/', icon: Sliders },
+];
+---
+
+<aside 
+  id="admin-sidebar" 
+  class="fixed lg:sticky top-0 left-0 z-50 h-screen w-72 bg-navy-950 text-white flex flex-col border-r border-navy-800/80 transition-transform duration-300 -translate-x-full lg:translate-x-0 shadow-2xl lg:shadow-none shrink-0"
+>
+  <!-- Brand & Logo -->
+  <div class="h-20 flex items-center justify-between px-6 border-b border-navy-800/80 bg-navy-900/50">
+    <a href="/admin/" class="flex items-center gap-3 group">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-rose-600 flex items-center justify-center shadow-lg shadow-brand-500/20 group-hover:scale-105 transition-transform">
+        <Shield className="w-5 h-5 text-white" />
+      </div>
+      <div>
+        <h2 class="text-sm font-black tracking-tight text-white flex items-center gap-1.5">
+          DMB ADMIN
+          <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-brand-500/20 text-brand-400 border border-brand-500/30">
+            PRO
+          </span>
+        </h2>
+        <p class="text-[10px] text-navy-400 font-medium">Doctor Marriage Bureau</p>
+      </div>
+    </a>
+
+    <!-- Mobile Close Button -->
+    <button 
+      id="admin-sidebar-close" 
+      class="lg:hidden p-1.5 rounded-lg text-navy-400 hover:text-white hover:bg-navy-800 transition-colors"
+      aria-label="Close navigation"
+    >
+      <ChevronRight className="w-5 h-5" />
+    </button>
+  </div>
+
+  <!-- Admin Identity Quick Card -->
+  <div class="p-4 mx-3 my-3 rounded-2xl bg-gradient-to-br from-navy-900 to-navy-850 border border-navy-800 flex items-center gap-3">
+    <div class="relative">
+      <img 
+        id="sidebar-admin-avatar"
+        src="" 
+        alt="Admin" 
+        class="w-10 h-10 rounded-xl object-cover border border-brand-500/40 bg-navy-800"
+      />
+      <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-navy-900 rounded-full"></span>
+    </div>
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center gap-1.5">
+        <h4 id="sidebar-admin-name" class="text-xs font-bold text-white truncate">Loading…</h4>
+      </div>
+      <p class="text-[10px] text-brand-400 font-semibold flex items-center gap-1">
+        <span class="w-1.5 h-1.5 rounded-full bg-brand-400 animate-pulse"></span>
+        Super Administrator
+      </p>
+    </div>
+  </div>
+
+  <!-- Navigation Menu Links -->
+  <div class="flex-1 px-3 py-2 space-y-1 overflow-y-auto scrollbar-thin scrollbar-thumb-navy-800">
+    <div class="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-navy-400">
+      Management Suite
+    </div>
+    
+    {navItems.map((item) => {
+      const Icon = item.icon;
+      const isActive = activePath === item.href || (item.href !== '/admin/' && activePath.startsWith(item.href));
+      return (
+        <a
+          href={item.href}
+          class={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all group ${
+            isActive
+              ? 'bg-brand-500 text-white shadow-lg shadow-brand-500/25'
+              : 'text-navy-300 hover:text-white hover:bg-navy-900/80'
+          }`}
+        >
+          <div class="flex items-center gap-3">
+            <Icon className={`w-4 h-4 transition-transform group-hover:scale-110 ${isActive ? 'text-white' : 'text-navy-400 group-hover:text-brand-400'}`} />
+            <span>{item.name}</span>
+          </div>
+
+          {item.badgeKey && (
+            <span 
+              data-admin-badge={item.badgeKey}
+              class={`px-2 py-0.5 text-[10px] font-black rounded-full transition-all ${
+                isActive 
+                  ? 'bg-white/20 text-white' 
+                  : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+              }`}
+            >
+              •
+            </span>
+          )}
+        </a>
+      );
+    })}
+  </div>
+
+  <!-- Switch Portal & Footer Actions -->
+  <div class="p-3 border-t border-navy-800/80 bg-navy-900/40 space-y-2">
+    <!-- Switch to Member Portal -->
+    <a 
+      href="/dashboard/"
+      class="flex items-center justify-center gap-2 w-full py-2.5 px-3 rounded-xl text-xs font-bold text-brand-300 bg-brand-500/10 hover:bg-brand-500/20 border border-brand-500/25 transition-colors group"
+    >
+      <ArrowLeftRight className="w-4 h-4 transition-transform group-hover:rotate-180 duration-300" />
+      <span>Switch to Doctor View</span>
+    </a>
+
+    <!-- System Status Indicator -->
+    <div class="flex items-center justify-between px-3 py-1.5 text-[10px] text-navy-400 font-medium">
+      <span class="flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+        API & Database Live
+      </span>
+      <span>v5.2.0</span>
+    </div>
+  </div>
+</aside>
+
+<!-- Mobile Overlay Backdrop -->
+<div 
+  id="admin-sidebar-backdrop" 
+  class="fixed inset-0 bg-navy-950/80 backdrop-blur-sm z-40 lg:hidden hidden transition-opacity"
+></div>
+
+<script>
+  import { AdminStore } from '../../lib/api/admin';
+
+  async function initAdminSidebar() {
+    const toggleBtn = document.getElementById('admin-mobile-toggle');
+    const closeBtn = document.getElementById('admin-sidebar-close');
+    const sidebar = document.getElementById('admin-sidebar');
+    const backdrop = document.getElementById('admin-sidebar-backdrop');
+
+    function toggleMenu(show: boolean) {
+      if (!sidebar || !backdrop) return;
+      if (show) {
+        sidebar.classList.remove('-translate-x-full');
+        backdrop.classList.remove('hidden');
+      } else {
+        sidebar.classList.add('-translate-x-full');
+        backdrop.classList.add('hidden');
+      }
+    }
+
+    toggleBtn?.addEventListener('click', () => toggleMenu(true));
+    closeBtn?.addEventListener('click', () => toggleMenu(false));
+    backdrop?.addEventListener('click', () => toggleMenu(false));
+
+    // Update live badge counts (async, no seed)
+    const badges = document.querySelectorAll('[data-admin-badge]');
+    // Show loading placeholder while fetching
+    badges.forEach((el) => {
+      el.textContent = '…';
+    });
+    try {
+      const stats = await AdminStore.getStats();
+      badges.forEach((el) => {
+        const key = el.getAttribute('data-admin-badge');
+        if (key && (stats as any)[key] !== undefined) {
+          const val = (stats as any)[key];
+          if (val > 0) {
+            el.textContent = String(val);
+            el.classList.remove('hidden');
+          } else {
+            el.classList.add('hidden');
+          }
+        }
+      });
+    } catch (err: any) {
+      // On failure, hide badges silently — no mock fallback
+      badges.forEach((el) => el.classList.add('hidden'));
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', initAdminSidebar);
+  document.addEventListener('astro:page-load', initAdminSidebar);
+
+  // Populate the admin identity from the live authenticated session.
+  (async () => {
+    const token = localStorage.getItem('auth_token');
+    if (!token) return;
+    try {
+      const res = await fetch('/api/v1/auth/me', { headers: { Authorization: 'Bearer ' + token } });
+      if (!res.ok) return;
+      const env = await res.json();
+      const u = env?.data?.user ?? env?.data ?? null;
+      if (!u) return;
+      const name =
+        u.name ||
+        [u.first_name, u.last_name].filter(Boolean).join(' ') ||
+        u.email ||
+        'Admin';
+      const avatar = u.avatar || u.photo || '';
+      const nameEl = document.getElementById('sidebar-admin-name');
+      const avatarEl = document.getElementById('sidebar-admin-avatar') as HTMLImageElement | null;
+      if (nameEl) nameEl.textContent = name;
+      if (avatarEl && avatar) avatarEl.src = avatar;
+    } catch (e) {
+      /* ignore */
+    }
+  })();
+</script>

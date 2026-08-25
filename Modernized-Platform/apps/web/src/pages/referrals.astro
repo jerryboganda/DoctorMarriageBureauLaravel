@@ -1,0 +1,96 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+import { Gift, Copy } from 'lucide-react';
+---
+
+<DashboardLayout
+  title="Refer Doctor Colleagues — Doctor Marriage Bureau"
+  description="Invite doctor colleagues and track referral rewards."
+>
+  <div class="space-y-8 animate-fadeIn max-w-4xl">
+    <div>
+      <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-50 border border-brand-100 text-brand-600 text-xs font-bold mb-2">
+        <Gift className="w-3.5 h-3.5" /><span>Doctor Referral Incentive</span>
+      </div>
+      <h1 class="text-2xl sm:text-3xl font-black text-navy-800 font-serif">
+        Refer Doctor <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 via-brand-600 to-pink-600">Colleagues</span>
+      </h1>
+      <p class="text-xs sm:text-sm text-navy-500">Share your invite link. Successful verified signups appear below.</p>
+    </div>
+
+    <div class="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-navy-950 via-navy-900 to-brand-950 text-white shadow-luxury space-y-4">
+      <div>
+        <h3 class="text-base font-bold">Your Unique Doctor Invite Link</h3>
+        <p class="text-xs text-white/70">Share via WhatsApp, email, or alumni groups</p>
+      </div>
+      <div class="flex flex-col sm:flex-row items-center gap-2">
+        <input id="ref-link" type="text" readonly class="w-full px-4 py-3 rounded-2xl bg-white/10 border border-white/20 text-white text-xs font-mono outline-none" />
+        <button id="ref-copy" class="w-full sm:w-auto px-6 py-3 rounded-full bg-gradient-to-r from-brand-500 via-brand-600 to-pink-600 text-white text-xs font-bold flex items-center justify-center gap-2">
+          <Copy className="w-4 h-4" /><span>Copy Link</span>
+        </button>
+      </div>
+      <p id="ref-code" class="text-xs text-brand-200">Code: —</p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div class="p-5 rounded-2xl bg-white border border-brand-100/80 shadow-luxury">
+        <span class="text-[11px] font-bold text-navy-400 uppercase">Total Clicks</span>
+        <p id="stat-clicks" class="text-2xl font-bold text-navy-800 mt-1">—</p>
+      </div>
+      <div class="p-5 rounded-2xl bg-white border border-brand-100/80 shadow-luxury">
+        <span class="text-[11px] font-bold text-navy-400 uppercase">Successful</span>
+        <p id="stat-ok" class="text-2xl font-bold text-emerald-600 mt-1">—</p>
+      </div>
+      <div class="p-5 rounded-2xl bg-white border border-brand-100/80 shadow-luxury">
+        <span class="text-[11px] font-bold text-navy-400 uppercase">Pending</span>
+        <p id="stat-pending" class="text-2xl font-bold text-navy-800 mt-1">—</p>
+      </div>
+    </div>
+
+    <div id="ref-list" class="space-y-3"></div>
+  </div>
+</DashboardLayout>
+
+<script>
+  import { api, escapeHtml, formatDate, toast, errorMessage, emptyStateHtml, errorStateHtml, skeletonHtml } from '../lib/dashboard/common';
+
+  const list = document.getElementById('ref-list')!;
+  list.innerHTML = skeletonHtml(2, 'h-16');
+
+  api.get('/dashboard/referrals')
+    .then((res) => {
+      const d = res.data?.data ?? {};
+      const link = d.share_url || `${location.origin}/register/?ref=${encodeURIComponent(d.code || '')}`;
+      (document.getElementById('ref-link') as HTMLInputElement).value = link;
+      document.getElementById('ref-code')!.textContent = `Code: ${d.code || '—'}`;
+      document.getElementById('stat-clicks')!.textContent = String(d.total_clicks ?? 0);
+      document.getElementById('stat-ok')!.textContent = String(d.successful_referrals ?? 0);
+      document.getElementById('stat-pending')!.textContent = String(d.pending_referrals ?? 0);
+      const rows = (d.referrals ?? []) as any[];
+      if (!rows.length) {
+        list.innerHTML = emptyStateHtml('No referrals yet', 'Share your invite link with a colleague to get started.', '🎁');
+        return;
+      }
+      list.innerHTML = rows.map((r) => `
+        <div class="p-4 rounded-2xl bg-white border border-brand-100/80 shadow-luxury flex items-center justify-between gap-3">
+          <div>
+            <h4 class="text-sm font-bold text-navy-800">${escapeHtml(r.name || r.email || 'Doctor')}</h4>
+            <p class="text-[11px] text-navy-500">${escapeHtml(r.status || 'pending')} · ${formatDate(r.created_at || r.joined_at)}</p>
+          </div>
+          <span class="text-xs font-bold ${String(r.status).includes('success') || String(r.status)==='completed' ? 'text-emerald-600' : 'text-navy-500'}">${escapeHtml(r.reward || r.status || '')}</span>
+        </div>`).join('');
+    })
+    .catch((err) => {
+      list.innerHTML = errorStateHtml(errorMessage(err));
+    });
+
+  document.getElementById('ref-copy')!.addEventListener('click', async () => {
+    const val = (document.getElementById('ref-link') as HTMLInputElement).value;
+    try {
+      await navigator.clipboard.writeText(val);
+      toast('Referral link copied.', 'success');
+    } catch {
+      toast('Could not copy link.', 'error');
+    }
+  });
+</script>

@@ -1,0 +1,209 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { Target, Eye, ShieldCheck, HeartHandshake, CheckCircle2, Award, Users, Stethoscope, ArrowRight } from 'lucide-react';
+
+const pathwaySteps = [
+  {
+    step: "01",
+    title: "Planning & Profile Assessment",
+    description: "Every candidate undergoes careful profile evaluation, medical degree verification (PMDC, FCPS, MRCP, BDS), and family background consultation.",
+    icon: Target
+  },
+  {
+    step: "02",
+    title: "Halal Matchmaking & Execution",
+    description: "Our senior matchmakers identify matching candidates matching your educational, religious, geographical, and family expectations.",
+    icon: HeartHandshake
+  },
+  {
+    step: "03",
+    title: "Coordination & Monitoring",
+    description: "We facilitate mutual introductions, family discussions, and coordinated communications while strictly safeguarding personal dignity and confidentiality.",
+    icon: Users
+  },
+  {
+    step: "04",
+    title: "Successful Closure & Nikah",
+    description: "Guiding both families towards a blessed, harmonious halal marriage union with mutual satisfaction and peace of mind.",
+    icon: CheckCircle2
+  }
+];
+---
+
+<Layout 
+  title="About Us - Helping Muslim Doctors Find the Right Match | Doctor Marriage Bureau"
+  description="Discover the story, mission, and streamlined 4-step pathway of Doctor Marriage Bureau. Dedicated to halal, verified, and respectful matchmaking for Muslim healthcare professionals."
+>
+  
+  <!-- Hero Section -->
+  <section class="py-20 bg-gradient-to-b from-navy-950 via-navy-900 to-navy-950 text-white relative overflow-hidden">
+    <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-brand-500/20 via-transparent to-transparent"></div>
+    
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10 space-y-6">
+      <span class="inline-block px-4 py-1.5 rounded-full text-xs font-semibold text-brand-300 bg-white/10 border border-white/15 tracking-wider uppercase">
+        About Our Matrimonial Bureau
+      </span>
+      
+      <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-white leading-tight">
+        Helping Muslim Doctors Find the <br class="hidden sm:inline" />
+        <span class="bg-gradient-to-r from-brand-400 to-pink-300 bg-clip-text text-transparent">
+          Right Match with Respect & Privacy
+        </span>
+      </h1>
+      
+      <p class="text-base sm:text-lg text-navy-100 max-w-2xl mx-auto leading-relaxed text-white/90">
+        Bridging the gap for medical professionals who sacrifice countless hours in hospitals and clinics, providing a specialized, halal, and trustworthy pathway to marital bliss.
+      </p>
+    </div>
+  </section>
+
+  <!-- Story Section -->
+  <section class="py-20 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+        
+        <div class="space-y-6">
+          <span class="inline-block px-3.5 py-1.5 rounded-full text-xs font-semibold text-brand-600 bg-brand-50 border border-brand-100 tracking-wider uppercase">
+            Our Origin
+          </span>
+          
+          <h2 class="text-3xl sm:text-4xl font-extrabold text-navy-900 tracking-tight leading-tight">
+            How Doctor Marriage Bureau Came to Be?
+          </h2>
+          
+          <p class="text-navy-700 text-sm sm:text-base leading-relaxed">
+            The medical profession demands immense dedication, long hospital on-calls, rigorous specialty exams, and years of postgraduate training. In this journey, finding a compatible life partner who genuinely understands these demanding clinical realities and respects Islamic values often becomes an uphill battle.
+          </p>
+
+          <p class="text-navy-700 text-sm sm:text-base leading-relaxed">
+            Standard commercial marriage bureaus frequently fail to appreciate the unique intellectual, social, and logistical compatibility required between healthcare professionals. Doctor Marriage Bureau was established as an exclusive, verified, and dignified platform dedicated specifically to doctors and their families in Pakistan and across the globe.
+          </p>
+
+          <div class="grid grid-cols-2 gap-4 pt-4">
+            <div class="p-4 rounded-2xl bg-brand-50/50 border border-brand-100 flex items-center gap-3">
+              <ShieldCheck className="w-6 h-6 text-brand-500 shrink-0" />
+              <span class="text-xs font-bold text-navy-900">100% Medical Verification</span>
+            </div>
+            <div class="p-4 rounded-2xl bg-navy-50/50 border border-navy-100 flex items-center gap-3">
+              <Award className="w-6 h-6 text-navy-700 shrink-0" />
+              <span class="text-xs font-bold text-navy-900">Dignified Halal Process</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Side Image / Graphic Card -->
+        <div class="relative">
+          <div class="rounded-3xl bg-gradient-to-tr from-navy-900 to-navy-950 p-8 sm:p-10 text-white shadow-2xl relative overflow-hidden border border-navy-800">
+            <div class="space-y-6 relative z-10">
+              <div class="w-12 h-12 rounded-2xl bg-brand-500 flex items-center justify-center shadow-lg">
+                <Stethoscope className="w-6 h-6 text-white" />
+              </div>
+              <h3 class="text-2xl font-bold text-white">Our Founding Pledge</h3>
+              <p class="text-sm text-navy-200 leading-relaxed">
+                "We pledge to handle every single proposal with the utmost confidentiality, Islamic decorum, and family respect. No commercial spam, no unverified profiles, and no compromises on dignity."
+              </p>
+              <div class="pt-4 border-t border-white/15 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center font-bold text-xs text-brand-300">
+                  DMB
+                </div>
+                <div>
+                  <h4 class="text-xs font-bold text-white">Management & Senior Matchmakers</h4>
+                  <p class="text-[11px] text-white/70">Doctor Marriage Bureau Pakistan</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Mission & Vision Cards -->
+  <section class="py-20 bg-[#FAFAFD] border-y border-brand-100/60">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        
+        <!-- Mission Card -->
+        <div class="rounded-3xl p-8 sm:p-10 bg-white border border-brand-100 shadow-luxury hover:shadow-luxury-hover transition-all duration-300 space-y-4">
+          <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-brand-500 to-rose-600 text-white flex items-center justify-center shadow-md">
+            <Target className="w-7 h-7" />
+          </div>
+          <h3 class="text-2xl font-bold text-navy-900">Our Mission</h3>
+          <p class="text-sm text-navy-700 leading-relaxed">
+            To provide a safe, modern, and spiritually aligned matchmaking ecosystem for Muslim doctors, facilitating honorable marital connections grounded in religious values, mutual respect, and intellectual synergy.
+          </p>
+        </div>
+
+        <!-- Vision Card -->
+        <div class="rounded-3xl p-8 sm:p-10 bg-white border border-brand-100 shadow-luxury hover:shadow-luxury-hover transition-all duration-300 space-y-4">
+          <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-navy-800 to-navy-950 text-white flex items-center justify-center shadow-md">
+            <Eye className="w-7 h-7" />
+          </div>
+          <h3 class="text-2xl font-bold text-navy-900">Our Vision</h3>
+          <p class="text-sm text-navy-700 leading-relaxed">
+            To be recognized globally as the most prestigious, trusted, and reliable matrimonial bureau for healthcare professionals, creating thriving Islamic households where compassionate doctors support each other in deen, career, and family life.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- 4-Step Pathway Workflow -->
+  <section class="py-20 lg:py-24 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-3xl mx-auto mb-16">
+        <span class="inline-block px-3.5 py-1.5 rounded-full text-xs font-semibold text-brand-600 bg-brand-50 border border-brand-100 tracking-wider uppercase mb-3">
+          How It Works
+        </span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-navy-900 tracking-tight">
+          Our Streamlined <span class="text-brand-500">4-Step Pathway</span>
+        </h2>
+        <p class="mt-4 text-sm sm:text-base text-navy-600 leading-relaxed">
+          From initial registration to the final Nikah ceremony, our methodical process guarantees peace of mind and maximum compatibility.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {pathwaySteps.map((step) => {
+          const IconComponent = step.icon;
+          return (
+            <div class="rounded-3xl p-6 bg-gradient-to-b from-[#FFF5F8] to-white border border-brand-100/80 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+              <div class="space-y-4">
+                <div class="flex justify-between items-center">
+                  <div class="w-12 h-12 rounded-xl bg-brand-500 text-white flex items-center justify-center shadow-sm">
+                    <IconComponent className="w-6 h-6" />
+                  </div>
+                  <span class="text-2xl font-extrabold text-navy-300">
+                    {step.step}
+                  </span>
+                </div>
+                <h3 class="text-lg font-bold text-navy-900">
+                  {step.title}
+                </h3>
+                <p class="text-xs text-navy-600 leading-relaxed">
+                  {step.description}
+                </p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <!-- CTA -->
+      <div class="mt-16 text-center">
+        <a 
+          href="/register/" 
+          class="inline-flex items-center gap-2 px-8 py-4 rounded-full text-sm font-bold text-white bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 shadow-xl shadow-brand-500/25 transition-all duration-300 transform hover:-translate-y-0.5"
+        >
+          <span>Start Your Assessment Today</span>
+          <ArrowRight className="w-4 h-4" />
+        </a>
+      </div>
+
+    </div>
+  </section>
+
+</Layout>

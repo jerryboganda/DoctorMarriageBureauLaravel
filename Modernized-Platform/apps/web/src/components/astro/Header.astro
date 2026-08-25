@@ -1,0 +1,119 @@
+---
+import { User, ArrowRight, Menu } from 'lucide-react';
+
+const navItems = [
+  { label: 'Home', href: '/' },
+  { label: 'About Us', href: '/about' },
+  { label: 'Packages', href: '/packages' },
+  { label: 'Contact', href: '/contact' },
+  { label: 'Report Harassment', href: '/report-harrasement' },
+];
+
+const currentPath = Astro.url.pathname.replace(/\/$/, '') || '/';
+---
+
+<header class="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-pink-100 shadow-sm transition-all duration-300">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-between items-center h-20">
+      
+      <!-- Brand Logo -->
+      <a href="/" class="flex items-center gap-3 group">
+        <img 
+          src="/images/logo.png" 
+          alt="Doctor Marriage Bureau Logo" 
+          class="h-12 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+          width="180"
+          height="48"
+          loading="eager"
+        />
+      </a>
+
+      <!-- Desktop Navigation -->
+      <nav class="hidden md:flex items-center gap-1 lg:gap-2">
+        {navItems.map((item) => {
+          const isActive = currentPath === item.href || (item.href !== '/' && currentPath.startsWith(item.href));
+          return (
+            <a 
+              href={item.href} 
+              class={`px-3 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                isActive 
+                  ? 'text-primary bg-primary/10 font-bold' 
+                  : 'text-slate-700 hover:text-primary hover:bg-primary/5'
+              }`}
+            >
+              {item.label}
+            </a>
+          );
+        })}
+      </nav>
+
+      <!-- Auth Action Buttons -->
+      <div class="hidden sm:flex items-center gap-3">
+        <a 
+          href="/login" 
+          class="px-4 py-2 text-sm font-bold text-slate-700 hover:text-primary transition-colors flex items-center gap-1.5"
+        >
+          <User className="w-4 h-4 text-slate-500" />
+          <span>Login</span>
+        </a>
+        <a 
+          href="/register" 
+          class="px-5 py-2.5 rounded-full text-sm font-bold text-white bg-primary hover:bg-primary-hover shadow-md shadow-primary/25 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 flex items-center gap-2"
+        >
+          <span>Find Your Match</span>
+          <ArrowRight className="w-4 h-4" />
+        </a>
+      </div>
+
+      <!-- Mobile Menu Toggle Button -->
+      <div class="flex items-center sm:hidden">
+        <button 
+          id="public-mobile-menu-toggle"
+          type="button" 
+          class="p-2 rounded-xl text-slate-800 hover:bg-slate-100 focus:outline-none"
+          aria-label="Toggle navigation menu"
+        >
+          <Menu className="w-6 h-6" />
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Mobile Drawer Menu -->
+  <div id="public-mobile-menu" class="hidden sm:hidden bg-white border-b border-slate-100 px-4 pt-2 pb-6 space-y-2">
+    {navItems.map((item) => (
+      <a 
+        href={item.href}
+        class="block px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-800 hover:bg-slate-50 hover:text-primary transition-colors"
+      >
+        {item.label}
+      </a>
+    ))}
+    <div class="pt-4 border-t border-slate-100 flex flex-col gap-2">
+      <a 
+        href="/login" 
+        class="w-full text-center py-2.5 rounded-xl text-sm font-bold text-slate-800 bg-slate-100 hover:bg-slate-200 transition-colors"
+      >
+        Member Login
+      </a>
+      <a 
+        href="/register" 
+        class="w-full text-center py-2.5 rounded-xl text-sm font-bold text-white bg-primary hover:bg-primary-hover shadow-md transition-colors"
+      >
+        Register Free
+      </a>
+    </div>
+  </div>
+</header>
+
+<script>
+  const toggleBtn = document.getElementById('public-mobile-menu-toggle');
+  const mobileMenu = document.getElementById('public-mobile-menu');
+
+  if (toggleBtn && mobileMenu) {
+    toggleBtn.addEventListener('click', () => {
+      mobileMenu.classList.toggle('hidden');
+    });
+  }
+</script>

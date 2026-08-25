@@ -1,0 +1,1 @@
+# Directory for ETL and Data Migration Scripts (migrate_mysql_to_postgres.py, verify_data_integrity.py, etc.)

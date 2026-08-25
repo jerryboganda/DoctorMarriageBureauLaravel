@@ -1,0 +1,116 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: dmb-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-dmb_modern}
+      POSTGRES_USER: ${POSTGRES_USER:-dmb_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dmb_secret_pass}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - dmb-postgres-data:/var/lib/postgresql/data
+      - ../migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dmb_user} -d ${POSTGRES_DB:-dmb_modern}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dmb-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: dmb-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass "${REDIS_PASSWORD:-redis_secret_pass}"
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - dmb-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis_secret_pass}", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dmb-network
+
+  api:
+    build:
+      context: ../../services/api
+      dockerfile: Dockerfile
+    container_name: dmb-api
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: 8080
+      APP_ENV: ${APP_ENV:-development}
+      DATABASE_URL: postgres://${POSTGRES_USER:-dmb_user}:${POSTGRES_PASSWORD:-dmb_secret_pass}@postgres:5432/${POSTGRES_DB:-dmb_modern}?sslmode=disable
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_secret_pass}@redis:6379/0
+      JWT_SECRET: ${JWT_SECRET:-dmb_jwt_ultra_secret_key_development_32_chars}
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:-mock_account}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-mock_key}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-mock_secret}
+      R2_BUCKET_NAME: ${R2_BUCKET_NAME:-dmb-media-dev}
+      R2_PUBLIC_DOMAIN: ${R2_PUBLIC_DOMAIN:-https://media-dev.doctormarriagebureau.com.pk}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - dmb-network
+
+  rust-compute:
+    build:
+      context: ../../services/rust-compute
+      dockerfile: Dockerfile
+    container_name: dmb-rust-compute
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      PORT: 8081
+      RUST_LOG: info
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_secret_pass}@redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - dmb-network
+
+  web:
+    build:
+      context: ../../apps/web
+      dockerfile: Dockerfile
+    container_name: dmb-web
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 3000
+      HOST: 0.0.0.0
+      PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:8080/api/v1}
+      PUBLIC_WS_URL: ${PUBLIC_WS_URL:-ws://localhost:8080/api/v1/chat/ws}
+    depends_on:
+      - api
+    networks:
+      - dmb-network
+
+volumes:
+  dmb-postgres-data:
+    name: dmb-postgres-data
+  dmb-redis-data:
+    name: dmb-redis-data
+
+networks:
+  dmb-network:
+    name: dmb-network
+    driver: bridge

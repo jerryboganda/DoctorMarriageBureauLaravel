@@ -1,0 +1,198 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import { Heart, ArrowLeft, Plus } from 'lucide-react';
+---
+
+<DashboardLayout
+  title="Courtship Journey — Doctor Marriage Bureau"
+  description="Track checklist, venues, budget, and events for an active courtship."
+>
+  <div class="space-y-8 animate-fadeIn max-w-4xl">
+    <a href="/progression/" class="inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 hover:text-brand-700">
+      <ArrowLeft className="w-3.5 h-3.5" /> Back to journeys
+    </a>
+
+    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      <div>
+        <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-brand-50 border border-brand-100 text-brand-600 text-xs font-bold mb-2">
+          <Heart className="w-3.5 h-3.5" />
+          <span>Courtship Pipeline</span>
+        </div>
+        <h1 id="journey-title" class="text-2xl sm:text-3xl font-black text-navy-800 font-serif">Loading journey…</h1>
+        <p id="journey-sub" class="text-xs sm:text-sm text-navy-500">Structured milestones with your matched doctor</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <select id="stage-select" class="py-2 px-3 rounded-xl text-xs bg-white border border-navy-200 outline-none focus:border-brand-500"></select>
+        <button id="stage-save" class="px-4 py-2 rounded-full bg-gradient-to-r from-brand-500 via-brand-600 to-pink-600 text-white text-xs font-bold shadow-lg shadow-brand-500/30">Advance Stage</button>
+      </div>
+    </div>
+
+    <div id="journey-stepper" class="grid grid-cols-5 gap-2 sm:gap-4"></div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <section class="p-6 rounded-3xl bg-white border border-brand-100/80 shadow-luxury space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-base font-bold text-navy-800 font-serif">Checklist</h2>
+          <button data-add="checklist" class="text-xs font-bold text-brand-600 inline-flex items-center gap-1"><Plus className="w-3.5 h-3.5" /> Add</button>
+        </div>
+        <div id="journey-checklist"></div>
+      </section>
+      <section class="p-6 rounded-3xl bg-white border border-brand-100/80 shadow-luxury space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-base font-bold text-navy-800 font-serif">Venues</h2>
+          <button data-add="venue" class="text-xs font-bold text-brand-600 inline-flex items-center gap-1"><Plus className="w-3.5 h-3.5" /> Add</button>
+        </div>
+        <div id="journey-venues"></div>
+      </section>
+      <section class="p-6 rounded-3xl bg-white border border-brand-100/80 shadow-luxury space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-base font-bold text-navy-800 font-serif">Budget</h2>
+          <button data-add="budget" class="text-xs font-bold text-brand-600 inline-flex items-center gap-1"><Plus className="w-3.5 h-3.5" /> Add</button>
+        </div>
+        <div id="journey-budget"></div>
+      </section>
+      <section class="p-6 rounded-3xl bg-white border border-brand-100/80 shadow-luxury space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-base font-bold text-navy-800 font-serif">Events</h2>
+          <button data-add="event" class="text-xs font-bold text-brand-600 inline-flex items-center gap-1"><Plus className="w-3.5 h-3.5" /> Add</button>
+        </div>
+        <div id="journey-events"></div>
+      </section>
+    </div>
+  </div>
+</DashboardLayout>
+
+<script>
+  import {
+    api,
+    escapeHtml,
+    formatPKR,
+    toast,
+    errorMessage,
+    emptyStateHtml,
+    errorStateHtml,
+    skeletonHtml,
+  } from '../../lib/dashboard/common';
+
+  const params = new URLSearchParams(window.location.search);
+  const journeyId = Number(params.get('id') || 0);
+  const $ = (id: string) => document.getElementById(id)!;
+
+  if (!journeyId) {
+    window.location.replace('/progression/');
+  }
+
+  type Stage = { id: number; slug: string; name: string; order_index: number };
+  type Item = { id: number; title?: string; name?: string; notes?: string; amount?: number; is_completed?: boolean; event_date?: string; location?: string };
+
+  let stages: Stage[] = [];
+
+  async function load() {
+    try {
+      const [detailRes, stagesRes] = await Promise.all([
+        api.get(`/progression/${journeyId}`),
+        api.get('/progression/stages'),
+      ]);
+      const j = detailRes.data?.data;
+      stages = stagesRes.data?.data ?? [];
+      const partner = j.partner || {};
+      const name = j.partner_name || `${partner.first_name || ''} ${partner.last_name || ''}`.trim() || 'Your Match';
+      $('journey-title').textContent = `Journey with Dr. ${name}`;
+      $('journey-sub').textContent = `${j.stage_name || 'In progress'} · ${Math.round(Number(j.progress_percent || 0))}% complete · ${j.status || 'active'}`;
+
+      const currentOrder = Number(stages.find((s) => Number(s.id) === Number(j.current_stage_id))?.order_index) || 1;
+      $('journey-stepper').innerHTML = stages
+        .map((s) => {
+          const order = Number(s.order_index);
+          const cls = order < currentOrder ? 'bg-emerald-500' : order === currentOrder ? 'bg-brand-500 animate-pulse' : 'bg-navy-200';
+          const txt = order < currentOrder ? 'text-emerald-600' : order === currentOrder ? 'text-brand-600 font-bold' : 'text-navy-400';
+          return `<div class="space-y-1.5 text-center"><div class="h-2 rounded-full ${cls}"></div><span class="text-[10px] sm:text-xs font-semibold ${txt}">${order}. ${escapeHtml(s.name)}</span></div>`;
+        })
+        .join('');
+
+      const sel = $('stage-select') as HTMLSelectElement;
+      sel.innerHTML = stages.map((s) => `<option value="${s.id}" ${Number(s.id) === Number(j.current_stage_id) ? 'selected' : ''}>${escapeHtml(s.name)}</option>`).join('');
+
+      renderItems('journey-checklist', j.checklist_items || [], 'checklist');
+      renderItems('journey-venues', j.venues || [], 'venue');
+      renderItems('journey-budget', j.budget_items || [], 'budget');
+      renderItems('journey-events', j.events || [], 'event');
+    } catch (err) {
+      $('journey-title').textContent = 'Unable to load journey';
+      $('journey-checklist').innerHTML = errorStateHtml(errorMessage(err));
+    }
+  }
+
+  function renderItems(id: string, items: Item[], kind: string) {
+    const host = $(id);
+    if (!items.length) {
+      host.innerHTML = emptyStateHtml(`No ${kind} items yet`, 'Add the first item to keep this courtship organised.', '📝');
+      return;
+    }
+    host.innerHTML = items
+      .map((it) => {
+        const title = escapeHtml(it.title || it.name || 'Item');
+        const extra =
+          kind === 'budget'
+            ? `<span class="text-[11px] text-navy-500">${formatPKR(it.amount)}</span>`
+            : kind === 'event'
+              ? `<span class="text-[11px] text-navy-500">${escapeHtml(it.event_date || it.location || '')}</span>`
+              : `<span class="text-[11px] text-navy-500">${escapeHtml(it.notes || it.location || '')}</span>`;
+        return `
+          <label class="flex items-start gap-3 p-3 rounded-2xl border border-navy-100 hover:border-brand-200 cursor-pointer">
+            <input type="checkbox" data-item="${it.id}" ${it.is_completed ? 'checked' : ''} class="mt-0.5 accent-brand-500" />
+            <div class="min-w-0">
+              <p class="text-xs font-bold text-navy-800 ${it.is_completed ? 'line-through opacity-60' : ''}">${title}</p>
+              ${extra}
+            </div>
+          </label>`;
+      })
+      .join('');
+    host.querySelectorAll<HTMLInputElement>('input[data-item]').forEach((box) => {
+      box.addEventListener('change', async () => {
+        try {
+          await api.patch(`/progression/items/${box.dataset.item}`, { is_completed: box.checked });
+          toast(box.checked ? 'Marked complete.' : 'Reopened item.', 'success');
+          load();
+        } catch (err) {
+          box.checked = !box.checked;
+          toast(errorMessage(err), 'error');
+        }
+      });
+    });
+  }
+
+  $('stage-save').addEventListener('click', async () => {
+    const stageId = Number(( $('stage-select') as HTMLSelectElement).value);
+    try {
+      await api.patch(`/progression/${journeyId}/stage`, { stage_id: stageId });
+      toast('Stage updated.', 'success');
+      load();
+    } catch (err) {
+      toast(errorMessage(err, 'Could not update stage.'), 'error');
+    }
+  });
+
+  document.querySelectorAll<HTMLButtonElement>('[data-add]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const item_type = btn.dataset.add!;
+      const title = window.prompt(`New ${item_type} title`);
+      if (!title?.trim()) return;
+      const payload: Record<string, unknown> = { item_type, title: title.trim() };
+      if (item_type === 'budget') {
+        const amount = Number(window.prompt('Amount in PKR') || 0);
+        payload.amount = amount;
+      }
+      try {
+        await api.post(`/progression/${journeyId}/items`, payload);
+        toast('Item added.', 'success');
+        load();
+      } catch (err) {
+        toast(errorMessage(err, 'Could not add item.'), 'error');
+      }
+    });
+  });
+
+  $('journey-checklist').innerHTML = skeletonHtml(3, 'h-12');
+  load();
+</script>

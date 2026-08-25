@@ -1,0 +1,148 @@
+name: Project CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: project-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-quality:
+    name: Backend quality
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: bcmath, exif, gd, intl, mbstring, pdo_mysql, pdo_sqlite, xml, zip
+          coverage: none
+
+      - name: Prepare test environment
+        run: cp .env.example .env
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Generate test application key
+        run: |
+          php artisan key:generate --no-interaction
+          php artisan package:discover
+
+      - name: Run backend quality suite
+        run: composer ci:backend
+
+  backend-mysql-smoke:
+    name: Backend MySQL smoke
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      APP_ENV: testing
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: dmb_test
+      DB_USERNAME: root
+      DB_PASSWORD: root
+      CACHE_DRIVER: array
+      QUEUE_CONNECTION: sync
+      SESSION_DRIVER: array
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: dmb_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: bcmath, exif, gd, intl, mbstring, pdo_mysql, pdo_sqlite, xml, zip
+          coverage: none
+
+      - name: Install MySQL client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends default-mysql-client
+
+      - name: Prepare test environment
+        run: cp .env.example .env
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Generate test application key
+        run: |
+          php artisan key:generate --no-interaction
+          php artisan package:discover
+
+      - name: Wait for MySQL
+        run: |
+          for attempt in $(seq 1 60); do
+            php -r 'new PDO("mysql:host=127.0.0.1;port=3306;dbname=dmb_test", "root", "root");' \
+              && exit 0 || true
+            sleep 2
+          done
+          exit 1
+
+      - name: Import baseline schema when present
+        run: php ci_import_test_schema.php
+
+      - name: Migrate and run API regression smoke test
+        run: |
+          php artisan migrate --force
+          php artisan test --testsuite=Feature --filter=BackendApiRegressionTest
+
+      - name: Verify database backup helper
+        run: |
+          mkdir -p /tmp/dmb-backups
+          mysql -h 127.0.0.1 -u root -proot -e \
+            "CREATE USER IF NOT EXISTS 'dmb_backup'@'%' IDENTIFIED BY 'backup'; \
+             GRANT SELECT, SHOW VIEW, TRIGGER, EVENT ON dmb_test.* TO 'dmb_backup'@'%';"
+          DB_USERNAME=dmb_backup DB_PASSWORD=backup \
+            php deploy/backup-database.php /tmp/dmb-backups/github-actions.sql.gz
+          test -s /tmp/dmb-backups/github-actions.sql.gz
+          gzip -t /tmp/dmb-backups/github-actions.sql.gz
+
+  user-frontend-quality:
+    name: Member panel quality (Astro 5)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install member panel dependencies
+        working-directory: Modernized-Platform/apps/web
+        run: npm install
+
+      - name: Build member panel (Astro 5)
+        working-directory: Modernized-Platform/apps/web
+        run: npm run build

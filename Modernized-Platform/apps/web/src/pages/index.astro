@@ -1,0 +1,32 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Hero from '../components/home/Hero.astro';
+import MissionPillars from '../components/home/MissionPillars.astro';
+import CheckProposalsSection from '../components/home/CheckProposalsSection.astro';
+import SuccessMetrics from '../components/home/SuccessMetrics.astro';
+import Testimonials from '../components/home/Testimonials.astro';
+import CtaBanner from '../components/home/CtaBanner.astro';
+---
+
+<Layout 
+  title="Doctor Marriage Bureau - Pakistan's Leading Doctor's Matrimonial Platform"
+  description="Pakistan's leading matrimonial platform exclusively for Muslim doctors, MBBS specialists, BDS dentists, surgeons, and healthcare professionals. 100% verified, private & halal matchmaking."
+>
+  <!-- Hero with background video & Quranic/Sunnah quote -->
+  <Hero />
+
+  <!-- 3 Mission Pillars -->
+  <MissionPillars />
+
+  <!-- Live Proposals Carousel Section -->
+  <CheckProposalsSection />
+
+  <!-- Our Success Stats Counters -->
+  <SuccessMetrics />
+
+  <!-- Testimonials & Client Reviews -->
+  <Testimonials />
+
+  <!-- High-Converting Bottom CTA Banner -->
+  <CtaBanner />
+</Layout>

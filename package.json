@@ -1,0 +1,14 @@
+{
+  "name": "doctor-marriage-bureau-root",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "Modernized-Platform/apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=@doctormarriagebureau/web",
+    "build": "npm run build --workspace=@doctormarriagebureau/web",
+    "lint": "npm run build --workspace=@doctormarriagebureau/web",
+    "preview": "npm run preview --workspace=@doctormarriagebureau/web"
+  }
+}

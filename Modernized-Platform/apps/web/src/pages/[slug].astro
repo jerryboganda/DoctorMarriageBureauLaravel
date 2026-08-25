@@ -1,0 +1,132 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+import { getCollection, render } from 'astro:content';
+import { Calendar, Eye, User, ArrowLeft } from 'lucide-react';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog');
+  return posts.map((post) => {
+    const slug = post.data.slug || post.id.replace(/\.md$/, '');
+    return {
+      params: { slug },
+      props: { post, cleanSlug: slug },
+    };
+  });
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+
+const allPosts = await getCollection('blog');
+const relatedPosts = allPosts
+  .filter((p) => p.data.slug !== post.data.slug && p.data.category === post.data.category)
+  .slice(0, 3);
+---
+
+<PublicLayout 
+  title={`${post.data.title} | Doctor Marriage Bureau`}
+  description={post.data.excerpt}
+  image={post.data.featuredImage}
+>
+  
+  <!-- Article Header -->
+  <header class="py-16 lg:py-20 bg-gradient-to-b from-navy-950 via-navy-900 to-navy-950 text-white relative">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-6">
+      
+      <div class="flex items-center gap-3">
+        <a 
+          href="/blog/" 
+          class="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-300 hover:text-white transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back to Blog Archive</span>
+        </a>
+        <span class="text-white/40">•</span>
+        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-brand-500/20 border border-brand-500/30 text-brand-300">
+          {post.data.category}
+        </span>
+      </div>
+
+      <h1 class="text-2xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-tight">
+        {post.data.title}
+      </h1>
+
+      <div class="flex flex-wrap items-center gap-6 text-xs text-navy-200 pt-2 border-t border-white/10">
+        <div class="flex items-center gap-2">
+          <User className="w-4 h-4 text-brand-400" />
+          <span>{post.data.author}</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-brand-400" />
+          <span>{post.data.date}</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <Eye className="w-4 h-4 text-brand-400" />
+          <span>{post.data.views} views</span>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Article Body -->
+  <main class="py-16 bg-[#FAFAFD]">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <!-- Featured Image Card -->
+      <div class="rounded-3xl overflow-hidden shadow-xl border border-brand-100 mb-12 bg-white">
+        <img 
+          src={post.data.featuredImage} 
+          alt={post.data.title} 
+          class="w-full h-auto max-h-[480px] object-cover"
+          width="900"
+          height="480"
+        />
+      </div>
+
+      <!-- Rich Text Typography Container -->
+      <article class="bg-white rounded-3xl p-8 sm:p-12 border border-brand-100/80 shadow-luxury space-y-6 text-navy-800 text-sm sm:text-base leading-relaxed">
+        <Content />
+      </article>
+
+      <!-- Bottom Matchmaking CTA Box -->
+      <div class="my-14 rounded-3xl bg-gradient-to-r from-brand-600 to-pink-600 p-8 sm:p-10 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-6">
+        <div class="space-y-2 text-center sm:text-left">
+          <h3 class="text-xl sm:text-2xl font-bold text-white">Looking for a Doctor Life Partner?</h3>
+          <p class="text-xs sm:text-sm text-white/90">Register on Doctor Marriage Bureau to access verified Muslim medical proposals.</p>
+        </div>
+        <a 
+          href="/register/" 
+          class="shrink-0 px-6 py-3 rounded-full text-xs font-bold text-brand-600 bg-white hover:bg-navy-50 shadow-lg transition-all"
+        >
+          Register for Free
+        </a>
+      </div>
+
+      <!-- Related Posts Section -->
+      {relatedPosts.length > 0 && (
+        <div class="pt-8 border-t border-brand-100">
+          <h3 class="text-2xl font-bold text-navy-900 mb-8">Related Articles in {post.data.category}</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            {relatedPosts.map((related) => (
+              <a 
+                href={`/${related.data.slug}/`}
+                class="group p-5 rounded-2xl bg-white border border-brand-100 hover:border-brand-300 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
+              >
+                <div class="space-y-2">
+                  <span class="text-[11px] font-semibold text-brand-600">{related.data.category}</span>
+                  <h4 class="text-xs font-bold text-navy-900 group-hover:text-brand-600 transition-colors line-clamp-2">
+                    {related.data.title}
+                  </h4>
+                </div>
+                <span class="text-[11px] text-navy-400 mt-4">{related.data.date}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+    </div>
+  </main>
+
+</PublicLayout>

@@ -1,0 +1,131 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+---
+
+<DashboardLayout
+  title="Doctor Security & Settings — Doctor Marriage Bureau"
+  description="Manage notification preferences, visibility, and account security."
+>
+  <div class="space-y-8 animate-fadeIn max-w-4xl">
+    <div>
+      <h1 class="text-2xl sm:text-3xl font-black text-navy-800 font-serif">
+        Security & <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 via-brand-600 to-pink-600">Privacy Settings</span>
+      </h1>
+      <p class="text-xs sm:text-sm text-navy-500">Control notifications, profile visibility, and password.</p>
+    </div>
+
+    <form id="notif-form" class="p-6 sm:p-8 rounded-3xl bg-white border border-brand-100/80 shadow-luxury space-y-4">
+      <h3 class="text-base font-bold text-navy-800">Notification Preferences</h3>
+      <div id="notif-toggles" class="space-y-3"></div>
+      <button type="submit" class="px-5 py-2.5 rounded-full bg-gradient-to-r from-brand-500 via-brand-600 to-pink-600 text-white text-xs font-bold shadow-lg shadow-brand-500/30">Save Notifications</button>
+    </form>
+
+    <div class="p-6 sm:p-8 rounded-3xl bg-white border border-brand-100/80 shadow-luxury space-y-4">
+      <h3 class="text-base font-bold text-navy-800">Profile Visibility</h3>
+      <label class="flex items-center justify-between p-4 rounded-2xl bg-navy-50 border border-navy-200">
+        <div>
+          <h4 class="text-xs font-bold text-navy-800">Visible in discovery</h4>
+          <p class="text-[11px] text-navy-500">Turn off to hide your profile from new searches</p>
+        </div>
+        <input id="vis-toggle" type="checkbox" class="accent-brand-500 w-5 h-5" />
+      </label>
+    </div>
+
+    <form id="pw-form" class="p-6 sm:p-8 rounded-3xl bg-white border border-brand-100/80 shadow-luxury space-y-4">
+      <h3 class="text-base font-bold text-navy-800">Change Password</h3>
+      <input id="pw-current" type="password" placeholder="Current password" required class="w-full px-4 py-3 rounded-2xl text-xs bg-navy-50 border border-navy-200" />
+      <input id="pw-new" type="password" placeholder="New password (8+ characters)" required minlength="8" class="w-full px-4 py-3 rounded-2xl text-xs bg-navy-50 border border-navy-200" />
+      <button type="submit" class="px-5 py-2.5 rounded-full bg-navy-800 text-white text-xs font-bold">Update Password</button>
+    </form>
+
+    <div class="p-6 sm:p-8 rounded-3xl bg-white border border-brand-100/80 shadow-luxury space-y-3">
+      <h3 class="text-base font-bold text-navy-800">Deactivate Account</h3>
+      <p class="text-xs text-navy-500">Temporarily hide your profile. You can sign in later to restore it.</p>
+      <button id="deactivate" class="px-5 py-2.5 rounded-xl bg-brand-50 text-brand-700 text-xs font-bold">Deactivate my account</button>
+    </div>
+  </div>
+</DashboardLayout>
+
+<script>
+  import { api, toast, errorMessage, logout } from '../lib/dashboard/common';
+
+  const keys = [
+    ['email_digest', 'Email digest'],
+    ['whatsapp', 'WhatsApp alerts'],
+    ['push_notifications', 'Push notifications'],
+    ['sms', 'SMS alerts'],
+    ['weekly_digest', 'Weekly digest'],
+    ['profile_snoozed', 'Snooze profile (hide temporarily)'],
+  ] as const;
+
+  const host = document.getElementById('notif-toggles')!;
+  host.innerHTML = keys.map(([k, label]) => `
+    <label class="flex items-center justify-between p-4 rounded-2xl bg-navy-50 border border-navy-200">
+      <span class="text-xs font-bold text-navy-800">${label}</span>
+      <input type="checkbox" name="${k}" class="accent-brand-500 w-5 h-5" />
+    </label>`).join('');
+
+  api.get('/dashboard/settings/notifications').then((res) => {
+    const d = res.data?.data ?? {};
+    keys.forEach(([k]) => {
+      const el = document.querySelector<HTMLInputElement>(`input[name="${k}"]`);
+      if (el) el.checked = Boolean(d[k]);
+    });
+  }).catch(() => undefined);
+
+  api.get('/dashboard/settings/notifications').catch(() => undefined);
+  api.get('/profiles/visibility').then((res) => {
+    const d = res.data?.data ?? {};
+    const vis = document.getElementById('vis-toggle') as HTMLInputElement;
+    vis.checked = d.visible !== false && d.is_visible !== false;
+  }).catch(() => undefined);
+
+  document.getElementById('notif-form')!.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const payload: Record<string, boolean> = {};
+    keys.forEach(([k]) => {
+      payload[k] = (document.querySelector<HTMLInputElement>(`input[name="${k}"]`)!).checked;
+    });
+    try {
+      await api.put('/dashboard/settings/notifications', payload);
+      toast('Notification preferences saved.', 'success');
+    } catch (err) {
+      toast(errorMessage(err), 'error');
+    }
+  });
+
+  document.getElementById('vis-toggle')!.addEventListener('change', async (ev) => {
+    const visible = (ev.target as HTMLInputElement).checked;
+    try {
+      await api.put('/dashboard/settings/visibility', { visible });
+      toast(visible ? 'Profile is visible in discovery.' : 'Profile hidden from discovery.', 'success');
+    } catch (err) {
+      toast(errorMessage(err), 'error');
+    }
+  });
+
+  document.getElementById('pw-form')!.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    try {
+      await api.post('/auth/change-password', {
+        current_password: (document.getElementById('pw-current') as HTMLInputElement).value,
+        new_password: (document.getElementById('pw-new') as HTMLInputElement).value,
+      });
+      toast('Password updated.', 'success');
+      (ev.target as HTMLFormElement).reset();
+    } catch (err) {
+      toast(errorMessage(err, 'Could not change password.'), 'error');
+    }
+  });
+
+  document.getElementById('deactivate')!.addEventListener('click', async () => {
+    if (!confirm('Deactivate your account? You can contact support to restore it.')) return;
+    try {
+      await api.post('/dashboard/account/deactivate');
+      toast('Account deactivated.', 'info');
+      setTimeout(() => logout(), 800);
+    } catch (err) {
+      toast(errorMessage(err), 'error');
+    }
+  });
+</script>

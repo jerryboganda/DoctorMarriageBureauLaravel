@@ -1,0 +1,375 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { 
+  Sliders, 
+  Plus, 
+  Trash2, 
+  Megaphone, 
+  Save, 
+  ShieldCheck, 
+  Building2, 
+  MapPin, 
+  ChevronRight,
+  Sparkles,
+  AlertCircle
+} from 'lucide-react';
+---
+
+<AdminLayout title="System Dropdowns & Settings — DMB Admin" activePath="/admin/settings/">
+  
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-1">
+        <a href="/admin/" class="hover:text-navy-900 transition-colors">Admin</a>
+        <ChevronRight className="w-3 h-3" />
+        <span class="text-navy-900 font-bold">System Configuration</span>
+      </div>
+      <h1 class="text-2xl sm:text-3xl font-black text-navy-900 tracking-tight">System Settings & Dropdowns</h1>
+      <p class="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
+        Manage dynamic dropdown lists (medical specialties, hospitals, cities, sects) and broadcast platform notices.
+      </p>
+    </div>
+
+    <button 
+      id="btn-save-all-settings" 
+      class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-brand-500 text-white hover:bg-brand-600 shadow-md shadow-brand-500/20 transition-all"
+    >
+      <Save className="w-4 h-4" />
+      <span>Save All Settings</span>
+    </button>
+  </div>
+
+  <!-- 2-Column Grid -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    
+    <!-- Left: Medical Specialties Dropdown Manager -->
+    <div class="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div class="flex items-center gap-2">
+          <ShieldCheck className="w-5 h-5 text-brand-600" />
+          <h3 class="text-base font-bold text-navy-900">Medical Specialties List</h3>
+        </div>
+        <button 
+          id="btn-add-specialty" 
+          class="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 hover:bg-brand-50 hover:text-brand-600 text-slate-700 transition-colors flex items-center gap-1"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span>Add Specialty</span>
+        </button>
+      </div>
+
+      <p class="text-xs text-slate-500">Active medical qualifications selectable during registration and search filters.</p>
+
+      <div id="list-specialties" class="flex flex-wrap gap-2 pt-2">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+    <!-- Right: Cities & Regions Manager -->
+    <div class="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div class="flex items-center gap-2">
+          <MapPin className="w-5 h-5 text-emerald-600" />
+          <h3 class="text-base font-bold text-navy-900">Cities & Practice Regions</h3>
+        </div>
+        <button 
+          id="btn-add-city" 
+          class="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 hover:bg-brand-50 hover:text-brand-600 text-slate-700 transition-colors flex items-center gap-1"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span>Add City</span>
+        </button>
+      </div>
+
+      <p class="text-xs text-slate-500">Pakistan major urban centers and overseas healthcare hubs (UK, UAE, KSA).</p>
+
+      <div id="list-cities" class="flex flex-wrap gap-2 pt-2">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+    <!-- Left: Major Teaching Hospitals -->
+    <div class="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div class="flex items-center gap-2">
+          <Building2 className="w-5 h-5 text-blue-600" />
+          <h3 class="text-base font-bold text-navy-900">Hospital & Medical Institutions</h3>
+        </div>
+        <button 
+          id="btn-add-hospital" 
+          class="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 hover:bg-brand-50 hover:text-brand-600 text-slate-700 transition-colors flex items-center gap-1"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span>Add Hospital</span>
+        </button>
+      </div>
+
+      <div id="list-hospitals" class="flex flex-wrap gap-2 pt-2">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+    <!-- Right: Broadcast Emergency Announcement Tool -->
+    <div class="p-6 rounded-2xl bg-gradient-to-br from-navy-900 to-navy-950 text-white shadow-xl space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-navy-800">
+        <div class="flex items-center gap-2">
+          <Megaphone className="w-5 h-5 text-amber-400" />
+          <h3 class="text-base font-bold text-white">Broadcast System Announcement</h3>
+        </div>
+        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30">
+          Live Broadcast
+        </span>
+      </div>
+
+      <p class="text-xs text-navy-300">
+        Dispatches an urgent announcement banner visible to all registered doctors upon login.
+      </p>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-bold text-navy-200 mb-1">Announcement Message</label>
+          <textarea 
+            id="broadcast-msg" 
+            rows="3" 
+            placeholder="e.g. System scheduled maintenance on Sunday 2 AM PKT. All matchmaking chats will remain securely encrypted." 
+            class="w-full p-3 rounded-xl bg-navy-800/90 border border-navy-700 text-white placeholder:text-navy-500 focus:border-brand-400 outline-none"
+          ></textarea>
+        </div>
+
+        <button 
+          id="btn-broadcast" 
+          class="w-full py-2.5 rounded-xl font-bold bg-brand-500 hover:bg-brand-600 text-white transition-colors shadow-lg shadow-brand-500/25"
+        >
+          Send Real-time Broadcast to Doctors
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+</AdminLayout>
+
+<script>
+  import { AdminStore, type AdminSystemSettings } from '../../lib/api/admin';
+  import { showToast } from '../../lib/toast';
+
+  let settings: AdminSystemSettings | null = null;
+
+  async function renderDropdowns() {
+    const specContainer = document.getElementById('list-specialties');
+    const citiesContainer = document.getElementById('list-cities');
+    const hospContainer = document.getElementById('list-hospitals');
+
+    if (specContainer) specContainer.innerHTML = '<span class="text-xs text-slate-400">Loading live specialties from API...</span>';
+    if (citiesContainer) citiesContainer.innerHTML = '<span class="text-xs text-slate-400">Loading live cities from API...</span>';
+    if (hospContainer) hospContainer.innerHTML = '<span class="text-xs text-slate-400">Loading live hospitals from API...</span>';
+
+    try {
+      const live = await AdminStore.getSettings();
+      settings = live;
+
+      // Prefill broadcast textarea if present
+      const broadcastEl = document.getElementById('broadcast-msg') as HTMLTextAreaElement | null;
+      if (broadcastEl && live.emergency_notice) {
+        broadcastEl.placeholder = live.emergency_notice;
+      }
+
+      // Render Specialties
+      if (specContainer) {
+        if (!settings.specialties.length) {
+          specContainer.innerHTML = '<span class="text-xs text-slate-500">No live data — no specialties configured.</span>';
+        } else {
+          specContainer.innerHTML = settings.specialties.map((item, idx) => `
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-800 border border-slate-200 group">
+              <span>${item}</span>
+              <button data-del-spec="${idx}" class="text-slate-400 hover:text-rose-600 transition-colors font-bold">&times;</button>
+            </span>
+          `).join('');
+        }
+      }
+
+      // Render Cities
+      if (citiesContainer) {
+        if (!settings.cities.length) {
+          citiesContainer.innerHTML = '<span class="text-xs text-slate-500">No live data — no cities configured.</span>';
+        } else {
+          citiesContainer.innerHTML = settings.cities.map((item, idx) => `
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-800 border border-slate-200 group">
+              <span>${item}</span>
+              <button data-del-city="${idx}" class="text-slate-400 hover:text-rose-600 transition-colors font-bold">&times;</button>
+            </span>
+          `).join('');
+        }
+      }
+
+      // Render Hospitals
+      if (hospContainer) {
+        if (!settings.hospitals.length) {
+          hospContainer.innerHTML = '<span class="text-xs text-slate-500">No live data — no hospitals configured.</span>';
+        } else {
+          hospContainer.innerHTML = settings.hospitals.map((item, idx) => `
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-800 border border-slate-200 group">
+              <span>${item}</span>
+              <button data-del-hosp="${idx}" class="text-slate-400 hover:text-rose-600 transition-colors font-bold">&times;</button>
+            </span>
+          `).join('');
+        }
+      }
+
+      // Bind deletes (re-bound after render)
+      document.querySelectorAll('[data-del-spec]').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          if (!settings) return;
+          const idx = Number((e.currentTarget as HTMLElement).getAttribute('data-del-spec'));
+          settings.specialties.splice(idx, 1);
+          try {
+            await AdminStore.saveSettings(settings);
+            showToast({ title: 'Specialty Removed', message: 'Dropdown updated and persisted live.', type: 'info' });
+            await renderDropdowns();
+          } catch (err: any) {
+            showToast({ title: 'Remove failed', message: err?.response?.data?.message || err?.message || 'Failed to save settings.', type: 'error' });
+            await renderDropdowns();
+          }
+        });
+      });
+
+      document.querySelectorAll('[data-del-city]').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          if (!settings) return;
+          const idx = Number((e.currentTarget as HTMLElement).getAttribute('data-del-city'));
+          settings.cities.splice(idx, 1);
+          try {
+            await AdminStore.saveSettings(settings);
+            showToast({ title: 'City Removed', message: 'Dropdown updated and persisted live.', type: 'info' });
+            await renderDropdowns();
+          } catch (err: any) {
+            showToast({ title: 'Remove failed', message: err?.response?.data?.message || err?.message || 'Failed to save settings.', type: 'error' });
+            await renderDropdowns();
+          }
+        });
+      });
+
+      document.querySelectorAll('[data-del-hosp]').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          if (!settings) return;
+          const idx = Number((e.currentTarget as HTMLElement).getAttribute('data-del-hosp'));
+          settings.hospitals.splice(idx, 1);
+          try {
+            await AdminStore.saveSettings(settings);
+            showToast({ title: 'Hospital Removed', message: 'Dropdown updated and persisted live.', type: 'info' });
+            await renderDropdowns();
+          } catch (err: any) {
+            showToast({ title: 'Remove failed', message: err?.response?.data?.message || err?.message || 'Failed to save settings.', type: 'error' });
+            await renderDropdowns();
+          }
+        });
+      });
+
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || 'Failed to load live settings. Please retry.';
+      showToast({ title: 'Failed to load settings', message: msg, type: 'error' });
+      if (specContainer) specContainer.innerHTML = `<span class="text-xs text-rose-600">${msg}</span>`;
+      if (citiesContainer) citiesContainer.innerHTML = `<span class="text-xs text-rose-600">${msg}</span>`;
+      if (hospContainer) hospContainer.innerHTML = `<span class="text-xs text-rose-600">${msg}</span>`;
+    }
+  }
+
+  async function initSettings() {
+    await renderDropdowns();
+
+    document.getElementById('btn-add-specialty')?.addEventListener('click', async () => {
+      const val = prompt('Enter new medical specialty:');
+      if (val && val.trim() && settings) {
+        settings.specialties.push(val.trim());
+        try {
+          await AdminStore.saveSettings(settings);
+          showToast({ title: 'Specialty Added', message: `${val} added to options.`, type: 'info' });
+          await renderDropdowns();
+        } catch (err: any) {
+          showToast({ title: 'Add failed', message: err?.response?.data?.message || err?.message || 'Failed to save specialty.', type: 'error' });
+          settings.specialties.pop();
+        }
+      }
+    });
+
+    document.getElementById('btn-add-city')?.addEventListener('click', async () => {
+      const val = prompt('Enter new city / region:');
+      if (val && val.trim() && settings) {
+        settings.cities.push(val.trim());
+        try {
+          await AdminStore.saveSettings(settings);
+          showToast({ title: 'City Added', message: `${val} added to options.`, type: 'info' });
+          await renderDropdowns();
+        } catch (err: any) {
+          showToast({ title: 'Add failed', message: err?.response?.data?.message || err?.message || 'Failed to save city.', type: 'error' });
+          settings.cities.pop();
+        }
+      }
+    });
+
+    document.getElementById('btn-add-hospital')?.addEventListener('click', async () => {
+      const val = prompt('Enter new medical institution / hospital:');
+      if (val && val.trim() && settings) {
+        settings.hospitals.push(val.trim());
+        try {
+          await AdminStore.saveSettings(settings);
+          showToast({ title: 'Hospital Added', message: `${val} added to options.`, type: 'info' });
+          await renderDropdowns();
+        } catch (err: any) {
+          showToast({ title: 'Add failed', message: err?.response?.data?.message || err?.message || 'Failed to save hospital.', type: 'error' });
+          settings.hospitals.pop();
+        }
+      }
+    });
+
+    document.getElementById('btn-save-all-settings')?.addEventListener('click', async () => {
+      if (!settings) {
+        showToast({ title: 'Nothing to save', message: 'Settings not loaded yet.', type: 'warning' });
+        return;
+      }
+      try {
+        await AdminStore.saveSettings(settings);
+        showToast({
+          title: 'Settings Saved',
+          message: 'All system settings and dropdown configurations updated live.',
+          type: 'info'
+        });
+      } catch (err: any) {
+        showToast({ title: 'Save failed', message: err?.response?.data?.message || err?.message || 'Failed to save settings.', type: 'error' });
+      }
+    });
+
+    document.getElementById('btn-broadcast')?.addEventListener('click', async () => {
+      const msg = (document.getElementById('broadcast-msg') as HTMLTextAreaElement)?.value.trim();
+      if (!msg) {
+        showToast({ title: 'Empty message', message: 'Please enter a broadcast message.', type: 'warning' });
+        return;
+      }
+      if (!settings) {
+        try {
+          settings = await AdminStore.getSettings();
+        } catch (err: any) {
+          showToast({ title: 'Broadcast failed', message: err?.response?.data?.message || err?.message || 'Failed to load settings for broadcast.', type: 'error' });
+          return;
+        }
+      }
+      settings.emergency_notice = msg;
+      try {
+        await AdminStore.saveSettings(settings);
+        showToast({
+          title: 'System Notice Broadcasted',
+          message: 'Notification dispatched to active doctor sessions.',
+          type: 'info'
+        });
+        (document.getElementById('broadcast-msg') as HTMLTextAreaElement).value = '';
+        await renderDropdowns();
+      } catch (err: any) {
+        showToast({ title: 'Broadcast failed', message: err?.response?.data?.message || err?.message || 'Failed to broadcast notice.', type: 'error' });
+      }
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', initSettings);
+  document.addEventListener('astro:page-load', initSettings);
+</script>

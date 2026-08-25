@@ -1,0 +1,44 @@
+---
+import { 
+  LayoutDashboard, 
+  Search, 
+  HeartHandshake, 
+  MessageSquare, 
+  UserCircle 
+} from 'lucide-react';
+
+const currentPath = Astro.url.pathname;
+
+const navItems = [
+  { label: 'Overview', href: '/dashboard/', icon: LayoutDashboard },
+  { label: 'Discover', href: '/discover/', icon: Search },
+  { label: 'Proposals', href: '/proposals/', icon: HeartHandshake, badge: 3 },
+  { label: 'Chat', href: '/messages/', icon: MessageSquare, badge: 2 },
+  { label: 'Profile', href: '/profile/', icon: UserCircle },
+];
+---
+
+<nav class="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-brand-100/80 px-2 py-2 shadow-lg flex items-center justify-around">
+  {navItems.map((item) => {
+    const Icon = item.icon;
+    const isActive = currentPath === item.href || (item.href !== '/dashboard/' && currentPath.startsWith(item.href));
+    return (
+      <a
+        href={item.href}
+        class={`flex flex-col items-center gap-1 py-1 px-3 rounded-xl relative transition-all duration-200 ${
+          isActive ? 'text-brand-600 font-bold' : 'text-navy-500 hover:text-navy-800'
+        }`}
+      >
+        <div class="relative">
+          <Icon className="w-5 h-5" />
+          {item.badge && (
+            <span class="absolute -top-1 -right-2 px-1.5 py-0.5 text-[9px] font-bold bg-brand-500 text-white rounded-full">
+              {item.badge}
+            </span>
+          )}
+        </div>
+        <span class="text-[10px] tracking-tight">{item.label}</span>
+      </a>
+    );
+  })}
+</nav>

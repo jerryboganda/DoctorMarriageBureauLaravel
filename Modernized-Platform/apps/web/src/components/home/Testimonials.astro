@@ -1,0 +1,93 @@
+---
+import { Star, Quote, HeartHandshake } from 'lucide-react';
+---
+
+<section class="py-20 lg:py-24 bg-white relative">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    
+    <!-- Section Header -->
+    <div class="text-center max-w-3xl mx-auto mb-16">
+      <span class="inline-block px-3.5 py-1.5 rounded-full text-xs font-semibold text-brand-600 bg-brand-50 border border-brand-100 tracking-wider uppercase mb-3">
+        Client Testimonials
+      </span>
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-navy-900 tracking-tight">
+        Trusted by Doctors & <span class="text-brand-500">Their Families</span>
+      </h2>
+      <p class="mt-4 text-sm sm:text-base text-navy-600 leading-relaxed">
+        Read genuine experiences of medical couples who found compatible life partners through our dedicated bureau.
+      </p>
+    </div>
+
+    <!-- Testimonials Grid (populated live from /api/v1/public/happy-stories) -->
+    <div id="testimonials-grid" class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      {Array.from({ length: 3 }).map(() => (
+        <div class="rounded-3xl p-8 bg-white border border-brand-100/80 shadow-sm animate-pulse h-64"></div>
+      ))}
+    </div>
+    <p id="testimonials-empty" class="hidden text-center text-sm text-navy-500 mt-10">
+      No verified success stories to show yet — be our next!
+    </p>
+
+  </div>
+</section>
+
+<script>
+  (function () {
+    const API = (import.meta.env.PUBLIC_API_URL || 'http://127.0.0.1:8080/api/v1').replace(/\/$/, '');
+    const grid = document.getElementById('testimonials-grid');
+    const empty = document.getElementById('testimonials-empty');
+    if (!grid) return;
+
+    function escapeHtml(str) {
+      return String(str == null ? '' : str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+    const quoteIcon =
+      '<svg class="w-10 h-10 text-brand-200 absolute top-6 right-6 opacity-60" viewBox="0 0 24 24" fill="currentColor"><path d="M7.5 6C5 6 3 8 3 10.5V18h6v-7.5H7.5C7.5 9 9 7.5 10.5 7.5L9 6zm9 0C14 6 12 8 12 10.5V18h6v-7.5h-1.5C16.5 9 18 7.5 19.5 7.5L18 6z"/></svg>';
+    const heartIcon =
+      '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-6.7-4.35-9.33-8.36C.9 9.78 2 6.5 5 6.5c2 0 3.17 1.27 4 2.6 0 0 1-1.33 2-2.6 2 0 4.1 1.78 2.33 6.14C18.7 16.65 12 21 12 21z"/></svg>';
+    const stars = '<div class="flex items-center gap-1 text-amber-400">' +
+      Array.from({ length: 5 }).map(() => '<svg class="w-4 h-4 fill-amber-400 text-amber-400" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.7-5.1 4.6 1.4 6.8L12 17.8 5.9 20.4l1.4-6.8L2.2 9l6.9-.7z"/></svg>').join('') +
+      '</div>';
+
+    (async function () {
+      try {
+        const res = await fetch(API + '/public/happy-stories');
+        const env = await res.json();
+        const stories = Array.isArray(env?.data) ? env.data : [];
+        if (!stories.length) {
+          grid.innerHTML = '';
+          if (empty) empty.classList.remove('hidden');
+          return;
+        }
+        grid.innerHTML = stories
+          .map(function (s) {
+            const title = escapeHtml(s.couple || s.title || 'Happy Couple');
+            const sub = escapeHtml(s.title && s.couple ? s.title : '');
+            const details = escapeHtml(s.details || '');
+            return (
+              '<div class="rounded-3xl p-8 bg-gradient-to-b from-[#FFF5F8] to-white border border-brand-100/80 shadow-luxury hover:shadow-luxury-hover transition-all duration-300 flex flex-col justify-between relative">' +
+              quoteIcon +
+              '<div class="space-y-4 relative z-10">' +
+              stars +
+              '<p class="text-sm text-navy-700 leading-relaxed italic">"' + details + '"</p>' +
+              '</div>' +
+              '<div class="pt-6 mt-6 border-t border-brand-100/60 flex items-center gap-3">' +
+              '<div class="w-10 h-10 rounded-full bg-brand-500 text-white flex items-center justify-center font-bold text-xs shadow-sm">' + heartIcon + '</div>' +
+              '<div><h4 class="text-sm font-bold text-navy-900">' + title + '</h4>' +
+              (sub ? '<p class="text-xs text-brand-600 font-medium">' + sub + '</p>' : '') +
+              '</div></div></div>'
+            );
+          })
+          .join('');
+      } catch (e) {
+        grid.innerHTML = '';
+        if (empty) empty.classList.remove('hidden');
+      }
+    })();
+  })();
+</script>

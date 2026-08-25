@@ -1,0 +1,71 @@
+---
+import { Calendar, Eye, ArrowRight, User } from 'lucide-react';
+
+interface Props {
+  title: string;
+  slug: string;
+  date: string;
+  category: string;
+  excerpt: string;
+  featuredImage: string;
+  views?: number;
+  author?: string;
+}
+
+const { title, slug, date, category, excerpt, featuredImage, views = 100, author = 'Editorial Team' } = Astro.props;
+---
+
+<article class="group rounded-3xl bg-white border border-brand-100/80 shadow-luxury hover:shadow-luxury-hover transition-all duration-300 transform hover:-translate-y-1 overflow-hidden flex flex-col justify-between">
+  
+  <div>
+    <!-- Featured Image -->
+    <a href={`/${slug}/`} class="block relative aspect-video overflow-hidden bg-navy-100">
+      <img 
+        src={featuredImage} 
+        alt={title}
+        class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+        loading="lazy"
+        width="600"
+        height="338"
+      />
+      <span class="absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-semibold bg-white/90 backdrop-blur-md text-brand-600 shadow-sm border border-brand-100/50">
+        {category}
+      </span>
+    </a>
+
+    <!-- Body -->
+    <div class="p-6">
+      
+      <div class="flex items-center gap-4 text-xs text-navy-400 mb-3">
+        <span class="flex items-center gap-1">
+          <Calendar className="w-3.5 h-3.5 text-brand-500" />
+          <span>{date}</span>
+        </span>
+        <span class="flex items-center gap-1">
+          <Eye className="w-3.5 h-3.5 text-navy-400" />
+          <span>{views} views</span>
+        </span>
+      </div>
+
+      <h3 class="text-base sm:text-lg font-bold text-navy-950 group-hover:text-brand-600 transition-colors line-clamp-2 mb-3 leading-snug">
+        <a href={`/${slug}/`}>
+          {title}
+        </a>
+      </h3>
+
+      <p class="text-xs sm:text-sm text-navy-600 line-clamp-3 leading-relaxed">
+        {excerpt}
+      </p>
+
+    </div>
+  </div>
+
+  <!-- Footer Link -->
+  <div class="px-6 pb-6 pt-2 border-t border-navy-50 flex items-center justify-between text-xs font-bold text-brand-600">
+    <a href={`/${slug}/`} class="inline-flex items-center gap-1 hover:gap-2 transition-all">
+      <span>Read Full Article</span>
+      <ArrowRight className="w-3.5 h-3.5" />
+    </a>
+  </div>
+
+</article>

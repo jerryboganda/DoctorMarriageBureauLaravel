@@ -1,0 +1,144 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+import { Edit3, Download } from 'lucide-react';
+---
+
+<DashboardLayout
+  title="My Doctor Biodata & Profile — Doctor Marriage Bureau"
+  description="Manage doctor credentials, biodata document, and privacy settings."
+>
+  <div class="space-y-8 animate-fadeIn max-w-4xl">
+    <div class="rounded-3xl bg-white border border-brand-100/80 shadow-luxury overflow-hidden">
+      <div class="h-36 sm:h-44 bg-gradient-to-r from-navy-950 via-brand-900 to-navy-900"></div>
+      <div class="px-6 sm:px-8 pb-8 relative -mt-16 sm:-mt-20">
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div class="flex items-end gap-4">
+            <div class="relative w-28 h-28 sm:w-36 sm:h-36 rounded-3xl overflow-hidden border-4 border-white shadow-xl bg-navy-100 shrink-0">
+              <img id="pf-photo" src="" alt="Profile" class="w-full h-full object-cover" />
+            </div>
+            <div class="space-y-1 pb-2">
+              <div class="flex items-center gap-2">
+                <h1 id="pf-name" class="text-xl sm:text-2xl font-black text-navy-800 font-serif">Loading…</h1>
+                <span id="pf-verified" class="hidden px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">Verified</span>
+              </div>
+              <p id="pf-title" class="text-xs sm:text-sm font-semibold text-brand-600"></p>
+              <p id="pf-meta" class="text-xs text-navy-500"></p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <a href="/profile/edit/" class="px-5 py-2.5 rounded-full bg-gradient-to-r from-brand-500 via-brand-600 to-pink-600 text-white text-xs font-bold shadow-lg shadow-brand-500/30 flex items-center gap-1.5">
+              <Edit3 className="w-4 h-4" /><span>Edit Profile</span>
+            </a>
+            <a id="pf-biodata" href="/api/v1/profiles/download-biodata" class="px-4 py-2.5 rounded-xl bg-navy-50 border border-navy-200 text-navy-700 text-xs font-bold flex items-center gap-1.5">
+              <Download className="w-4 h-4" /><span>Biodata PDF</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div class="p-5 rounded-2xl bg-white border border-brand-100/80 shadow-luxury">
+        <span class="text-[11px] font-bold text-navy-400 uppercase">Quality Score</span>
+        <p id="pf-score" class="text-2xl font-bold text-brand-600 mt-1">—</p>
+        <p id="pf-score-level" class="text-[11px] text-navy-500"></p>
+      </div>
+      <div class="p-5 rounded-2xl bg-white border border-brand-100/80 shadow-luxury">
+        <span class="text-[11px] font-bold text-navy-400 uppercase">Location</span>
+        <p id="pf-city" class="text-sm font-bold text-navy-800 mt-1">—</p>
+      </div>
+      <div class="p-5 rounded-2xl bg-white border border-brand-100/80 shadow-luxury">
+        <span class="text-[11px] font-bold text-navy-400 uppercase">Faith / Caste</span>
+        <p id="pf-faith" class="text-sm font-bold text-navy-800 mt-1">—</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <section class="p-6 rounded-3xl bg-white border border-brand-100/80 shadow-luxury space-y-3">
+        <h2 class="text-base font-bold text-navy-800 font-serif">Career & Education</h2>
+        <div id="pf-career" class="text-xs text-navy-600 space-y-2"></div>
+      </section>
+      <section class="p-6 rounded-3xl bg-white border border-brand-100/80 shadow-luxury space-y-3">
+        <h2 class="text-base font-bold text-navy-800 font-serif">Family</h2>
+        <div id="pf-family" class="text-xs text-navy-600 space-y-2"></div>
+      </section>
+      <section class="p-6 rounded-3xl bg-white border border-brand-100/80 shadow-luxury space-y-3">
+        <h2 class="text-base font-bold text-navy-800 font-serif">Lifestyle</h2>
+        <div id="pf-life" class="text-xs text-navy-600 space-y-2"></div>
+      </section>
+      <section class="p-6 rounded-3xl bg-white border border-brand-100/80 shadow-luxury space-y-3">
+        <h2 class="text-base font-bold text-navy-800 font-serif">Partner Preferences</h2>
+        <div id="pf-pref" class="text-xs text-navy-600 space-y-2"></div>
+      </section>
+    </div>
+
+    <section class="p-6 rounded-3xl bg-white border border-brand-100/80 shadow-luxury space-y-3">
+      <h2 class="text-base font-bold text-navy-800 font-serif">Photo Gallery</h2>
+      <div id="pf-gallery" class="grid grid-cols-3 sm:grid-cols-4 gap-3"></div>
+    </section>
+  </div>
+</DashboardLayout>
+
+<script>
+  import { api, avatarFor, escapeHtml, heightLabel, emptyStateHtml, errorMessage, toast } from '../lib/dashboard/common';
+
+  const row = (k: string, v: unknown) => v ? `<div class="flex justify-between gap-3"><span class="text-navy-400">${k}</span><span class="font-semibold text-navy-800 text-right">${escapeHtml(v)}</span></div>` : '';
+
+  api.get('/profiles/full').then((res) => {
+    const p = res.data?.data ?? {};
+    const b = p.basics || {};
+    const c = p.career || {};
+    const f = p.family || {};
+    const l = p.lifestyle || {};
+    const pr = p.preferences || {};
+    const sp = p.spiritual || {};
+    const m = p.media || {};
+    const q = p.quality_score || {};
+    const name = b.full_name || `${b.first_name || ''} ${b.last_name || ''}`.trim() || 'Doctor';
+    document.getElementById('pf-name')!.textContent = name.startsWith('Dr.') ? name : `Dr. ${name}`;
+    (document.getElementById('pf-photo') as HTMLImageElement).src = avatarFor(m.main_photo || b.photo, b.gender);
+    const edu = (c.education || [])[0];
+    document.getElementById('pf-title')!.textContent = [edu?.degree, c.medical_speciality].filter(Boolean).join(', ') || 'Medical Professional';
+    document.getElementById('pf-meta')!.textContent = [b.age ? `${b.age} yrs` : '', heightLabel(b.height), b.current_residency?.city || b.current_residency?.country].filter(Boolean).join(' · ');
+    document.getElementById('pf-score')!.textContent = `${Math.round(Number(q.total || 0))}%`;
+    document.getElementById('pf-score-level')!.textContent = q.level || '';
+    document.getElementById('pf-city')!.textContent = [b.current_residency?.city, b.current_residency?.country].filter(Boolean).join(', ') || '—';
+    document.getElementById('pf-faith')!.textContent = [sp.religion_name, sp.caste_name].filter(Boolean).join(' / ') || '—';
+
+    const careerHost = document.getElementById('pf-career')!;
+    const edus = (c.education || []).map((e: any) => `<p><strong>${escapeHtml(e.degree)}</strong> · ${escapeHtml(e.institution || '')}</p>`).join('') || '<p>No education listed</p>';
+    const jobs = (c.careers || []).map((j: any) => `<p>${escapeHtml(j.designation)} · ${escapeHtml(j.company || '')}</p>`).join('');
+    careerHost.innerHTML = edus + jobs + row('Registration', c.medical_registration);
+
+    document.getElementById('pf-family')!.innerHTML = [
+      row('Father', f.father),
+      row('Mother', f.mother),
+      row('Father occupation', f.father_occupation),
+      row('Brothers / Sisters', `${f.no_of_brothers ?? 0} / ${f.no_of_sisters ?? 0}`),
+      row('Hometown', [f.family_location_city, f.family_location_country].filter(Boolean).join(', ')),
+    ].join('') || emptyStateHtml('No family details', 'Add them from the Family portal.', '👨‍👩‍👧');
+
+    document.getElementById('pf-life')!.innerHTML = [
+      row('Diet', l.diet),
+      row('Drink', l.drink),
+      row('Smoke', l.smoke),
+      row('Living with', l.living_with),
+      row('Hobbies', l.hobbies),
+    ].join('');
+
+    document.getElementById('pf-pref')!.innerHTML = [
+      row('Age', pr.min_age || pr.max_age ? `${pr.min_age || '?'} – ${pr.max_age || '?'}` : ''),
+      row('Education', pr.education),
+      row('Profession', pr.profession),
+    ].join('');
+
+    const gal = document.getElementById('pf-gallery')!;
+    const photos = m.gallery || [];
+    gal.innerHTML = photos.length
+      ? photos.map((g: any) => `<img src="${avatarFor(g.url)}" class="aspect-square rounded-2xl object-cover border border-navy-100 ${g.privacy_level === 'private' ? 'opacity-70' : ''}" />`).join('')
+      : emptyStateHtml('No photos yet', 'Upload from Edit Profile.', '📷');
+  }).catch((err) => {
+    document.getElementById('pf-name')!.textContent = 'Unable to load profile';
+    toast(errorMessage(err), 'error');
+  });
+</script>

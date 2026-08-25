@@ -1,0 +1,144 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+import { Plus, ShieldCheck } from 'lucide-react';
+---
+
+<DashboardLayout
+  title="Family Portal & Wali Access — Doctor Marriage Bureau"
+  description="Manage trusted family guardians and parental background."
+>
+  <div class="space-y-8 animate-fadeIn max-w-4xl">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-black text-navy-800 font-serif">
+          Family Portal & <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 via-brand-600 to-pink-600">Guardian Access</span>
+        </h1>
+        <p class="text-xs sm:text-sm text-navy-500">Involve your parents or Wali in the rishta review process.</p>
+      </div>
+      <button id="add-guardian" class="py-2.5 px-4 rounded-full bg-gradient-to-r from-brand-500 via-brand-600 to-pink-600 text-white text-xs font-bold shadow-lg shadow-brand-500/30 flex items-center gap-1.5">
+        <Plus className="w-4 h-4" /><span>+ Add Guardian / Wali</span>
+      </button>
+    </div>
+
+    <div class="p-6 rounded-3xl bg-brand-50 border border-brand-100 flex items-start gap-4">
+      <div class="p-3 rounded-2xl bg-white text-brand-600 shadow-sm shrink-0"><ShieldCheck className="w-6 h-6" /></div>
+      <div class="text-xs space-y-1">
+        <h4 class="font-bold text-navy-800">Islamic Matrimonial Oversight</h4>
+        <p class="text-navy-600 leading-relaxed">Authorized guardians can receive proposal alerts and participate in family introductions.</p>
+      </div>
+    </div>
+
+    <form id="family-form" class="p-6 sm:p-8 rounded-3xl bg-white border border-brand-100/80 shadow-luxury grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <h3 class="sm:col-span-2 text-base font-bold text-navy-800 font-serif">Parents & Household</h3>
+      <label class="space-y-1 text-xs font-bold text-navy-700">Father<input name="father" class="w-full px-4 py-3 rounded-2xl bg-navy-50 border border-navy-200 font-medium text-navy-800" /></label>
+      <label class="space-y-1 text-xs font-bold text-navy-700">Mother<input name="mother" class="w-full px-4 py-3 rounded-2xl bg-navy-50 border border-navy-200 font-medium text-navy-800" /></label>
+      <label class="space-y-1 text-xs font-bold text-navy-700">Father occupation<input name="father_occupation" class="w-full px-4 py-3 rounded-2xl bg-navy-50 border border-navy-200 font-medium text-navy-800" /></label>
+      <label class="space-y-1 text-xs font-bold text-navy-700">Mother occupation<input name="mother_occupation" class="w-full px-4 py-3 rounded-2xl bg-navy-50 border border-navy-200 font-medium text-navy-800" /></label>
+      <label class="space-y-1 text-xs font-bold text-navy-700">Brothers<input name="no_of_brothers" type="number" min="0" class="w-full px-4 py-3 rounded-2xl bg-navy-50 border border-navy-200 font-medium text-navy-800" /></label>
+      <label class="space-y-1 text-xs font-bold text-navy-700">Sisters<input name="no_of_sisters" type="number" min="0" class="w-full px-4 py-3 rounded-2xl bg-navy-50 border border-navy-200 font-medium text-navy-800" /></label>
+      <label class="space-y-1 text-xs font-bold text-navy-700">Family city<input name="location_city" class="w-full px-4 py-3 rounded-2xl bg-navy-50 border border-navy-200 font-medium text-navy-800" /></label>
+      <label class="space-y-1 text-xs font-bold text-navy-700">Family country<input name="location_country" class="w-full px-4 py-3 rounded-2xl bg-navy-50 border border-navy-200 font-medium text-navy-800" /></label>
+      <label class="sm:col-span-2 space-y-1 text-xs font-bold text-navy-700">About parents<textarea name="about_parents" rows="3" class="w-full px-4 py-3 rounded-2xl bg-navy-50 border border-navy-200 font-medium text-navy-800"></textarea></label>
+      <label class="sm:col-span-2 space-y-1 text-xs font-bold text-navy-700">About siblings<textarea name="about_siblings" rows="3" class="w-full px-4 py-3 rounded-2xl bg-navy-50 border border-navy-200 font-medium text-navy-800"></textarea></label>
+      <div class="sm:col-span-2">
+        <button type="submit" class="px-6 py-2.5 rounded-full bg-gradient-to-r from-brand-500 via-brand-600 to-pink-600 text-white text-xs font-bold shadow-lg shadow-brand-500/30">Save Family Details</button>
+      </div>
+    </form>
+
+    <div id="guardian-list" class="space-y-4"></div>
+  </div>
+</DashboardLayout>
+
+<script>
+  import { api, escapeHtml, toast, errorMessage, emptyStateHtml, errorStateHtml, skeletonHtml } from '../lib/dashboard/common';
+
+  const form = document.getElementById('family-form') as HTMLFormElement;
+  const list = document.getElementById('guardian-list')!;
+
+  function fill(data: any) {
+    const set = (name: string, val: unknown) => {
+      const el = form.elements.namedItem(name) as HTMLInputElement | HTMLTextAreaElement | null;
+      if (el) el.value = val == null ? '' : String(val);
+    };
+    set('father', data.father);
+    set('mother', data.mother);
+    set('father_occupation', data.father_occupation);
+    set('mother_occupation', data.mother_occupation);
+    set('no_of_brothers', data.no_of_brothers ?? 0);
+    set('no_of_sisters', data.no_of_sisters ?? 0);
+    set('location_city', data.location_city);
+    set('location_country', data.location_country);
+    set('about_parents', data.about_parents);
+    set('about_siblings', data.about_siblings);
+  }
+
+  function renderGuardians(items: any[]) {
+    if (!items.length) {
+      list.innerHTML = emptyStateHtml('No guardians added', 'Add a parent or Wali so they can follow proposal activity.', '👨‍👩‍👧');
+      return;
+    }
+    list.innerHTML = items.map((g) => `
+      <div class="p-6 rounded-3xl bg-white border border-brand-100/80 shadow-luxury flex items-center justify-between gap-4">
+        <div>
+          <h3 class="text-sm font-bold text-navy-800">${escapeHtml(g.name)}</h3>
+          <p class="text-xs text-navy-500">${escapeHtml(g.relationship || 'Guardian')} · ${escapeHtml(g.phone || '')} ${g.email ? '· ' + escapeHtml(g.email) : ''}</p>
+          ${g.is_primary_contact ? '<span class="text-[10px] font-bold text-emerald-700">Primary contact</span>' : ''}
+        </div>
+        <button data-del="${g.id}" class="px-3 py-2 rounded-xl bg-navy-100 text-navy-700 text-xs font-semibold">Remove</button>
+      </div>`).join('');
+    list.querySelectorAll<HTMLButtonElement>('[data-del]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Remove this guardian?')) return;
+        try {
+          await api.delete(`/dashboard/family/guardians/${btn.dataset.del}`);
+          toast('Guardian removed.', 'info');
+          load();
+        } catch (err) {
+          toast(errorMessage(err), 'error');
+        }
+      });
+    });
+  }
+
+  async function load() {
+    list.innerHTML = skeletonHtml(2, 'h-20');
+    try {
+      const res = await api.get('/dashboard/family');
+      const data = res.data?.data ?? {};
+      fill(data);
+      renderGuardians(data.guardians || []);
+    } catch (err) {
+      list.innerHTML = errorStateHtml(errorMessage(err));
+    }
+  }
+
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const fd = new FormData(form);
+    const payload: Record<string, unknown> = {};
+    fd.forEach((v, k) => { payload[k] = k.startsWith('no_of_') ? Number(v) : v; });
+    try {
+      await api.put('/dashboard/family', payload);
+      toast('Family details saved.', 'success');
+    } catch (err) {
+      toast(errorMessage(err), 'error');
+    }
+  });
+
+  document.getElementById('add-guardian')!.addEventListener('click', async () => {
+    const name = prompt('Guardian full name');
+    if (!name?.trim()) return;
+    const relationship = prompt('Relationship (e.g. Father, Mother, Brother)') || 'Guardian';
+    const phone = prompt('Phone number') || '';
+    const email = prompt('Email (optional)') || '';
+    try {
+      await api.post('/dashboard/family/guardians', { name: name.trim(), relationship, phone, email, is_primary_contact: false });
+      toast('Guardian added.', 'success');
+      load();
+    } catch (err) {
+      toast(errorMessage(err), 'error');
+    }
+  });
+
+  load();
+</script>

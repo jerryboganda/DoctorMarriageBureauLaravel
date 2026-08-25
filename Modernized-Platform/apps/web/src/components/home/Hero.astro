@@ -1,0 +1,93 @@
+---
+import { ShieldCheck, HeartHandshake, ArrowRight, Sparkles, CheckCircle2, Stethoscope } from 'lucide-react';
+---
+
+<section class="relative min-h-[85vh] lg:min-h-[90vh] flex items-center justify-center overflow-hidden bg-navy-950 text-white">
+  
+  <!-- Background Video with Luxury Dark Gradient Overlay -->
+  <div class="absolute inset-0 z-0 overflow-hidden">
+    <video 
+      autoplay 
+      loop 
+      muted 
+      playsinline 
+      class="w-full h-full object-cover opacity-35 scale-105 filter saturate-150"
+    >
+      <source src="/videos/drmarriage-720.mp4" type="video/mp4" />
+    </video>
+    <div class="absolute inset-0 bg-gradient-to-t from-navy-950 via-navy-900/80 to-navy-950/90"></div>
+    <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-brand-500/15 via-transparent to-transparent"></div>
+  </div>
+
+  <!-- Content Container -->
+  <div class="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center flex flex-col items-center">
+    
+    <!-- Arabic Calligraphy & Hadith Banner -->
+    <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-brand-300 text-xs sm:text-sm font-medium mb-6 animate-fade-in shadow-lg">
+      <Sparkles className="w-4 h-4 text-brand-400" />
+      <span class="font-arabic text-base sm:text-lg text-white font-bold tracking-wide">« النِّكَاحُ نِصْفُ الْإِيمَانِ »</span>
+      <span class="text-white/80 hidden sm:inline">— "Marriage is half of Faith" (Sunnah)</span>
+    </div>
+
+    <!-- Main Headline -->
+    <h1 class="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight sm:leading-tight mb-6">
+      We Are Pakistan's Leading <br class="hidden sm:inline" />
+      <span class="bg-gradient-to-r from-brand-400 via-brand-300 to-pink-200 bg-clip-text text-transparent drop-shadow-sm">
+        Doctor's Matrimonial Platform
+      </span>
+    </h1>
+
+    <!-- Subheading Copy -->
+    <p class="max-w-3xl text-base sm:text-lg lg:text-xl text-navy-100 font-normal leading-relaxed mb-10 text-white/90">
+      Connecting Muslim medical specialists, MBBS doctors, BDS dentists, surgeons, and healthcare professionals in Pakistan and overseas with 100% verified credentials, absolute confidentiality, and Islamic family values.
+    </p>
+
+    <!-- CTAs -->
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto mb-14">
+      <a 
+        href="/register/" 
+        class="w-full sm:w-auto px-8 py-4 rounded-full text-base font-bold text-white bg-gradient-to-r from-brand-500 via-brand-600 to-pink-600 hover:from-brand-600 hover:to-pink-700 shadow-xl shadow-brand-500/30 hover:shadow-2xl hover:shadow-brand-500/50 transition-all duration-300 transform hover:-translate-y-1 flex items-center justify-center gap-3"
+      >
+        <HeartHandshake className="w-5 h-5" />
+        <span>Find Your Match — Register Today</span>
+        <ArrowRight className="w-5 h-5" />
+      </a>
+      
+      <a 
+        href="#proposals" 
+        class="w-full sm:w-auto px-8 py-4 rounded-full text-base font-semibold text-white bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 hover:border-white/40 transition-all duration-300 flex items-center justify-center gap-2"
+      >
+        <Stethoscope className="w-5 h-5 text-brand-300" />
+        <span>Explore Doctor Proposals</span>
+      </a>
+    </div>
+
+    <!-- Trust Badges Strip -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-8 pt-8 border-t border-white/10 w-full max-w-4xl text-left">
+      <div class="flex items-center gap-3 p-3 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
+        <ShieldCheck className="w-6 h-6 text-brand-400 shrink-0" />
+        <div>
+          <h4 class="text-xs font-semibold text-white">100% Verified Profiles</h4>
+          <p class="text-[11px] text-white/70">PMDC & Medical Credentials Checked</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3 p-3 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
+        <CheckCircle2 className="w-6 h-6 text-emerald-400 shrink-0" />
+        <div>
+          <h4 class="text-xs font-semibold text-white">Halal & Islamic Process</h4>
+          <p class="text-[11px] text-white/70">Family-Centric Matrimony</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3 p-3 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
+        <HeartHandshake className="w-6 h-6 text-brand-400 shrink-0" />
+        <div>
+          <h4 class="text-xs font-semibold text-white">Global Reach</h4>
+          <p class="text-[11px] text-white/70">40+ Countries Covered</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>

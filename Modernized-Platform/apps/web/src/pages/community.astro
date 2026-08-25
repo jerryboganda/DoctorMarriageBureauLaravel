@@ -1,0 +1,84 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+---
+
+<DashboardLayout
+  title="Doctor Community Networks — Doctor Marriage Bureau"
+  description="Connect with alumni networks, hospital circles, and regional medical communities."
+>
+  <div class="space-y-8 animate-fadeIn max-w-4xl">
+    <div>
+      <h1 class="text-2xl sm:text-3xl font-black text-navy-800 font-serif">
+        Doctor <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 via-brand-600 to-pink-600">Community Networks</span>
+      </h1>
+      <p class="text-xs sm:text-sm text-navy-500">Join verified peer networks by alumni, hospital, and chapter.</p>
+    </div>
+    <div class="relative">
+      <input id="comm-search" type="text" placeholder="Search communities…" class="w-full pl-4 pr-4 py-3 rounded-2xl text-xs bg-white border border-navy-200 outline-none focus:border-brand-500" />
+    </div>
+    <div id="comm-list" class="space-y-4"></div>
+  </div>
+</DashboardLayout>
+
+<script>
+  import { api, escapeHtml, toast, errorMessage, emptyStateHtml, errorStateHtml, skeletonHtml } from '../lib/dashboard/common';
+
+  const host = document.getElementById('comm-list')!;
+  let rows: any[] = [];
+
+  function render(filter = '') {
+    const q = filter.toLowerCase();
+    const list = rows.filter((c) => !q || `${c.name} ${c.description} ${c.type}`.toLowerCase().includes(q));
+    if (!list.length) {
+      host.innerHTML = emptyStateHtml('No communities found', 'Try another search, or check back as new chapters open.', '🏥');
+      return;
+    }
+    host.innerHTML = list.map((c) => {
+      const joined = c.my_status === 'approved' || c.my_status === 'pending';
+      const label = c.my_status === 'approved' ? 'Leave' : c.my_status === 'pending' ? 'Pending · Cancel' : 'Join Network';
+      return `
+        <div class="p-6 rounded-3xl bg-white border border-brand-100/80 shadow-luxury flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div class="space-y-1">
+            <div class="flex items-center gap-2">
+              <h3 class="text-base font-bold text-navy-800">${escapeHtml(c.name)}</h3>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-navy-100 text-navy-600">${escapeHtml(c.type || 'Network')}</span>
+            </div>
+            <p class="text-xs text-navy-600">${escapeHtml(c.description || '')}</p>
+            <p class="text-[11px] text-navy-400">${Number(c.member_count || 0)} members${c.is_private ? ' · Private' : ''}</p>
+          </div>
+          <button data-id="${c.id}" data-status="${c.my_status || 'none'}" class="px-5 py-2.5 rounded-full text-xs font-bold ${joined ? 'bg-navy-100 text-navy-700' : 'bg-gradient-to-r from-brand-500 via-brand-600 to-pink-600 text-white shadow-lg shadow-brand-500/30'}">${label}</button>
+        </div>`;
+    }).join('');
+    host.querySelectorAll<HTMLButtonElement>('button[data-id]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        const status = btn.dataset.status;
+        btn.disabled = true;
+        try {
+          if (status === 'none') await api.post(`/dashboard/communities/${id}/join`);
+          else await api.post(`/dashboard/communities/${id}/leave`);
+          toast(status === 'none' ? 'Join request sent.' : 'You left this community.', 'success');
+          await load();
+        } catch (err) {
+          btn.disabled = false;
+          toast(errorMessage(err), 'error');
+        }
+      });
+    });
+  }
+
+  async function load() {
+    host.innerHTML = skeletonHtml(3, 'h-28');
+    try {
+      const res = await api.get('/dashboard/communities');
+      rows = res.data?.data ?? [];
+      render((document.getElementById('comm-search') as HTMLInputElement).value);
+    } catch (err) {
+      host.innerHTML = errorStateHtml(errorMessage(err));
+      host.querySelector('[data-dmb-retry]')?.addEventListener('click', load);
+    }
+  }
+
+  document.getElementById('comm-search')!.addEventListener('input', (ev) => render((ev.target as HTMLInputElement).value));
+  load();
+</script>

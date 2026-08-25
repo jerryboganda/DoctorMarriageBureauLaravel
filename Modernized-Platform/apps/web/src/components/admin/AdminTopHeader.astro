@@ -1,0 +1,148 @@
+---
+import { 
+  Menu, 
+  Search, 
+  Bell, 
+  ShieldCheck, 
+  Sparkles, 
+  ArrowLeftRight, 
+  ExternalLink,
+  PlusCircle,
+  HelpCircle,
+  LogOut
+} from 'lucide-react';
+---
+
+<header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/90 shadow-sm h-16 sm:h-20 transition-all">
+  <div class="px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between gap-4">
+    
+    <!-- Left: Mobile Toggle & Page Breadcrumb Indicator -->
+    <div class="flex items-center gap-3">
+      <button 
+        id="admin-mobile-toggle" 
+        class="lg:hidden p-2 rounded-xl text-navy-800 hover:bg-slate-100 transition-colors"
+        aria-label="Toggle Navigation"
+      >
+        <Menu className="w-5 h-5" />
+      </button>
+
+      <div class="hidden sm:flex items-center gap-2 text-xs font-semibold text-slate-500">
+        <span class="text-navy-900 font-bold">Admin Console</span>
+        <span>/</span>
+        <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[11px] font-bold">
+          Live Portal
+        </span>
+      </div>
+    </div>
+
+    <!-- Center: Global Admin Search -->
+    <div class="flex-1 max-w-lg mx-2 sm:mx-6">
+      <div class="relative w-full">
+        <input 
+          type="text" 
+          id="admin-global-search"
+          placeholder="Search doctors by name, PMDC no, email, specialty, or phone..." 
+          class="w-full pl-9 pr-4 py-2 sm:py-2.5 rounded-xl text-xs bg-slate-100/90 border border-slate-200 focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 text-slate-900 placeholder:text-slate-400 outline-none transition-all"
+        />
+        <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+      </div>
+    </div>
+
+    <!-- Right: Quick Actions & Profile -->
+    <div class="flex items-center gap-2 sm:gap-3">
+      
+      <!-- Review Verifications Shortcut -->
+      <a 
+        href="/admin/verifications/" 
+        class="hidden md:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-brand-500/10 text-brand-700 hover:bg-brand-500/20 border border-brand-500/20 transition-colors"
+      >
+        <ShieldCheck className="w-4 h-4 text-brand-600" />
+        <span>Verify PMDC</span>
+      </a>
+
+      <!-- Switch to Member Portal -->
+      <a 
+        href="/dashboard/" 
+        target="_blank"
+        rel="noopener noreferrer"
+        class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-navy-900 text-white hover:bg-navy-800 transition-colors shadow-sm"
+        title="Open Doctor Dashboard in new tab"
+      >
+        <span class="hidden sm:inline">Member View</span>
+        <ExternalLink className="w-3.5 h-3.5" />
+      </a>
+
+      <!-- Notifications Bell -->
+      <a 
+        href="/admin/tickets/" 
+        class="relative p-2 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-navy-900 transition-colors"
+        title="View Alerts & Reports"
+      >
+        <Bell className="w-5 h-5" />
+        <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white animate-ping"></span>
+        <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white"></span>
+      </a>
+
+      <!-- Admin Avatar Dropdown -->
+      <div class="relative flex items-center pl-2 border-l border-slate-200">
+        <div class="flex items-center gap-2.5">
+          <img 
+            id="admin-avatar"
+            src="" 
+            alt="Admin" 
+            class="w-9 h-9 rounded-xl object-cover ring-2 ring-brand-500/30 bg-slate-200"
+          />
+          <div class="hidden xl:block text-left">
+            <p id="admin-display-name" class="text-xs font-bold text-navy-900 leading-tight">Loading…</p>
+            <p class="text-[10px] text-slate-500 font-medium">Super Admin</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</header>
+
+<script>
+  function setupAdminSearch() {
+    const input = document.getElementById('admin-global-search') as HTMLInputElement | null;
+    if (!input) return;
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const query = input.value.trim();
+        if (query) {
+          window.location.href = `/admin/doctors/?search=${encodeURIComponent(query)}`;
+        }
+      }
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', setupAdminSearch);
+  document.addEventListener('astro:page-load', setupAdminSearch);
+
+  // Populate the admin identity from the live authenticated session.
+  (async () => {
+    const token = localStorage.getItem('auth_token');
+    if (!token) return;
+    try {
+      const res = await fetch('/api/v1/auth/me', { headers: { Authorization: 'Bearer ' + token } });
+      if (!res.ok) return;
+      const env = await res.json();
+      const u = env?.data?.user ?? env?.data ?? null;
+      if (!u) return;
+      const name =
+        u.name ||
+        [u.first_name, u.last_name].filter(Boolean).join(' ') ||
+        u.email ||
+        'Admin';
+      const avatar = u.avatar || u.photo || '';
+      const nameEl = document.getElementById('admin-display-name');
+      const avatarEl = document.getElementById('admin-avatar') as HTMLImageElement | null;
+      if (nameEl) nameEl.textContent = name;
+      if (avatarEl && avatar) avatarEl.src = avatar;
+    } catch (e) {
+      /* ignore */
+    }
+  })();
+</script>

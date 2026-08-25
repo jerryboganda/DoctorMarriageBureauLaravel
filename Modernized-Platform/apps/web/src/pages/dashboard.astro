@@ -1,0 +1,537 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+import { 
+  ShieldCheck, 
+  Sparkles, 
+  Eye, 
+  HeartHandshake, 
+  MessageSquare, 
+  Send, 
+  ArrowRight
+} from 'lucide-react';
+---
+
+<DashboardLayout 
+  title="Doctor Portal Overview — Doctor Marriage Bureau"
+  description="Manage doctor proposals, profile quality score, and discover verified medical matches."
+>
+  <div class="space-y-8 animate-fadeIn">
+    
+    <!-- Hero Welcome Card -->
+    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-navy-950 via-navy-900 to-brand-950 p-6 sm:p-8 text-white shadow-luxury border border-brand-500/20">
+      <div class="absolute -right-12 -top-12 w-64 h-64 bg-brand-500/20 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute right-10 bottom-0 opacity-10 hidden sm:block">
+        <Sparkles className="w-48 h-48 text-brand-300" />
+      </div>
+
+      <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        <div class="space-y-3">
+          <div id="hero-verified-badge" class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-semibold">
+            <ShieldCheck className="w-4 h-4" />
+            <span>PMDC / GMC Verified Doctor Account</span>
+          </div>
+
+          <h1 class="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white font-serif">
+            Welcome back, <span id="hero-name" class="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-brand-300 to-pink-200">Doctor</span>
+          </h1>
+
+          <p id="hero-activity-line" class="text-xs sm:text-sm text-navy-200 max-w-xl leading-relaxed">
+            Loading your latest proposal and message activity…
+          </p>
+
+          <p class="pt-1">
+            <span class="font-arabic text-lg sm:text-xl text-brand-200/90">&laquo; النِّكَاحُ نِصْفُ الْإِيمَانِ &raquo;</span>
+            <span class="text-[10px] text-navy-300 ml-2 align-middle">Marriage is half of faith &mdash; Hadith</span>
+          </p>
+        </div>
+
+        <!-- Quality Score Progress Box -->
+        <div class="w-full md:w-auto md:min-w-[290px] lg:min-w-[320px] shrink-0 p-4 sm:p-5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 space-y-3">
+          <div class="flex items-center justify-between text-xs gap-3">
+            <span class="font-bold text-navy-100">Profile Quality Score</span>
+            <span id="hero-completion-label" class="font-bold text-brand-300 shrink-0">—</span>
+          </div>
+
+          <!-- Progress Bar -->
+          <div class="w-full h-2.5 bg-navy-800/80 rounded-full overflow-hidden p-0.5">
+            <div id="hero-completion-bar" class="h-full bg-gradient-to-r from-brand-500 via-brand-600 to-pink-600 rounded-full transition-all duration-1000" style="width: 0%"></div>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 pt-1">
+            <span id="hero-completion-hint" class="text-[11px] text-navy-300 leading-snug flex-1 min-w-[140px]">
+              Complete your profile to rank higher
+            </span>
+            <a 
+              href="/profile/edit/" 
+              class="text-[11px] font-bold text-brand-300 hover:text-white underline underline-offset-2 transition-colors whitespace-nowrap shrink-0 ml-auto"
+            >
+              Complete Now
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Stats Ribbon (4 Cards) -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      
+      <!-- Stat 1: Proposals Remaining -->
+      <div class="p-5 rounded-2xl bg-white border border-brand-100/80 shadow-luxury hover:shadow-luxury-hover transition-all space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-navy-500">Proposal Quota</span>
+          <div class="p-2 rounded-xl bg-brand-50 text-brand-600">
+            <Send className="w-4 h-4" />
+          </div>
+        </div>
+        <div class="flex items-baseline gap-2">
+          <span id="stat-quota" class="text-2xl sm:text-3xl font-bold text-navy-800">—</span>
+          <span id="stat-quota-tier" class="text-xs font-bold text-emerald-600"></span>
+        </div>
+        <p class="text-[11px] text-navy-400">Interests remaining in plan</p>
+      </div>
+
+      <!-- Stat 2: Profile Views -->
+      <div class="p-5 rounded-2xl bg-white border border-brand-100/80 shadow-luxury hover:shadow-luxury-hover transition-all space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-navy-500">Profile Views</span>
+          <div class="p-2 rounded-xl bg-navy-100 text-navy-600">
+            <Eye className="w-4 h-4" />
+          </div>
+        </div>
+        <div class="flex items-baseline gap-2">
+          <span id="stat-views" class="text-2xl sm:text-3xl font-bold text-navy-800">—</span>
+        </div>
+        <p class="text-[11px] text-navy-400">Viewed by verified doctors</p>
+      </div>
+
+      <!-- Stat 3: Mutual Matches -->
+      <div class="p-5 rounded-2xl bg-white border border-brand-100/80 shadow-luxury hover:shadow-luxury-hover transition-all space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-navy-500">Mutual Matches</span>
+          <div class="p-2 rounded-xl bg-brand-100 text-brand-700">
+            <HeartHandshake className="w-4 h-4" />
+          </div>
+        </div>
+        <div class="flex items-baseline gap-2">
+          <span id="stat-matches" class="text-2xl sm:text-3xl font-bold text-navy-800">—</span>
+          <span class="text-xs font-bold text-brand-600">Accepted</span>
+        </div>
+        <p class="text-[11px] text-navy-400">Compatible criteria</p>
+      </div>
+
+      <!-- Stat 4: Active Messages -->
+      <div class="p-5 rounded-2xl bg-white border border-brand-100/80 shadow-luxury hover:shadow-luxury-hover transition-all space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-navy-500">Active Chats</span>
+          <div class="p-2 rounded-xl bg-navy-100 text-navy-600">
+            <MessageSquare className="w-4 h-4" />
+          </div>
+        </div>
+        <div class="flex items-baseline gap-2">
+          <span id="stat-chats" class="text-2xl sm:text-3xl font-bold text-navy-800">—</span>
+          <span id="stat-chats-new" class="text-xs font-bold text-brand-600"></span>
+        </div>
+        <p class="text-[11px] text-navy-400">Direct conversations</p>
+      </div>
+
+    </div>
+
+    <!-- Active Proposal Activity Tracker -->
+    <div class="rounded-3xl bg-white border border-brand-100/80 p-6 sm:p-7 shadow-luxury space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-lg sm:text-xl font-bold text-navy-800 font-serif">Received Proposal Requests</h2>
+          <p class="text-xs text-navy-500">Medical doctors who have sent formal marriage proposals to your profile</p>
+        </div>
+        <a 
+          href="/proposals/" 
+          class="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1 transition-colors"
+        >
+          <span id="proposals-view-all">View All</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </a>
+      </div>
+
+      <div id="dash-proposals" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+    </div>
+
+    <!-- Recommended Matches Feed -->
+    <div class="space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div>
+          <div class="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-brand-500" />
+            <h2 class="text-lg sm:text-xl font-bold text-navy-800 font-serif">Agent Picks & Recommended Matches</h2>
+          </div>
+          <p class="text-xs text-navy-500">Hand-curated candidate profiles calculated via our 6-factor compatibility engine</p>
+        </div>
+        <a 
+          href="/discover/" 
+          class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold text-brand-600 bg-brand-50 hover:bg-brand-100 transition-colors"
+        >
+          <span>Explore All Doctors</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </a>
+      </div>
+
+      <!-- Doctor Cards Grid -->
+      <div id="dash-suggestions" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+    </div>
+
+    <!-- Courtship Journey Progression Teaser (hidden until an active journey exists) -->
+    <div id="dash-progression" class="hidden rounded-3xl bg-gradient-to-r from-navy-900 to-navy-950 p-6 sm:p-8 text-white shadow-xl space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-brand-400">Active Courtship Pipeline</span>
+          <h3 id="progression-title" class="text-lg sm:text-xl font-bold text-white mt-0.5"></h3>
+        </div>
+        <a 
+          id="progression-link"
+          href="/progression/"
+          class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-gradient-to-r from-brand-500 via-brand-600 to-pink-600 hover:from-brand-600 hover:to-pink-700 text-white text-xs font-bold shadow-lg shadow-brand-500/30 hover:shadow-brand-500/50 transition-all transform hover:-translate-y-0.5 active:scale-[0.98]"
+        >
+          <span>Open Milestone Tracker</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </a>
+      </div>
+
+      <!-- 5-Stage Stepper Bar -->
+      <div id="progression-stepper" class="grid grid-cols-5 gap-2 sm:gap-4 pt-2"></div>
+    </div>
+
+  </div>
+</DashboardLayout>
+
+<script>
+  import {
+    api,
+    getMe,
+    avatarFor,
+    escapeHtml,
+    timeAgo,
+    toast,
+    errorMessage,
+    emptyStateHtml,
+    errorStateHtml,
+    skeletonHtml,
+  } from '../lib/dashboard/common';
+
+  type Overview = {
+    user: {
+      id: number;
+      name: string;
+      first_name: string;
+      photo: string;
+      code: string;
+      membership: number;
+      is_verified: boolean;
+      profile_completion: number;
+      gender: string;
+    };
+    stats: {
+      profile_views: number;
+      pending_interests_received: number;
+      interests_sent: number;
+      accepted_matches: number;
+      shortlisted_me: number;
+      my_shortlists: number;
+      unread_messages: number;
+      unread_notifications: number;
+      active_chats: number;
+    };
+    subscription: {
+      package_name: string;
+      is_paid: boolean;
+      remaining: Record<string, number>;
+    };
+    suggestions: Array<{
+      user_id: number;
+      first_name: string;
+      last_name: string;
+      age: number;
+      gender: string;
+      degree: string;
+      speciality: string;
+      city_name: string;
+      country_name: string;
+      caste: string;
+      religion: string;
+      height: number;
+      profile_photo_url: string;
+      is_verified: boolean;
+      is_photo_blurred?: boolean;
+      compatibility_score?: number;
+    }>;
+  };
+
+  const $ = (id: string) => document.getElementById(id)!;
+
+  function setText(id: string, text: string) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+  }
+
+  async function loadOverview() {
+    try {
+      const res = await api.get('/dashboard/overview');
+      const data = res.data?.data as Overview;
+      const { user, stats, subscription } = data;
+
+      setText('hero-name', user.name || user.first_name || 'Doctor');
+      const proposalsWord = stats.pending_interests_received === 1 ? 'new proposal' : 'new proposals';
+      const msgWord = stats.unread_messages === 1 ? 'unread message' : 'unread messages';
+      $('hero-activity-line').innerHTML =
+        `You have <strong class="text-white font-semibold">${stats.pending_interests_received} ${proposalsWord}</strong> and ` +
+        `<strong class="text-white font-semibold">${stats.unread_messages} ${msgWord}</strong> from verified medical doctors.`;
+      if (!user.is_verified) $('hero-verified-badge').classList.add('hidden');
+
+      const pct = Math.max(0, Math.min(100, Number(user.profile_completion || 0)));
+      setText('hero-completion-label', `${pct}% Complete`);
+      ($('hero-completion-bar') as HTMLElement).style.width = `${pct}%`;
+      setText(
+        'hero-completion-hint',
+        pct >= 100 ? 'Outstanding! Your profile is complete.' : 'Complete your profile to rank higher',
+      );
+
+      const remaining = Number(subscription?.remaining?.interests ?? 0);
+      setText('stat-quota', String(remaining));
+      setText('stat-quota-tier', subscription?.package_name || '');
+      setText('stat-views', String(stats.profile_views));
+      setText('stat-matches', String(stats.accepted_matches));
+      setText('stat-chats', String(stats.active_chats));
+      setText('stat-chats-new', stats.unread_messages > 0 ? `${stats.unread_messages} New` : '');
+
+      renderSuggestions(data.suggestions || []);
+    } catch (err) {
+      $('dash-suggestions').innerHTML = errorStateHtml(errorMessage(err));
+      $('dash-suggestions')
+        .querySelector('[data-dmb-retry]')
+        ?.addEventListener('click', () => {
+          $('dash-suggestions').innerHTML = skeletonHtml(2, 'h-72');
+          loadOverview();
+        });
+    }
+  }
+
+  function renderSuggestions(list: Overview['suggestions']) {
+    const host = $('dash-suggestions');
+    if (!list.length) {
+      host.innerHTML = emptyStateHtml(
+        'No recommendations yet',
+        'Complete your partner preferences so our compatibility engine can curate matches for you.',
+        '🔍',
+      );
+      return;
+    }
+
+    host.innerHTML = list
+      .map((doc) => {
+        const name = `Dr. ${escapeHtml(doc.first_name)} ${escapeHtml(doc.last_name || '')}`.trim();
+        const title = [doc.degree, doc.speciality].filter(Boolean).map(escapeHtml).join(', ') || 'Medical Professional';
+        const city = escapeHtml(doc.city_name || doc.country_name || 'Pakistan');
+        const score = doc.compatibility_score != null ? Math.round(Number(doc.compatibility_score)) : null;
+        const photo = avatarFor(doc.profile_photo_url, doc.gender);
+        const heightFt = doc.height ? `${Math.floor(doc.height / 12)}'${doc.height % 12}"` : '';
+        return `
+        <div class="group rounded-3xl bg-white border border-brand-100/80 shadow-luxury hover:shadow-luxury-hover transition-all duration-300 overflow-hidden flex flex-col justify-between">
+          <div>
+            <div class="aspect-[4/3] w-full overflow-hidden bg-navy-100 relative">
+              <img src="${photo}" alt="${name}" loading="lazy" onerror="this.onerror=null;this.src='${escapeHtml(avatarFor('', doc.gender))}';" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500 ${doc.is_photo_blurred ? 'blur-md' : ''}" />
+              ${
+                score != null
+                  ? `<div class="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-bold glass-card text-brand-600 shadow-md flex items-center gap-1">✨ ${score}% Match</div>`
+                  : ''
+              }
+              ${
+                doc.is_verified
+                  ? `<div class="absolute top-3 right-3 p-1.5 rounded-full bg-emerald-500 text-white shadow-md" title="PMDC Verified"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/></svg></div>`
+                  : ''
+              }
+            </div>
+            <div class="p-5 space-y-3">
+              <div>
+                <h3 class="text-base font-bold text-navy-800 group-hover:text-brand-600 transition-colors">${name}</h3>
+                <p class="text-xs font-semibold text-brand-600 line-clamp-1">${title}</p>
+              </div>
+              <div class="grid grid-cols-2 gap-2 py-2 border-y border-navy-100 text-xs text-navy-700">
+                <div class="flex items-center gap-1.5">📅 <span>${doc.age || '—'} yrs${heightFt ? ` • ${heightFt}` : ''}</span></div>
+                <div class="flex items-center gap-1.5">📍 <span class="truncate">${city}</span></div>
+              </div>
+              ${
+                doc.caste || doc.religion
+                  ? `<div class="flex flex-wrap gap-1.5 pt-1">${[doc.caste, doc.religion]
+                      .filter(Boolean)
+                      .map((t) => `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-brand-50 text-brand-700 border border-brand-100">${escapeHtml(t)}</span>`)
+                      .join('')}</div>`
+                  : ''
+              }
+            </div>
+          </div>
+          <div class="p-5 pt-0 flex items-center gap-2">
+            <button data-express="${doc.user_id}"
+              class="flex-1 py-2.5 px-4 rounded-full bg-gradient-to-r from-brand-500 via-brand-600 to-pink-600 hover:from-brand-600 hover:to-pink-700 text-white text-xs font-bold shadow-lg shadow-brand-500/30 hover:shadow-brand-500/50 transition-all transform hover:-translate-y-0.5 active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50 disabled:transform-none">
+              💌 <span>Send Proposal</span>
+            </button>
+            <a href="/discover/?view=${doc.user_id}"
+              class="py-2.5 px-3 rounded-xl bg-navy-50 hover:bg-navy-100 text-navy-700 border border-navy-200 text-xs font-bold transition-colors" title="View Full Biodata">
+              Biodata
+            </a>
+          </div>
+        </div>`;
+      })
+      .join('');
+
+    host.querySelectorAll<HTMLButtonElement>('button[data-express]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        try {
+          await api.post('/interests/express', { user_id: Number(btn.dataset.express) });
+          btn.innerHTML = '✓ <span>Proposal Sent</span>';
+          toast('Proposal sent! The doctor will be notified.', 'success');
+        } catch (err) {
+          btn.disabled = false;
+          toast(errorMessage(err, 'Could not send proposal.'), 'error');
+        }
+      });
+    });
+  }
+
+  async function loadProposals() {
+    const host = $('dash-proposals');
+    try {
+      const res = await api.get('/interests/requests', { params: { type: 'received' } });
+      const items = ((res.data?.data ?? []) as any[]).filter((i) => String(i.status) === 'pending');
+      setText('proposals-view-all', items.length ? `View All (${items.length})` : 'View All');
+
+      if (!items.length) {
+        host.innerHTML = emptyStateHtml(
+          'No pending proposals',
+          'When a verified doctor sends you a proposal, it will appear here for your review.',
+        );
+        return;
+      }
+
+      host.innerHTML = items
+        .slice(0, 4)
+        .map((p) => {
+          const other = p.candidate || p.sender || p.other_user || {};
+          const name = escapeHtml(
+            other.first_name
+              ? `Dr. ${other.first_name} ${other.last_name || ''}`.trim()
+              : p.sender_name || 'Doctor',
+          );
+          const degree = escapeHtml(other.degree || other.speciality || 'Verified Medical Professional');
+          const city = escapeHtml(other.city_name || other.city || '');
+          const age = other.age || '';
+          const photo = avatarFor(other.profile_photo_url || other.photo || other.avatar, other.gender);
+          return `
+          <div class="p-5 rounded-2xl bg-navy-50/70 border border-navy-200/80 hover:border-brand-300 transition-all flex flex-col justify-between gap-4">
+            <div class="flex items-start gap-3.5">
+              <div class="w-14 h-14 rounded-2xl overflow-hidden bg-navy-100 border border-brand-200 shadow-sm shrink-0">
+                <img src="${photo}" alt="${name}" loading="lazy" class="w-full h-full object-cover" />
+              </div>
+              <div class="space-y-1 min-w-0">
+                <h4 class="text-sm font-bold text-navy-800 truncate">${name}</h4>
+                <p class="text-xs font-medium text-brand-600 line-clamp-1">${degree}</p>
+                <div class="flex items-center gap-2 text-[11px] text-navy-400">
+                  ${age ? `<span>${age} yrs</span><span>•</span>` : ''}
+                  <span>${city || timeAgo(p.created_at)}</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 pt-2 border-t border-navy-200/60">
+              <button data-accept="${p.id}"
+                class="flex-1 py-2 px-3 rounded-full bg-gradient-to-r from-brand-500 via-brand-600 to-pink-600 hover:from-brand-600 hover:to-pink-700 text-white text-xs font-bold shadow-lg shadow-brand-500/30 hover:shadow-brand-500/50 transition-all transform hover:-translate-y-0.5 active:scale-[0.98] flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:transform-none">
+                ✓ <span>Accept & Chat</span>
+              </button>
+              <button data-reject="${p.id}"
+                class="py-2 px-3 rounded-xl bg-white hover:bg-navy-100 text-navy-700 border border-navy-300 text-xs font-semibold transition-all flex items-center justify-center gap-1 disabled:opacity-50">
+                ✕ <span>Decline</span>
+              </button>
+            </div>
+          </div>`;
+        })
+        .join('');
+
+      host.querySelectorAll<HTMLButtonElement>('button[data-accept]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          btn.disabled = true;
+          try {
+            const res = await api.post(`/interests/${btn.dataset.accept}/accept`);
+            toast('Proposal accepted! Opening your chat…', 'success');
+            const threadID = res.data?.data?.chat_thread_id;
+            setTimeout(() => {
+              window.location.href = threadID ? `/messages/?thread=${threadID}` : '/messages/';
+            }, 900);
+          } catch (err) {
+            btn.disabled = false;
+            toast(errorMessage(err, 'Could not accept proposal.'), 'error');
+          }
+        });
+      });
+      host.querySelectorAll<HTMLButtonElement>('button[data-reject]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          btn.disabled = true;
+          try {
+            await api.post(`/interests/${btn.dataset.reject}/reject`);
+            toast('Proposal declined respectfully.', 'info');
+            loadProposals();
+          } catch (err) {
+            btn.disabled = false;
+            toast(errorMessage(err, 'Could not decline proposal.'), 'error');
+          }
+        });
+      });
+    } catch (err) {
+      host.innerHTML = errorStateHtml(errorMessage(err));
+      host.querySelector('[data-dmb-retry]')?.addEventListener('click', () => {
+        host.innerHTML = skeletonHtml(2, 'h-36');
+        loadProposals();
+      });
+    }
+  }
+
+  async function loadProgression() {
+    try {
+      const res = await api.get('/progression/');
+      const rows = (res.data?.data ?? []) as any[];
+      const active = rows.find((r) => String(r.status) === 'active') || rows[0];
+      if (!active) return;
+
+      const stagesRes = await api.get('/progression/stages');
+      const stages = (stagesRes.data?.data ?? []) as any[];
+      const currentOrder =
+        Number(stages.find((s) => Number(s.id) === Number(active.current_stage_id))?.order_index) ||
+        Number(active.current_stage_id) ||
+        1;
+
+      const partnerName = active.partner_name
+        ? `Dr. ${active.partner_name}`
+        : 'Your Match';
+      const stageName = active.stage_name || '';
+
+      setText('progression-title', `${partnerName} — Stage ${currentOrder} of ${stages.length || 5}${stageName ? `: ${stageName}` : ''}`);
+      ($('progression-link') as HTMLAnchorElement).href = `/progression/journey/?id=${active.id}`;
+
+      $('progression-stepper').innerHTML = (stages.length ? stages : Array.from({ length: 5 }, (_, i) => ({ name: `Stage ${i + 1}`, order_index: i + 1 })))
+        .map((s: any, idx: number) => {
+          const order = Number(s.order_index ?? idx + 1);
+          const cls = order < currentOrder ? 'bg-emerald-500' : order === currentOrder ? 'bg-brand-500 animate-pulse' : 'bg-white/20';
+          const txt = order < currentOrder ? 'text-emerald-300' : order === currentOrder ? 'text-brand-300 font-bold' : 'text-white/50';
+          return `<div class="space-y-1.5 text-center"><div class="h-2 rounded-full ${cls}"></div><span class="text-[10px] sm:text-xs font-semibold ${txt}">${idx + 1}. ${escapeHtml(s.name)}</span></div>`;
+        })
+        .join('');
+      $('dash-progression').classList.remove('hidden');
+    } catch {
+      /* teaser stays hidden */
+    }
+  }
+
+  // Initial paint
+  $('dash-proposals').innerHTML = skeletonHtml(2, 'h-36');
+  $('dash-suggestions').innerHTML = skeletonHtml(2, 'h-72');
+  getMe();
+  loadOverview();
+  loadProposals();
+  loadProgression();
+</script>

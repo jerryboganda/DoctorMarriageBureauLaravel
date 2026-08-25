@@ -1,0 +1,504 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { 
+  Users, 
+  ShieldCheck, 
+  CreditCard, 
+  HeartHandshake, 
+  AlertTriangle, 
+  TrendingUp, 
+  ArrowUpRight, 
+  Clock, 
+  CheckCircle2, 
+  XCircle, 
+  Eye, 
+  Search,
+  Sparkles,
+  Download,
+  Filter,
+  Megaphone,
+  UserCheck
+} from 'lucide-react';
+---
+
+<AdminLayout title="Executive Overview — DMB Admin Console" activePath="/admin/">
+  
+  <!-- Page Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl sm:text-3xl font-black text-navy-900 tracking-tight">Executive Dashboard</h1>
+      <p class="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
+        Real-time platform telemetry, doctor verifications, payments, and courtship matchmaking governance.
+      </p>
+    </div>
+
+    <!-- Quick Buttons -->
+    <div class="flex items-center gap-2">
+      <a 
+        href="/admin/verifications/" 
+        class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold bg-brand-500 text-white hover:bg-brand-600 shadow-md shadow-brand-500/20 transition-all"
+      >
+        <ShieldCheck className="w-4 h-4" />
+        <span>Review Verifications</span>
+      </a>
+      <a 
+        href="/admin/doctors/" 
+        class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold bg-white text-navy-800 hover:bg-slate-50 border border-slate-200 transition-all shadow-sm"
+      >
+        <Users className="w-4 h-4" />
+        <span>Doctor Directory</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Key Metrics Row -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+    
+    <!-- Total Doctors -->
+    <div class="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm relative overflow-hidden group">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Doctors</span>
+        <div class="p-2.5 rounded-xl bg-blue-50 text-blue-600 group-hover:scale-110 transition-transform">
+          <Users className="w-5 h-5" />
+        </div>
+      </div>
+      <div class="mt-3">
+        <h3 id="stat-total-doctors" class="text-2xl sm:text-3xl font-black text-navy-900 tracking-tight">--</h3>
+        <div class="flex items-center gap-2 mt-1">
+          <span class="inline-flex items-center text-[11px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
+            +18% this mo
+          </span>
+          <span class="text-xs text-slate-500">100% Medical Graduates</span>
+        </div>
+      </div>
+      <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-600"></div>
+    </div>
+
+    <!-- PMDC Verified Doctors -->
+    <div class="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm relative overflow-hidden group">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Verified PMDC</span>
+        <div class="p-2.5 rounded-xl bg-emerald-50 text-emerald-600 group-hover:scale-110 transition-transform">
+          <ShieldCheck className="w-5 h-5" />
+        </div>
+      </div>
+      <div class="mt-3">
+        <h3 id="stat-verified-doctors" class="text-2xl sm:text-3xl font-black text-navy-900 tracking-tight">--</h3>
+        <div class="flex items-center gap-2 mt-1">
+          <span id="stat-verified-pct" class="text-xs font-bold text-emerald-600">--% Verified</span>
+          <span class="text-xs text-slate-500">License badge active</span>
+        </div>
+      </div>
+      <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-teal-600"></div>
+    </div>
+
+    <!-- Total Revenue -->
+    <div class="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm relative overflow-hidden group">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Revenue</span>
+        <div class="p-2.5 rounded-xl bg-brand-50 text-brand-600 group-hover:scale-110 transition-transform">
+          <CreditCard className="w-5 h-5" />
+        </div>
+      </div>
+      <div class="mt-3">
+        <h3 id="stat-revenue" class="text-2xl sm:text-3xl font-black text-navy-900 tracking-tight">Rs --</h3>
+        <div class="flex items-center gap-2 mt-1">
+          <span class="text-xs font-bold text-brand-600">Packages & VIP</span>
+          <span class="text-xs text-slate-500">Bank / EasyPaisa</span>
+        </div>
+      </div>
+      <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-brand-500 to-rose-500"></div>
+    </div>
+
+    <!-- Pending Action Items -->
+    <div class="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm relative overflow-hidden group">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Pending Reviews</span>
+        <div class="p-2.5 rounded-xl bg-amber-50 text-amber-600 group-hover:scale-110 transition-transform">
+          <Clock className="w-5 h-5" />
+        </div>
+      </div>
+      <div class="mt-3">
+        <h3 id="stat-pending-reviews" class="text-2xl sm:text-3xl font-black text-navy-900 tracking-tight">--</h3>
+        <div class="flex items-center gap-2 mt-1">
+          <span class="text-xs font-bold text-amber-600">Verifications & Payments</span>
+          <span class="text-xs text-slate-500">Require approval</span>
+        </div>
+      </div>
+      <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 to-orange-500"></div>
+    </div>
+
+  </div>
+
+  <!-- Main 2-Column Operational Grid -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    
+    <!-- Left 2 Cols: Real-time PMDC Verification Queue -->
+    <div class="lg:col-span-2 space-y-6">
+      
+      <!-- Verification Queue Card -->
+      <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
+        <div class="p-5 border-b border-slate-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="flex items-center gap-2.5">
+            <div class="p-2 rounded-xl bg-brand-50 text-brand-600">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 class="text-base font-bold text-navy-900">PMDC / PMC License Verification Queue</h3>
+              <p class="text-xs text-slate-500">Review doctors awaiting official PMDC license badge validation.</p>
+            </div>
+          </div>
+          
+          <a 
+            href="/admin/verifications/" 
+            class="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1 group"
+          >
+            <span>View All Verifications</span>
+            <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+          </a>
+        </div>
+
+        <!-- Verification Table -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 border-b border-slate-200/80 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
+              <tr>
+                <th class="py-3.5 px-4">Doctor Profile</th>
+                <th class="py-3.5 px-4">Specialty & City</th>
+                <th class="py-3.5 px-4">PMDC Number</th>
+                <th class="py-3.5 px-4">Status</th>
+                <th class="py-3.5 px-4 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="home-verification-tbody" class="divide-y divide-slate-100 font-medium">
+              <!-- Rendered dynamically -->
+              <tr>
+                <td colspan="5" class="py-8 text-center text-slate-400">Loading verifications...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Recent Payments & Upgrades -->
+      <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
+        <div class="p-5 border-b border-slate-200/90 flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="p-2 rounded-xl bg-emerald-50 text-emerald-600">
+              <CreditCard className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 class="text-base font-bold text-navy-900">Recent Transactions & Upgrades</h3>
+              <p class="text-xs text-slate-500">Bank deposits, JazzCash, and Stripe package purchases.</p>
+            </div>
+          </div>
+          <a 
+            href="/admin/payments/" 
+            class="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1 group"
+          >
+            <span>All Payments</span>
+            <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+          </a>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 border-b border-slate-200/80 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
+              <tr>
+                <th class="py-3.5 px-4">Doctor</th>
+                <th class="py-3.5 px-4">Package</th>
+                <th class="py-3.5 px-4">Amount</th>
+                <th class="py-3.5 px-4">Method / Trx</th>
+                <th class="py-3.5 px-4">Status</th>
+                <th class="py-3.5 px-4 text-right">Review</th>
+              </tr>
+            </thead>
+            <tbody id="home-payments-tbody" class="divide-y divide-slate-100 font-medium">
+              <!-- Rendered dynamically -->
+              <tr>
+                <td colspan="6" class="py-8 text-center text-slate-400">Loading transactions...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right 1 Col: Platform Health & Quick Tools -->
+    <div class="space-y-6">
+      
+      <!-- Quick Actions Widget -->
+      <div class="p-5 rounded-2xl bg-gradient-to-br from-navy-900 to-navy-950 text-white shadow-xl relative overflow-hidden">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-brand-400" />
+            Administrative Tools
+          </h3>
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-brand-500/20 text-brand-300 border border-brand-500/30">
+            Instant Actions
+          </span>
+        </div>
+
+        <div class="space-y-2.5">
+          <a 
+            href="/admin/doctors/" 
+            class="w-full flex items-center justify-between p-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-xs font-bold text-white transition-all group"
+          >
+            <div class="flex items-center gap-2.5">
+              <UserCheck className="w-4 h-4 text-brand-400" />
+              <span>Browse All Registered Doctors</span>
+            </div>
+            <ArrowUpRight className="w-4 h-4 text-white/60 group-hover:text-white transition-colors" />
+          </a>
+
+          <a 
+            href="/admin/packages/" 
+            class="w-full flex items-center justify-between p-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-xs font-bold text-white transition-all group"
+          >
+            <div class="flex items-center gap-2.5">
+              <CreditCard className="w-4 h-4 text-emerald-400" />
+              <span>Edit Pricing & Quotas</span>
+            </div>
+            <ArrowUpRight className="w-4 h-4 text-white/60 group-hover:text-white transition-colors" />
+          </a>
+
+          <a 
+            href="/admin/settings/" 
+            class="w-full flex items-center justify-between p-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-xs font-bold text-white transition-all group"
+          >
+            <div class="flex items-center gap-2.5">
+              <Megaphone className="w-4 h-4 text-amber-400" />
+              <span>Broadcast System Notice</span>
+            </div>
+            <ArrowUpRight className="w-4 h-4 text-white/60 group-hover:text-white transition-colors" />
+          </a>
+        </div>
+      </div>
+
+      <!-- Matchmaking Health Stats -->
+      <div class="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-4">
+        <h3 class="text-sm font-bold text-navy-900 flex items-center gap-2">
+          <HeartHandshake className="w-4 h-4 text-rose-500" />
+          Courtship & Matchmaking Health
+        </h3>
+
+        <div class="space-y-3 text-xs">
+          <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100">
+            <span class="font-medium text-slate-600">Active Proposals</span>
+            <span id="stat-active-proposals" class="font-black text-navy-900 text-sm">--</span>
+          </div>
+
+          <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100">
+            <span class="font-medium text-slate-600">Mutual Acceptance Rate</span>
+            <span class="font-black text-emerald-600 text-sm">74.2%</span>
+          </div>
+
+          <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100">
+            <span class="font-medium text-slate-600">Open Reports / Disputes</span>
+            <span id="stat-open-tickets" class="font-black text-rose-600 text-sm">--</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- System Infrastructure Status -->
+      <div class="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-3">
+        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">System Infrastructure</h3>
+        
+        <div class="space-y-2 text-xs">
+          <div class="flex items-center justify-between py-1 border-b border-slate-100">
+            <span class="text-slate-600">Web App Engine</span>
+            <span class="font-bold text-navy-900">Astro 5 (Node 22)</span>
+          </div>
+          <div class="flex items-center justify-between py-1 border-b border-slate-100">
+            <span class="text-slate-600">API Backend</span>
+            <span class="font-bold text-emerald-600">Go 1.23 REST (Port 8080)</span>
+          </div>
+          <div class="flex items-center justify-between py-1 border-b border-slate-100">
+            <span class="text-slate-600">Database Engine</span>
+            <span class="font-bold text-navy-900">MySQL 8.0 Primary</span>
+          </div>
+          <div class="flex items-center justify-between py-1">
+            <span class="text-slate-600">Real-time Echo Socket</span>
+            <span class="font-bold text-emerald-600">Connected</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</AdminLayout>
+
+<script>
+  import { AdminStore } from '../../lib/api/admin';
+  import { showToast } from '../../lib/toast';
+
+  async function initDashboard() {
+    // --- Stats (live) ---
+    try {
+      const stats = await AdminStore.getStats();
+      const totalDocsEl = document.getElementById('stat-total-doctors');
+      if (totalDocsEl) totalDocsEl.textContent = String(stats.totalDoctors);
+      const verifiedDocsEl = document.getElementById('stat-verified-doctors');
+      if (verifiedDocsEl) verifiedDocsEl.textContent = String(stats.verifiedDoctors);
+      const verifiedPctEl = document.getElementById('stat-verified-pct');
+      if (verifiedPctEl) verifiedPctEl.textContent = `${stats.verifiedPercentage}% Verified`;
+      const revenueEl = document.getElementById('stat-revenue');
+      if (revenueEl) revenueEl.textContent = `Rs ${stats.totalRevenuePkr.toLocaleString()}`;
+      const pendingEl = document.getElementById('stat-pending-reviews');
+      if (pendingEl) pendingEl.textContent = String(stats.pendingVerifications + stats.pendingPayments);
+      const activeProposalsEl = document.getElementById('stat-active-proposals');
+      if (activeProposalsEl) activeProposalsEl.textContent = String(stats.activeProposals);
+      const openTicketsEl = document.getElementById('stat-open-tickets');
+      if (openTicketsEl) openTicketsEl.textContent = String(stats.openTickets);
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || 'Failed to load live stats. Please retry.';
+      showToast({ title: 'Failed to load stats', message: msg, type: 'error' });
+      const pendingEl = document.getElementById('stat-pending-reviews');
+      if (pendingEl) pendingEl.textContent = '—';
+    }
+
+    // --- Verifications Queue (live) ---
+    const verifTbody = document.getElementById('home-verification-tbody');
+    if (verifTbody) {
+      verifTbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-slate-400">Loading live verifications from API...</td></tr>';
+      try {
+        const verifsAll = await AdminStore.getVerifications();
+        const verifs = verifsAll.slice(0, 4);
+        if (verifs.length === 0) {
+          verifTbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-slate-500">No live data — no pending PMDC verifications.</td></tr>';
+        } else {
+          verifTbody.innerHTML = verifs.map(v => `
+          <tr class="hover:bg-slate-50/80 transition-colors">
+            <td class="py-3 px-4">
+              <div class="flex items-center gap-3">
+                <img src="${v.avatar}" class="w-8 h-8 rounded-full object-cover border border-slate-200" alt="${v.doctor_name}" />
+                <div>
+                  <a href="/admin/doctors/${v.doctor_id}/" class="font-bold text-navy-900 hover:text-brand-600 transition-colors">
+                    ${v.doctor_name}
+                  </a>
+                  <p class="text-[10px] text-slate-400">${v.document_type}</p>
+                </div>
+              </div>
+            </td>
+            <td class="py-3 px-4 text-slate-600">
+              <p class="font-semibold text-slate-800">${v.speciality}</p>
+              <p class="text-[10px] text-slate-400">${v.city}</p>
+            </td>
+            <td class="py-3 px-4">
+              <span class="px-2 py-0.5 rounded font-mono text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                ${v.pmdc_number}
+              </span>
+            </td>
+            <td class="py-3 px-4">
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                v.status === 'approved' 
+                  ? 'bg-emerald-100 text-emerald-700' 
+                  : v.status === 'pending' 
+                  ? 'bg-amber-100 text-amber-700 animate-pulse' 
+                  : 'bg-rose-100 text-rose-700'
+              }">
+                ${v.status.toUpperCase()}
+              </span>
+            </td>
+            <td class="py-3 px-4 text-right">
+              ${v.status === 'pending' ? `
+                <div class="flex items-center justify-end gap-1.5">
+                  <button 
+                    data-action="quick-approve-verif" 
+                    data-id="${v.id}"
+                    class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
+                  >
+                    Approve
+                  </button>
+                  <a 
+                    href="/admin/verifications/" 
+                    class="p-1 rounded-lg text-slate-400 hover:text-navy-900 hover:bg-slate-100 transition-colors"
+                    title="Inspect documents"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </a>
+                </div>
+              ` : `
+                <span class="text-[10px] text-slate-400">Reviewed</span>
+              `}
+            </td>
+          </tr>
+        `).join('');
+        }
+        // Bind Quick Approve Buttons (re-bound after render)
+        document.querySelectorAll('[data-action="quick-approve-verif"]').forEach((btn) => {
+          btn.addEventListener('click', async (e) => {
+            const id = Number((e.currentTarget as HTMLElement).getAttribute('data-id'));
+            if (!id) return;
+            try {
+              await AdminStore.reviewVerification(id, 'approved');
+              showToast({
+                title: 'PMDC Verification Approved',
+                message: 'Doctor badge has been granted and notification dispatched.',
+                type: 'verification'
+              });
+              await initDashboard();
+            } catch (err: any) {
+              showToast({ title: 'Approval failed', message: err?.response?.data?.message || err?.message || 'Failed to approve verification.', type: 'error' });
+            }
+          });
+        });
+      } catch (err: any) {
+        verifTbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-rose-600">${err?.response?.data?.message || err?.message || 'Failed to load live verifications. Please retry.'}</td></tr>`;
+      }
+    }
+
+    // --- Payments (live) ---
+    const paymentsTbody = document.getElementById('home-payments-tbody');
+    if (paymentsTbody) {
+      paymentsTbody.innerHTML = '<tr><td colspan="6" class="py-8 text-center text-slate-400">Loading live transactions from API...</td></tr>';
+      try {
+        const paymentsAll = await AdminStore.getPayments();
+        const payments = paymentsAll.slice(0, 4);
+        if (payments.length === 0) {
+          paymentsTbody.innerHTML = '<tr><td colspan="6" class="py-8 text-center text-slate-500">No live data — no recent payments.</td></tr>';
+        } else {
+          paymentsTbody.innerHTML = payments.map(p => `
+          <tr class="hover:bg-slate-50/80 transition-colors">
+            <td class="py-3 px-4">
+              <div class="flex items-center gap-2.5">
+                <img src="${p.avatar}" class="w-7 h-7 rounded-full object-cover" alt="" />
+                <span class="font-bold text-navy-900">${p.doctor_name}</span>
+              </div>
+            </td>
+            <td class="py-3 px-4 font-semibold text-slate-700">${p.package_name}</td>
+            <td class="py-3 px-4 font-bold text-navy-900">Rs ${p.amount_pkr.toLocaleString()}</td>
+            <td class="py-3 px-4">
+              <p class="font-medium text-slate-700">${p.payment_method}</p>
+              <p class="text-[10px] text-slate-400 font-mono">${p.transaction_id}</p>
+            </td>
+            <td class="py-3 px-4">
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                p.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+              }">
+                ${p.status.toUpperCase()}
+              </span>
+            </td>
+            <td class="py-3 px-4 text-right">
+              <a 
+                href="/admin/payments/" 
+                class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 hover:bg-brand-50 hover:text-brand-600 text-slate-700 transition-colors"
+              >
+                Review Slip
+              </a>
+            </td>
+          </tr>
+        `).join('');
+        }
+      } catch (err: any) {
+        paymentsTbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-rose-600">${err?.response?.data?.message || err?.message || 'Failed to load live transactions. Please retry.'}</td></tr>`;
+      }
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', initDashboard);
+  document.addEventListener('astro:page-load', initDashboard);
+</script>

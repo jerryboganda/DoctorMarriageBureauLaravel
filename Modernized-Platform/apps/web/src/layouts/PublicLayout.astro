@@ -1,0 +1,14 @@
+---
+import Layout from './Layout.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  canonical?: string;
+}
+---
+
+<Layout {...Astro.props}>
+  <slot />
+</Layout>

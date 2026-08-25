@@ -1,0 +1,30 @@
+[package]
+name = "doctormarriagebureau-compute"
+version = "0.1.0"
+edition = "2021"
+authors = ["Doctor Marriage Bureau Engineering Team <dev@doctormarriagebureau.com.pk>"]
+description = "High-performance compute service for perceptual image hashing, duplicate photo detection, and vectorized match scoring"
+readme = "README.md"
+license = "Proprietary"
+
+[dependencies]
+tokio = { version = "1.38", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+image = { version = "0.23", default-features = false, features = ["png", "jpeg", "webp"] }
+img_hash = "3.2"
+redis = { version = "0.25", features = ["tokio-comp"] }
+anyhow = "1.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+axum = { version = "0.7", features = ["macros"] }
+tower-http = { version = "0.5", features = ["cors", "trace"] }
+base64 = "0.22"
+rayon = "1.10"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

@@ -1,0 +1,204 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+import { Search, Filter } from 'lucide-react';
+---
+
+<DashboardLayout
+  title="Find Verified Doctors — Doctor Marriage Bureau"
+  description="Search and filter Muslim medical doctors across Pakistan and abroad."
+>
+  <div class="space-y-8 animate-fadeIn">
+    <div class="space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-black text-navy-800 font-serif">
+            Discover <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 via-brand-600 to-pink-600">Doctor Proposals</span>
+          </h1>
+          <p id="discover-count" class="text-xs sm:text-sm text-navy-500">Loading verified candidate profiles…</p>
+        </div>
+        <button id="anon-toggle" class="px-4 py-2 rounded-full bg-navy-50 border border-navy-200 text-xs font-bold text-navy-700 hover:bg-navy-100">Anonymous browsing: Off</button>
+      </div>
+
+      <form id="discover-form" class="p-4 sm:p-5 rounded-3xl bg-white border border-brand-100/80 shadow-luxury space-y-4">
+        <div class="flex flex-col sm:flex-row gap-3">
+          <div class="relative flex-1">
+            <input id="q-search" type="text" placeholder="Search by specialty, city, degree…" class="w-full pl-10 pr-4 py-3 rounded-2xl text-xs bg-navy-50 border border-navy-200 focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 text-navy-800 outline-none" />
+            <Search className="w-4 h-4 text-navy-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          </div>
+          <button type="submit" class="px-6 py-3 rounded-full bg-gradient-to-r from-brand-500 via-brand-600 to-pink-600 text-white text-xs font-bold shadow-lg shadow-brand-500/30 flex items-center justify-center gap-2">
+            <Filter className="w-4 h-4" /><span>Apply Filters</span>
+          </button>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-navy-100">
+          <div class="space-y-1">
+            <label class="text-[11px] font-bold text-navy-600">Specialty</label>
+            <select id="q-speciality" class="w-full py-2 px-3 rounded-xl text-xs bg-navy-50 border border-navy-200 outline-none focus:border-brand-500">
+              <option value="">All Specialties</option>
+            </select>
+          </div>
+          <div class="space-y-1">
+            <label class="text-[11px] font-bold text-navy-600">City</label>
+            <input id="q-city" type="text" placeholder="City name" class="w-full py-2 px-3 rounded-xl text-xs bg-navy-50 border border-navy-200 outline-none focus:border-brand-500" />
+          </div>
+          <div class="space-y-1">
+            <label class="text-[11px] font-bold text-navy-600">Caste / Biradari</label>
+            <select id="q-caste" class="w-full py-2 px-3 rounded-xl text-xs bg-navy-50 border border-navy-200 outline-none focus:border-brand-500">
+              <option value="">All Castes</option>
+            </select>
+          </div>
+          <div class="space-y-1">
+            <label class="text-[11px] font-bold text-navy-600">Age Range</label>
+            <select id="q-age" class="w-full py-2 px-3 rounded-xl text-xs bg-navy-50 border border-navy-200 outline-none focus:border-brand-500">
+              <option value="">Any Age</option>
+              <option value="24-28">24 – 28</option>
+              <option value="28-32">28 – 32</option>
+              <option value="32-36">32 – 36</option>
+              <option value="36-99">36+</option>
+            </select>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div id="discover-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+    <div id="discover-pager" class="flex justify-center pt-2"></div>
+  </div>
+</DashboardLayout>
+
+<script>
+  import {
+    api,
+    doctorCardHtml,
+    bindCardActions,
+    emptyStateHtml,
+    errorStateHtml,
+    skeletonHtml,
+    toast,
+    errorMessage,
+  } from '../lib/dashboard/common';
+  import { lastPage, paginationHtml } from '../lib/pagination';
+
+  const grid = document.getElementById('discover-grid')!;
+  const pager = document.getElementById('discover-pager')!;
+  const countEl = document.getElementById('discover-count')!;
+  const params = new URLSearchParams(window.location.search);
+  (document.getElementById('q-search') as HTMLInputElement).value = params.get('search') || '';
+
+  const limit = 12;
+  let page = Math.max(1, Number(params.get('page') || 1) || 1);
+
+  function filters() {
+    const search = (document.getElementById('q-search') as HTMLInputElement).value.trim();
+    const speciality = (document.getElementById('q-speciality') as HTMLSelectElement).value;
+    const caste = (document.getElementById('q-caste') as HTMLSelectElement).value;
+    const city = (document.getElementById('q-city') as HTMLInputElement).value.trim();
+    const age = (document.getElementById('q-age') as HTMLSelectElement).value;
+    const q: Record<string, string | number> = { limit, page };
+    if (search) q.search = search;
+    if (speciality) q.speciality = speciality;
+    if (caste) q.caste_id = Number(caste);
+    if (city) q.search = [search, city].filter(Boolean).join(' ');
+    if (age) {
+      const [min, max] = age.split('-');
+      q.min_age = Number(min);
+      q.max_age = Number(max);
+    }
+    return q;
+  }
+
+  function syncUrl() {
+    const next = new URL(window.location.href);
+    if (page > 1) next.searchParams.set('page', String(page));
+    else next.searchParams.delete('page');
+    const search = (document.getElementById('q-search') as HTMLInputElement).value.trim();
+    if (search) next.searchParams.set('search', search);
+    else next.searchParams.delete('search');
+    history.replaceState({}, '', next);
+  }
+
+  function renderPager(total: number, current: number) {
+    const last = lastPage(total, limit);
+    pager.innerHTML = paginationHtml({ page: current, lastPage: last, total, perPage: limit });
+    pager.querySelectorAll<HTMLButtonElement>('button[data-page]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const nextPage = Number(btn.dataset.page);
+        if (!Number.isFinite(nextPage) || nextPage < 1 || nextPage > last || nextPage === page) return;
+        page = nextPage;
+        load();
+        grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+  }
+
+  async function load() {
+    grid.innerHTML = skeletonHtml(4, 'h-72');
+    pager.innerHTML = '';
+    try {
+      const q = filters();
+      const usingSearch = Boolean(q.search || q.speciality || q.caste_id || q.min_age);
+      const res = usingSearch
+        ? await api.get('/discovery/search', { params: q })
+        : await api.get('/discovery/', { params: { limit, page } });
+      const data = res.data?.data ?? {};
+      const items = (Array.isArray(data.items) ? data.items : Array.isArray(data) ? data : []) as any[];
+      const total = Number(data.total ?? items.length);
+      page = Math.max(1, Number(data.page || page) || 1);
+      countEl.textContent = `${total} verified doctor profile${total === 1 ? '' : 's'} matched your criteria`;
+      syncUrl();
+      if (!items.length) {
+        grid.innerHTML = emptyStateHtml('No doctors found', 'Try relaxing filters or complete your partner preferences.', '🔍');
+        renderPager(total, page);
+        return;
+      }
+      grid.innerHTML = items.map((d) => doctorCardHtml(d, { shortlist: true })).join('');
+      bindCardActions(grid);
+      renderPager(total, page);
+    } catch (err) {
+      grid.innerHTML = errorStateHtml(errorMessage(err));
+      pager.innerHTML = '';
+      grid.querySelector('[data-dmb-retry]')?.addEventListener('click', () => load());
+    }
+  }
+
+  document.getElementById('discover-form')!.addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    page = 1;
+    load();
+  });
+
+  document.getElementById('anon-toggle')!.addEventListener('click', async (ev) => {
+    const btn = ev.currentTarget as HTMLButtonElement;
+    try {
+      const res = await api.post('/discovery/toggle-anonymous');
+      const on = Boolean(res.data?.data?.is_anonymous);
+      btn.textContent = `Anonymous browsing: ${on ? 'On' : 'Off'}`;
+      toast(on ? 'You are browsing anonymously.' : 'Anonymous mode turned off.', 'info');
+    } catch (err) {
+      toast(errorMessage(err), 'error');
+    }
+  });
+
+  api.get('/taxonomy/specialities').then((res) => {
+    const list = (res.data?.data ?? []) as Array<{ id?: number; name?: string }>;
+    const sel = document.getElementById('q-speciality') as HTMLSelectElement;
+    list.forEach((s) => {
+      const opt = document.createElement('option');
+      opt.value = s.name || String(s.id || '');
+      opt.textContent = s.name || String(s.id);
+      sel.appendChild(opt);
+    });
+  }).catch(() => undefined);
+
+  api.get('/taxonomy/castes').then((res) => {
+    const list = (res.data?.data ?? []) as Array<{ id: number; name: string }>;
+    const sel = document.getElementById('q-caste') as HTMLSelectElement;
+    list.forEach((c) => {
+      const opt = document.createElement('option');
+      opt.value = String(c.id);
+      opt.textContent = c.name;
+      sel.appendChild(opt);
+    });
+  }).catch(() => undefined);
+
+  load();
+</script>

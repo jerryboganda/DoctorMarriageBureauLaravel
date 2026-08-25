@@ -1,0 +1,90 @@
+---
+import TopHeader from '../components/dashboard/TopHeader.astro';
+import Sidebar from '../components/dashboard/Sidebar.astro';
+import MobileBottomNav from '../components/dashboard/MobileBottomNav.astro';
+import FloatingContactWidget from '../components/islands/FloatingContactWidget';
+import GlitterCursor from '../components/effects/GlitterCursor.astro';
+import ToastContainer from '../components/ui/ToastContainer';
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = "Doctor Portal — Doctor Marriage Bureau",
+  description = "Halal, private, and verified matchmaking portal exclusively for medical doctors and healthcare professionals."
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="robots" content="noindex, nofollow" />
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link 
+      href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;0,900;1,600&display=swap" 
+      rel="stylesheet" 
+    />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/images/site-icon-192x192.png" />
+
+    <!-- Auth guard: redirect before paint when signed out -->
+    <script is:inline>
+      (function () {
+        try {
+          if (!localStorage.getItem('auth_token')) {
+            sessionStorage.setItem('auth_error', 'Please sign in to access your portal.');
+            window.location.replace('/login/');
+          }
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+
+  <body class="bg-[#FAFAFD] text-navy-800 font-sans antialiased min-h-screen flex flex-col selection:bg-brand-500 selection:text-white">
+    
+    <!-- Top Sticky Header -->
+    <TopHeader />
+
+    <!-- Main Container with Sidebar + Content -->
+    <div class="flex-1 flex max-w-7xl w-full mx-auto pb-16 lg:pb-0">
+      
+      <!-- Collapsible Desktop Navigation Sidebar -->
+      <Sidebar />
+
+      <!-- Dynamic Page Content -->
+      <main class="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 max-w-5xl">
+        <slot />
+      </main>
+
+    </div>
+
+    <!-- Mobile Bottom Navigation Bar -->
+    <MobileBottomNav />
+
+    <!-- Framer Motion Toast Notification System -->
+    <ToastContainer client:load />
+
+    <!-- Floating WhatsApp / Call Assistance Island -->
+    <FloatingContactWidget client:idle />
+
+    <!-- Colored & Glittering Mouse Follower Effect -->
+    <GlitterCursor />
+
+    <script>
+      import { hydrateChrome } from '../lib/dashboard/common';
+      hydrateChrome();
+    </script>
+
+  </body>
+</html>

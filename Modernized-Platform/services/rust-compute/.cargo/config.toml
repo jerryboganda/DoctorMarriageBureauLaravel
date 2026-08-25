@@ -1,0 +1,7 @@
+[build]
+target = "x86_64-pc-windows-gnullvm"
+rustflags = [
+    "-C", "linker=rust-lld",
+    "-C", "link-arg=E:/Projects/Doctor Marriage Bureau/Modernized-Platform/services/rust-compute/native-libs/crt2.o",
+    "-L", "native=E:/Projects/Doctor Marriage Bureau/Modernized-Platform/services/rust-compute/native-libs"
+]

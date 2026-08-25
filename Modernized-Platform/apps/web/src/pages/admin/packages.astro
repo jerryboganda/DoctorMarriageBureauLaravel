@@ -1,0 +1,191 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { 
+  Package, 
+  Plus, 
+  Check, 
+  CreditCard, 
+  ShieldCheck, 
+  Sparkles, 
+  Crown, 
+  ChevronRight,
+  Edit2,
+  Trash2,
+  Save
+} from 'lucide-react';
+---
+
+<AdminLayout title="Membership Packages & Pricing — DMB Admin" activePath="/admin/packages/">
+  
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-1">
+        <a href="/admin/" class="hover:text-navy-900 transition-colors">Admin</a>
+        <ChevronRight className="w-3 h-3" />
+        <span class="text-navy-900 font-bold">Packages & Pricing</span>
+      </div>
+      <h1 class="text-2xl sm:text-3xl font-black text-navy-900 tracking-tight">Membership Packages</h1>
+      <p class="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
+        Configure subscription tiers, proposal limits, Wali contact unlock quotas, and PKR pricing.
+      </p>
+    </div>
+
+    <!-- Actions -->
+    <button 
+      id="btn-add-package" 
+      class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-brand-500 text-white hover:bg-brand-600 shadow-md shadow-brand-500/20 transition-all"
+    >
+      <Plus className="w-4 h-4" />
+      <span>Add New Package Tier</span>
+    </button>
+  </div>
+
+  <!-- Package Cards Grid -->
+  <div id="packages-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <!-- Populated by JavaScript -->
+    <div class="col-span-3 py-16 text-center text-slate-400 bg-white rounded-2xl border border-slate-200">
+      Loading membership packages...
+    </div>
+  </div>
+
+</AdminLayout>
+
+<script>
+  import { AdminStore, type AdminPackage } from '../../lib/api/admin';
+  import { showToast } from '../../lib/toast';
+
+  let packagesCache: AdminPackage[] = [];
+
+  async function renderPackages() {
+    const grid = document.getElementById('packages-grid');
+    if (!grid) return;
+    grid.innerHTML = '<div class="col-span-3 py-16 text-center text-slate-400 bg-white rounded-2xl border border-slate-200">Loading live packages from API...</div>';
+    try {
+      const list = await AdminStore.getPackages();
+      packagesCache = list;
+      if (!list.length) {
+        grid.innerHTML = '<div class="col-span-3 py-16 text-center text-slate-500 bg-white rounded-2xl border border-slate-200">No packages found. Create your first tier.</div>';
+        return;
+      }
+      grid.innerHTML = list.map(pkg => `
+      <div class="p-6 rounded-2xl bg-white border ${pkg.is_featured ? 'border-brand-500 ring-2 ring-brand-500/20' : 'border-slate-200/90'} shadow-sm flex flex-col justify-between space-y-5 relative">
+        
+        ${pkg.is_featured ? `
+          <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-brand-500 text-white shadow-sm">
+            Most Popular Choice
+          </div>
+        ` : ''}
+
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-black text-navy-900">${pkg.name}</h3>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${pkg.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}">
+              ${pkg.is_active ? 'Active' : 'Inactive'}
+            </span>
+          </div>
+
+          <p class="text-xs text-slate-500 leading-relaxed">${pkg.tagline}</p>
+
+          <div class="pt-2">
+            <span class="text-2xl font-black text-navy-900">Rs ${Number(pkg.price_pkr).toLocaleString()}</span>
+            <span class="text-xs text-slate-400 font-semibold"> / ${pkg.duration_days} days</span>
+          </div>
+        </div>
+
+        <!-- Quotas -->
+        <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-100 space-y-2 text-xs">
+          <div class="flex items-center justify-between text-slate-700">
+            <span>Direct Rishta Proposals:</span>
+            <span class="font-bold text-navy-900">${pkg.proposal_quota === 999 ? 'Unlimited' : pkg.proposal_quota}</span>
+          </div>
+          <div class="flex items-center justify-between text-slate-700">
+            <span>Wali / Contact Unlocks:</span>
+            <span class="font-bold text-navy-900">${pkg.contact_unlocks}</span>
+          </div>
+        </div>
+
+        <!-- Perks List -->
+        <div class="space-y-2 text-xs flex-1">
+          <span class="text-[10px] font-bold uppercase text-slate-400 block">Features & Privileges</span>
+          <ul class="space-y-1.5 text-slate-600">
+            ${pkg.perks.map(perk => `
+              <li class="flex items-center gap-2">
+                <span class="text-emerald-500 font-bold">✓</span>
+                <span>${perk}</span>
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+
+        <!-- Actions -->
+        <div class="pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
+          <button 
+            data-action="edit-price" 
+            data-id="${pkg.id}"
+            class="flex-1 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-brand-50 hover:text-brand-600 text-slate-700 transition-colors"
+          >
+            Edit Price & Quotas
+          </button>
+        </div>
+
+      </div>
+    `).join('');
+
+      document.querySelectorAll('[data-action="edit-price"]').forEach((btn) => {
+        btn.addEventListener('click', async (e) => {
+          const id = Number((e.currentTarget as HTMLElement).getAttribute('data-id'));
+          const pkg = packagesCache.find(p => p.id === id);
+          if (pkg) {
+            const newPrice = prompt(`Enter new price in PKR for ${pkg.name}:`, String(pkg.price_pkr));
+            if (newPrice !== null && !isNaN(Number(newPrice))) {
+              pkg.price_pkr = Number(newPrice);
+              try {
+                await AdminStore.savePackage(pkg);
+                showToast({ title: 'Package Updated', message: `${pkg.name} price updated to Rs ${Number(pkg.price_pkr).toLocaleString()}.`, type: 'payment' });
+                await renderPackages();
+              } catch (err: any) {
+                showToast({ title: 'Update failed', message: err?.response?.data?.message || err.message, type: 'error' });
+              }
+            }
+          }
+        });
+      });
+    } catch (err: any) {
+      grid.innerHTML = `<div class="col-span-3 py-16 text-center text-brand-600 bg-white rounded-2xl border border-brand-200">${err?.response?.data?.message || 'Failed to load live packages. Please retry.'}</div>`;
+    }
+  }
+
+  async function initPackages() {
+    await renderPackages();
+    document.getElementById('btn-add-package')?.addEventListener('click', async () => {
+      const name = prompt('Enter package name (e.g. Diamond Executive):');
+      if (name) {
+        const price = Number(prompt('Enter price in PKR:', '25000')) || 25000;
+        const newPkg: AdminPackage = {
+          id: Date.now(),
+          name,
+          tagline: 'Custom executive matchmaking tier for medical consultants.',
+          price_pkr: price,
+          duration_days: 120,
+          proposal_quota: 50,
+          contact_unlocks: 20,
+          badge_color: 'purple',
+          is_featured: false,
+          is_active: true,
+          perks: ['50 Direct Rishta Proposals','20 Verified Contact Unlocks','Priority Support']
+        };
+        try {
+          await AdminStore.savePackage(newPkg);
+          showToast({ title: 'Package Created', message: `${name} has been added.`, type: 'info' });
+          await renderPackages();
+        } catch (err: any) {
+          showToast({ title: 'Create failed', message: err?.response?.data?.message || err.message, type: 'error' });
+        }
+      }
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', initPackages);
+  document.addEventListener('astro:page-load', initPackages);
+</script>

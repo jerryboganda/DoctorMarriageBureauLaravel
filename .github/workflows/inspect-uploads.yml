@@ -1,0 +1,70 @@
+name: Inspect Production Uploads
+
+on:
+  workflow_dispatch:
+
+jobs:
+  inspect:
+    name: Inspect uploads table and disk
+    runs-on: ubuntu-24.04
+    environment: Production
+    timeout-minutes: 10
+    steps:
+      - name: Configure SSH
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST || '185.252.233.186' }}
+          VPS_USER: ${{ secrets.VPS_USER || 'root' }}
+        run: |
+          test -n "$VPS_SSH_KEY"
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/vps_key
+          chmod 600 ~/.ssh/vps_key
+          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          cat > ~/.ssh/config <<EOF
+          Host vps-production
+            HostName $VPS_HOST
+            User $VPS_USER
+            IdentityFile ~/.ssh/vps_key
+            IdentitiesOnly yes
+            StrictHostKeyChecking accept-new
+            ConnectTimeout 15
+          EOF
+          chmod 600 ~/.ssh/config
+
+      - name: Inspect uploads
+        run: |
+          ssh vps-production '
+            set -e
+            cd /opt/docker/doctormarriagebureau/Modernized-Platform/infra/docker
+            echo "==> uploads count"
+            docker compose -f docker-compose.production.yml exec -T postgres \
+              psql -U dmb_user -d doctor_marriage_bureau -c "SELECT COUNT(*) AS uploads FROM uploads;"
+            echo "==> sample uploads"
+            docker compose -f docker-compose.production.yml exec -T postgres \
+              psql -U dmb_user -d doctor_marriage_bureau -c "SELECT id, user_id, file_name, extension, deleted_at IS NOT NULL AS deleted FROM uploads ORDER BY id LIMIT 15;"
+            echo "==> gallery image samples"
+            docker compose -f docker-compose.production.yml exec -T postgres \
+              psql -U dmb_user -d doctor_marriage_bureau -c "SELECT id, user_id, image, is_main_photo FROM gallery_images WHERE deleted_at IS NULL ORDER BY id LIMIT 15;"
+            echo "==> upload id range"
+            docker compose -f docker-compose.production.yml exec -T postgres \
+              psql -U dmb_user -d doctor_marriage_bureau -c "SELECT MIN(id), MAX(id), COUNT(*) FROM uploads;"
+            echo "==> missing old upload ids"
+            docker compose -f docker-compose.production.yml exec -T postgres \
+              psql -U dmb_user -d doctor_marriage_bureau -c "SELECT id, file_name FROM uploads WHERE id IN (26,48,50,53,112);"
+            echo "==> resolvable gallery joins"
+            docker compose -f docker-compose.production.yml exec -T postgres \
+              psql -U dmb_user -d doctor_marriage_bureau -c "SELECT g.user_id, g.image, up.file_name FROM gallery_images g JOIN uploads up ON up.id = NULLIF(g.image, '')::bigint LIMIT 10;"
+            echo "==> resolved user photos"
+            docker compose -f docker-compose.production.yml exec -T postgres \
+              psql -U dmb_user -d doctor_marriage_bureau -c "SELECT u.id, u.first_name, u.photo, up.file_name FROM users u LEFT JOIN uploads up ON u.photo ~ '^[0-9]+$' AND up.id = NULLIF(u.photo, '')::bigint WHERE length(COALESCE(u.photo, '-')) > 1 ORDER BY u.id DESC LIMIT 15;"
+            echo "==> user photos joined"
+            docker compose -f docker-compose.production.yml exec -T postgres \
+              psql -U dmb_user -d doctor_marriage_bureau -c "SELECT u.id, u.first_name, u.last_name, u.photo, up.file_name FROM users u LEFT JOIN uploads up ON up.id = NULLIF(u.photo, '')::bigint WHERE length(u.photo) > 0 ORDER BY u.id DESC LIMIT 15;"
+            echo "==> host upload dirs"
+            ls -la /opt/docker/doctormarriagebureau/public/uploads || true
+            echo "==> upload file count"
+            find /opt/docker/doctormarriagebureau/public/uploads -type f | wc -l
+            echo "==> sample files"
+            find /opt/docker/doctormarriagebureau/public/uploads -type f | head -20
+          '

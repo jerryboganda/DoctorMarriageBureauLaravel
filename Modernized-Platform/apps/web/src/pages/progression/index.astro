@@ -1,0 +1,70 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import { Heart } from 'lucide-react';
+---
+
+<DashboardLayout
+  title="Courtship Journeys — Doctor Marriage Bureau"
+  description="All active courtship progressions with verified doctor candidates."
+>
+  <div class="space-y-8 animate-fadeIn max-w-4xl">
+    <div>
+      <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-brand-50 border border-brand-100 text-brand-600 text-xs font-bold mb-2">
+        <Heart className="w-3.5 h-3.5 text-brand-500" />
+        <span>Courtship Pipeline</span>
+      </div>
+      <h1 class="text-2xl sm:text-3xl font-black text-navy-800 font-serif">
+        Active <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 via-brand-600 to-pink-600">Courtship Journeys</span>
+      </h1>
+      <p class="text-xs sm:text-sm text-navy-500">Candidates with whom your structured courtship has begun.</p>
+    </div>
+    <div id="journey-list" class="space-y-4"></div>
+  </div>
+</DashboardLayout>
+
+<script>
+  import { api, avatarFor, escapeHtml, doctorName, emptyStateHtml, errorStateHtml, skeletonHtml, errorMessage } from '../../lib/dashboard/common';
+
+  const host = document.getElementById('journey-list')!;
+  host.innerHTML = skeletonHtml(3, 'h-28');
+
+  api.get('/progression/')
+    .then((res) => {
+      const rows = (res.data?.data ?? []) as any[];
+      if (!rows.length) {
+        host.innerHTML = emptyStateHtml('No courtship journeys yet', 'Accept a proposal and start a journey from the chat or profile of a mutual match.', '💍');
+        return;
+      }
+      host.innerHTML = rows
+        .map((j) => {
+          const partner = j.partner || {};
+          const name = escapeHtml(j.partner_name ? `Dr. ${j.partner_name}` : doctorName(partner));
+          const title = escapeHtml([partner.degree, partner.speciality].filter(Boolean).join(', ') || 'Medical Professional');
+          const city = escapeHtml(partner.city_name || '');
+          const photo = avatarFor(partner.profile_photo_url, partner.gender);
+          const pct = Math.round(Number(j.progress_percent || 0));
+          return `
+            <a href="/progression/journey/?id=${j.id}" class="group block p-5 sm:p-6 rounded-3xl bg-white border border-brand-100/80 shadow-luxury hover:shadow-luxury-hover transition-all">
+              <div class="flex items-center gap-4">
+                <div class="w-16 h-16 rounded-2xl overflow-hidden bg-navy-100 border border-brand-200 shrink-0">
+                  <img src="${photo}" alt="${name}" class="w-full h-full object-cover" />
+                </div>
+                <div class="flex-1 min-w-0 space-y-1">
+                  <div class="flex items-center justify-between gap-2">
+                    <h3 class="text-base font-bold text-navy-800 truncate">${name}</h3>
+                    <span class="text-[10px] font-bold uppercase ${String(j.status)==='active' ? 'text-emerald-600' : 'text-navy-400'}">${escapeHtml(j.status || 'active')}</span>
+                  </div>
+                  <p class="text-xs font-semibold text-brand-600 truncate">${title}${city ? ` · ${city}` : ''}</p>
+                  <p class="text-xs text-navy-500">${escapeHtml(j.stage_name || 'Getting started')} · ${pct}%</p>
+                  <div class="h-1.5 rounded-full bg-navy-100 overflow-hidden"><div class="h-full bg-gradient-to-r from-brand-500 to-pink-600" style="width:${pct}%"></div></div>
+                </div>
+              </div>
+            </a>`;
+        })
+        .join('');
+    })
+    .catch((err) => {
+      host.innerHTML = errorStateHtml(errorMessage(err));
+      host.querySelector('[data-dmb-retry]')?.addEventListener('click', () => location.reload());
+    });
+</script>

@@ -1,0 +1,364 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { 
+  ShieldCheck, 
+  ShieldAlert, 
+  Search, 
+  Filter, 
+  ExternalLink, 
+  Check, 
+  X, 
+  Eye, 
+  FileText,
+  Clock,
+  Award,
+  ChevronRight,
+  AlertCircle
+} from 'lucide-react';
+---
+
+<AdminLayout title="PMDC Medical License Verifications — DMB Admin" activePath="/admin/verifications/">
+  
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-1">
+        <a href="/admin/" class="hover:text-navy-900 transition-colors">Admin</a>
+        <ChevronRight className="w-3 h-3" />
+        <span class="text-navy-900 font-bold">PMDC Verifications</span>
+      </div>
+      <h1 class="text-2xl sm:text-3xl font-black text-navy-900 tracking-tight">PMDC / PMC License Verification</h1>
+      <p class="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
+        Audit medical credentials, Pakistan Medical Commission certificates, and GMC registrations to award verified badges.
+      </p>
+    </div>
+
+    <!-- PMC Official Portal Link -->
+    <a 
+      href="https://pmc.pakistanmedicalcommission.gov.pk/" 
+      target="_blank" 
+      rel="noopener noreferrer" 
+      class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold bg-white text-navy-800 hover:bg-slate-50 border border-slate-200 transition-all shadow-sm"
+    >
+      <ExternalLink className="w-4 h-4 text-brand-600" />
+      <span>Official PMC Verification Portal</span>
+    </a>
+  </div>
+
+  <!-- Status Tabs -->
+  <div class="flex items-center gap-2 p-1.5 rounded-2xl bg-white border border-slate-200 shadow-sm max-w-md">
+    <button 
+      data-tab="pending" 
+      class="flex-1 py-2 px-3 rounded-xl text-xs font-bold bg-brand-500 text-white shadow-sm transition-all tab-btn"
+    >
+      Pending Reviews (<span id="count-pending">0</span>)
+    </button>
+    <button 
+      data-tab="approved" 
+      class="flex-1 py-2 px-3 rounded-xl text-xs font-bold text-slate-600 hover:text-navy-900 transition-all tab-btn"
+    >
+      Approved (<span id="count-approved">0</span>)
+    </button>
+    <button 
+      data-tab="rejected" 
+      class="flex-1 py-2 px-3 rounded-xl text-xs font-bold text-slate-600 hover:text-navy-900 transition-all tab-btn"
+    >
+      Flagged / Rejected (<span id="count-rejected">0</span>)
+    </button>
+  </div>
+
+  <!-- Verification Cards Grid -->
+  <div id="verifications-grid" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+    <!-- Populated by JavaScript -->
+    <div class="col-span-2 py-16 text-center text-slate-400 bg-white rounded-2xl border border-slate-200">
+      Loading verification queue...
+    </div>
+  </div>
+
+  <!-- Document Inspection Modal -->
+  <div 
+    id="modal-inspect-doc" 
+    class="fixed inset-0 z-50 bg-navy-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden"
+  >
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-2xl w-full p-6 space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div>
+          <h3 id="modal-doc-title" class="text-base font-black text-navy-900">PMDC License Document Inspection</h3>
+          <p id="modal-doc-sub" class="text-xs text-slate-500">Official medical license certificate submitted for review.</p>
+        </div>
+        <button id="btn-close-inspect" class="p-1 text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+      </div>
+
+      <div class="h-80 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center">
+        <img id="modal-doc-img" src="" alt="License scan" class="w-full h-full object-contain" />
+      </div>
+
+      <div class="flex items-center justify-between pt-2">
+        <span id="modal-doc-pmdc" class="font-mono text-xs font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded">
+          PMC-00000
+        </span>
+        <div class="flex items-center gap-2">
+          <button id="modal-btn-reject" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition-colors">
+            Reject License
+          </button>
+          <button id="modal-btn-approve" class="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 shadow-md shadow-emerald-600/20 transition-colors">
+            Approve & Grant Badge
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</AdminLayout>
+
+<script>
+  import { AdminStore, type AdminVerification } from '../../lib/api/admin';
+  import { showToast } from '../../lib/toast';
+
+  let currentTab = 'pending';
+  let activeModalItem: AdminVerification | null = null;
+  let verificationsCache: AdminVerification[] = [];
+
+  async function renderVerifications() {
+    const grid = document.getElementById('verifications-grid');
+    if (!grid) return;
+    grid.innerHTML = '<div class="col-span-2 py-16 text-center text-slate-400 bg-white rounded-2xl border border-slate-200">Loading live verifications from API...</div>';
+    try {
+      const list = await AdminStore.getVerifications();
+      verificationsCache = list;
+      
+      // Counts
+      const pendingCount = list.filter(v => v.status === 'pending').length;
+      const approvedCount = list.filter(v => v.status === 'approved').length;
+      const rejectedCount = list.filter(v => v.status === 'rejected').length;
+
+      const elPending = document.getElementById('count-pending');
+      if (elPending) elPending.textContent = String(pendingCount);
+      const elApproved = document.getElementById('count-approved');
+      if (elApproved) elApproved.textContent = String(approvedCount);
+      const elRejected = document.getElementById('count-rejected');
+      if (elRejected) elRejected.textContent = String(rejectedCount);
+
+      const filtered = list.filter(v => v.status === currentTab);
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div class="col-span-2 py-16 text-center text-slate-500 bg-white rounded-2xl border border-slate-200">No live data — no ${currentTab} verifications.</div>`;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(v => `
+      <div class="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-4 relative group">
+        <!-- Header -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <img src="${v.avatar}" class="w-12 h-12 rounded-xl object-cover border border-slate-200" alt="${v.doctor_name}" />
+            <div>
+              <a href="/admin/doctors/${v.doctor_id}/" class="text-sm font-black text-navy-900 hover:text-brand-600 transition-colors">
+                ${v.doctor_name}
+              </a>
+              <p class="text-xs text-slate-600 font-semibold">${v.speciality}</p>
+              <p class="text-[10px] text-slate-400">${v.hospital} • ${v.city}</p>
+            </div>
+          </div>
+
+          <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${
+            v.status === 'approved' 
+              ? 'bg-emerald-100 text-emerald-700' 
+              : v.status === 'pending' 
+              ? 'bg-amber-100 text-amber-700 animate-pulse' 
+              : 'bg-rose-100 text-rose-700'
+          }">
+            ${v.status.toUpperCase()}
+          </span>
+        </div>
+
+        <!-- License Info -->
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between text-xs">
+          <div>
+            <span class="text-[10px] font-bold uppercase text-slate-400 block">${v.document_type}</span>
+            <span class="font-mono font-black text-navy-900 text-sm">${v.pmdc_number}</span>
+          </div>
+          <span class="text-[11px] text-slate-400 font-medium">${v.submitted_at}</span>
+        </div>
+
+        <!-- Document Preview Thumbnail -->
+        <div class="relative h-40 rounded-xl overflow-hidden bg-slate-200 border border-slate-200 group/img">
+          <img src="${v.document_url}" alt="License scan" class="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-300" />
+          <div class="absolute inset-0 bg-navy-950/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-2">
+            <button 
+              data-action="inspect-doc" 
+              data-id="${v.id}"
+              class="px-3.5 py-1.5 rounded-lg bg-white text-xs font-bold text-navy-900 shadow-md flex items-center gap-1.5"
+            >
+              <Eye className="w-3.5 h-3.5" />
+              <span>Inspect Full Resolution</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Review Actions -->
+        <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+          <a 
+            href="https://pmc.pakistanmedicalcommission.gov.pk/" 
+            target="_blank" 
+            class="text-[11px] font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1"
+          >
+            <span>PMC Online Check</span>
+            <ExternalLink className="w-3 h-3" />
+          </a>
+
+          ${v.status === 'pending' ? `
+            <div class="flex items-center gap-2">
+              <button 
+                data-action="reject-verif" 
+                data-id="${v.id}"
+                class="px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition-colors"
+              >
+                Reject
+              </button>
+              <button 
+                data-action="approve-verif" 
+                data-id="${v.id}"
+                class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-colors flex items-center gap-1"
+              >
+                <Check className="w-3.5 h-3.5" />
+                <span>Approve Badge</span>
+              </button>
+            </div>
+          ` : `
+            <span class="text-xs text-slate-400 font-medium">
+              ${v.status === 'approved' ? `Approved on ${v.reviewed_at || 'Recently'}` : `Rejected: ${v.rejection_reason || 'Invalid license image'}`}
+            </span>
+          `}
+        </div>
+      </div>
+    `).join('');
+
+      // Bind action events (re-bound after render)
+      document.querySelectorAll('[data-action="approve-verif"]').forEach((btn) => {
+        btn.addEventListener('click', async (e) => {
+          const id = Number((e.currentTarget as HTMLElement).getAttribute('data-id'));
+          try {
+            await AdminStore.reviewVerification(id, 'approved');
+            showToast({
+              title: 'PMDC License Verified',
+              message: 'Official verified badge granted to doctor.',
+              type: 'verification'
+            });
+            await renderVerifications();
+          } catch (err: any) {
+            showToast({ title: 'Approval failed', message: err?.response?.data?.message || err?.message || 'Failed to approve verification.', type: 'error' });
+          }
+        });
+      });
+
+      document.querySelectorAll('[data-action="reject-verif"]').forEach((btn) => {
+        btn.addEventListener('click', async (e) => {
+          const id = Number((e.currentTarget as HTMLElement).getAttribute('data-id'));
+          const reason = prompt('Enter rejection reason for doctor (e.g., Unclear photograph, License expired):');
+          if (reason) {
+            try {
+              await AdminStore.reviewVerification(id, 'rejected', reason);
+              showToast({
+                title: 'Verification Rejected',
+                message: 'Feedback sent to doctor.',
+                type: 'warning'
+              });
+              await renderVerifications();
+            } catch (err: any) {
+              showToast({ title: 'Rejection failed', message: err?.response?.data?.message || err?.message || 'Failed to reject verification.', type: 'error' });
+            }
+          }
+        });
+      });
+
+      document.querySelectorAll('[data-action="inspect-doc"]').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          const id = Number((e.currentTarget as HTMLElement).getAttribute('data-id'));
+          const item = verificationsCache.find(v => v.id === id);
+          if (item) {
+            activeModalItem = item;
+            const modal = document.getElementById('modal-inspect-doc');
+            const title = document.getElementById('modal-doc-title');
+            const sub = document.getElementById('modal-doc-sub');
+            const img = document.getElementById('modal-doc-img') as HTMLImageElement;
+            const pmdc = document.getElementById('modal-doc-pmdc');
+
+            if (title) title.textContent = `${item.doctor_name} — ${item.document_type}`;
+            if (sub) sub.textContent = `${item.speciality} • ${item.hospital}`;
+            if (img) img.src = item.document_url;
+            if (pmdc) pmdc.textContent = item.pmdc_number;
+
+            modal?.classList.remove('hidden');
+          }
+        });
+      });
+    } catch (err: any) {
+      grid.innerHTML = `<div class="col-span-2 py-16 text-center text-rose-600 bg-white rounded-2xl border border-rose-200">${err?.response?.data?.message || err?.message || 'Failed to load live verifications. Please retry.'}</div>`;
+    }
+  }
+
+  async function initVerifications() {
+    // Tab switching
+    document.querySelectorAll('.tab-btn').forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        const tab = (e.currentTarget as HTMLElement).getAttribute('data-tab');
+        if (!tab) return;
+        currentTab = tab;
+
+        document.querySelectorAll('.tab-btn').forEach((b) => {
+          b.className = 'flex-1 py-2 px-3 rounded-xl text-xs font-bold text-slate-600 hover:text-navy-900 transition-all tab-btn';
+        });
+
+        (e.currentTarget as HTMLElement).className = 'flex-1 py-2 px-3 rounded-xl text-xs font-bold bg-brand-500 text-white shadow-sm transition-all tab-btn';
+        await renderVerifications();
+      });
+    });
+
+    // Inspect Modal Buttons
+    const modal = document.getElementById('modal-inspect-doc');
+    document.getElementById('btn-close-inspect')?.addEventListener('click', () => modal?.classList.add('hidden'));
+
+    document.getElementById('modal-btn-approve')?.addEventListener('click', async () => {
+      if (activeModalItem) {
+        try {
+          await AdminStore.reviewVerification(activeModalItem.id, 'approved');
+          modal?.classList.add('hidden');
+          showToast({
+            title: 'PMDC License Verified',
+            message: 'Official verified badge granted to doctor.',
+            type: 'verification'
+          });
+          await renderVerifications();
+        } catch (err: any) {
+          showToast({ title: 'Approval failed', message: err?.response?.data?.message || err?.message || 'Failed to approve verification.', type: 'error' });
+        }
+      }
+    });
+
+    document.getElementById('modal-btn-reject')?.addEventListener('click', async () => {
+      if (activeModalItem) {
+        const reason = prompt('Enter rejection reason for doctor:');
+        if (reason) {
+          try {
+            await AdminStore.reviewVerification(activeModalItem.id, 'rejected', reason);
+            modal?.classList.add('hidden');
+            showToast({
+              title: 'Verification Rejected',
+              message: 'Feedback sent to doctor.',
+              type: 'warning'
+            });
+            await renderVerifications();
+          } catch (err: any) {
+            showToast({ title: 'Rejection failed', message: err?.response?.data?.message || err?.message || 'Failed to reject verification.', type: 'error' });
+          }
+        }
+      }
+    });
+
+    await renderVerifications();
+  }
+
+  document.addEventListener('DOMContentLoaded', initVerifications);
+  document.addEventListener('astro:page-load', initVerifications);
+</script>

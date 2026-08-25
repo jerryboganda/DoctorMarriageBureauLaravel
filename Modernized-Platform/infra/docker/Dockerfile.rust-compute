@@ -1,0 +1,17 @@
+# Dockerfile for Rust Compute Engine
+FROM rust:alpine AS builder
+WORKDIR /app
+RUN apk add --no-cache musl-dev
+COPY Cargo.toml ./
+RUN mkdir src && echo "fn main() {}" > src/main.rs && cargo build --release || true
+COPY . .
+RUN cargo build --release
+
+FROM alpine:3.20
+WORKDIR /app
+RUN apk add --no-cache ca-certificates tzdata
+COPY --from=builder /app/target/release/doctormarriagebureau-compute /app/compute
+EXPOSE 8081
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:8081/health || exit 1
+CMD ["/app/compute"]

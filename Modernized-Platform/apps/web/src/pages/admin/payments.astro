@@ -1,0 +1,360 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { 
+  CreditCard, 
+  CheckCircle2, 
+  XCircle, 
+  Eye, 
+  Download, 
+  Search, 
+  Filter, 
+  Clock, 
+  ChevronRight, 
+  Sparkles,
+  Building,
+  Smartphone,
+  ExternalLink
+} from 'lucide-react';
+---
+
+<AdminLayout title="Payment Proofs & Transactions — DMB Admin" activePath="/admin/payments/">
+  
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-1">
+        <a href="/admin/" class="hover:text-navy-900 transition-colors">Admin</a>
+        <ChevronRight className="w-3 h-3" />
+        <span class="text-navy-900 font-bold">Payments & Bank Slips</span>
+      </div>
+      <h1 class="text-2xl sm:text-3xl font-black text-navy-900 tracking-tight">Payment Proofs & Upgrades</h1>
+      <p class="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
+        Audit manual bank deposit slips, JazzCash, EasyPaisa, and gateway transactions to activate doctor packages.
+      </p>
+    </div>
+
+    <!-- Export Summary -->
+    <div class="flex items-center gap-2">
+      <span class="text-xs font-bold text-slate-500">Auto-Clearing:</span>
+      <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-700">
+        Stripe & Card Active
+      </span>
+    </div>
+  </div>
+
+  <!-- Status Tabs -->
+  <div class="flex items-center gap-2 p-1.5 rounded-2xl bg-white border border-slate-200 shadow-sm max-w-md">
+    <button 
+      data-tab="pending" 
+      class="flex-1 py-2 px-3 rounded-xl text-xs font-bold bg-brand-500 text-white shadow-sm transition-all pay-tab-btn"
+    >
+      Pending (<span id="pay-count-pending">0</span>)
+    </button>
+    <button 
+      data-tab="approved" 
+      class="flex-1 py-2 px-3 rounded-xl text-xs font-bold text-slate-600 hover:text-navy-900 transition-all pay-tab-btn"
+    >
+      Approved (<span id="pay-count-approved">0</span>)
+    </button>
+    <button 
+      data-tab="rejected" 
+      class="flex-1 py-2 px-3 rounded-xl text-xs font-bold text-slate-600 hover:text-navy-900 transition-all pay-tab-btn"
+    >
+      Rejected (<span id="pay-count-rejected">0</span>)
+    </button>
+  </div>
+
+  <!-- Payments Table / List -->
+  <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs">
+        <thead class="bg-slate-50 border-b border-slate-200/80 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
+          <tr>
+            <th class="py-3.5 px-4">Doctor</th>
+            <th class="py-3.5 px-4">Package & Amount</th>
+            <th class="py-3.5 px-4">Method & Transaction ID</th>
+            <th class="py-3.5 px-4">Submitted At</th>
+            <th class="py-3.5 px-4">Slip Preview</th>
+            <th class="py-3.5 px-4 text-right">Review Action</th>
+          </tr>
+        </thead>
+        <tbody id="payments-tbody" class="divide-y divide-slate-100 font-medium">
+          <!-- Populated by JavaScript -->
+          <tr>
+            <td colspan="6" class="py-12 text-center text-slate-400">Loading payment records...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Inspect Slip Modal -->
+  <div 
+    id="modal-inspect-slip" 
+    class="fixed inset-0 z-50 bg-navy-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden"
+  >
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full p-6 space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div>
+          <h3 id="modal-slip-title" class="text-base font-black text-navy-900">Deposit Slip & Receipt Inspection</h3>
+          <p id="modal-slip-sub" class="text-xs text-slate-500">Verify bank reference number with merchant statement.</p>
+        </div>
+        <button id="btn-close-slip-modal" class="p-1 text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+      </div>
+
+      <div class="h-80 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center">
+        <img id="modal-slip-img" src="" alt="Payment proof" class="w-full h-full object-contain" />
+      </div>
+
+      <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-1 text-xs">
+        <div class="flex justify-between">
+          <span class="text-slate-500">Transaction Ref:</span>
+          <span id="modal-slip-trx" class="font-mono font-bold text-navy-900">--</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-500">Doctor Notes:</span>
+          <span id="modal-slip-notes" class="font-medium text-slate-700">--</span>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+        <button id="modal-slip-btn-reject" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-rose-50 text-rose-700 hover:bg-rose-100 transition-colors">
+          Reject Slip
+        </button>
+        <button id="modal-slip-btn-approve" class="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 shadow-md shadow-emerald-600/20 transition-colors">
+          Approve & Upgrade Package
+        </button>
+      </div>
+    </div>
+  </div>
+
+</AdminLayout>
+
+<script>
+  import { AdminStore, type AdminPayment } from '../../lib/api/admin';
+  import { showToast } from '../../lib/toast';
+
+  let currentTab = 'pending';
+  let activePayment: AdminPayment | null = null;
+  let paymentsCache: AdminPayment[] = [];
+
+  async function renderPayments() {
+    const tbody = document.getElementById('payments-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="6" class="py-12 text-center text-slate-400">Loading live payments from API...</td></tr>';
+    try {
+      const list = await AdminStore.getPayments();
+      paymentsCache = list;
+
+      const pendingCount = list.filter(p => p.status === 'pending').length;
+      const approvedCount = list.filter(p => p.status === 'approved').length;
+      const rejectedCount = list.filter(p => p.status === 'rejected').length;
+
+      const elPending = document.getElementById('pay-count-pending');
+      if (elPending) elPending.textContent = String(pendingCount);
+      const elApproved = document.getElementById('pay-count-approved');
+      if (elApproved) elApproved.textContent = String(approvedCount);
+      const elRejected = document.getElementById('pay-count-rejected');
+      if (elRejected) elRejected.textContent = String(rejectedCount);
+
+      const filtered = list.filter(p => p.status === currentTab);
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="py-12 text-center text-slate-500">No live data — no ${currentTab} payments.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(p => `
+      <tr class="hover:bg-slate-50/80 transition-colors">
+        <td class="py-3.5 px-4">
+          <div class="flex items-center gap-3">
+            <img src="${p.avatar}" class="w-9 h-9 rounded-xl object-cover border border-slate-200" alt="${p.doctor_name}" />
+            <div>
+              <a href="/admin/doctors/${p.doctor_id}/" class="font-bold text-navy-900 hover:text-brand-600 transition-colors">
+                ${p.doctor_name}
+              </a>
+              <p class="text-[11px] text-slate-400">${p.doctor_email}</p>
+            </div>
+          </div>
+        </td>
+        <td class="py-3.5 px-4">
+          <p class="font-bold text-navy-900">${p.package_name}</p>
+          <p class="text-xs font-black text-brand-600">Rs ${p.amount_pkr.toLocaleString()}</p>
+        </td>
+        <td class="py-3.5 px-4">
+          <p class="font-semibold text-slate-800">${p.payment_method}</p>
+          <span class="font-mono text-[11px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+            ${p.transaction_id}
+          </span>
+        </td>
+        <td class="py-3.5 px-4 text-slate-500 text-[11px]">
+          ${p.submitted_at}
+        </td>
+        <td class="py-3.5 px-4">
+          <button 
+            data-action="view-slip" 
+            data-id="${p.id}"
+            class="flex items-center gap-1.5 text-brand-600 hover:text-brand-700 font-bold"
+          >
+            <Eye className="w-4 h-4" />
+            <span>View Slip</span>
+          </button>
+        </td>
+        <td class="py-3.5 px-4 text-right">
+          ${p.status === 'pending' ? `
+            <div class="flex items-center justify-end gap-1.5">
+              <button 
+                data-action="reject-pay" 
+                data-id="${p.id}"
+                class="px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-50 text-rose-700 hover:bg-rose-100 transition-colors"
+              >
+                Reject
+              </button>
+              <button 
+                data-action="approve-pay" 
+                data-id="${p.id}"
+                class="px-3 py-1 rounded-lg text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm"
+              >
+                Approve
+              </button>
+            </div>
+          ` : `
+            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${
+              p.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
+            }">
+              ${p.status.toUpperCase()}
+            </span>
+          `}
+        </td>
+      </tr>
+    `).join('');
+
+      // Bind action events (re-bound after each render)
+      document.querySelectorAll('[data-action="approve-pay"]').forEach((btn) => {
+        btn.addEventListener('click', async (e) => {
+          const id = Number((e.currentTarget as HTMLElement).getAttribute('data-id'));
+          try {
+            await AdminStore.reviewPayment(id, 'approved', 'Approved via admin console');
+            showToast({
+              title: 'Payment Cleared',
+              message: 'Doctor account upgraded to premium tier successfully.',
+              type: 'payment'
+            });
+            await renderPayments();
+          } catch (err: any) {
+            showToast({ title: 'Approval failed', message: err?.response?.data?.message || err?.message || 'Failed to approve payment.', type: 'error' });
+          }
+        });
+      });
+
+      document.querySelectorAll('[data-action="reject-pay"]').forEach((btn) => {
+        btn.addEventListener('click', async (e) => {
+          const id = Number((e.currentTarget as HTMLElement).getAttribute('data-id'));
+          const reason = prompt('Enter rejection note:');
+          if (reason) {
+            try {
+              await AdminStore.reviewPayment(id, 'rejected', reason);
+              showToast({
+                title: 'Payment Rejected',
+                message: 'Transaction flagged as rejected.',
+                type: 'warning'
+              });
+              await renderPayments();
+            } catch (err: any) {
+              showToast({ title: 'Rejection failed', message: err?.response?.data?.message || err?.message || 'Failed to reject payment.', type: 'error' });
+            }
+          }
+        });
+      });
+
+      document.querySelectorAll('[data-action="view-slip"]').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          const id = Number((e.currentTarget as HTMLElement).getAttribute('data-id'));
+          const item = paymentsCache.find(p => p.id === id);
+          if (item) {
+            activePayment = item;
+            const modal = document.getElementById('modal-inspect-slip');
+            const title = document.getElementById('modal-slip-title');
+            const sub = document.getElementById('modal-slip-sub');
+            const img = document.getElementById('modal-slip-img') as HTMLImageElement;
+            const trx = document.getElementById('modal-slip-trx');
+            const notes = document.getElementById('modal-slip-notes');
+
+            if (title) title.textContent = `${item.doctor_name} — Rs ${item.amount_pkr.toLocaleString()}`;
+            if (sub) sub.textContent = `${item.package_name} • ${item.payment_method}`;
+            if (img) img.src = item.proof_image;
+            if (trx) trx.textContent = item.transaction_id;
+            if (notes) notes.textContent = item.admin_notes || 'Deposit slip uploaded.';
+
+            modal?.classList.remove('hidden');
+          }
+        });
+      });
+    } catch (err: any) {
+      tbody.innerHTML = `<tr><td colspan="6" class="py-12 text-center text-rose-600">${err?.response?.data?.message || err?.message || 'Failed to load live payments. Please retry.'}</td></tr>`;
+    }
+  }
+
+  async function initPayments() {
+    document.querySelectorAll('.pay-tab-btn').forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        const tab = (e.currentTarget as HTMLElement).getAttribute('data-tab');
+        if (!tab) return;
+        currentTab = tab;
+
+        document.querySelectorAll('.pay-tab-btn').forEach((b) => {
+          b.className = 'flex-1 py-2 px-3 rounded-xl text-xs font-bold text-slate-600 hover:text-navy-900 transition-all pay-tab-btn';
+        });
+
+        (e.currentTarget as HTMLElement).className = 'flex-1 py-2 px-3 rounded-xl text-xs font-bold bg-brand-500 text-white shadow-sm transition-all pay-tab-btn';
+        await renderPayments();
+      });
+    });
+
+    // Inspect Modal Buttons
+    const modal = document.getElementById('modal-inspect-slip');
+    document.getElementById('btn-close-slip-modal')?.addEventListener('click', () => modal?.classList.add('hidden'));
+
+    document.getElementById('modal-slip-btn-approve')?.addEventListener('click', async () => {
+      if (activePayment) {
+        try {
+          await AdminStore.reviewPayment(activePayment.id, 'approved', 'Verified and upgraded');
+          modal?.classList.add('hidden');
+          showToast({
+            title: 'Payment Cleared',
+            message: 'Doctor account upgraded to premium tier successfully.',
+            type: 'payment'
+          });
+          await renderPayments();
+        } catch (err: any) {
+          showToast({ title: 'Approval failed', message: err?.response?.data?.message || err?.message || 'Failed to approve payment.', type: 'error' });
+        }
+      }
+    });
+
+    document.getElementById('modal-slip-btn-reject')?.addEventListener('click', async () => {
+      if (activePayment) {
+        const reason = prompt('Enter rejection note:');
+        if (reason) {
+          try {
+            await AdminStore.reviewPayment(activePayment.id, 'rejected', reason);
+            modal?.classList.add('hidden');
+            showToast({
+              title: 'Payment Rejected',
+              message: 'Transaction flagged as rejected.',
+              type: 'warning'
+            });
+            await renderPayments();
+          } catch (err: any) {
+            showToast({ title: 'Rejection failed', message: err?.response?.data?.message || err?.message || 'Failed to reject payment.', type: 'error' });
+          }
+        }
+      }
+    });
+
+    await renderPayments();
+  }
+
+  document.addEventListener('DOMContentLoaded', initPayments);
+  document.addEventListener('astro:page-load', initPayments);
+</script>

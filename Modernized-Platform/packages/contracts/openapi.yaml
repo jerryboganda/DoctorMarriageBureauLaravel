@@ -1,0 +1,1186 @@
+openapi: 3.1.0
+info:
+  title: Doctor Marriage Bureau Modernized API
+  description: >-
+    Complete OpenAPI 3.1 specification for the Doctor Marriage Bureau
+    high-performance Go Modular Monolith API (v1). Covers Authentication,
+    Profiles, Discovery & Match Intelligence, Proposals, Real-time Chat,
+    Progression, Media Management with Cloudflare R2, and Payments.
+  version: 1.0.0
+  contact:
+    name: Engineering Team
+    email: dev@doctormarriagebureau.com.pk
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local Docker Development API Server
+  - url: https://panel.doctormarriagebureau.com.pk/api/v1
+    description: Production VPS API Gateway
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Health & System
+    description: Liveness, readiness, and telemetry probes
+  - name: Authentication & Security
+    description: Signup, Signin, OTP, 2FA TOTP, Step-Up Auth, and Tokens
+  - name: Profiles & Biodata
+    description: Comprehensive 6-section doctor profiles and PDF generation
+  - name: Discovery & Match Intelligence
+    description: Algorithmic search, compatibility scores, and travel mode
+  - name: Proposals & Shortlists
+    description: Expression of interest lifecycle and bookmarking
+  - name: Courtship Progression
+    description: 5-stage milestone progression and wedding planning ledger
+  - name: Real-time Chat & Presence
+    description: WebSocket streaming, message persistence, and presence
+  - name: Media & Privacy
+    description: Cloudflare R2 presigned uploads and photo access control
+  - name: Packages & Payments
+    description: Subscriptions, Stripe checkout, Pakistani gateways, and coupons
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health & System
+      summary: Health check probe
+      description: Returns status of API server, PostgreSQL database, and Redis cache.
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /auth/signup:
+    post:
+      tags:
+        - Authentication & Security
+      summary: Register a new member account
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokenResponse'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/signin:
+    post:
+      tags:
+        - Authentication & Security
+      summary: Authenticate user with credentials
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SigninRequest'
+      responses:
+        '200':
+          description: Authenticated successfully (or 2FA challenge triggered)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SigninResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '423':
+          description: Password change required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/2fa/challenge:
+    post:
+      tags:
+        - Authentication & Security
+      summary: Submit 2FA TOTP or recovery code to complete signin
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TwoFactorChallengeRequest'
+      responses:
+        '200':
+          description: 2FA challenge passed, auth token returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokenResponse'
+        '401':
+          description: Invalid or expired 2FA code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication & Security
+      summary: Revoke current session/token
+      responses:
+        '200':
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+
+  /profiles/full:
+    get:
+      tags:
+        - Profiles & Biodata
+      summary: Retrieve complete profile data for logged-in user
+      responses:
+        '200':
+          description: Full profile document
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FullProfileResponse'
+
+  /profiles/section/{section}:
+    post:
+      tags:
+        - Profiles & Biodata
+      summary: Update a specific profile section
+      parameters:
+        - name: section
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [basics, family, career, lifestyle, spiritual, preferences, residency]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Section updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+
+  /profiles/quality-score:
+    get:
+      tags:
+        - Profiles & Biodata
+      summary: Calculate dynamic Profile Quality Score (0-100%)
+      responses:
+        '200':
+          description: Quality score breakdown
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QualityScoreResponse'
+
+  /profiles/visibility:
+    get:
+      tags:
+        - Profiles & Biodata
+      summary: Get granular field-level privacy and visibility settings
+      responses:
+        '200':
+          description: Visibility settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VisibilitySettingsResponse'
+    post:
+      tags:
+        - Profiles & Biodata
+      summary: Update field-level privacy settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VisibilitySettingsUpdateRequest'
+      responses:
+        '200':
+          description: Privacy settings updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+
+  /profiles/download-biodata:
+    get:
+      tags:
+        - Profiles & Biodata
+      summary: Export formatted Biodata PDF document
+      parameters:
+        - name: member_id
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: PDF stream
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+
+  /discovery:
+    get:
+      tags:
+        - Discovery & Match Intelligence
+      summary: Get paginated discovery candidate cards
+      parameters:
+        - name: feed
+          in: query
+          schema:
+            type: string
+            enum: [recommended, agent_picks, high_intent, bookmarked, near_me]
+            default: recommended
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 15
+      responses:
+        '200':
+          description: Discovery candidate cards
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscoveryFeedResponse'
+
+  /discovery/search:
+    get:
+      tags:
+        - Discovery & Match Intelligence
+      summary: Parametric doctor profile search
+      parameters:
+        - name: min_age
+          in: query
+          schema:
+            type: integer
+        - name: max_age
+          in: query
+          schema:
+            type: integer
+        - name: religion_id
+          in: query
+          schema:
+            type: integer
+        - name: sect_id
+          in: query
+          schema:
+            type: integer
+        - name: caste_id
+          in: query
+          schema:
+            type: integer
+        - name: city_id
+          in: query
+          schema:
+            type: integer
+        - name: country_id
+          in: query
+          schema:
+            type: integer
+        - name: speciality
+          in: query
+          schema:
+            type: string
+        - name: degree
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscoveryFeedResponse'
+
+  /discovery/match-intelligence/{id}:
+    get:
+      tags:
+        - Discovery & Match Intelligence
+      summary: Get 6-factor compatibility breakdown for candidate
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Compatibility score breakdown
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchIntelligenceResponse'
+
+  /interests/express:
+    post:
+      tags:
+        - Proposals & Shortlists
+      summary: Send a proposal (express interest) to a candidate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id]
+              properties:
+                user_id:
+                  type: integer
+                message:
+                  type: string
+      responses:
+        '200':
+          description: Proposal sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+
+  /interests/requests:
+    get:
+      tags:
+        - Proposals & Shortlists
+      summary: List incoming and outgoing proposals
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [received, sent]
+            default: received
+      responses:
+        '200':
+          description: Proposals list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InterestListResponse'
+
+  /interests/{id}/accept:
+    post:
+      tags:
+        - Proposals & Shortlists
+      summary: Accept an incoming proposal and auto-provision chat thread
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Proposal accepted and chat thread created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InterestAcceptResponse'
+
+  /interests/{id}/reject:
+    post:
+      tags:
+        - Proposals & Shortlists
+      summary: Reject an incoming proposal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Proposal rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+
+  /shortlists:
+    get:
+      tags:
+        - Proposals & Shortlists
+      summary: Get bookmarked shortlists
+      responses:
+        '200':
+          description: Shortlisted profiles
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscoveryFeedResponse'
+    post:
+      tags:
+        - Proposals & Shortlists
+      summary: Add candidate to shortlist
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id]
+              properties:
+                user_id:
+                  type: integer
+      responses:
+        '200':
+          description: Candidate bookmarked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+
+  /chat/threads:
+    get:
+      tags:
+        - Real-time Chat & Presence
+      summary: List all active chat threads with unread counts
+      responses:
+        '200':
+          description: List of conversations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatThreadListResponse'
+
+  /chat/threads/{id}/messages:
+    get:
+      tags:
+        - Real-time Chat & Presence
+      summary: Get paginated message history for a conversation thread
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 30
+      responses:
+        '200':
+          description: Thread messages
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatMessageListResponse'
+    post:
+      tags:
+        - Real-time Chat & Presence
+      summary: Send a message in thread
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendMessageRequest'
+      responses:
+        '201':
+          description: Message dispatched and stored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatMessage'
+
+  /media/upload-url:
+    post:
+      tags:
+        - Media & Privacy
+      summary: Generate presigned Cloudflare R2 upload URL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [file_name, content_type, category]
+              properties:
+                file_name:
+                  type: string
+                content_type:
+                  type: string
+                  enum: [image/jpeg, image/png, image/webp]
+                category:
+                  type: string
+                  enum: [avatar, gallery, voice_bio, video_bio, payment_proof, verification_doc]
+      responses:
+        '200':
+          description: Signed upload URL generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresignedUploadResponse'
+
+  /media/confirm:
+    post:
+      tags:
+        - Media & Privacy
+      summary: Confirm upload completion and trigger async variant generation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [media_id, key]
+              properties:
+                media_id:
+                  type: string
+                key:
+                  type: string
+      responses:
+        '200':
+          description: Media registered and queued for processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaItem'
+
+  /packages:
+    get:
+      tags:
+        - Packages & Payments
+      summary: Get active membership subscription packages and features
+      security: []
+      responses:
+        '200':
+          description: Packages list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PackageListResponse'
+
+  /payments/checkout/stripe:
+    post:
+      tags:
+        - Packages & Payments
+      summary: Create Stripe checkout session for package purchase
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [package_id]
+              properties:
+                package_id:
+                  type: integer
+                coupon_code:
+                  type: string
+      responses:
+        '200':
+          description: Stripe checkout session URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  session_id:
+                    type: string
+                  checkout_url:
+                    type: string
+
+  /payments/manual/submit:
+    post:
+      tags:
+        - Packages & Payments
+      summary: Submit offline Pakistani payment proof (JazzCash, EasyPaisa, Bank Transfer)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [package_id, payment_method, transaction_id]
+              properties:
+                package_id:
+                  type: integer
+                payment_method:
+                  type: string
+                  enum: [jazzcash, easypaisa, bank_transfer]
+                transaction_id:
+                  type: string
+                proof_media_key:
+                  type: string
+      responses:
+        '200':
+          description: Payment proof submitted for admin verification
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+
+  /coupons/validate:
+    post:
+      tags:
+        - Packages & Payments
+      summary: Validate promo discount coupon code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code, package_id]
+              properties:
+                code:
+                  type: string
+                package_id:
+                  type: integer
+      responses:
+        '200':
+          description: Coupon validation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CouponValidationResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+        version:
+          type: string
+          example: 1.0.0
+        timestamp:
+          type: string
+          format: date-time
+        database:
+          type: string
+          example: connected
+        redis:
+          type: string
+          example: connected
+
+    SignupRequest:
+      type: object
+      required: [first_name, last_name, email, password, gender, on_behalf]
+      properties:
+        first_name:
+          type: string
+          example: Sarah
+        last_name:
+          type: string
+          example: Khan
+        email:
+          type: string
+          format: email
+          example: dr.sarah@example.com
+        phone:
+          type: string
+          example: "+923001234567"
+        password:
+          type: string
+          format: password
+          minLength: 8
+        gender:
+          type: string
+          enum: [1, 2, "male", "female"]
+        on_behalf:
+          type: integer
+          example: 1
+        referral_code:
+          type: string
+          example: "DOCMATCH26"
+
+    SigninRequest:
+      type: object
+      required: [email_or_phone, password]
+      properties:
+        email_or_phone:
+          type: string
+          example: dr.sarah@example.com
+        password:
+          type: string
+          format: password
+
+    SigninResponse:
+      type: object
+      properties:
+        requires_2fa:
+          type: boolean
+          example: false
+        temp_token:
+          type: string
+        token:
+          type: string
+          example: "128|AbCdEf123456..."
+        user:
+          $ref: '#/components/schemas/UserSummary'
+
+    TwoFactorChallengeRequest:
+      type: object
+      required: [temp_token, code]
+      properties:
+        temp_token:
+          type: string
+        code:
+          type: string
+          example: "492104"
+        is_recovery_code:
+          type: boolean
+          default: false
+
+    AuthTokenResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        token_type:
+          type: string
+          example: Bearer
+        user:
+          $ref: '#/components/schemas/UserSummary'
+
+    UserSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        membership_type:
+          type: string
+        profile_picture:
+          type: string
+        verification_status:
+          type: integer
+
+    FullProfileResponse:
+      type: object
+      properties:
+        user_id:
+          type: integer
+        basics:
+          type: object
+        family:
+          type: object
+        career:
+          type: object
+        lifestyle:
+          type: object
+        spiritual:
+          type: object
+        partner_expectations:
+          type: object
+        media:
+          type: object
+        quality_score:
+          type: integer
+
+    QualityScoreResponse:
+      type: object
+      properties:
+        overall_score:
+          type: integer
+          example: 85
+        breakdown:
+          type: object
+          properties:
+            basics:
+              type: integer
+            career_education:
+              type: integer
+            family:
+              type: integer
+            lifestyle_spiritual:
+              type: integer
+            partner_expectations:
+              type: integer
+            photos_media:
+              type: integer
+            verification:
+              type: integer
+
+    VisibilitySettingsResponse:
+      type: object
+      properties:
+        profile_photo_visible_to:
+          type: string
+          enum: [all, premium, connected, private]
+        phone_visible_to:
+          type: string
+          enum: [all, connected, accepted, private]
+        family_visible_to:
+          type: string
+          enum: [all, connected, private]
+        anonymous_browsing:
+          type: boolean
+
+    VisibilitySettingsUpdateRequest:
+      type: object
+      properties:
+        profile_photo_visible_to:
+          type: string
+        phone_visible_to:
+          type: string
+        family_visible_to:
+          type: string
+        anonymous_browsing:
+          type: boolean
+
+    DiscoveryFeedResponse:
+      type: object
+      properties:
+        candidates:
+          type: array
+          items:
+            $ref: '#/components/schemas/CandidateCard'
+        next_cursor:
+          type: string
+          nullable: true
+        total_count:
+          type: integer
+
+    CandidateCard:
+      type: object
+      properties:
+        id:
+          type: integer
+        code:
+          type: string
+          example: "DMB-8492"
+        first_name:
+          type: string
+        age:
+          type: integer
+        height:
+          type: string
+        speciality:
+          type: string
+          example: "Cardiology"
+        degree:
+          type: string
+          example: "MBBS, FCPS"
+        city:
+          type: string
+          example: "Lahore"
+        country:
+          type: string
+          example: "Pakistan"
+        sect:
+          type: string
+          example: "Sunni"
+        caste:
+          type: string
+          example: "Rajput"
+        photo_url:
+          type: string
+        photo_blurred:
+          type: boolean
+        match_percentage:
+          type: integer
+          example: 92
+
+    MatchIntelligenceResponse:
+      type: object
+      properties:
+        candidate_id:
+          type: integer
+        overall_score:
+          type: integer
+          example: 94
+        factors:
+          type: array
+          items:
+            type: object
+            properties:
+              factor:
+                type: string
+                example: "Medical Career"
+              score:
+                type: integer
+                example: 100
+              weight:
+                type: string
+                example: "must_have"
+              match:
+                type: boolean
+                example: true
+        reasons_to_connect:
+          type: array
+          items:
+            type: string
+        potential_dealbreakers:
+          type: array
+          items:
+            type: string
+
+    InterestListResponse:
+      type: object
+      properties:
+        interests:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              user_id:
+                type: integer
+              candidate:
+                $ref: '#/components/schemas/CandidateCard'
+              status:
+                type: string
+                enum: [pending, accepted, rejected, withdrawn]
+              created_at:
+                type: string
+                format: date-time
+
+    InterestAcceptResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: accepted
+        chat_thread_id:
+          type: integer
+          example: 412
+
+    ChatThreadListResponse:
+      type: object
+      properties:
+        threads:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatThread'
+
+    ChatThread:
+      type: object
+      properties:
+        id:
+          type: integer
+        participant:
+          $ref: '#/components/schemas/UserSummary'
+        last_message:
+          type: string
+        last_message_at:
+          type: string
+          format: date-time
+        unread_count:
+          type: integer
+        is_online:
+          type: boolean
+
+    ChatMessageListResponse:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatMessage'
+        next_cursor:
+          type: string
+          nullable: true
+
+    ChatMessage:
+      type: object
+      properties:
+        id:
+          type: integer
+        thread_id:
+          type: integer
+        sender_id:
+          type: integer
+        message:
+          type: string
+        attachment_url:
+          type: string
+          nullable: true
+        is_biodata_share:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    SendMessageRequest:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+        attachment_key:
+          type: string
+        is_biodata_share:
+          type: boolean
+
+    PresignedUploadResponse:
+      type: object
+      properties:
+        media_id:
+          type: string
+        upload_url:
+          type: string
+        key:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+
+    MediaItem:
+      type: object
+      properties:
+        id:
+          type: string
+        url:
+          type: string
+        variants:
+          type: object
+          properties:
+            thumb:
+              type: string
+            card:
+              type: string
+            large:
+              type: string
+            blurred:
+              type: string
+
+    PackageListResponse:
+      type: object
+      properties:
+        packages:
+          type: array
+          items:
+            $ref: '#/components/schemas/PackageItem'
+
+    PackageItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+          example: "Doctor Royal Platinum"
+        price_pkr:
+          type: number
+          example: 25000
+        price_usd:
+          type: number
+          example: 120
+        validity_days:
+          type: integer
+          example: 180
+        proposal_limit:
+          type: integer
+          example: 100
+        contact_view_limit:
+          type: integer
+          example: 50
+        features:
+          type: array
+          items:
+            type: string
+
+    CouponValidationResponse:
+      type: object
+      properties:
+        valid:
+          type: boolean
+        code:
+          type: string
+        discount_percent:
+          type: number
+        discount_amount:
+          type: number
+        final_price:
+          type: number
+
+    MessageResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Action completed successfully"
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: "VALIDATION_FAILED"
+            message:
+              type: string
+              example: "The given input was invalid"
+            details:
+              type: object

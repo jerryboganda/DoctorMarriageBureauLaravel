@@ -1,0 +1,67 @@
+name: Modernized Platform CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test-go-api:
+    name: Go API Tests & Static Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Go 1.22
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+      - name: Run Go Unit Tests
+        run: |
+          cd Modernized-Platform/services/api
+          go test -v -race -cover ./...
+
+  test-rust-compute:
+    name: Rust Compute Engine Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Run Cargo Tests
+        run: |
+          cd Modernized-Platform/services/rust-compute
+          cargo test --release
+
+  test-astro-web:
+    name: Astro Web Frontend Build & Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Dependencies
+        run: |
+          cd Modernized-Platform/apps/web
+          npm ci
+      - name: Run Build
+        run: |
+          cd Modernized-Platform/apps/web
+          npm run build
+
+  parity-suite:
+    name: Differential Parity Suite
+    runs-on: ubuntu-latest
+    needs: [test-go-api, test-rust-compute, test-astro-web]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run Parity Verification
+        run: |
+          cd Modernized-Platform/tests/parity
+          python run_all.py

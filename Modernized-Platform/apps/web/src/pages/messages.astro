@@ -1,0 +1,199 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+import { Send, Search, Lock } from 'lucide-react';
+---
+
+<DashboardLayout
+  title="Doctor Messages & Live Chat — Doctor Marriage Bureau"
+  description="Private, encrypted halal chat with verified doctor proposals."
+>
+  <div class="h-[calc(100vh-9.5rem)] rounded-3xl bg-white border border-brand-100/80 shadow-luxury overflow-hidden flex flex-col md:flex-row animate-fadeIn">
+    <div class="w-full md:w-80 border-r border-navy-100 flex flex-col bg-navy-50/50">
+      <div class="p-4 border-b border-navy-100 bg-white">
+        <h2 class="text-base font-bold text-navy-800 mb-3 font-serif">Active Conversations</h2>
+        <div class="relative">
+          <input id="thread-search" type="text" placeholder="Search messages..." class="w-full pl-9 pr-3 py-2 rounded-xl text-xs bg-navy-50 border border-navy-200 outline-none focus:border-brand-500 text-navy-800" />
+          <Search className="w-3.5 h-3.5 text-navy-400 absolute left-3 top-1/2 -translate-y-1/2" />
+        </div>
+      </div>
+      <div id="thread-list" class="flex-1 overflow-y-auto divide-y divide-navy-100"></div>
+    </div>
+
+    <div class="flex-1 flex flex-col bg-white">
+      <div id="chat-header" class="p-4 px-6 border-b border-navy-100 flex items-center justify-between bg-white/95">
+        <div class="text-xs text-navy-500">Select a conversation to begin</div>
+      </div>
+      <div id="message-stream" class="flex-1 p-6 overflow-y-auto space-y-4 bg-navy-50/40">
+        <div class="max-w-md mx-auto p-3 rounded-2xl bg-brand-50 border border-brand-100 text-center space-y-1 text-[11px] text-navy-700">
+          <div class="flex items-center justify-center gap-1 text-brand-600 font-bold">
+            <Lock className="w-3.5 h-3.5" />
+            <span>Private matchmaking conversation</span>
+          </div>
+          <p>Choose a thread on the left to load messages.</p>
+        </div>
+      </div>
+      <form id="msg-form" class="p-4 border-t border-navy-100 bg-white flex items-center gap-2">
+        <input id="msg-input" type="text" placeholder="Type your message here..." disabled class="flex-1 py-3 px-4 rounded-2xl text-xs bg-navy-50 border border-navy-200 outline-none focus:bg-white focus:border-brand-500 text-navy-800" />
+        <button type="submit" id="msg-send" disabled class="p-3 rounded-full bg-gradient-to-r from-brand-500 via-brand-600 to-pink-600 text-white shadow-lg shadow-brand-500/30 disabled:opacity-50">
+          <Send className="w-4 h-4" />
+        </button>
+      </form>
+    </div>
+  </div>
+</DashboardLayout>
+
+<script>
+  import { api, avatarFor, escapeHtml, timeAgo, toast, errorMessage, emptyStateHtml, doctorName, getMe } from '../lib/dashboard/common';
+
+  type Thread = { id: number; other_user: any; last_message?: string; last_message_at?: string; unread_count?: number };
+  type Msg = { id: number; thread_id: number; sender_user_id: number; message: string; is_biodata_share?: boolean; is_read?: boolean; created_at: string };
+
+  const list = document.getElementById('thread-list')!;
+  const stream = document.getElementById('message-stream')!;
+  const header = document.getElementById('chat-header')!;
+  const input = document.getElementById('msg-input') as HTMLInputElement;
+  const sendBtn = document.getElementById('msg-send') as HTMLButtonElement;
+  const wanted = Number(new URLSearchParams(location.search).get('thread') || 0);
+
+  let threads: Thread[] = [];
+  let activeId = 0;
+  let meId = 0;
+  let ws: WebSocket | null = null;
+
+  getMe().then((me) => { meId = Number(me?.id || 0); });
+
+  function renderThreads(filter = '') {
+    const q = filter.toLowerCase();
+    const rows = threads.filter((t) => {
+      const name = doctorName(t.other_user).toLowerCase();
+      return !q || name.includes(q) || String(t.last_message || '').toLowerCase().includes(q);
+    });
+    if (!rows.length) {
+      list.innerHTML = emptyStateHtml('No conversations', 'Accept a proposal to open a private chat.', '💬');
+      return;
+    }
+    list.innerHTML = rows
+      .map((t) => {
+        const other = t.other_user || {};
+        const name = escapeHtml(doctorName(other));
+        const photo = avatarFor(other.profile_photo_url, other.gender);
+        const active = Number(t.id) === activeId;
+        return `
+          <button data-thread="${t.id}" class="w-full text-left p-4 flex items-start gap-3 ${active ? 'bg-brand-50/70 border-l-4 border-brand-500' : 'hover:bg-navy-100/60'}">
+            <div class="w-12 h-12 rounded-2xl overflow-hidden bg-navy-100 border border-navy-200 shrink-0">
+              <img src="${photo}" alt="${name}" class="w-full h-full object-cover" />
+            </div>
+            <div class="flex-1 min-w-0 space-y-1">
+              <div class="flex items-center justify-between">
+                <h4 class="text-xs font-bold text-navy-800 truncate">${name}</h4>
+                <span class="text-[10px] text-navy-400">${timeAgo(t.last_message_at)}</span>
+              </div>
+              <p class="text-[11px] text-brand-600 font-medium truncate">${escapeHtml(other.degree || other.speciality || '')}</p>
+              <p class="text-xs text-navy-500 truncate">${escapeHtml(t.last_message || 'No messages yet')}</p>
+            </div>
+            ${Number(t.unread_count) > 0 ? `<span class="shrink-0 w-5 h-5 rounded-full bg-brand-500 text-white text-[10px] font-bold flex items-center justify-center">${t.unread_count}</span>` : ''}
+          </button>`;
+      })
+      .join('');
+    list.querySelectorAll<HTMLButtonElement>('[data-thread]').forEach((btn) => {
+      btn.addEventListener('click', () => openThread(Number(btn.dataset.thread)));
+    });
+  }
+
+  function renderMessages(msgs: Msg[], other: any) {
+    const photo = avatarFor(other?.profile_photo_url, other?.gender);
+    stream.innerHTML = `
+      <div class="max-w-md mx-auto p-3 rounded-2xl bg-brand-50 border border-brand-100 text-center space-y-1 text-[11px] text-navy-700">
+        <div class="font-bold text-brand-600">Private matchmaking conversation</div>
+        <p>Please maintain professional respect and Islamic courting guidelines.</p>
+      </div>` + msgs.map((m) => {
+        const mine = Number(m.sender_user_id) === meId;
+        if (m.is_biodata_share) {
+          return `<div class="flex ${mine ? 'justify-end' : ''} "><div class="p-4 rounded-2xl bg-white border border-brand-200 text-xs">Biodata shared · <a class="font-bold text-brand-600" href="/profiles/download-biodata?user_id=${m.sender_user_id}" target="_blank">Download</a></div></div>`;
+        }
+        return mine
+          ? `<div class="flex items-end justify-end gap-2 max-w-md ml-auto"><div class="p-4 rounded-2xl rounded-br-sm bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-md"><p class="text-xs leading-relaxed">${escapeHtml(m.message)}</p><span class="text-[10px] text-brand-200 block text-right">${timeAgo(m.created_at)}</span></div></div>`
+          : `<div class="flex items-end gap-2 max-w-md"><div class="w-8 h-8 rounded-xl overflow-hidden bg-navy-100 shrink-0"><img src="${photo}" class="w-full h-full object-cover" /></div><div class="p-4 rounded-2xl rounded-bl-sm bg-white border border-navy-200 shadow-sm"><p class="text-xs text-navy-800 leading-relaxed">${escapeHtml(m.message)}</p><span class="text-[10px] text-navy-400 block text-right">${timeAgo(m.created_at)}</span></div></div>`;
+      }).join('');
+    stream.scrollTop = stream.scrollHeight;
+  }
+
+  async function openThread(id: number) {
+    activeId = id;
+    renderThreads((document.getElementById('thread-search') as HTMLInputElement).value);
+    const t = threads.find((x) => Number(x.id) === id);
+    const other = t?.other_user || {};
+    const name = escapeHtml(doctorName(other));
+    const photo = avatarFor(other.profile_photo_url, other.gender);
+    header.innerHTML = `
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl overflow-hidden bg-navy-100 border border-navy-200"><img src="${photo}" class="w-full h-full object-cover" /></div>
+        <div>
+          <h3 class="text-sm font-bold text-navy-800">${name}</h3>
+          <p class="text-[11px] text-navy-500">${escapeHtml(other.city_name || other.speciality || 'Verified doctor')}</p>
+        </div>
+      </div>
+      <a href="/profiles/download-biodata?user_id=${other.user_id || ''}" class="px-3.5 py-1.5 rounded-xl bg-brand-50 text-brand-700 text-xs font-bold">Share / Download Biodata</a>`;
+    input.disabled = false;
+    sendBtn.disabled = false;
+    try {
+      const res = await api.get(`/chat/threads/${id}/messages`);
+      const msgs = (res.data?.data ?? []) as Msg[];
+      renderMessages(msgs, other);
+    } catch (err) {
+      stream.innerHTML = `<p class="text-xs text-brand-600">${escapeHtml(errorMessage(err))}</p>`;
+    }
+    connectWs();
+  }
+
+  function connectWs() {
+    const token = localStorage.getItem('auth_token');
+    if (!token) return;
+    try { ws?.close(); } catch {}
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    ws = new WebSocket(`${proto}//${location.host}/api/v1/chat/ws?token=${encodeURIComponent(token)}`);
+    ws.onmessage = (ev) => {
+      try {
+        const payload = JSON.parse(ev.data);
+        if (Number(payload.thread_id) === activeId && payload.message) {
+          const t = threads.find((x) => Number(x.id) === activeId);
+          const el = document.createElement('div');
+          stream.appendChild(el);
+          api.get(`/chat/threads/${activeId}/messages`).then((res) => {
+            renderMessages(res.data?.data ?? [], t?.other_user);
+          }).catch(() => undefined);
+        }
+      } catch {}
+    };
+  }
+
+  document.getElementById('msg-form')!.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    if (!activeId || !input.value.trim()) return;
+    const text = input.value.trim();
+    input.value = '';
+    try {
+      await api.post(`/chat/threads/${activeId}/messages`, { message: text });
+      const t = threads.find((x) => Number(x.id) === activeId);
+      const res = await api.get(`/chat/threads/${activeId}/messages`);
+      renderMessages(res.data?.data ?? [], t?.other_user);
+    } catch (err) {
+      toast(errorMessage(err, 'Could not send message.'), 'error');
+    }
+  });
+
+  document.getElementById('thread-search')!.addEventListener('input', (ev) => {
+    renderThreads((ev.target as HTMLInputElement).value);
+  });
+
+  api.get('/chat/threads')
+    .then((res) => {
+      threads = (res.data?.data ?? []) as Thread[];
+      renderThreads();
+      if (wanted && threads.some((t) => Number(t.id) === wanted)) openThread(wanted);
+      else if (threads[0]) openThread(Number(threads[0].id));
+    })
+    .catch((err) => {
+      list.innerHTML = `<p class="p-4 text-xs text-brand-600">${escapeHtml(errorMessage(err))}</p>`;
+    });
+</script>

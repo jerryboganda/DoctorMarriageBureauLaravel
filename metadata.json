@@ -1,0 +1,8 @@
+{
+  "name": "Doctor Marriage Bureau",
+  "description": "Exclusive verified halal matchmaking platform & admin governance console for doctors and medical professionals in Pakistan and overseas.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

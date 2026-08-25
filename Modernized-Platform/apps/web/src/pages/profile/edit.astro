@@ -1,0 +1,307 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+---
+
+<DashboardLayout
+  title="Edit Doctor Profile — Doctor Marriage Bureau"
+  description="Update medical credentials, personal attributes, and partner expectations."
+>
+  <div class="space-y-8 animate-fadeIn max-w-4xl">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-black text-navy-800 font-serif">
+          Edit <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 via-brand-600 to-pink-600">Doctor Profile</span>
+        </h1>
+        <p class="text-xs sm:text-sm text-navy-500">Keep your medical background and matchmaking criteria accurate.</p>
+      </div>
+      <div class="shrink-0 p-3.5 rounded-2xl bg-white border border-brand-100 shadow-luxury text-right">
+        <span class="text-[11px] font-bold text-navy-500 block">Quality Score</span>
+        <span id="edit-score" class="text-sm font-bold text-brand-600">—</span>
+      </div>
+    </div>
+
+    <div id="edit-tabs" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-center text-xs font-bold"></div>
+    <form id="edit-form" class="p-6 sm:p-8 rounded-3xl bg-white border border-brand-100/80 shadow-luxury space-y-5"></form>
+  </div>
+</DashboardLayout>
+
+<script>
+  import { api, toast, errorMessage, avatarFor, escapeHtml } from '../../lib/dashboard/common';
+
+  type Opt = { value: string; label: string };
+
+  const tabs = [
+    { id: 'basics', label: '1. Basics' },
+    { id: 'career', label: '2. Medical' },
+    { id: 'lifestyle', label: '3. Lifestyle' },
+    { id: 'family', label: '4. Family' },
+    { id: 'preferences', label: '5. Partner' },
+    { id: 'media', label: '6. Photos' },
+  ];
+  let current = 'basics';
+  let profile: any = {};
+  const options: Record<string, Opt[]> = {};
+  let maritalOpts: Opt[] = [];
+  let religionOpts: Opt[] = [];
+  let sectOpts: Opt[] = [];
+  let casteOpts: Opt[] = [];
+  let specialityOpts: Opt[] = [];
+
+  function attr(value: unknown): string {
+    return escapeHtml(value ?? '');
+  }
+
+  function sameVal(a: unknown, b: unknown): boolean {
+    return String(a ?? '').trim().toLowerCase() === String(b ?? '').trim().toLowerCase();
+  }
+
+  function asOpts(raw: unknown): Opt[] {
+    if (!Array.isArray(raw)) return [];
+    return raw
+      .map((item) => {
+        const row = item as Record<string, unknown>;
+        const value = String(row.value ?? row.id ?? row.code ?? '').trim();
+        const label = String(row.label ?? row.name ?? value).trim();
+        return value ? { value, label: label || value } : null;
+      })
+      .filter((item): item is Opt => Boolean(item));
+  }
+
+  function field(name: string, label: string, type = 'text', value = '') {
+    return `<label class="space-y-1.5 block"><span class="text-xs font-bold text-navy-700">${label}</span><input name="${name}" type="${type}" value="${attr(value)}" class="w-full px-4 py-3 rounded-2xl text-xs bg-navy-50 border border-navy-200 outline-none focus:border-brand-500 text-navy-800" /></label>`;
+  }
+  function area(name: string, label: string, value = '') {
+    return `<label class="space-y-1.5 block sm:col-span-2"><span class="text-xs font-bold text-navy-700">${label}</span><textarea name="${name}" rows="3" class="w-full px-4 py-3 rounded-2xl text-xs bg-navy-50 border border-navy-200 outline-none focus:border-brand-500 text-navy-800">${attr(value)}</textarea></label>`;
+  }
+  function sel(name: string, label: string, opts: Opt[], value: unknown = '') {
+    const currentValue = String(value ?? '');
+    const hasMatch = opts.some((o) => sameVal(o.value, currentValue));
+    const extra = currentValue && !hasMatch ? `<option value="${attr(currentValue)}" selected>${attr(currentValue)}</option>` : '';
+    const choices = opts
+      .map((o) => `<option value="${attr(o.value)}" ${sameVal(o.value, currentValue) ? 'selected' : ''}>${attr(o.label)}</option>`)
+      .join('');
+    return `<label class="space-y-1.5 block"><span class="text-xs font-bold text-navy-700">${label}</span><select name="${name}" class="w-full px-4 py-3 rounded-2xl text-xs bg-navy-50 border border-navy-200 outline-none focus:border-brand-500 text-navy-800"><option value="">Select</option>${extra}${choices}</select></label>`;
+  }
+  function group(name: string): Opt[] {
+    return options[name] || [];
+  }
+
+  function renderTabs() {
+    document.getElementById('edit-tabs')!.innerHTML = tabs.map((t) =>
+      `<button type="button" data-tab="${t.id}" class="p-3 rounded-2xl ${t.id === current ? 'bg-brand-500 text-white shadow-md shadow-brand-500/25' : 'bg-white text-navy-700 border border-navy-200'}">${t.label}</button>`
+    ).join('');
+    document.querySelectorAll<HTMLButtonElement>('[data-tab]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        current = btn.dataset.tab!;
+        renderForm();
+        renderTabs();
+      });
+    });
+  }
+
+  async function loadFaithLists(religionId: unknown) {
+    const id = String(religionId || '');
+    const [sects, castes] = await Promise.all([
+      api.get(id ? `/taxonomy/sects/${id}` : '/taxonomy/sects').catch(() => ({ data: { data: [] } })),
+      api.get(id ? `/taxonomy/castes/${id}` : '/taxonomy/castes').catch(() => ({ data: { data: [] } })),
+    ]);
+    sectOpts = asOpts(sects.data?.data);
+    casteOpts = asOpts(castes.data?.data);
+  }
+
+  async function renderForm() {
+    const form = document.getElementById('edit-form') as HTMLFormElement;
+    const b = profile.basics || {};
+    const c = profile.career || {};
+    const l = profile.lifestyle || {};
+    const f = profile.family || {};
+    const s = profile.spiritual || {};
+    const p = profile.preferences || {};
+    const m = profile.media || {};
+    const intent = profile.marriage_intent || {};
+    const edu = (c.education || [])[0] || {};
+    const job = (c.careers || [])[0] || {};
+    const acceptOpts: Opt[] = [
+      { value: 'yes', label: 'Yes' },
+      { value: 'no', label: 'No' },
+      { value: 'doesnt_matter', label: "Doesn't matter" },
+    ];
+
+    if (current === 'family' || current === 'preferences') {
+      await loadFaithLists(current === 'family' ? s.religion_id : p.religion_id);
+    }
+
+    let html = '';
+    if (current === 'basics') {
+      html = `<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        ${field('first_name', 'First name', 'text', b.first_name)}
+        ${field('last_name', 'Last name', 'text', b.last_name)}
+        ${sel('gender', 'Gender', group('gender'), b.gender)}
+        ${field('birthday', 'Date of birth', 'date', (b.birthday || '').slice(0, 10))}
+        ${field('height', 'Height (inches)', 'number', b.height ?? '')}
+        ${field('weight', 'Weight (kg)', 'number', b.weight ?? '')}
+        ${field('phone', 'Phone', 'tel', b.phone)}
+        ${field('nationality', 'Nationality', 'text', b.nationality)}
+        ${sel('marital_status_id', 'Marital status', maritalOpts, b.marital_status_id)}
+        ${sel('immigration_status', 'Immigration status', group('immigration_status'), b.immigration_status)}
+        ${sel('timeline', 'Marriage timeline', group('marriage_timeline'), intent.timeline)}
+        ${sel('relocation_willingness', 'Relocation willingness', group('relocation_willingness'), intent.relocation_willingness)}
+        ${sel('seriousness_level', 'Seriousness', group('seriousness_level'), intent.seriousness_level)}
+      </div>`;
+    } else if (current === 'career') {
+      html = `<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        ${field('degree', 'Highest degree', 'text', edu.degree)}
+        ${field('institution', 'Institution', 'text', edu.institution)}
+        ${field('designation', 'Current designation', 'text', job.designation)}
+        ${field('company', 'Hospital / employer', 'text', job.company)}
+        ${sel('medical_speciality', 'Medical speciality', specialityOpts, c.medical_speciality)}
+        ${field('medical_registration', 'PMDC / GMC number', 'text', c.medical_registration)}
+        ${sel('work_location_type', 'Work location', group('work_location_type'), job.work_location_type)}
+      </div>`;
+    } else if (current === 'lifestyle') {
+      html = `<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        ${sel('diet', 'Diet', group('diet'), l.diet)}
+        ${sel('drink', 'Drink', group('drink'), l.drink)}
+        ${sel('smoke', 'Smoke', group('smoke'), l.smoke)}
+        ${sel('living_with', 'Living with', group('living_with'), l.living_with)}
+        ${sel('sleep_schedule', 'Sleep schedule', group('sleep_schedule'), l.sleep_schedule)}
+        ${area('hobbies', 'Hobbies', l.hobbies)}
+        ${area('interests', 'Interests', l.interests)}
+      </div>`;
+    } else if (current === 'family') {
+      html = `<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        ${sel('family_type', 'Family type', group('family_type'), f.family_type)}
+        ${sel('personal_value', 'Personal values', group('personal_values'), s.personal_value)}
+        ${sel('religion_id', 'Religion', religionOpts, s.religion_id)}
+        ${sel('sect_id', 'Sect', sectOpts, s.sect_id)}
+        ${sel('caste_id', 'Caste', casteOpts, s.caste_id)}
+        ${field('father', 'Father', 'text', f.father)}
+        ${field('mother', 'Mother', 'text', f.mother)}
+        ${field('father_occupation', 'Father occupation', 'text', f.father_occupation)}
+        ${field('mother_occupation', 'Mother occupation', 'text', f.mother_occupation)}
+        ${field('no_of_brothers', 'Brothers', 'number', f.no_of_brothers ?? 0)}
+        ${field('no_of_sisters', 'Sisters', 'number', f.no_of_sisters ?? 0)}
+        ${field('family_location_city', 'Family city', 'text', f.family_location_city)}
+        ${field('family_location_country', 'Family country', 'text', f.family_location_country)}
+        ${area('about_parents', 'About parents', f.about_parents)}
+      </div>`;
+    } else if (current === 'preferences') {
+      html = `<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        ${field('min_age', 'Min partner age', 'number', p.min_age ?? '')}
+        ${field('max_age', 'Max partner age', 'number', p.max_age ?? '')}
+        ${field('education', 'Preferred education', 'text', p.education)}
+        ${field('profession', 'Preferred profession', 'text', p.profession)}
+        ${sel('marital_status_id', 'Preferred marital status', maritalOpts, p.marital_status_id)}
+        ${sel('religion_id', 'Preferred religion', religionOpts, p.religion_id)}
+        ${sel('diet', 'Preferred diet', group('diet'), p.diet)}
+        ${sel('smoking_acceptable', 'Smoking acceptable', acceptOpts, p.smoking_acceptable)}
+        ${sel('drinking_acceptable', 'Drinking acceptable', acceptOpts, p.drinking_acceptable)}
+        ${sel('children_acceptable', 'Children acceptable', acceptOpts, p.children_acceptable)}
+      </div>`;
+    } else {
+      const photos = (m.gallery || []).map((g: any) =>
+        `<div class="relative"><img src="${avatarFor(g.url)}" class="aspect-square rounded-2xl object-cover border border-navy-100" /><button type="button" data-del-media="${g.id}" class="absolute top-2 right-2 px-2 py-1 rounded-full bg-white text-[10px] font-bold">✕</button></div>`
+      ).join('');
+      html = `<div class="space-y-4">
+        <div class="grid grid-cols-3 sm:grid-cols-4 gap-3">${photos || '<p class="text-xs text-navy-500 col-span-3">No photos uploaded yet.</p>'}</div>
+        <label class="block text-xs font-bold text-navy-700">Upload photo
+          <input id="photo-file" type="file" accept="image/*" class="mt-1 block text-xs" />
+        </label>
+        <label class="flex items-center gap-2 text-xs font-semibold text-navy-700"><input id="photo-primary" type="checkbox" class="accent-brand-500" /> Set as main photo</label>
+      </div>`;
+    }
+    form.innerHTML = html + `<div class="pt-2"><button type="submit" class="px-6 py-2.5 rounded-full bg-gradient-to-r from-brand-500 via-brand-600 to-pink-600 text-white text-xs font-bold shadow-lg shadow-brand-500/30">Save ${tabs.find((t) => t.id === current)?.label}</button></div>`;
+
+    form.querySelectorAll<HTMLButtonElement>('[data-del-media]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        try {
+          await api.delete(`/media/${btn.dataset.delMedia}`);
+          toast('Photo removed.', 'info');
+          await reload();
+        } catch (err) {
+          toast(errorMessage(err), 'error');
+        }
+      });
+    });
+    form.querySelector<HTMLSelectElement>('[name="religion_id"]')?.addEventListener('change', async (event) => {
+      const value = (event.target as HTMLSelectElement).value;
+      if (current === 'family') {
+        profile.spiritual = { ...(profile.spiritual || {}), religion_id: value || null };
+      } else {
+        profile.preferences = { ...(profile.preferences || {}), religion_id: value || null };
+      }
+      await renderForm();
+    });
+  }
+
+  function payloadFromForm(): Record<string, unknown> {
+    const form = document.getElementById('edit-form') as HTMLFormElement;
+    const fd = new FormData(form);
+    const out: Record<string, unknown> = {};
+    const numberKeys = ['height', 'weight', 'min_age', 'max_age', 'no_of_brothers', 'no_of_sisters', 'marital_status_id', 'religion_id', 'sect_id', 'caste_id'];
+    fd.forEach((v, k) => {
+      if (numberKeys.includes(k)) {
+        out[k] = v === '' ? null : Number(v);
+      } else {
+        out[k] = v;
+      }
+    });
+    if (current === 'career') {
+      out.education = [{ degree: out.degree, institution: out.institution, is_highest: true }];
+      out.careers = [{ designation: out.designation, company: out.company, present: true, work_location_type: out.work_location_type }];
+    }
+    return out;
+  }
+
+  async function loadLookups() {
+    const [optsRes, maritalRes, religionRes, specialityRes] = await Promise.all([
+      api.get('/taxonomy/profile-options').catch(() => ({ data: { data: {} } })),
+      api.get('/taxonomy/marital-statuses').catch(() => ({ data: { data: [] } })),
+      api.get('/taxonomy/religions').catch(() => ({ data: { data: [] } })),
+      api.get('/taxonomy/specialities').catch(() => ({ data: { data: [] } })),
+    ]);
+    const grouped = (optsRes.data?.data ?? {}) as Record<string, unknown>;
+    Object.keys(grouped).forEach((key) => {
+      options[key] = asOpts(grouped[key]);
+    });
+    maritalOpts = asOpts(maritalRes.data?.data);
+    religionOpts = asOpts(religionRes.data?.data);
+    specialityOpts = asOpts(specialityRes.data?.data);
+  }
+
+  async function reload() {
+    const res = await api.get('/profiles/full');
+    profile = res.data?.data ?? {};
+    const score = Math.round(Number(profile.quality_score?.total || 0));
+    document.getElementById('edit-score')!.textContent = `${score}% Complete`;
+    await renderForm();
+  }
+
+  document.getElementById('edit-form')!.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    try {
+      if (current === 'media') {
+        const file = (document.getElementById('photo-file') as HTMLInputElement | null)?.files?.[0];
+        if (!file) { toast('Choose a photo to upload.', 'error'); return; }
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('category', 'gallery');
+        fd.append('is_primary', String((document.getElementById('photo-primary') as HTMLInputElement)?.checked || false));
+        fd.append('is_private', 'false');
+        await api.post('/media/upload', fd);
+        toast('Photo uploaded.', 'success');
+      } else {
+        await api.post(`/profiles/section/${current}`, payloadFromForm());
+        toast('Section saved.', 'success');
+      }
+      await reload();
+    } catch (err) {
+      toast(errorMessage(err, 'Could not save section.'), 'error');
+    }
+  });
+
+  renderTabs();
+  loadLookups()
+    .then(() => reload())
+    .catch((err) => toast(errorMessage(err), 'error'));
+</script>
