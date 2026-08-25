@@ -152,10 +152,11 @@ const navGroups = [
       </div>
     </div>
 
-    <!-- Admin Console Shortcut -->
+    <!-- Admin Console Shortcut — visible only to admins (hidden by default, verified via API) -->
     <a
+      id="admin-console-link"
       href="/admin/"
-      class="flex items-center justify-between px-3.5 py-2 text-xs font-bold text-navy-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
+      class="hidden flex items-center justify-between px-3.5 py-2 text-xs font-bold text-navy-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
     >
       <div class="flex items-center gap-2">
         <ShieldCheck className="w-4 h-4 text-brand-600" />
@@ -177,3 +178,17 @@ const navGroups = [
     </a>
   </div>
 </aside>
+
+<script>
+  // Show Admin Console only to verified admins - otherwise keep hidden (fixes major leak)
+  (function () {
+    const link = document.getElementById('admin-console-link');
+    if (!link) return;
+    const token = localStorage.getItem('auth_token');
+    if (!token) return;
+    const API = (import.meta.env.PUBLIC_API_URL || 'http://127.0.0.1:8080/api/v1').replace(/\/$/, '');
+    fetch(API + '/admin/stats', { headers: { Authorization: 'Bearer ' + token } })
+      .then(function (res) { if (res.ok) link.classList.remove('hidden'); })
+      .catch(function () {});
+  })();
+</script>
