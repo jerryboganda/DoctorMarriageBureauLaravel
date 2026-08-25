@@ -30,6 +30,9 @@ RUN echo 'server { \
         expires 30d; \
         add_header Cache-Control "public, no-transform"; \
     } \
+    location ~ ^/admin/doctors/([0-9]+)/?$ { \
+        return 302 /admin/doctors/view/?id=$1; \
+    } \
     location / { \
         try_files $uri $uri/ $uri/index.html /404.html; \
     } \

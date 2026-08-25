@@ -281,7 +281,7 @@ import {
               }"></span>
             </div>
             <div>
-              <a href="/admin/doctors/${d.id}/" class="font-bold text-navy-900 hover:text-brand-600 transition-colors text-sm flex items-center gap-1.5">
+              <a href="/admin/doctors/view/?id=${d.id}" class="font-bold text-navy-900 hover:text-brand-600 transition-colors text-sm flex items-center gap-1.5">
                 ${d.name}
               </a>
               <div class="text-[11px] text-slate-400 flex items-center gap-2">
@@ -337,7 +337,7 @@ import {
         <td class="py-3.5 px-4 text-right">
           <div class="flex items-center justify-end gap-1.5">
             <a 
-              href="/admin/doctors/${d.id}/" 
+              href="/admin/doctors/view/?id=${d.id}" 
               class="px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-navy-900 text-white hover:bg-navy-800 transition-colors flex items-center gap-1 shadow-sm"
             >
               <span>Dossier</span>

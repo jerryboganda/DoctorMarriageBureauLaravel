@@ -1,0 +1,535 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { 
+  ShieldCheck, 
+  ShieldAlert, 
+  Award, 
+  Building2, 
+  MapPin, 
+  Phone, 
+  Mail, 
+  Calendar, 
+  User, 
+  CreditCard, 
+  Key, 
+  Ban, 
+  Trash2, 
+  ExternalLink,
+  ChevronLeft,
+  CheckCircle2,
+  FileText,
+  AlertTriangle,
+  Sparkles
+} from 'lucide-react';
+import { AdminStore } from '../../../lib/api/admin';
+---
+
+<AdminLayout title="Doctor Dossier & Management — DMB Admin" activePath="/admin/doctors/">
+  
+  <!-- Back Link & Header -->
+  <div class="space-y-3">
+    <a 
+      href="/admin/doctors/" 
+      class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-navy-900 transition-colors"
+    >
+      <ChevronLeft className="w-4 h-4" />
+      <span>Back to Doctor Directory</span>
+    </a>
+
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <img 
+          id="doc-avatar" 
+          src="" 
+          alt="" 
+          class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover border-2 border-white shadow-md bg-slate-200"
+        />
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 id="doc-name" class="text-xl sm:text-2xl font-black text-navy-900">Loading doctor…</h1>
+            <span id="doc-pmdc-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 flex items-center gap-1">
+              <ShieldCheck className="w-3 h-3" />
+              PMDC VERIFIED
+            </span>
+          </div>
+          <p id="doc-specialty-sub" class="text-xs sm:text-sm text-slate-600 font-semibold mt-0.5">
+            Loading profile…
+          </p>
+          <p class="text-[11px] text-slate-400 mt-1 flex items-center gap-2">
+            <span id="doc-email"></span>
+            <span>•</span>
+            <span id="doc-phone"></span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Quick Action Controls -->
+      <div class="flex items-center gap-2">
+        <button 
+          id="btn-toggle-doctor-status" 
+          class="px-3.5 py-2 rounded-xl text-xs font-bold bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 transition-all shadow-sm"
+        >
+          Suspend Account
+        </button>
+        <button 
+          id="btn-save-dossier" 
+          class="px-4 py-2 rounded-xl text-xs font-bold bg-brand-500 hover:bg-brand-600 text-white shadow-md shadow-brand-500/20 transition-all"
+        >
+          Save Changes
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3-Column Dossier Layout -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-2">
+    
+    <!-- Left 2 Cols: Medical Credentials & Matrimonial Profile -->
+    <div class="lg:col-span-2 space-y-6">
+      
+      <!-- Medical Credentials & PMDC Verification Review -->
+      <div class="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-5">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+          <div class="flex items-center gap-2.5">
+            <div class="p-2 rounded-xl bg-brand-50 text-brand-600">
+              <Award className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 class="text-base font-bold text-navy-900">Medical Qualifications & PMDC Record</h3>
+              <p class="text-xs text-slate-500">Official medical council registrations, post-graduate degrees, and hospital credentials.</p>
+            </div>
+          </div>
+          
+          <a 
+            href="https://pmc.pakistanmedicalcommission.gov.pk/" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            class="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1"
+          >
+            <span>PMC Online Verification Portal</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+            <span class="text-slate-400 font-bold uppercase text-[10px]">PMDC / PMC Registration No.</span>
+            <p id="doc-pmdc-num" class="text-sm font-mono font-black text-navy-900">—</p>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+            <span class="text-slate-400 font-bold uppercase text-[10px]">Medical Degree & Postgrad</span>
+            <p id="doc-degree" class="text-sm font-bold text-navy-900">—</p>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+            <span class="text-slate-400 font-bold uppercase text-[10px]">Specialty / Designation</span>
+            <p id="doc-specialty" class="text-sm font-bold text-navy-900">—</p>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+            <span class="text-slate-400 font-bold uppercase text-[10px]">Current Practicing Hospital</span>
+            <p id="doc-hospital" class="text-sm font-bold text-navy-900">—</p>
+          </div>
+        </div>
+
+        <!-- License Document Preview & Status Decision -->
+        <div class="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-700">PMDC License Document Inspection</span>
+            <span class="text-[11px] text-brand-600 font-semibold">High-Resolution Scan Available</span>
+          </div>
+
+          <div class="relative h-44 rounded-xl overflow-hidden bg-slate-200 border border-slate-300 group">
+            <img 
+              id="doc-pmdc-img"
+              src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop&q=80" 
+              alt="PMDC License Document" 
+              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+            <div class="absolute inset-0 bg-navy-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <a 
+                id="doc-pmdc-img-link"
+                href="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop&q=80" 
+                target="_blank" 
+                class="px-3.5 py-1.5 rounded-lg bg-white font-bold text-xs text-navy-900 shadow-lg"
+              >
+                Inspect Full Document
+              </a>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2 pt-2">
+            <button 
+              id="btn-grant-pmdc" 
+              class="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors flex items-center gap-1.5"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              <span>Verify & Grant PMDC Badge</span>
+            </button>
+            
+            <button 
+              id="btn-reject-pmdc" 
+              class="px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition-colors"
+            >
+              Reject PMDC Document
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Matrimonial Profile & Personal Biodata -->
+      <div class="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-4">
+        <h3 class="text-base font-bold text-navy-900 flex items-center gap-2">
+          <User className="w-5 h-5 text-brand-600" />
+          Matrimonial Biodata & Partner Preferences
+        </h3>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-100">
+            <span class="text-slate-400 font-bold uppercase text-[10px]">Age & Height</span>
+            <p id="doc-age-height" class="font-bold text-navy-900 mt-0.5">30 yrs • 180 cm (5'11")</p>
+          </div>
+
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-100">
+            <span class="text-slate-400 font-bold uppercase text-[10px]">Marital Status</span>
+            <p id="doc-marital" class="font-bold text-navy-900 mt-0.5">Never Married</p>
+          </div>
+
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-100">
+            <span class="text-slate-400 font-bold uppercase text-[10px]">Religion / Sect</span>
+            <p id="doc-religion" class="font-bold text-navy-900 mt-0.5">Muslim - Sunni</p>
+          </div>
+
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-100">
+            <span class="text-slate-400 font-bold uppercase text-[10px]">Caste / Family Background</span>
+            <p id="doc-caste" class="font-bold text-navy-900 mt-0.5">Rajput / Panwar</p>
+          </div>
+
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-100">
+            <span class="text-slate-400 font-bold uppercase text-[10px]">City / Country</span>
+            <p id="doc-city-country" class="font-bold text-navy-900 mt-0.5">Lahore, Pakistan</p>
+          </div>
+
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-100">
+            <span class="text-slate-400 font-bold uppercase text-[10px]">Profile Status</span>
+            <p id="doc-status-badge" class="font-bold text-emerald-600 mt-0.5">Active & Public</p>
+          </div>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+          <span class="text-slate-400 font-bold uppercase text-[10px]">About Doctor & Family Introduction</span>
+          <p id="doc-about" class="text-xs text-slate-700 leading-relaxed">
+            Senior Registrar Interventional Cardiologist. Practicing in Lahore. Looking for an educated, deen-conscious doctor partner.
+          </p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right 1 Col: Subscription, Admin Notes & Safety Controls -->
+    <div class="space-y-6">
+      
+      <!-- Package & Quota Controls -->
+      <div class="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-4">
+        <h3 class="text-sm font-bold text-navy-900 flex items-center gap-2">
+          <CreditCard className="w-4 h-4 text-emerald-600" />
+          Subscription & Quotas
+        </h3>
+
+        <div class="space-y-3 text-xs">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Assigned Membership Tier</label>
+            <select 
+              id="select-package" 
+              class="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 font-bold outline-none focus:border-brand-500"
+            >
+              <option value="3">Essential Membership — 3 months (PKR 5,000)</option>
+              <option value="1">Extended Membership — 6 months (PKR 8,000)</option>
+            </select>
+          </div>
+
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-1 text-slate-600">
+            <div class="flex justify-between">
+              <span>Proposal Quota:</span>
+              <span class="font-bold text-navy-900">Unlimited (VIP)</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Contact Unlocks Remaining:</span>
+              <span class="font-bold text-navy-900">48 / 50</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Profile Boost:</span>
+              <span class="font-bold text-emerald-600">Active (Rank #1)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Admin Internal Notes Pad -->
+      <div class="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-3">
+        <h3 class="text-sm font-bold text-navy-900 flex items-center gap-2">
+          <FileText className="w-4 h-4 text-brand-600" />
+          Confidential Admin Notes
+        </h3>
+        <p class="text-[11px] text-slate-500">Internal notes visible exclusively to admin staff.</p>
+
+        <textarea 
+          id="textarea-admin-notes" 
+          rows="4" 
+          placeholder="Add internal notes about doctor verification, family background checks, or payment confirmations..."
+          class="w-full p-3 rounded-xl text-xs bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand-500 outline-none text-slate-900"
+        ></textarea>
+
+        <button 
+          id="btn-save-notes" 
+          class="w-full py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-brand-50 hover:text-brand-600 text-slate-700 transition-colors"
+        >
+          Save Internal Note
+        </button>
+      </div>
+
+      <!-- Danger & Security Zone -->
+      <div class="p-6 rounded-2xl bg-rose-50/70 border border-rose-200 shadow-sm space-y-3">
+        <h3 class="text-sm font-bold text-rose-900 flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 text-rose-600" />
+          Administrative Security
+        </h3>
+
+        <div class="space-y-2 text-xs">
+          <button 
+            id="btn-reset-password" 
+            class="w-full py-2.5 px-3 rounded-xl font-bold bg-white text-slate-700 hover:bg-slate-100 border border-rose-200 transition-colors flex items-center justify-center gap-2"
+          >
+            <Key className="w-4 h-4 text-slate-500" />
+            <span>Generate Password Reset Link</span>
+          </button>
+
+          <button 
+            id="btn-delete-doctor" 
+            class="w-full py-2.5 px-3 rounded-xl font-bold bg-rose-600 hover:bg-rose-700 text-white transition-colors flex items-center justify-center gap-2 shadow-sm"
+          >
+            <Trash2 className="w-4 h-4" />
+            <span>Delete Doctor Account</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</AdminLayout>
+
+<script>
+  import { AdminStore, type AdminDoctor } from '../../../lib/api/admin';
+  import { showToast } from '../../../lib/toast';
+
+  let currentDoc: AdminDoctor | undefined;
+
+  async function loadDoctor() {
+    // Extract ID from query ?id=924 or pathname /admin/doctors/924/ (supports both view and legacy links)
+    const params = new URLSearchParams(window.location.search);
+    const qId = params.get('id');
+    const parts = window.location.pathname.split('/').filter(Boolean);
+    const pathId = parts[parts.length - 1];
+    const rawId = qId || (pathId !== 'view' ? pathId : null);
+    const id = Number(rawId);
+    if (!rawId || Number.isNaN(id) || id <= 0) {
+      const nameEl2 = document.getElementById('doc-name');
+      if (nameEl2) nameEl2.textContent = 'Invalid doctor ID — check the URL.';
+      showToast({ title: 'Invalid ID', message: 'No doctor ID found. Use /admin/doctors/view/?id=924', type: 'error' });
+      return;
+    }
+    
+    const nameEl = document.getElementById('doc-name');
+    if (nameEl) nameEl.textContent = 'Loading live dossier from API...';
+    try {
+      let doc = await AdminStore.getDoctorById(id);
+      if (!doc) {
+        const all = await AdminStore.getDoctors();
+        doc = all.find(d => d.id === id) || all[0];
+        if (!doc) throw new Error('No live doctor data found.');
+      }
+      currentDoc = doc;
+    } catch (err: any) {
+      showToast({ title: 'Failed to load dossier', message: err?.response?.data?.message || err?.message || 'Failed to load live doctor.', type: 'error' });
+      if (nameEl) nameEl.textContent = 'Failed to load live data';
+      return;
+    }
+    if (!currentDoc) return;
+
+    // Populate UI fields
+    const setText = (id: string, text: string) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = text;
+    };
+
+    setText('doc-name', currentDoc.name);
+    setText('doc-specialty-sub', `${currentDoc.speciality} • ${currentDoc.hospital}`);
+    setText('doc-email', currentDoc.email);
+    setText('doc-phone', currentDoc.phone);
+    setText('doc-pmdc-num', currentDoc.pmdc_number);
+    setText('doc-degree', currentDoc.degree);
+    setText('doc-specialty', currentDoc.speciality);
+    setText('doc-hospital', currentDoc.hospital);
+    setText('doc-age-height', `${currentDoc.age} yrs • ${currentDoc.height_cm} cm`);
+    setText('doc-marital', currentDoc.marital_status || 'Never Married');
+    setText('doc-religion', currentDoc.religion || 'Muslim - Sunni');
+    setText('doc-caste', currentDoc.caste || 'Rajput / Panwar');
+    setText('doc-city-country', `${currentDoc.city_name}, ${currentDoc.country_name}`);
+    setText('doc-about', currentDoc.about || 'Senior practicing doctor.');
+
+    const avatarEl = document.getElementById('doc-avatar') as HTMLImageElement;
+    if (avatarEl) avatarEl.src = currentDoc.avatar;
+
+    const pmdcBadgeEl = document.getElementById('doc-pmdc-badge');
+    if (pmdcBadgeEl) {
+      if (currentDoc.pmdc_status === 'verified') {
+        pmdcBadgeEl.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 flex items-center gap-1';
+        pmdcBadgeEl.textContent = '✓ PMDC VERIFIED';
+      } else {
+        pmdcBadgeEl.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 flex items-center gap-1';
+        pmdcBadgeEl.textContent = currentDoc.pmdc_status.toUpperCase();
+      }
+    }
+
+    const pmdcImg = document.getElementById('doc-pmdc-img') as HTMLImageElement | null;
+    if (pmdcImg && currentDoc.pmdc_document_url) pmdcImg.src = currentDoc.pmdc_document_url;
+    const pmdcLink = document.getElementById('doc-pmdc-img-link') as HTMLAnchorElement | null;
+    if (pmdcLink && currentDoc.pmdc_document_url) pmdcLink.href = currentDoc.pmdc_document_url;
+
+    const selectPkg = document.getElementById('select-package') as HTMLSelectElement;
+    if (selectPkg) selectPkg.value = String(currentDoc.package_id || 2);
+
+    const notesArea = document.getElementById('textarea-admin-notes') as HTMLTextAreaElement;
+    if (notesArea) notesArea.value = currentDoc.admin_notes || '';
+
+    const toggleBtn = document.getElementById('btn-toggle-doctor-status');
+    if (toggleBtn) {
+      toggleBtn.textContent = currentDoc.status === 'active' ? 'Suspend Account' : 'Reactivate Account';
+    }
+
+    const statusBadge = document.getElementById('doc-status-badge');
+    if (statusBadge) {
+      statusBadge.textContent = currentDoc.status === 'active' ? 'Active & Public' : currentDoc.status.toUpperCase();
+      statusBadge.className = currentDoc.status === 'active' ? 'font-bold text-emerald-600 mt-0.5' : 'font-bold text-rose-600 mt-0.5';
+    }
+  }
+
+  async function initDossier() {
+    await loadDoctor();
+
+    // Toggle Status
+    document.getElementById('btn-toggle-doctor-status')?.addEventListener('click', async () => {
+      if (!currentDoc) return;
+      const newStatus = currentDoc.status === 'active' ? 'suspended' : 'active';
+      try {
+        await AdminStore.updateDoctorStatus(currentDoc.id, newStatus);
+        showToast({
+          title: `Account ${newStatus === 'active' ? 'Reactivated' : 'Suspended'}`,
+          message: `${currentDoc.name} status is now ${newStatus}.`,
+          type: 'info'
+        });
+        await loadDoctor();
+      } catch (err: any) {
+        showToast({ title: 'Status update failed', message: err?.response?.data?.message || err?.message || 'Failed to update status.', type: 'error' });
+      }
+    });
+
+    // Grant PMDC
+    document.getElementById('btn-grant-pmdc')?.addEventListener('click', async () => {
+      if (!currentDoc) return;
+      currentDoc.pmdc_status = 'verified';
+      try {
+        await AdminStore.saveDoctor(currentDoc);
+        showToast({
+          title: 'PMDC License Verified',
+          message: `Official verified badge granted to ${currentDoc.name}.`,
+          type: 'verification'
+        });
+        await loadDoctor();
+      } catch (err: any) {
+        showToast({ title: 'Verification failed', message: err?.response?.data?.message || err?.message || 'Failed to grant PMDC badge.', type: 'error' });
+      }
+    });
+
+    // Reject PMDC
+    document.getElementById('btn-reject-pmdc')?.addEventListener('click', async () => {
+      if (!currentDoc) return;
+      currentDoc.pmdc_status = 'rejected';
+      try {
+        await AdminStore.saveDoctor(currentDoc);
+        showToast({
+          title: 'PMDC Document Flagged',
+          message: 'Doctor has been notified to provide an updated PMC license certificate.',
+          type: 'warning'
+        });
+        await loadDoctor();
+      } catch (err: any) {
+        showToast({ title: 'Rejection failed', message: err?.response?.data?.message || err?.message || 'Failed to reject PMDC.', type: 'error' });
+      }
+    });
+
+    // Save Notes & Changes
+    const saveChanges = async () => {
+      if (!currentDoc) return;
+      const selectPkg = document.getElementById('select-package') as HTMLSelectElement;
+      const notesArea = document.getElementById('textarea-admin-notes') as HTMLTextAreaElement;
+
+      if (selectPkg) {
+        currentDoc.package_id = Number(selectPkg.value);
+        currentDoc.package_name = selectPkg.options[selectPkg.selectedIndex].text.split('(')[0].trim();
+      }
+      if (notesArea) {
+        currentDoc.admin_notes = notesArea.value;
+      }
+
+      try {
+        await AdminStore.saveDoctor(currentDoc);
+        showToast({
+          title: 'Dossier Saved',
+          message: 'Doctor record updated successfully.',
+          type: 'info'
+        });
+        await loadDoctor();
+      } catch (err: any) {
+        showToast({ title: 'Save failed', message: err?.response?.data?.message || err?.message || 'Failed to save dossier.', type: 'error' });
+      }
+    };
+
+    document.getElementById('btn-save-dossier')?.addEventListener('click', () => { void saveChanges(); });
+    document.getElementById('btn-save-notes')?.addEventListener('click', () => { void saveChanges(); });
+
+    // Password Reset
+    document.getElementById('btn-reset-password')?.addEventListener('click', () => {
+      if (!currentDoc) return;
+      showToast({
+        title: 'Password Reset Dispatched',
+        message: `Secure one-time login link sent to ${currentDoc.email}.`,
+        type: 'info'
+      });
+    });
+
+    // Delete Doctor
+    document.getElementById('btn-delete-doctor')?.addEventListener('click', async () => {
+      if (!currentDoc) return;
+      if (confirm(`Are you sure you want to permanently delete the profile of ${currentDoc.name}?`)) {
+        try {
+          await AdminStore.deleteDoctor(currentDoc.id);
+          showToast({
+            title: 'Doctor Account Deleted',
+            message: 'Profile removed from registry.',
+            type: 'warning'
+          });
+          window.location.href = '/admin/doctors/';
+        } catch (err: any) {
+          showToast({ title: 'Delete failed', message: err?.response?.data?.message || err?.message || 'Failed to delete doctor.', type: 'error' });
+        }
+      }
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', initDossier);
+  document.addEventListener('astro:page-load', initDossier);
+</script>

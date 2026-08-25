@@ -87,7 +87,7 @@ import {
           <div class="flex items-center gap-3">
             <img src="${p.sender_avatar}" class="w-9 h-9 rounded-xl object-cover border border-slate-200" alt="" />
             <div>
-              <a href="/admin/doctors/${p.sender_id}/" class="font-bold text-navy-900 hover:text-brand-600 transition-colors">
+              <a href="/admin/doctors/view/?id=${p.sender_id}" class="font-bold text-navy-900 hover:text-brand-600 transition-colors">
                 ${p.sender_name}
               </a>
               <p class="text-[11px] text-slate-400">${p.sender_specialty}</p>
@@ -103,7 +103,7 @@ import {
           <div class="flex items-center gap-3">
             <img src="${p.recipient_avatar}" class="w-9 h-9 rounded-xl object-cover border border-slate-200" alt="" />
             <div>
-              <a href="/admin/doctors/${p.recipient_id}/" class="font-bold text-navy-900 hover:text-brand-600 transition-colors">
+              <a href="/admin/doctors/view/?id=${p.recipient_id}" class="font-bold text-navy-900 hover:text-brand-600 transition-colors">
                 ${p.recipient_name}
               </a>
               <p class="text-[11px] text-slate-400">${p.recipient_specialty}</p>

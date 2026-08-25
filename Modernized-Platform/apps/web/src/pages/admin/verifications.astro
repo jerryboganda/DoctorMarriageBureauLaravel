@@ -153,7 +153,7 @@ import {
           <div class="flex items-center gap-3">
             <img src="${v.avatar}" class="w-12 h-12 rounded-xl object-cover border border-slate-200" alt="${v.doctor_name}" />
             <div>
-              <a href="/admin/doctors/${v.doctor_id}/" class="text-sm font-black text-navy-900 hover:text-brand-600 transition-colors">
+              <a href="/admin/doctors/view/?id=${v.doctor_id}" class="text-sm font-black text-navy-900 hover:text-brand-600 transition-colors">
                 ${v.doctor_name}
               </a>
               <p class="text-xs text-slate-600 font-semibold">${v.speciality}</p>
