@@ -36,6 +36,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     errorStateHtml,
     skeletonHtml,
     doctorName,
+    openBiodataModal,
   } from '../lib/dashboard/common';
 
   const list = document.getElementById('proposals-list')!;
@@ -99,7 +100,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
                 </div>
               </div>
               <div class="flex items-center gap-2.5 shrink-0">${actions}
-                <a href="/discover/?view=${other.user_id || p.sender_user_id || p.recipient_user_id || ''}" class="py-2.5 px-3.5 rounded-xl bg-navy-50 border border-navy-200 text-navy-700 text-xs font-bold">Full Biodata</a>
+                <button data-biodata="${other.user_id || p.sender_user_id || p.recipient_user_id || ''}" class="py-2.5 px-3.5 rounded-xl bg-navy-50 border border-navy-200 text-navy-700 text-xs font-bold">Full Biodata</button>
               </div>
             </div>`;
         })
@@ -143,6 +144,12 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
             btn.disabled = false;
             toast(errorMessage(err), 'error');
           }
+        });
+      });
+      list.querySelectorAll<HTMLButtonElement>('button[data-biodata]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const uid = Number(btn.dataset.biodata);
+          if (uid) openBiodataModal(uid);
         });
       });
     } catch (err) {

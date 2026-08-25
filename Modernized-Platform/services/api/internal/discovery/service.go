@@ -36,6 +36,7 @@ type SearchFilter struct {
 type Service interface {
 	GetFeed(ctx context.Context, userID int64, feedType string, page, limit int) ([]models.DoctorCard, int64, error)
 	Search(ctx context.Context, viewerID int64, filter SearchFilter) ([]models.DoctorCard, int64, error)
+	GetProfile(ctx context.Context, viewerID, candidateID int64) (*models.DoctorCard, error)
 	GetMatchIntelligence(ctx context.Context, userID int64, candidateID int64) (*models.ScoreBreakdownDTO, error)
 	UpdateMatchTuner(ctx context.Context, userID int64, weights models.PreferenceWeights) error
 	ToggleAnonymous(ctx context.Context, userID int64) (bool, error)
@@ -372,6 +373,27 @@ func (s *discoveryService) Search(ctx context.Context, viewerID int64, filter Se
 		}
 	}
 	return cards.FetchCards(ctx, s.pg, f)
+}
+
+// GetProfile returns a single candidate's DoctorCard for biodata view.
+func (s *discoveryService) GetProfile(ctx context.Context, viewerID, candidateID int64) (*models.DoctorCard, error) {
+	cr, err := s.fetchCandidateByID(ctx, candidateID)
+	if err != nil {
+		return nil, err
+	}
+	// Enrich with photo and verification status
+	var photo string
+	_ = s.pg.Pool.QueryRow(ctx, `SELECT `+assets.PhotoSQLWithUserFallback("u.photo", "u.id")+` FROM users u WHERE u.id=$1`, candidateID).Scan(&photo)
+	cr.card.ProfilePhotoURL = photo
+	var verified bool
+	_ = s.pg.Pool.QueryRow(ctx, `SELECT (m.is_approved AND u.email_verified_at IS NOT NULL) FROM users u JOIN members m ON m.user_id=u.id WHERE u.id=$1`, candidateID).Scan(&verified)
+	cr.card.IsVerified = verified
+	exp := s.loadExpectations(ctx, viewerID)
+	breakdown := CalculateCompatibility(exp, &cr.prof, nil)
+	card := cr.card
+	card.CompatibilityScore = breakdown.TotalScore
+	card.ScoreBreakdown = &breakdown
+	return &card, nil
 }
 
 // GetMatchIntelligence explains compatibility factors for a candidate.

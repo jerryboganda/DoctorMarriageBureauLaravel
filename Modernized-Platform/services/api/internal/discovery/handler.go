@@ -28,6 +28,7 @@ func (h *Handler) Routes() chi.Router {
 
 	r.Get("/", h.HandleFeed)
 	r.Get("/search", h.HandleSearch)
+	r.Get("/profile/{id}", h.HandleGetProfile)
 	r.Get("/match-intelligence/{id}", h.HandleMatchIntel)
 	r.Post("/match-tuner", h.HandleMatchTuner)
 	r.Post("/toggle-anonymous", h.HandleToggleIncognito)
@@ -162,6 +163,30 @@ func (h *Handler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 		"limit":     filter.Limit,
 		"has_more":  int64(page) < lastPage,
 	}, "Search results retrieved")
+}
+
+// HandleGetProfile handles GET /api/v1/discovery/profile/{id}
+func (h *Handler) HandleGetProfile(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	if !ok {
+		response.Error(w, http.StatusUnauthorized, "UNAUTHORIZED", "Authentication required", nil)
+		return
+	}
+
+	idStr := chi.URLParam(r, "id")
+	candidateID, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil || candidateID <= 0 {
+		response.Error(w, http.StatusBadRequest, "INVALID_ID", "Invalid candidate ID", nil)
+		return
+	}
+
+	card, err := h.service.GetProfile(r.Context(), userID, candidateID)
+	if err != nil {
+		response.Error(w, http.StatusNotFound, "NOT_FOUND", err.Error(), nil)
+		return
+	}
+
+	response.JSON(w, http.StatusOK, card, "Profile fetched")
 }
 
 // HandleMatchIntel handles GET /api/v1/discovery/match-intelligence/{id}

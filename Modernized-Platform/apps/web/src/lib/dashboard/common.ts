@@ -352,7 +352,7 @@ export function doctorCardHtml(doc: DoctorCard, opts: { shortlist?: boolean } = 
       </div>
       <div class="p-5 pt-0 flex items-center gap-2">
         <button data-express="${doc.user_id}" class="flex-1 py-2.5 px-4 rounded-full bg-gradient-to-r from-brand-500 via-brand-600 to-pink-600 hover:from-brand-600 hover:to-pink-700 text-white text-xs font-bold shadow-lg shadow-brand-500/30 hover:shadow-brand-500/50 transition-all transform hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-50">💌 Send Proposal</button>
-        <a href="/discover/?view=${doc.user_id}" class="py-2.5 px-3 rounded-xl bg-navy-50 hover:bg-navy-100 text-navy-700 border border-navy-200 text-xs font-bold transition-colors">Biodata</a>
+        <button data-biodata="${doc.user_id}" class="py-2.5 px-3 rounded-xl bg-navy-50 hover:bg-navy-100 text-navy-700 border border-navy-200 text-xs font-bold transition-colors">Biodata</button>
         ${opts.shortlist !== false ? `<button data-shortlist="${doc.user_id}" class="p-2.5 rounded-xl bg-navy-50 hover:bg-brand-50 hover:text-brand-600 border border-navy-200 text-navy-400 transition-colors" title="Shortlist">🔖</button>` : ''}
       </div>
     </div>`;
@@ -386,4 +386,127 @@ export function bindCardActions(host: HTMLElement): void {
       }
     });
   });
+  host.querySelectorAll<HTMLButtonElement>('button[data-biodata]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const userId = Number(btn.dataset.biodata);
+      if (!userId) return;
+      // Update URL without reload for shareable link
+      const url = new URL(window.location.href);
+      url.searchParams.set('view', String(userId));
+      history.pushState({}, '', url);
+      await openBiodataModal(userId);
+    });
+  });
+}
+
+let biodataModalEl: HTMLElement | null = null;
+
+function ensureBiodataModal(): HTMLElement {
+  let el = document.getElementById('biodata-modal');
+  if (el) return el;
+  el = document.createElement('div');
+  el.id = 'biodata-modal';
+  el.className = 'fixed inset-0 z-50 hidden items-center justify-center p-4 bg-navy-950/70 backdrop-blur-sm';
+  el.innerHTML = `
+    <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col">
+      <div class="flex items-center justify-between p-6 border-b border-navy-100">
+        <h3 class="text-lg font-black text-navy-800">Doctor Biodata</h3>
+        <button id="biodata-close" class="w-8 h-8 rounded-full bg-navy-100 hover:bg-navy-200 flex items-center justify-center text-navy-600">✕</button>
+      </div>
+      <div id="biodata-content" class="p-6 overflow-y-auto space-y-4">
+        <div class="text-center py-8 text-navy-500">Loading biodata...</div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(el);
+  el.addEventListener('click', (e) => { if (e.target === el) closeBiodataModal(); });
+  el.querySelector('#biodata-close')?.addEventListener('click', closeBiodataModal);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeBiodataModal(); });
+  window.addEventListener('popstate', () => {
+    const params = new URLSearchParams(window.location.search);
+    const v = params.get('view');
+    if (v) openBiodataModal(Number(v)); else closeBiodataModal();
+  });
+  biodataModalEl = el;
+  return el;
+}
+
+function closeBiodataModal() {
+  const el = document.getElementById('biodata-modal');
+  if (el) el.classList.add('hidden'); el?.classList.remove('flex');
+  const url = new URL(window.location.href);
+  url.searchParams.delete('view');
+  history.replaceState({}, '', url);
+}
+
+export async function openBiodataModal(userId: number) {
+  const modal = ensureBiodataModal();
+  const content = document.getElementById('biodata-content')!;
+  modal.classList.remove('hidden'); modal.classList.add('flex');
+  content.innerHTML = '<div class="text-center py-8"><div class="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div><p class="text-xs text-navy-500">Loading full biodata...</p></div>';
+  try {
+    // Try dedicated profile endpoint first, fallback to match-intelligence, then to search
+    let data: any = null;
+    try {
+      const res = await api.get(`/discovery/profile/${userId}`);
+      data = res.data?.data ?? res.data;
+    } catch {
+      try {
+        const res2 = await api.get(`/discovery/match-intelligence/${userId}`);
+        data = res2.data?.data ?? res2.data;
+      } catch {
+        const res3 = await api.get('/discovery/search', { params: { search: String(userId), limit: 1 } });
+        const items = (res3.data?.data?.items ?? res3.data?.data ?? []) as any[];
+        data = items.find((x: any) => Number(x.user_id) === userId) || items[0] || null;
+      }
+    }
+    if (!data || (!data.user_id && !data.id)) throw new Error('Biodata not found');
+    const d = data.candidate || data.profile || data;
+    const name = escapeHtml(doctorName(d, 'Doctor'));
+    const photo = avatarFor(d.profile_photo_url || d.photo || d.avatar, d.gender);
+    const title = escapeHtml([d.degree, d.speciality].filter(Boolean).join(', ') || 'Medical Professional');
+    const city = escapeHtml(d.city_name || d.country_name || 'Pakistan');
+    const ht = heightLabel(d.height);
+    content.innerHTML = `
+      <div class="flex flex-col sm:flex-row gap-6">
+        <div class="w-40 h-52 rounded-2xl overflow-hidden bg-navy-100 border border-navy-200 shrink-0 mx-auto sm:mx-0">
+          <img src="${photo}" alt="${name}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='${escapeHtml(avatarFor('', d.gender))}'" />
+        </div>
+        <div class="flex-1 space-y-3">
+          <div>
+            <h4 class="text-xl font-black text-navy-800">${name}</h4>
+            <p class="text-sm font-semibold text-brand-600">${title}</p>
+            <p class="text-xs text-navy-500 mt-1">📍 ${city} • 📅 ${d.age || '—'} yrs${ht ? ` • ${ht}` : ''} • ${escapeHtml(d.gender || '')}</p>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div class="p-2.5 rounded-xl bg-navy-50 border border-navy-100"><span class="text-navy-400 font-bold uppercase text-[10px] block">Caste</span><span class="font-semibold text-navy-700">${escapeHtml(d.caste || '—')}</span></div>
+            <div class="p-2.5 rounded-xl bg-navy-50 border border-navy-100"><span class="text-navy-400 font-bold uppercase text-[10px] block">Religion</span><span class="font-semibold text-navy-700">${escapeHtml(d.religion || '—')}</span></div>
+            <div class="p-2.5 rounded-xl bg-navy-50 border border-navy-100"><span class="text-navy-400 font-bold uppercase text-[10px] block">Marital Status</span><span class="font-semibold text-navy-700">${escapeHtml(d.marital_status || '—')}</span></div>
+            <div class="p-2.5 rounded-xl bg-navy-50 border border-navy-100"><span class="text-navy-400 font-bold uppercase text-[10px] block">City</span><span class="font-semibold text-navy-700">${city}</span></div>
+          </div>
+          ${d.about ? `<div class="p-3 rounded-xl bg-brand-50/50 border border-brand-100"><p class="text-xs text-navy-700 leading-relaxed">${escapeHtml(d.about)}</p></div>` : ''}
+          <div class="flex gap-2 pt-2">
+            <button data-biodata-express="${d.user_id || userId}" class="flex-1 py-2.5 rounded-full bg-gradient-to-r from-brand-500 to-pink-600 text-white text-xs font-bold">💌 Send Proposal</button>
+            <button onclick="document.getElementById('biodata-modal')?.classList.add('hidden')" class="px-4 py-2.5 rounded-xl bg-navy-100 text-navy-700 text-xs font-bold">Close</button>
+          </div>
+        </div>
+      </div>
+    `;
+    content.querySelector('[data-biodata-express]')?.addEventListener('click', async (e) => {
+      const b = e.currentTarget as HTMLButtonElement;
+      b.disabled = true;
+      try { await api.post('/interests/express', { user_id: Number(b.dataset.biodataExpress) }); toast('Proposal sent!', 'success'); closeBiodataModal(); } catch (err) { b.disabled = false; toast(errorMessage(err), 'error'); }
+    });
+  } catch (err) {
+    content.innerHTML = `<div class="text-center py-8"><p class="text-sm font-bold text-rose-600">${escapeHtml(errorMessage(err, 'Could not load biodata'))}</p><button onclick="document.getElementById('biodata-modal')?.classList.add('hidden')" class="mt-3 px-4 py-2 rounded-full bg-navy-100 text-xs font-bold">Close</button></div>`;
+  }
+}
+
+// Auto-open biodata if ?view= is in URL on page load
+if (typeof window !== 'undefined') {
+  const _viewId = new URLSearchParams(window.location.search).get('view');
+  if (_viewId) {
+    const _uid = Number(_viewId);
+    if (_uid) setTimeout(() => openBiodataModal(_uid), 600);
+  }
 }
