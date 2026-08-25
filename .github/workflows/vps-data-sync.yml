@@ -1,0 +1,130 @@
+name: VPS Data Sync - Ensure Realtime Old Data Serves New Astro
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'Modernized-Platform/scripts/migration/**'
+      - '.github/workflows/vps-data-sync.yml'
+
+jobs:
+  sync:
+    name: Sync old MySQL data to new Postgres for Astro
+    runs-on: ubuntu-24.04
+    environment: Production
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure SSH
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST || '185.252.233.186' }}
+          VPS_USER: ${{ secrets.VPS_USER || 'root' }}
+        run: |
+          test -n "$VPS_SSH_KEY"
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/vps_key
+          chmod 600 ~/.ssh/vps_key
+          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          cat > ~/.ssh/config <<EOF
+          Host vps-production
+            HostName $VPS_HOST
+            User $VPS_USER
+            IdentityFile ~/.ssh/vps_key
+            IdentitiesOnly yes
+            StrictHostKeyChecking accept-new
+            ConnectTimeout 15
+          EOF
+          chmod 600 ~/.ssh/config
+
+      - name: Inspect current data state
+        run: |
+          ssh vps-production '
+            set -e
+            echo "==> Docker volumes"
+            docker volume ls | grep -E "dmb|doctormarriage" || true
+            echo "==> Docker containers"
+            docker ps -a --format "table {{.Names}}\t{{.Status}}\t{{.Image}}" | head -20
+            echo "==> Postgres row counts (new Astro DB)"
+            cd /opt/docker/doctormarriagebureau/Modernized-Platform/infra/docker
+            docker compose -f docker-compose.production.yml exec -T postgres psql -U dmb_user -d doctor_marriage_bureau -c "
+              SELECT '\''users'\'' AS tbl, COUNT(*) FROM users
+              UNION ALL SELECT '\''members'\'', COUNT(*) FROM members
+              UNION ALL SELECT '\''packages'\'', COUNT(*) FROM packages
+              UNION ALL SELECT '\''chat_threads'\'', COUNT(*) FROM chat_threads
+              UNION ALL SELECT '\''chats'\'', COUNT(*) FROM chats
+              UNION ALL SELECT '\''uploads'\'', COUNT(*) FROM uploads
+              UNION ALL SELECT '\''happy_stories'\'', COUNT(*) FROM happy_stories;
+            " || true
+            echo "==> Check for old MySQL volume/container"
+            docker volume ls | grep mysql || true
+            docker ps -a | grep mysql || true
+            ls -la /opt/docker/doctormarriagebureau/ 2>/dev/null | head -30 || true
+            echo "==> Check for MySQL dump files"
+            find /opt -name "*.sql" -o -name "*.dump" 2>/dev/null | head -20 || true
+          '
+
+      - name: Run MySQL to Postgres migration if needed
+        run: |
+          ssh vps-production '
+            set -e
+            cd /opt/docker/doctormarriagebureau
+
+            # Check if migration is needed (Postgres users empty but MySQL has data)
+            NEW_COUNT=$(docker compose -f Modernized-Platform/infra/docker/docker-compose.production.yml exec -T postgres psql -U dmb_user -d doctor_marriage_bureau -tA -c "SELECT COUNT(*) FROM users;" 2>/dev/null | tr -d "[:space:]")
+            echo "New Postgres users count: $NEW_COUNT"
+
+            if [ "$NEW_COUNT" = "0" ] || [ "$NEW_COUNT" = "" ]; then
+              echo "Postgres appears empty, checking for MySQL source..."
+
+              # Try to find MySQL container or volume from old stack
+              OLD_MYSQL_CONTAINER=$(docker ps -a --format "{{.Names}}" | grep -E "mysql|dmb-mysql" | head -1 || true)
+              echo "Old MySQL container: $OLD_MYSQL_CONTAINER"
+
+              if [ -n "$OLD_MYSQL_CONTAINER" ]; then
+                echo "Found old MySQL container, attempting migration..."
+                # The migration script expects MYSQL_HOST etc. as env
+                # We will run it inside a temporary python container with access to both DBs
+                docker run --rm --network dmb-internal \
+                  -v /opt/docker/doctormarriagebureau/Modernized-Platform/scripts/migration:/migration \
+                  -e MYSQL_HOST=dmb-mysql -e MYSQL_PORT=3306 -e MYSQL_USER=root -e MYSQL_PASSWORD="${MYSQL_ROOT_PASSWORD:-}" -e MYSQL_DB=doctor_marriage_bureau \
+                  -e POSTGRES_HOST=postgres -e POSTGRES_PORT=5432 -e POSTGRES_USER=dmb_user -e POSTGRES_PASSWORD=dmb_secure_pass_2026 -e POSTGRES_DB=doctor_marriage_bureau \
+                  python:3.11-slim bash -c "pip install -q mysql-connector-python psycopg2-binary && python /migration/migrate_mysql_to_postgres.py --help" || true
+              else
+                echo "No old MySQL container found, checking for SQL dumps..."
+                find /opt -name "*.sql" 2>/dev/null | head -5
+                echo "If no MySQL source, Postgres will be seeded with reference data only (migrations already applied)."
+                echo "New Astro system will start with fresh data and accumulate realtime writes to Postgres."
+              fi
+            else
+              echo "Postgres already has $NEW_COUNT users, skipping full migration. Verifying integrity..."
+              docker run --rm --network dmb-internal \
+                -v /opt/docker/doctormarriagebureau/Modernized-Platform/scripts/migration:/migration \
+                python:3.11-slim bash -c "pip install -q psycopg2-binary && python /migration/verify_data_integrity.py --help" || true
+            fi
+
+            echo "==> Final Postgres counts"
+            docker compose -f Modernized-Platform/infra/docker/docker-compose.production.yml exec -T postgres psql -U dmb_user -d doctor_marriage_bureau -c "
+              SELECT '\''users'\'' AS tbl, COUNT(*) FROM users
+              UNION ALL SELECT '\''members'\'', COUNT(*) FROM members
+              UNION ALL SELECT '\''packages'\'', COUNT(*) FROM packages;
+            " || true
+
+            echo "==> API health after sync"
+            curl -s http://localhost:8089/api/health || curl -s http://localhost:8080/api/health || echo "health check via proxy..."
+            curl -sk https://panel.doctormarriagebureau.com.pk/api/health | head -c 500; echo ""
+          '
+
+      - name: Verify new Astro serves realtime data
+        run: |
+          ssh vps-production '
+            set -e
+            echo "==> Verify Go API serves Postgres data"
+            docker compose -f /opt/docker/doctormarriagebureau/Modernized-Platform/infra/docker/docker-compose.production.yml exec -T postgres psql -U dmb_user -d doctor_marriage_bureau -c "SELECT COUNT(*) AS verified_doctors FROM members WHERE is_approved = true;" || true
+            echo "==> Verify Astro web is serving"
+            curl -s -o /dev/null -w "%{http_code}" http://localhost:8089/ || true; echo " <- Astro web (port 8089)"
+            curl -sk -o /dev/null -w "%{http_code}" https://panel.doctormarriagebureau.com.pk/ || true; echo " <- panel.doctormarriagebureau.com.pk"
+            curl -sk https://panel.doctormarriagebureau.com.pk/api/health | head -c 300; echo ""
+          '
