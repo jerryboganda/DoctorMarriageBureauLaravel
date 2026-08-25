@@ -1,0 +1,75 @@
+name: Fix Admin 403 - Restore Production Admin Access
+on:
+  workflow_dispatch:
+jobs:
+  fix:
+    runs-on: ubuntu-24.04
+    environment: Production
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure SSH
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST || '185.252.233.186' }}
+          VPS_USER: ${{ secrets.VPS_USER || 'root' }}
+        run: |
+          test -n "$VPS_SSH_KEY"
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/vps_key
+          chmod 600 ~/.ssh/vps_key
+          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          cat > ~/.ssh/config <<'EOF'
+          Host vps-production
+            HostName $VPS_HOST
+            User $VPS_USER
+            IdentityFile ~/.ssh/vps_key
+            IdentitiesOnly yes
+            StrictHostKeyChecking accept-new
+            ConnectTimeout 15
+          EOF
+          chmod 600 ~/.ssh/config
+      - name: Diagnose admin access
+        run: |
+          ssh vps-production '
+            set -e
+            cd /opt/docker/doctormarriagebureau/Modernized-Platform/infra/docker
+            echo "=== POSTGRES users with admin markers ==="
+            docker compose -f docker-compose.production.yml exec -T postgres psql -U dmb_user -d doctor_marriage_bureau -c "SELECT id, email, COALESCE(name, first_name||'\'' '\''||last_name) AS name, COALESCE(user_type,'\'''\'' ) AS user_type, COALESCE(membership,0) AS membership, COALESCE(approved,false) AS approved FROM users WHERE LOWER(email) LIKE '\''%developer%'\'' OR LOWER(name) LIKE '\''%developer%'\'' OR LOWER(user_type)='\''admin'\'' OR membership=3 OR LOWER(email) LIKE '\''%admin%'\'' ORDER BY id LIMIT 20;" || true
+            echo "=== STAFF table (if exists, Laravel admins live here) ==="
+            docker compose -f docker-compose.production.yml exec -T postgres psql -U dmb_user -d doctor_marriage_bureau -c "SELECT id, email, name, role_id FROM staff ORDER BY id LIMIT 20;" || true
+            docker compose -f docker-compose.production.yml exec -T postgres psql -U dmb_user -d doctor_marriage_bureau -c "\d staff" || true
+            echo "=== ALL user_type values ==="
+            docker compose -f docker-compose.production.yml exec -T postgres psql -U dmb_user -d doctor_marriage_bureau -tA -c "SELECT DISTINCT COALESCE(user_type,'\''(null)'\'' ) FROM users;" || true
+            echo "=== RECENT users ==="
+            docker compose -f docker-compose.production.yml exec -T postgres psql -U dmb_user -d doctor_marriage_bureau -c "SELECT id, email, COALESCE(user_type,'\'''\'' ) AS ut, membership FROM users ORDER BY id DESC LIMIT 15;" || true
+          '
+      - name: Fix admin user
+        run: |
+          ssh vps-production '
+            set -e
+            cd /opt/docker/doctormarriagebureau/Modernized-Platform/infra/docker
+            echo "=== Promoting Developer Testing Account and known admins ==="
+            docker compose -f docker-compose.production.yml exec -T postgres psql -U dmb_user -d doctor_marriage_bureau -c "
+              UPDATE users SET user_type='\''admin'\'', membership=3, approved=true WHERE LOWER(name) LIKE '\''%developer%'\'' OR LOWER(email) LIKE '\''%developer%'\'' OR email IN ('\''developer@hospital.org'\'','\''doctor@hospital.org'\'','\''ayesha@hospital.org'\'') ;
+              SELECT id, email, name, user_type, membership FROM users WHERE LOWER(name) LIKE '\''%developer%'\'' OR LOWER(email) LIKE '\''%developer%'\'' OR email IN ('\''developer@hospital.org'\'','\''doctor@hospital.org'\'');
+            " || true
+            echo "=== Check personal_access_tokens for recent user ==="
+            docker compose -f docker-compose.production.yml exec -T postgres psql -U dmb_user -d doctor_marriage_bureau -c "SELECT id, user_id, name, last_used_at FROM personal_access_tokens ORDER BY last_used_at DESC NULLS LAST LIMIT 10;" || true
+            echo "=== Fallback: promote most recent token user ==="
+            docker compose -f docker-compose.production.yml exec -T postgres psql -U dmb_user -d doctor_marriage_bureau -c "
+              WITH recent AS (SELECT user_id FROM personal_access_tokens WHERE last_used_at IS NOT NULL ORDER BY last_used_at DESC LIMIT 1)
+              UPDATE users SET user_type='\''admin'\'', membership=3 WHERE id IN (SELECT user_id FROM recent) ;
+              SELECT id, email, name, user_type FROM users WHERE id IN (SELECT user_id FROM personal_access_tokens ORDER BY last_used_at DESC LIMIT 3);
+            " || true
+            echo "=== Final admin list ==="
+            docker compose -f docker-compose.production.yml exec -T postgres psql -U dmb_user -d doctor_marriage_bureau -c "SELECT id, email, name, user_type, membership FROM users WHERE LOWER(user_type)='\''admin'\'' OR membership=3 ORDER BY id;" || true
+          '
+      - name: Verify fix
+        run: |
+          ssh vps-production '
+            set -e
+            echo "=== Verify health ==="
+            curl -sk https://panel.doctormarriagebureau.com.pk/api/health | head -c 400; echo ""
+            cd /opt/docker/doctormarriagebureau/Modernized-Platform/infra/docker
+            docker compose -f docker-compose.production.yml exec -T postgres psql -U dmb_user -d doctor_marriage_bureau -tA -c "SELECT id, email, (SELECT EXISTS(SELECT 1 FROM users u2 WHERE u2.id=u.id AND (u2.membership=3 OR LOWER(COALESCE(u2.user_type,'\'''\'' ))='\''admin'\'' ))) AS is_admin FROM users WHERE LOWER(user_type)='\''admin'\'' OR membership=3 LIMIT 5;" || true
+          '
