@@ -719,7 +719,7 @@ func (s *Service) ListVerifications(ctx context.Context) ([]AdminVerification, e
 				WHEN (elem->>'value') != '' THEN '/uploads/' || (elem->>'value')
 				ELSE ''
 			END
-			FROM jsonb_array_elements(CASE WHEN u.verification_info IS NOT NULL AND u.verification_info != '' AND u.verification_info ~ '^\s*\\[' THEN u.verification_info::jsonb ELSE '[]'::jsonb END) elem
+			FROM jsonb_array_elements(CASE WHEN LEFT(LTRIM(COALESCE(u.verification_info, '')), 1) = '[' THEN u.verification_info::jsonb ELSE '[]'::jsonb END) elem
 			WHERE (elem->>'type') = 'file' AND elem->>'value' IS NOT NULL AND elem->>'value' != ''
 			LIMIT 1
 		), ''),
@@ -729,7 +729,7 @@ func (s *Service) ListVerifications(ctx context.Context) ([]AdminVerification, e
 		NULLIF(m.medical_license_number, ''),
 		(
 			SELECT elem->>'value'
-			FROM jsonb_array_elements(CASE WHEN u.verification_info IS NOT NULL AND u.verification_info != '' AND u.verification_info ~ '^\s*\\[' THEN u.verification_info::jsonb ELSE '[]'::jsonb END) elem
+			FROM jsonb_array_elements(CASE WHEN LEFT(LTRIM(COALESCE(u.verification_info, '')), 1) = '[' THEN u.verification_info::jsonb ELSE '[]'::jsonb END) elem
 			WHERE (elem->>'type') IN ('text', 'string') AND elem->>'value' IS NOT NULL AND elem->>'value' != ''
 			LIMIT 1
 		),
