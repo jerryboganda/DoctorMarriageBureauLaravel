@@ -138,9 +138,35 @@ import {
       sessionStorage.removeItem('auth_error');
     }
 
-    // Already signed in? Straight to portal.
+    // Already signed in? Route based on user role
     if (localStorage.getItem('auth_token')) {
-      window.location.replace('/dashboard/');
+      const cached = sessionStorage.getItem('dmb_me');
+      if (cached) {
+        try {
+          const u = JSON.parse(cached);
+          const t = String(u?.type || u?.user_type || '').toLowerCase();
+          if (t === 'admin' || t === 'staff') {
+            window.location.replace('/admin/');
+          } else {
+            window.location.replace('/dashboard/');
+          }
+        } catch {
+          window.location.replace('/dashboard/');
+        }
+      } else {
+        api.get('/auth/me').then((res) => {
+          const u = res.data?.data;
+          if (u) sessionStorage.setItem('dmb_me', JSON.stringify(u));
+          const t = String(u?.type || u?.user_type || '').toLowerCase();
+          if (t === 'admin' || t === 'staff') {
+            window.location.replace('/admin/');
+          } else {
+            window.location.replace('/dashboard/');
+          }
+        }).catch(() => {
+          window.location.replace('/dashboard/');
+        });
+      }
     }
 
     form?.addEventListener('submit', async (ev) => {
@@ -158,7 +184,13 @@ import {
         if (!token) throw new Error(res.data?.message || 'Sign in failed. Please try again.');
         localStorage.setItem('auth_token', token);
         if (data?.user) sessionStorage.setItem('dmb_me', JSON.stringify(data.user));
-        window.location.href = '/dashboard/';
+
+        const userType = String(data?.user?.type || data?.user?.user_type || '').toLowerCase();
+        if (userType === 'admin' || userType === 'staff') {
+          window.location.href = '/admin/';
+        } else {
+          window.location.href = '/dashboard/';
+        }
       } catch (err) {
         errBox.textContent = errorMessage(err, 'Invalid credentials. Please check your email/phone and password.');
         errBox.classList.remove('hidden');

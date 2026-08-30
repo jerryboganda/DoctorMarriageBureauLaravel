@@ -55,6 +55,17 @@ import {
     <!-- Quick Action Icons & Profile Drawer -->
     <div class="flex items-center gap-2 sm:gap-3">
       
+      <!-- Admin Control Center Shortcut (shown only for admin) -->
+      <a 
+        href="/admin/" 
+        data-dmb-admin-link
+        class="hidden items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-white bg-slate-950 hover:bg-slate-900 border border-slate-800 shadow-sm transition-all"
+        title="Open Admin Control Center"
+      >
+        <ShieldCheck className="w-3.5 h-3.5 text-brand-400" />
+        <span>Admin Portal</span>
+      </a>
+
       <!-- Upgrade VIP Pill -->
       <a 
         href="/packages/" 
@@ -104,6 +115,10 @@ import {
           </div>
 
           <div class="py-1.5 space-y-0.5">
+            <a href="/admin/" data-dmb-admin-link class="hidden items-center gap-2.5 px-3 py-2 text-xs font-bold text-brand-600 hover:bg-brand-50 rounded-xl transition-colors">
+              <ShieldCheck className="w-4 h-4 text-brand-600" />
+              <span>Admin Control Center</span>
+            </a>
             <a href="/profile/" class="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-navy-700 hover:text-brand-600 hover:bg-brand-50 rounded-xl transition-colors">
               <User className="w-4 h-4" />
               <span>My Doctor Profile</span>

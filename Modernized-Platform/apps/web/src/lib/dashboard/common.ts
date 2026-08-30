@@ -196,6 +196,16 @@ export async function hydrateChrome(): Promise<MeUser | null> {
         el.src = avatarFor('', me.gender);
       };
     });
+
+    const userRole = String(me.type || (me as any).user_type || '').toLowerCase();
+    if (userRole === 'admin' || userRole === 'staff') {
+      document.querySelectorAll<HTMLElement>('[data-dmb-admin-link]').forEach((el) => {
+        el.classList.remove('hidden');
+        if (el.tagName === 'A' && !el.classList.contains('flex')) {
+          el.classList.add('inline-flex');
+        }
+      });
+    }
   }
 
   document.querySelectorAll<HTMLElement>('[data-dmb-logout]').forEach((el) => {

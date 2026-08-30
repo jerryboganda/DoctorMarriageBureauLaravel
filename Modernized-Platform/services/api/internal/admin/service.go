@@ -220,7 +220,7 @@ func (s *Service) IsAdmin(ctx context.Context, userID int64) (bool, error) {
 	var isAdmin bool
 	err := s.pg.Pool.QueryRow(ctx, `
 		SELECT EXISTS(
-			SELECT 1 FROM users WHERE id=$1 AND (membership=3 OR LOWER(COALESCE(user_type,''))='admin')
+			SELECT 1 FROM users WHERE id=$1 AND (membership=3 OR LOWER(COALESCE(user_type,'')) IN ('admin', 'staff'))
 		)
 	`, userID).Scan(&isAdmin)
 	if err != nil {
