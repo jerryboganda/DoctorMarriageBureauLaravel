@@ -171,19 +171,35 @@ import {
         return;
       }
 
-      tbody.innerHTML = filtered.map(p => `
-      <tr class="hover:bg-slate-50/80 transition-colors">
-        <td class="py-3.5 px-4">
-          <div class="flex items-center gap-3">
-            <img src="${p.avatar || '/assets/img/avatar-place.png'}" onerror="this.src='/assets/img/avatar-place.png';this.onerror=null;" class="w-9 h-9 rounded-xl object-cover border border-slate-200 bg-slate-100" alt="${p.doctor_name}" />
-            <div>
-              <a href="/admin/doctors/view/?id=${p.doctor_id}" class="font-bold text-navy-900 hover:text-brand-600 transition-colors">
-                ${p.doctor_name}
-              </a>
-              <p class="text-[11px] text-slate-400">${p.doctor_email}</p>
+      tbody.innerHTML = filtered.map(p => {
+        const initials = (p.doctor_name || 'Dr').trim().split(/\s+/).map((n: string) => n[0]).slice(0, 2).join('').toUpperCase() || 'DR';
+        const hasAvatar = p.avatar && p.avatar.trim() !== '' && p.avatar !== 'null';
+
+        return `
+        <tr class="hover:bg-slate-50/80 transition-colors">
+          <td class="py-3.5 px-4">
+            <div class="flex items-center gap-3">
+              <div class="relative w-9 h-9 rounded-xl overflow-hidden ring-1 ring-slate-200 bg-gradient-to-tr from-brand-600 via-rose-500 to-pink-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                ${hasAvatar ? `
+                  <img 
+                    src="${p.avatar}" 
+                    class="w-full h-full object-cover" 
+                    alt="${p.doctor_name}" 
+                    onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
+                  />
+                  <span style="display:none;" class="w-full h-full flex items-center justify-center font-bold text-xs uppercase">${initials}</span>
+                ` : `
+                  <span class="w-full h-full flex items-center justify-center font-bold text-xs uppercase">${initials}</span>
+                `}
+              </div>
+              <div>
+                <a href="/admin/doctors/view/?id=${p.doctor_id}" class="font-bold text-navy-900 hover:text-brand-600 transition-colors block">
+                  ${p.doctor_name || 'Doctor'}
+                </a>
+                <p class="text-[11px] text-slate-400">${p.doctor_email || ''}</p>
+              </div>
             </div>
-          </div>
-        </td>
+          </td>
         <td class="py-3.5 px-4">
           <p class="font-bold text-navy-900">${p.package_name}</p>
           <p class="text-xs font-black text-brand-600">Rs ${p.amount_pkr.toLocaleString()}</p>
@@ -234,7 +250,8 @@ import {
           `}
         </td>
       </tr>
-    `).join('');
+      `;
+    }).join('');
 
       // Bind action events (re-bound after each render)
       document.querySelectorAll('[data-action="approve-pay"]').forEach((btn) => {

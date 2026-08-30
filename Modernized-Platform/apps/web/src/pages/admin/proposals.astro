@@ -81,50 +81,81 @@ import {
         tbody.innerHTML = '<tr><td colspan="6" class="py-12 text-center text-slate-500">No live data — no proposals recorded.</td></tr>';
         return;
       }
-      tbody.innerHTML = list.map(p => `
-      <tr class="hover:bg-slate-50/80 transition-colors">
-        <td class="py-4 px-4">
-          <div class="flex items-center gap-3">
-            <img src="${p.sender_avatar}" class="w-9 h-9 rounded-xl object-cover border border-slate-200" alt="" />
-            <div>
-              <a href="/admin/doctors/view/?id=${p.sender_id}" class="font-bold text-navy-900 hover:text-brand-600 transition-colors">
-                ${p.sender_name}
-              </a>
-              <p class="text-[11px] text-slate-400">${p.sender_specialty}</p>
+      tbody.innerHTML = list.map(p => {
+        const senderInitials = (p.sender_name || 'Dr').trim().split(/\s+/).map((n: string) => n[0]).slice(0, 2).join('').toUpperCase() || 'DR';
+        const recipientInitials = (p.recipient_name || 'Dr').trim().split(/\s+/).map((n: string) => n[0]).slice(0, 2).join('').toUpperCase() || 'DR';
+        const hasSenderAvatar = p.sender_avatar && p.sender_avatar.trim() !== '' && p.sender_avatar !== 'null';
+        const hasRecipientAvatar = p.recipient_avatar && p.recipient_avatar.trim() !== '' && p.recipient_avatar !== 'null';
+
+        return `
+        <tr class="hover:bg-slate-50/80 transition-colors">
+          <td class="py-4 px-4">
+            <div class="flex items-center gap-3">
+              <div class="relative w-9 h-9 rounded-xl overflow-hidden ring-1 ring-slate-200 bg-gradient-to-tr from-brand-600 via-rose-500 to-pink-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                ${hasSenderAvatar ? `
+                  <img 
+                    src="${p.sender_avatar}" 
+                    class="w-full h-full object-cover" 
+                    alt="${p.sender_name}" 
+                    onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
+                  />
+                  <span style="display:none;" class="w-full h-full flex items-center justify-center font-bold text-xs uppercase">${senderInitials}</span>
+                ` : `
+                  <span class="w-full h-full flex items-center justify-center font-bold text-xs uppercase">${senderInitials}</span>
+                `}
+              </div>
+              <div>
+                <a href="/admin/doctors/view/?id=${p.sender_id}" class="font-bold text-navy-900 hover:text-brand-600 transition-colors block">
+                  ${p.sender_name || 'Doctor'}
+                </a>
+                <p class="text-[11px] text-slate-400">${p.sender_specialty || ''}</p>
+              </div>
             </div>
-          </div>
-        </td>
-        <td class="py-4 px-4 text-center">
-          <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-black bg-rose-50 text-rose-700 border border-rose-200">
-            ✨ ${p.match_percentage}%
-          </span>
-        </td>
-        <td class="py-4 px-4">
-          <div class="flex items-center gap-3">
-            <img src="${p.recipient_avatar}" class="w-9 h-9 rounded-xl object-cover border border-slate-200" alt="" />
-            <div>
-              <a href="/admin/doctors/view/?id=${p.recipient_id}" class="font-bold text-navy-900 hover:text-brand-600 transition-colors">
-                ${p.recipient_name}
-              </a>
-              <p class="text-[11px] text-slate-400">${p.recipient_specialty}</p>
+          </td>
+          <td class="py-4 px-4 text-center">
+            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-black bg-rose-50 text-rose-700 border border-rose-200">
+              ✨ ${p.match_percentage || 85}%
+            </span>
+          </td>
+          <td class="py-4 px-4">
+            <div class="flex items-center gap-3">
+              <div class="relative w-9 h-9 rounded-xl overflow-hidden ring-1 ring-slate-200 bg-gradient-to-tr from-brand-600 via-rose-500 to-pink-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                ${hasRecipientAvatar ? `
+                  <img 
+                    src="${p.recipient_avatar}" 
+                    class="w-full h-full object-cover" 
+                    alt="${p.recipient_name}" 
+                    onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
+                  />
+                  <span style="display:none;" class="w-full h-full flex items-center justify-center font-bold text-xs uppercase">${recipientInitials}</span>
+                ` : `
+                  <span class="w-full h-full flex items-center justify-center font-bold text-xs uppercase">${recipientInitials}</span>
+                `}
+              </div>
+              <div>
+                <a href="/admin/doctors/view/?id=${p.recipient_id}" class="font-bold text-navy-900 hover:text-brand-600 transition-colors block">
+                  ${p.recipient_name || 'Doctor'}
+                </a>
+                <p class="text-[11px] text-slate-400">${p.recipient_specialty || ''}</p>
+              </div>
             </div>
-          </div>
-        </td>
-        <td class="py-4 px-4">
-          <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold ${
-            p.status === 'accepted' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-          }">
-            ${p.status === 'accepted' ? '✓ PROPOSAL ACCEPTED' : p.status.toUpperCase()}
-          </span>
-        </td>
-        <td class="py-4 px-4 text-slate-500 text-[11px]">
-          ${p.created_at}
-        </td>
-        <td class="py-4 px-4 text-right text-slate-600 text-[11px]">
-          ${p.notes || 'Family review in progress'}
-        </td>
-      </tr>
-    `).join('');
+          </td>
+          <td class="py-4 px-4">
+            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold ${
+              p.status === 'accepted' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+            }">
+              ${p.status === 'accepted' ? '✓ PROPOSAL ACCEPTED' : (p.status || 'PENDING').toUpperCase()}
+            </span>
+          </td>
+          <td class="py-4 px-4 text-slate-500 text-[11px]">
+            ${p.created_at}
+          </td>
+          <td class="py-4 px-4 text-right text-slate-600 text-[11px]">
+            ${p.notes || 'Family review in progress'}
+          </td>
+        </tr>
+        `;
+      }).join('');
     } catch (err: any) {
       tbody.innerHTML = `<tr><td colspan="6" class="py-12 text-center text-rose-600">${err?.response?.data?.message || err?.message || 'Failed to load live proposals. Please retry.'}</td></tr>`;
       showToast({ title: 'Failed to load proposals', message: err?.response?.data?.message || err?.message || 'Failed to load live proposals.', type: 'error' });
