@@ -370,63 +370,81 @@ import {
         if (verifs.length === 0) {
           verifTbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-slate-500">No live data — no pending PMDC verifications.</td></tr>';
         } else {
-          verifTbody.innerHTML = verifs.map(v => `
-          <tr class="hover:bg-slate-50/80 transition-colors">
-            <td class="py-3 px-4">
-              <div class="flex items-center gap-3">
-                <img src="${v.avatar}" class="w-8 h-8 rounded-full object-cover border border-slate-200" alt="${v.doctor_name}" />
-                <div>
-                  <a href="/admin/doctors/view/?id=${v.doctor_id}" class="font-bold text-navy-900 hover:text-brand-600 transition-colors">
-                    ${v.doctor_name}
-                  </a>
-                  <p class="text-[10px] text-slate-400">${v.document_type}</p>
+          verifTbody.innerHTML = verifs.map(v => {
+            const initials = (v.doctor_name || 'Dr').trim().split(/\s+/).map((n: string) => n[0]).slice(0, 2).join('').toUpperCase() || 'DR';
+            const hasAvatar = v.avatar && v.avatar.trim() !== '' && v.avatar !== 'null';
+            const pmdcClean = (v.pmdc_number && v.pmdc_number.trim() !== '') ? v.pmdc_number : '<span class="text-slate-400 font-normal italic">PMC Not Provided</span>';
+
+            return `
+            <tr class="hover:bg-slate-50/80 transition-colors">
+              <td class="py-3 px-4">
+                <div class="flex items-center gap-3">
+                  <div class="relative w-8 h-8 rounded-full overflow-hidden ring-1 ring-slate-200 bg-gradient-to-tr from-brand-600 via-rose-500 to-pink-600 text-white flex items-center justify-center font-bold text-[11px] shrink-0">
+                    ${hasAvatar ? `
+                      <img 
+                        src="${v.avatar}" 
+                        class="w-full h-full object-cover" 
+                        alt="${v.doctor_name}" 
+                        onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
+                      />
+                      <span style="display:none;" class="w-full h-full flex items-center justify-center font-bold text-[11px] uppercase">${initials}</span>
+                    ` : `
+                      <span class="w-full h-full flex items-center justify-center font-bold text-[11px] uppercase">${initials}</span>
+                    `}
+                  </div>
+                  <div>
+                    <a href="/admin/doctors/view/?id=${v.doctor_id}" class="font-bold text-navy-900 hover:text-brand-600 transition-colors block">
+                      ${v.doctor_name || 'Doctor'}
+                    </a>
+                    <p class="text-[10px] text-slate-400">${v.document_type || 'PMDC License'}</p>
+                  </div>
                 </div>
-              </div>
-            </td>
-            <td class="py-3 px-4 text-slate-600">
-              <p class="font-semibold text-slate-800">${v.speciality}</p>
-              <p class="text-[10px] text-slate-400">${v.city}</p>
-            </td>
-            <td class="py-3 px-4">
-              <span class="px-2 py-0.5 rounded font-mono text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
-                ${v.pmdc_number}
-              </span>
-            </td>
-            <td class="py-3 px-4">
-              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                v.status === 'approved' 
-                  ? 'bg-emerald-100 text-emerald-700' 
-                  : v.status === 'pending' 
-                  ? 'bg-amber-100 text-amber-700 animate-pulse' 
-                  : 'bg-rose-100 text-rose-700'
-              }">
-                ${v.status.toUpperCase()}
-              </span>
-            </td>
-            <td class="py-3 px-4 text-right">
-              ${v.status === 'pending' ? `
-                <div class="flex items-center justify-end gap-1.5">
-                  <button 
-                    data-action="quick-approve-verif" 
-                    data-id="${v.id}"
-                    class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
-                  >
-                    Approve
-                  </button>
-                  <a 
-                    href="/admin/verifications/" 
-                    class="p-1 rounded-lg text-slate-400 hover:text-navy-900 hover:bg-slate-100 transition-colors"
-                    title="Inspect documents"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </a>
-                </div>
-              ` : `
-                <span class="text-[10px] text-slate-400">Reviewed</span>
-              `}
-            </td>
-          </tr>
-        `).join('');
+              </td>
+              <td class="py-3 px-4 text-slate-600">
+                <p class="font-semibold text-slate-800">${v.speciality || 'General Medicine'}</p>
+                <p class="text-[10px] text-slate-400">${v.city || 'Pakistan'}</p>
+              </td>
+              <td class="py-3 px-4">
+                <span class="px-2 py-0.5 rounded font-mono text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                  ${pmdcClean}
+                </span>
+              </td>
+              <td class="py-3 px-4">
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                  v.status === 'approved' 
+                    ? 'bg-emerald-100 text-emerald-700' 
+                    : v.status === 'pending' 
+                    ? 'bg-amber-100 text-amber-700 animate-pulse' 
+                    : 'bg-rose-100 text-rose-700'
+                }">
+                  ${v.status.toUpperCase()}
+                </span>
+              </td>
+              <td class="py-3 px-4 text-right">
+                ${v.status === 'pending' ? `
+                  <div class="flex items-center justify-end gap-1.5">
+                    <button 
+                      data-action="quick-approve-verif" 
+                      data-id="${v.id}"
+                      class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors cursor-pointer"
+                    >
+                      Approve
+                    </button>
+                    <a 
+                      href="/admin/verifications/" 
+                      class="p-1 rounded-lg text-slate-400 hover:text-navy-900 hover:bg-slate-100 transition-colors"
+                      title="Inspect documents"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </a>
+                  </div>
+                ` : `
+                  <span class="text-[10px] text-slate-400">Reviewed</span>
+                `}
+              </td>
+            </tr>
+          `;
+          }).join('');
         }
         // Bind Quick Approve Buttons (re-bound after render)
         document.querySelectorAll('[data-action="quick-approve-verif"]').forEach((btn) => {
@@ -461,37 +479,54 @@ import {
         if (payments.length === 0) {
           paymentsTbody.innerHTML = '<tr><td colspan="6" class="py-8 text-center text-slate-500">No live data — no recent payments.</td></tr>';
         } else {
-          paymentsTbody.innerHTML = payments.map(p => `
-          <tr class="hover:bg-slate-50/80 transition-colors">
-            <td class="py-3 px-4">
-              <div class="flex items-center gap-2.5">
-                <img src="${p.avatar}" class="w-7 h-7 rounded-full object-cover" alt="" />
-                <span class="font-bold text-navy-900">${p.doctor_name}</span>
-              </div>
-            </td>
-            <td class="py-3 px-4 font-semibold text-slate-700">${p.package_name}</td>
-            <td class="py-3 px-4 font-bold text-navy-900">Rs ${p.amount_pkr.toLocaleString()}</td>
-            <td class="py-3 px-4">
-              <p class="font-medium text-slate-700">${p.payment_method}</p>
-              <p class="text-[10px] text-slate-400 font-mono">${p.transaction_id}</p>
-            </td>
-            <td class="py-3 px-4">
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                p.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-              }">
-                ${p.status.toUpperCase()}
-              </span>
-            </td>
-            <td class="py-3 px-4 text-right">
-              <a 
-                href="/admin/payments/" 
-                class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 hover:bg-brand-50 hover:text-brand-600 text-slate-700 transition-colors"
-              >
-                Review Slip
-              </a>
-            </td>
-          </tr>
-        `).join('');
+          paymentsTbody.innerHTML = payments.map(p => {
+            const initials = (p.doctor_name || 'Dr').trim().split(/\s+/).map((n: string) => n[0]).slice(0, 2).join('').toUpperCase() || 'DR';
+            const hasAvatar = p.avatar && p.avatar.trim() !== '' && p.avatar !== 'null';
+
+            return `
+            <tr class="hover:bg-slate-50/80 transition-colors">
+              <td class="py-3 px-4">
+                <div class="flex items-center gap-2.5">
+                  <div class="relative w-7 h-7 rounded-full overflow-hidden ring-1 ring-slate-200 bg-gradient-to-tr from-brand-600 via-rose-500 to-pink-600 text-white flex items-center justify-center font-bold text-[10px] shrink-0">
+                    ${hasAvatar ? `
+                      <img 
+                        src="${p.avatar}" 
+                        class="w-full h-full object-cover" 
+                        alt="${p.doctor_name}" 
+                        onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
+                      />
+                      <span style="display:none;" class="w-full h-full flex items-center justify-center font-bold text-[10px] uppercase">${initials}</span>
+                    ` : `
+                      <span class="w-full h-full flex items-center justify-center font-bold text-[10px] uppercase">${initials}</span>
+                    `}
+                  </div>
+                  <span class="font-bold text-navy-900">${p.doctor_name || 'Doctor'}</span>
+                </div>
+              </td>
+              <td class="py-3 px-4 font-semibold text-slate-700">${p.package_name}</td>
+              <td class="py-3 px-4 font-bold text-navy-900">Rs ${p.amount_pkr.toLocaleString()}</td>
+              <td class="py-3 px-4">
+                <p class="font-medium text-slate-700">${p.payment_method}</p>
+                <p class="text-[10px] text-slate-400 font-mono">${p.transaction_id || 'N/A'}</p>
+              </td>
+              <td class="py-3 px-4">
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                  p.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                }">
+                  ${p.status.toUpperCase()}
+                </span>
+              </td>
+              <td class="py-3 px-4 text-right">
+                <a 
+                  href="/admin/payments/" 
+                  class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 hover:bg-brand-50 hover:text-brand-600 text-slate-700 transition-colors"
+                >
+                  Review Slip
+                </a>
+              </td>
+            </tr>
+          `;
+          }).join('');
         }
       } catch (err: any) {
         paymentsTbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-rose-600">${err?.response?.data?.message || err?.message || 'Failed to load live transactions. Please retry.'}</td></tr>`;

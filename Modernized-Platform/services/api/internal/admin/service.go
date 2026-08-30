@@ -702,6 +702,39 @@ func (s *Service) ListVerifications(ctx context.Context) ([]AdminVerification, e
 		return []AdminVerification{}, nil
 	}
 	avatarSQL := assets.PhotoSQLWithUserFallback("u.photo", "u.id")
+	docSQL := `COALESCE(
+		NULLIF(` + assets.PhotoSQL("m.verification_document") + `, ''),
+		NULLIF((
+			SELECT CASE
+				WHEN (elem->>'value') ~ '^[0-9]+$' THEN (
+					SELECT CASE
+						WHEN up.file_name LIKE '/%' THEN replace(up.file_name, '/public/uploads/', '/uploads/')
+						WHEN up.file_name LIKE 'uploads/%' THEN '/' || up.file_name
+						ELSE '/uploads/' || up.file_name
+					END
+					FROM uploads up WHERE up.id = (elem->>'value')::bigint LIMIT 1
+				)
+				WHEN (elem->>'value') LIKE '/%' THEN replace(elem->>'value', '/public/uploads/', '/uploads/')
+				WHEN (elem->>'value') LIKE 'uploads/%' THEN '/' || (elem->>'value')
+				WHEN (elem->>'value') != '' THEN '/uploads/' || (elem->>'value')
+				ELSE ''
+			END
+			FROM jsonb_array_elements(CASE WHEN u.verification_info IS NOT NULL AND u.verification_info != '' AND u.verification_info ~ '^\s*\\[' THEN u.verification_info::jsonb ELSE '[]'::jsonb END) elem
+			WHERE (elem->>'type') = 'file' AND elem->>'value' IS NOT NULL AND elem->>'value' != ''
+			LIMIT 1
+		), ''),
+		''
+	)`
+	pmdcSQL := `COALESCE(
+		NULLIF(m.medical_license_number, ''),
+		(
+			SELECT elem->>'value'
+			FROM jsonb_array_elements(CASE WHEN u.verification_info IS NOT NULL AND u.verification_info != '' AND u.verification_info ~ '^\s*\\[' THEN u.verification_info::jsonb ELSE '[]'::jsonb END) elem
+			WHERE (elem->>'type') IN ('text', 'string') AND elem->>'value' IS NOT NULL AND elem->>'value' != ''
+			LIMIT 1
+		),
+		''
+	)`
 	query := `
 	SELECT
 		m.id,
@@ -711,8 +744,8 @@ func (s *Service) ListVerifications(ctx context.Context) ([]AdminVerification, e
 		COALESCE(car.speciality,''),
 		COALESCE(car.company,''),
 		COALESCE(ci.name,''),
-		COALESCE(m.medical_license_number,''),
-		COALESCE(m.verification_document,''),
+		` + pmdcSQL + `,
+		` + docSQL + `,
 		m.created_at,
 		CASE WHEN COALESCE(m.is_approved,false)=true THEN 'approved' ELSE 'pending' END,
 		COALESCE(m.updated_at, m.created_at)

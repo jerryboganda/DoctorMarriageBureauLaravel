@@ -38,12 +38,15 @@ import { AdminStore } from '../../../lib/api/admin';
 
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div class="flex items-center gap-4">
-        <img 
-          id="doc-avatar" 
-          src="" 
-          alt="" 
-          class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover border-2 border-white shadow-md bg-slate-200"
-        />
+        <div class="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden ring-2 ring-white shadow-md bg-gradient-to-tr from-brand-600 via-rose-500 to-pink-600 text-white flex items-center justify-center font-bold text-lg shrink-0">
+          <img 
+            id="doc-avatar" 
+            src="" 
+            alt="" 
+            class="w-full h-full object-cover hidden"
+          />
+          <span id="doc-avatar-fallback" class="font-extrabold uppercase tracking-wider">DR</span>
+        </div>
         <div>
           <div class="flex items-center gap-2">
             <h1 id="doc-name" class="text-xl sm:text-2xl font-black text-navy-900">Loading doctor…</h1>
@@ -137,22 +140,29 @@ import { AdminStore } from '../../../lib/api/admin';
         <div class="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-3">
           <div class="flex items-center justify-between">
             <span class="text-xs font-bold text-slate-700">PMDC License Document Inspection</span>
-            <span class="text-[11px] text-brand-600 font-semibold">High-Resolution Scan Available</span>
+            <span id="doc-pmdc-status-sub" class="text-[11px] text-slate-500 font-semibold">Submitted Document</span>
           </div>
 
-          <div class="relative h-44 rounded-xl overflow-hidden bg-slate-200 border border-slate-300 group">
+          <div class="relative h-48 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 group flex items-center justify-center">
             <img 
               id="doc-pmdc-img"
-              src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop&q=80" 
+              src="" 
               alt="PMDC License Document" 
-              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 hidden"
             />
-            <div class="absolute inset-0 bg-navy-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <div id="doc-pmdc-fallback" class="flex flex-col items-center justify-center p-6 text-center text-slate-400">
+              <div class="w-10 h-10 rounded-xl bg-slate-200/80 text-slate-500 flex items-center justify-center mb-1.5">
+                <FileText className="w-5 h-5" />
+              </div>
+              <p class="text-xs font-bold text-slate-700">No Document Scan Attached</p>
+              <p class="text-[10px] text-slate-400 mt-0.5 max-w-sm">Candidate registered without attaching PMDC certificate scan.</p>
+            </div>
+            <div id="doc-pmdc-overlay" class="hidden absolute inset-0 bg-navy-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
               <a 
                 id="doc-pmdc-img-link"
-                href="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop&q=80" 
+                href="" 
                 target="_blank" 
-                class="px-3.5 py-1.5 rounded-lg bg-white font-bold text-xs text-navy-900 shadow-lg"
+                class="px-3.5 py-1.5 rounded-lg bg-white font-bold text-xs text-navy-900 shadow-lg cursor-pointer"
               >
                 Inspect Full Document
               </a>
@@ -380,8 +390,27 @@ import { AdminStore } from '../../../lib/api/admin';
     setText('doc-city-country', `${currentDoc.city_name}, ${currentDoc.country_name}`);
     setText('doc-about', currentDoc.about || 'Senior practicing doctor.');
 
-    const avatarEl = document.getElementById('doc-avatar') as HTMLImageElement;
-    if (avatarEl) avatarEl.src = currentDoc.avatar;
+    const avatarEl = document.getElementById('doc-avatar') as HTMLImageElement | null;
+    const avatarFallback = document.getElementById('doc-avatar-fallback');
+    const initials = (currentDoc.name || 'Dr').trim().split(/\s+/).map((n: string) => n[0]).slice(0, 2).join('').toUpperCase() || 'DR';
+    if (avatarFallback) avatarFallback.textContent = initials;
+
+    if (avatarEl) {
+      if (currentDoc.avatar && currentDoc.avatar.trim() !== '' && currentDoc.avatar !== 'null') {
+        avatarEl.src = currentDoc.avatar;
+        avatarEl.onload = () => {
+          avatarEl.classList.remove('hidden');
+          if (avatarFallback) avatarFallback.classList.add('hidden');
+        };
+        avatarEl.onerror = () => {
+          avatarEl.classList.add('hidden');
+          if (avatarFallback) avatarFallback.classList.remove('hidden');
+        };
+      } else {
+        avatarEl.classList.add('hidden');
+        if (avatarFallback) avatarFallback.classList.remove('hidden');
+      }
+    }
 
     const pmdcBadgeEl = document.getElementById('doc-pmdc-badge');
     if (pmdcBadgeEl) {
@@ -395,9 +424,34 @@ import { AdminStore } from '../../../lib/api/admin';
     }
 
     const pmdcImg = document.getElementById('doc-pmdc-img') as HTMLImageElement | null;
-    if (pmdcImg && currentDoc.pmdc_document_url) pmdcImg.src = currentDoc.pmdc_document_url;
+    const pmdcFallback = document.getElementById('doc-pmdc-fallback');
+    const pmdcOverlay = document.getElementById('doc-pmdc-overlay');
     const pmdcLink = document.getElementById('doc-pmdc-img-link') as HTMLAnchorElement | null;
-    if (pmdcLink && currentDoc.pmdc_document_url) pmdcLink.href = currentDoc.pmdc_document_url;
+    const pmdcSub = document.getElementById('doc-pmdc-status-sub');
+
+    if (currentDoc.pmdc_document_url && currentDoc.pmdc_document_url.trim() !== '' && currentDoc.pmdc_document_url !== 'null') {
+      if (pmdcSub) pmdcSub.textContent = 'High-Resolution Scan Available';
+      if (pmdcImg) {
+        pmdcImg.src = currentDoc.pmdc_document_url;
+        pmdcImg.onload = () => {
+          pmdcImg.classList.remove('hidden');
+          pmdcFallback?.classList.add('hidden');
+          pmdcOverlay?.classList.remove('hidden');
+          pmdcOverlay?.classList.add('flex');
+        };
+        pmdcImg.onerror = () => {
+          pmdcImg.classList.add('hidden');
+          pmdcFallback?.classList.remove('hidden');
+          pmdcOverlay?.classList.add('hidden');
+        };
+      }
+      if (pmdcLink) pmdcLink.href = currentDoc.pmdc_document_url;
+    } else {
+      if (pmdcSub) pmdcSub.textContent = 'No File Submitted';
+      pmdcImg?.classList.add('hidden');
+      pmdcFallback?.classList.remove('hidden');
+      pmdcOverlay?.classList.add('hidden');
+    }
 
     const selectPkg = document.getElementById('select-package') as HTMLSelectElement;
     if (selectPkg) selectPkg.value = String(currentDoc.package_id || 2);
