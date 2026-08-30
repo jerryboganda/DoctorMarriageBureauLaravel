@@ -9,7 +9,13 @@ import {
   ExternalLink,
   PlusCircle,
   HelpCircle,
-  LogOut
+  LogOut,
+  ChevronDown,
+  LayoutDashboard,
+  Users,
+  CreditCard,
+  Settings,
+  UserCheck
 } from 'lucide-react';
 ---
 
@@ -84,18 +90,123 @@ import {
       </a>
 
       <!-- Admin Avatar Dropdown -->
-      <div class="relative flex items-center pl-2 border-l border-slate-200">
-        <div class="flex items-center gap-2.5">
-          <img 
-            id="admin-avatar"
-            src="" 
-            alt="Admin" 
-            class="w-9 h-9 rounded-xl object-cover ring-2 ring-brand-500/30 bg-slate-200"
-          />
+      <div class="relative flex items-center pl-2 border-l border-slate-200" id="admin-user-dropdown-container">
+        <button 
+          id="admin-user-menu-btn" 
+          type="button"
+          class="flex items-center gap-2.5 p-1.5 rounded-2xl hover:bg-slate-100/90 transition-all outline-none cursor-pointer group"
+          aria-expanded="false"
+          aria-haspopup="true"
+        >
+          <div class="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl overflow-hidden ring-2 ring-brand-500/20 bg-gradient-to-tr from-brand-600 via-rose-500 to-pink-600 text-white flex items-center justify-center font-bold text-xs shadow-sm group-hover:ring-brand-500/40 transition-all">
+            <img 
+              id="admin-avatar"
+              src="" 
+              alt="Admin Profile" 
+              class="w-full h-full object-cover hidden"
+            />
+            <span id="admin-avatar-fallback" class="font-extrabold uppercase text-[11px] tracking-wider">AD</span>
+          </div>
+
           <div class="hidden xl:block text-left">
-            <p id="admin-display-name" class="text-xs font-bold text-navy-900 leading-tight">Loading…</p>
+            <p id="admin-display-name" class="text-xs font-bold text-navy-900 leading-tight">Admin User</p>
             <p class="text-[10px] text-slate-500 font-medium">Super Admin</p>
           </div>
+
+          <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-navy-900 transition-transform duration-200" id="admin-dropdown-arrow" />
+        </button>
+
+        <!-- Dropdown Menu Popover -->
+        <div 
+          id="admin-user-menu-popover" 
+          class="hidden absolute right-0 top-full mt-2 w-64 bg-white border border-slate-200/90 rounded-2xl shadow-luxury p-2 z-50 animate-fadeIn"
+        >
+          <!-- User Summary Card in Dropdown -->
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 mb-1.5">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-brand-600 to-pink-600 text-white flex items-center justify-center font-bold text-[11px] shadow-sm">
+                <span id="admin-popover-initials">AD</span>
+              </div>
+              <div class="min-w-0 flex-1">
+                <p id="admin-popover-name" class="text-xs font-bold text-navy-900 truncate">Administrator</p>
+                <p id="admin-popover-email" class="text-[10px] text-slate-500 truncate">admin@admin.com</p>
+              </div>
+            </div>
+            <div class="mt-2 flex items-center gap-1.5">
+              <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-brand-500/10 text-brand-700 border border-brand-500/20">
+                Super Administrator
+              </span>
+            </div>
+          </div>
+
+          <!-- Quick Navigation Links -->
+          <div class="py-1 space-y-0.5 text-xs font-semibold text-slate-700">
+            <a 
+              href="/admin/" 
+              class="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-brand-50 hover:text-brand-600 transition-colors"
+            >
+              <LayoutDashboard className="w-4 h-4 text-brand-500" />
+              <span>Executive Dashboard</span>
+            </a>
+
+            <a 
+              href="/admin/doctors/" 
+              class="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-brand-50 hover:text-brand-600 transition-colors"
+            >
+              <Users className="w-4 h-4 text-blue-500" />
+              <span>Doctor Directory</span>
+            </a>
+
+            <a 
+              href="/admin/verifications/" 
+              class="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-brand-50 hover:text-brand-600 transition-colors"
+            >
+              <ShieldCheck className="w-4 h-4 text-emerald-500" />
+              <span>PMDC Verifications</span>
+            </a>
+
+            <a 
+              href="/admin/payments/" 
+              class="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-brand-50 hover:text-brand-600 transition-colors"
+            >
+              <CreditCard className="w-4 h-4 text-amber-500" />
+              <span>Payments & VIP Plans</span>
+            </a>
+
+            <a 
+              href="/admin/settings/" 
+              class="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-brand-50 hover:text-brand-600 transition-colors"
+            >
+              <Settings className="w-4 h-4 text-slate-500" />
+              <span>System Settings</span>
+            </a>
+
+            <a 
+              href="/dashboard/" 
+              target="_blank"
+              rel="noopener noreferrer"
+              class="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-slate-100 text-slate-600 transition-colors"
+            >
+              <div class="flex items-center gap-2.5">
+                <ExternalLink className="w-4 h-4 text-slate-400" />
+                <span>Switch to Doctor View</span>
+              </div>
+              <span class="text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-mono">Portal</span>
+            </a>
+          </div>
+
+          <!-- Divider -->
+          <div class="my-1 border-t border-slate-100"></div>
+
+          <!-- Logout Button -->
+          <button 
+            id="admin-logout-btn" 
+            type="button"
+            class="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer text-left"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Sign Out of Admin Console</span>
+          </button>
         </div>
       </div>
 
@@ -118,31 +229,141 @@ import {
     });
   }
 
-  document.addEventListener('DOMContentLoaded', setupAdminSearch);
-  document.addEventListener('astro:page-load', setupAdminSearch);
+  function setupAdminDropdown() {
+    const btn = document.getElementById('admin-user-menu-btn');
+    const popover = document.getElementById('admin-user-menu-popover');
+    const arrow = document.getElementById('admin-dropdown-arrow');
+    const logoutBtn = document.getElementById('admin-logout-btn');
 
-  // Populate the admin identity from the live authenticated session.
-  (async () => {
+    if (!btn || !popover) return;
+
+    function openMenu() {
+      popover?.classList.remove('hidden');
+      arrow?.classList.add('rotate-180');
+      btn?.setAttribute('aria-expanded', 'true');
+    }
+
+    function closeMenu() {
+      popover?.classList.add('hidden');
+      arrow?.classList.remove('rotate-180');
+      btn?.setAttribute('aria-expanded', 'false');
+    }
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (popover.classList.contains('hidden')) {
+        openMenu();
+      } else {
+        closeMenu();
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!popover.contains(e.target as Node) && !btn.contains(e.target as Node)) {
+        closeMenu();
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeMenu();
+      }
+    });
+
+    logoutBtn?.addEventListener('click', async () => {
+      try {
+        const token = localStorage.getItem('auth_token');
+        if (token) {
+          await fetch('/api/v1/auth/logout', {
+            method: 'POST',
+            headers: { Authorization: 'Bearer ' + token }
+          });
+        }
+      } catch (e) {}
+      localStorage.removeItem('auth_token');
+      sessionStorage.removeItem('dmb_me');
+      window.location.href = '/login/';
+    });
+  }
+
+  function applyAdminUserData(u: any) {
+    if (!u) return;
+    const name = u.name || [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email || 'Admin';
+    const email = u.email || u.phone || 'admin@admin.com';
+    const avatar = u.avatar || u.photo || '';
+    
+    const nameEl = document.getElementById('admin-display-name');
+    const popoverNameEl = document.getElementById('admin-popover-name');
+    const popoverEmailEl = document.getElementById('admin-popover-email');
+    const avatarEl = document.getElementById('admin-avatar') as HTMLImageElement | null;
+    const fallbackEl = document.getElementById('admin-avatar-fallback');
+    const popoverInitialsEl = document.getElementById('admin-popover-initials');
+
+    if (nameEl) nameEl.textContent = name;
+    if (popoverNameEl) popoverNameEl.textContent = name;
+    if (popoverEmailEl) popoverEmailEl.textContent = email;
+
+    // Extract 2-letter initials
+    const parts = name.trim().split(/\s+/);
+    const initials = parts.length >= 2 
+      ? (parts[0][0] + parts[1][0]).toUpperCase() 
+      : (name.slice(0, 2) || 'AD').toUpperCase();
+    
+    if (fallbackEl) fallbackEl.textContent = initials;
+    if (popoverInitialsEl) popoverInitialsEl.textContent = initials;
+
+    if (avatarEl) {
+      if (avatar && typeof avatar === 'string' && avatar.trim() && avatar !== 'null' && avatar !== 'undefined') {
+        const fullAvatarUrl = avatar.startsWith('/') || avatar.startsWith('http') ? avatar : `/${avatar}`;
+        avatarEl.src = fullAvatarUrl;
+        avatarEl.onload = () => {
+          avatarEl.classList.remove('hidden');
+          if (fallbackEl) fallbackEl.classList.add('hidden');
+        };
+        avatarEl.onerror = () => {
+          avatarEl.classList.add('hidden');
+          if (fallbackEl) fallbackEl.classList.remove('hidden');
+        };
+      } else {
+        avatarEl.classList.add('hidden');
+        if (fallbackEl) fallbackEl.classList.remove('hidden');
+      }
+    }
+  }
+
+  async function loadAdminIdentity() {
     const token = localStorage.getItem('auth_token');
     if (!token) return;
+
+    // Fast-path from cached session
+    const cached = sessionStorage.getItem('dmb_me');
+    if (cached) {
+      try {
+        applyAdminUserData(JSON.parse(cached));
+      } catch (e) {}
+    }
+
     try {
       const res = await fetch('/api/v1/auth/me', { headers: { Authorization: 'Bearer ' + token } });
       if (!res.ok) return;
       const env = await res.json();
       const u = env?.data?.user ?? env?.data ?? null;
-      if (!u) return;
-      const name =
-        u.name ||
-        [u.first_name, u.last_name].filter(Boolean).join(' ') ||
-        u.email ||
-        'Admin';
-      const avatar = u.avatar || u.photo || '';
-      const nameEl = document.getElementById('admin-display-name');
-      const avatarEl = document.getElementById('admin-avatar') as HTMLImageElement | null;
-      if (nameEl) nameEl.textContent = name;
-      if (avatarEl && avatar) avatarEl.src = avatar;
-    } catch (e) {
-      /* ignore */
-    }
-  })();
+      if (u) {
+        sessionStorage.setItem('dmb_me', JSON.stringify(u));
+        applyAdminUserData(u);
+      }
+    } catch (e) {}
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    setupAdminSearch();
+    setupAdminDropdown();
+    loadAdminIdentity();
+  });
+
+  document.addEventListener('astro:page-load', () => {
+    setupAdminSearch();
+    setupAdminDropdown();
+    loadAdminIdentity();
+  });
 </script>

@@ -68,18 +68,19 @@ const navItems = [
 
   <!-- Admin Identity Quick Card -->
   <div class="p-4 mx-3 my-3 rounded-2xl bg-gradient-to-br from-navy-900 to-navy-850 border border-navy-800 flex items-center gap-3">
-    <div class="relative">
+    <div class="relative w-10 h-10 rounded-xl overflow-hidden ring-1 ring-brand-500/40 bg-gradient-to-tr from-brand-600 via-rose-500 to-pink-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
       <img 
         id="sidebar-admin-avatar"
         src="" 
         alt="Admin" 
-        class="w-10 h-10 rounded-xl object-cover border border-brand-500/40 bg-navy-800"
+        class="w-full h-full object-cover hidden"
       />
-      <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-navy-900 rounded-full"></span>
+      <span id="sidebar-admin-fallback" class="font-extrabold uppercase text-[11px] tracking-wider">AD</span>
+      <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-navy-900 rounded-full"></span>
     </div>
     <div class="flex-1 min-w-0">
       <div class="flex items-center gap-1.5">
-        <h4 id="sidebar-admin-name" class="text-xs font-bold text-white truncate">Loading…</h4>
+        <h4 id="sidebar-admin-name" class="text-xs font-bold text-white truncate">Admin User</h4>
       </div>
       <p class="text-[10px] text-brand-400 font-semibold flex items-center gap-1">
         <span class="w-1.5 h-1.5 rounded-full bg-brand-400 animate-pulse"></span>
@@ -209,28 +210,60 @@ const navItems = [
   document.addEventListener('DOMContentLoaded', initAdminSidebar);
   document.addEventListener('astro:page-load', initAdminSidebar);
 
+  function applySidebarAdmin(u: any) {
+    if (!u) return;
+    const name = u.name || [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email || 'Admin';
+    const avatar = u.avatar || u.photo || '';
+    const nameEl = document.getElementById('sidebar-admin-name');
+    const avatarEl = document.getElementById('sidebar-admin-avatar') as HTMLImageElement | null;
+    const fallbackEl = document.getElementById('sidebar-admin-fallback');
+
+    if (nameEl) nameEl.textContent = name;
+
+    const parts = name.trim().split(/\s+/);
+    const initials = parts.length >= 2 
+      ? (parts[0][0] + parts[1][0]).toUpperCase() 
+      : (name.slice(0, 2) || 'AD').toUpperCase();
+    if (fallbackEl) fallbackEl.textContent = initials;
+
+    if (avatarEl) {
+      if (avatar && typeof avatar === 'string' && avatar.trim() && avatar !== 'null' && avatar !== 'undefined') {
+        const fullUrl = avatar.startsWith('/') || avatar.startsWith('http') ? avatar : `/${avatar}`;
+        avatarEl.src = fullUrl;
+        avatarEl.onload = () => {
+          avatarEl.classList.remove('hidden');
+          if (fallbackEl) fallbackEl.classList.add('hidden');
+        };
+        avatarEl.onerror = () => {
+          avatarEl.classList.add('hidden');
+          if (fallbackEl) fallbackEl.classList.remove('hidden');
+        };
+      } else {
+        avatarEl.classList.add('hidden');
+        if (fallbackEl) fallbackEl.classList.remove('hidden');
+      }
+    }
+  }
+
   // Populate the admin identity from the live authenticated session.
   (async () => {
     const token = localStorage.getItem('auth_token');
     if (!token) return;
+
+    const cached = sessionStorage.getItem('dmb_me');
+    if (cached) {
+      try { applySidebarAdmin(JSON.parse(cached)); } catch (e) {}
+    }
+
     try {
       const res = await fetch('/api/v1/auth/me', { headers: { Authorization: 'Bearer ' + token } });
       if (!res.ok) return;
       const env = await res.json();
       const u = env?.data?.user ?? env?.data ?? null;
-      if (!u) return;
-      const name =
-        u.name ||
-        [u.first_name, u.last_name].filter(Boolean).join(' ') ||
-        u.email ||
-        'Admin';
-      const avatar = u.avatar || u.photo || '';
-      const nameEl = document.getElementById('sidebar-admin-name');
-      const avatarEl = document.getElementById('sidebar-admin-avatar') as HTMLImageElement | null;
-      if (nameEl) nameEl.textContent = name;
-      if (avatarEl && avatar) avatarEl.src = avatar;
-    } catch (e) {
-      /* ignore */
-    }
+      if (u) {
+        sessionStorage.setItem('dmb_me', JSON.stringify(u));
+        applySidebarAdmin(u);
+      }
+    } catch (e) {}
   })();
 </script>
