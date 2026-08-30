@@ -86,14 +86,34 @@ jobs:
 
             echo '==> Ensuring Admin user admin@admin.com credentials set to 123123123...'
             docker compose -f docker-compose.production.yml exec -T postgres psql -U dmb_user -d doctor_marriage_bureau -c \"
+              UPDATE users 
+              SET password = '\$2b\$10\$/UvSOA7AwlOpz5HlSEoD5eFuGUkGdOFwAThFp2EMj1rzn6a/RUim6',
+                  user_type = 'admin',
+                  membership = 3,
+                  approved = true,
+                  blocked = false,
+                  deactivated = false,
+                  updated_at = NOW()
+              WHERE LOWER(email) = 'admin@admin.com';
+
               INSERT INTO users (first_name, last_name, name, email, phone, password, user_type, membership, approved, blocked, deactivated, photo, photo_approved, email_verified_at, created_at, updated_at)
-              VALUES ('Admin', 'Administrator', 'Super Administrator', 'admin@admin.com', '03001234567', '\$2b\$10\$/UvSOA7AwlOpz5HlSEoD5eFuGUkGdOFwAThFp2EMj1rzn6a/RUim6', 'admin', 3, true, false, false, '', 1, NOW(), NOW(), NOW())
-              ON CONFLICT (email) DO UPDATE SET password = '\$2b\$10\$/UvSOA7AwlOpz5HlSEoD5eFuGUkGdOFwAThFp2EMj1rzn6a/RUim6', user_type = 'admin', membership = 3, approved = true, blocked = false, deactivated = false, updated_at = NOW();
-              
+              SELECT 'Admin', 'Administrator', 'Super Administrator', 'admin@admin.com', '03001234567', '\$2b\$10\$/UvSOA7AwlOpz5HlSEoD5eFuGUkGdOFwAThFp2EMj1rzn6a/RUim6', 'admin', 3, true, false, false, '', 1, NOW(), NOW(), NOW()
+              WHERE NOT EXISTS (SELECT 1 FROM users WHERE LOWER(email) = 'admin@admin.com');
+
+              UPDATE users 
+              SET password = '\$2b\$10\$/UvSOA7AwlOpz5HlSEoD5eFuGUkGdOFwAThFp2EMj1rzn6a/RUim6',
+                  user_type = 'admin',
+                  membership = 3,
+                  approved = true,
+                  blocked = false,
+                  deactivated = false,
+                  updated_at = NOW()
+              WHERE LOWER(email) = 'dev-admin@panel.doctormarriagebureau.com.pk';
+
               INSERT INTO users (first_name, last_name, name, email, phone, password, user_type, membership, approved, blocked, deactivated, photo, photo_approved, email_verified_at, created_at, updated_at)
-              VALUES ('Developer', 'Admin', 'Developer Testing Account', 'dev-admin@panel.doctormarriagebureau.com.pk', '03000000000', '\$2b\$10\$/UvSOA7AwlOpz5HlSEoD5eFuGUkGdOFwAThFp2EMj1rzn6a/RUim6', 'admin', 3, true, false, false, '', 1, NOW(), NOW(), NOW())
-              ON CONFLICT (email) DO UPDATE SET password = '\$2b\$10\$/UvSOA7AwlOpz5HlSEoD5eFuGUkGdOFwAThFp2EMj1rzn6a/RUim6', user_type = 'admin', membership = 3, approved = true, blocked = false, deactivated = false, updated_at = NOW();
-              
+              SELECT 'Developer', 'Admin', 'Developer Testing Account', 'dev-admin@panel.doctormarriagebureau.com.pk', '03000000000', '\$2b\$10\$/UvSOA7AwlOpz5HlSEoD5eFuGUkGdOFwAThFp2EMj1rzn6a/RUim6', 'admin', 3, true, false, false, '', 1, NOW(), NOW(), NOW()
+              WHERE NOT EXISTS (SELECT 1 FROM users WHERE LOWER(email) = 'dev-admin@panel.doctormarriagebureau.com.pk');
+
               SELECT id, email, name, user_type, membership FROM users WHERE LOWER(user_type)='admin' OR membership=3 ORDER BY id;
             \" || true
 
