@@ -237,7 +237,8 @@ func (h *Handler) HandleListVerifications(w http.ResponseWriter, r *http.Request
 	if !h.allowReadWithLog(w, r) {
 		return
 	}
-	list, err := h.service.ListVerifications(r.Context())
+	status := r.URL.Query().Get("status")
+	list, err := h.service.ListVerifications(r.Context(), status)
 	if err != nil {
 		response.Error(w, http.StatusInternalServerError, "VERIFICATIONS_ERROR", err.Error(), nil)
 		return

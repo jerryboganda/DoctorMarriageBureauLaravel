@@ -244,8 +244,8 @@ func (s *Service) GetStats(ctx context.Context) (*AdminStats, error) {
 	if err := s.pg.Pool.QueryRow(ctx, `SELECT COUNT(*) FROM members WHERE is_approved = true`).Scan(&stats.VerifiedDoctors); err != nil && !isMissingTable(err) {
 		slog.Warn("admin stats verifiedDoctors query failed", "error", err)
 	}
-	// pending verifications = members not approved
-	_ = s.pg.Pool.QueryRow(ctx, `SELECT COUNT(*) FROM members WHERE COALESCE(is_approved,false)=false`).Scan(&stats.PendingVerifications)
+	// pending verifications = members with pending verification status
+	_ = s.pg.Pool.QueryRow(ctx, `SELECT COUNT(*) FROM members WHERE COALESCE(verification_status, CASE WHEN COALESCE(is_approved,false)=true THEN 'approved' ELSE 'pending' END) = 'pending'`).Scan(&stats.PendingVerifications)
 	// pending payments
 	if err := s.pg.Pool.QueryRow(ctx, `SELECT COUNT(*) FROM package_payments WHERE payment_status IN ('under_review','pending')`).Scan(&stats.PendingPayments); err != nil && !isMissingTable(err) {
 		slog.Warn("admin stats pendingPayments failed", "error", err)
@@ -697,7 +697,7 @@ func (s *Service) DeleteDoctor(ctx context.Context, id int64) error {
 }
 
 // ListVerifications returns pending/approved verifications from members.
-func (s *Service) ListVerifications(ctx context.Context) ([]AdminVerification, error) {
+func (s *Service) ListVerifications(ctx context.Context, statusFilter string) ([]AdminVerification, error) {
 	if s.pg == nil || s.pg.Pool == nil {
 		return []AdminVerification{}, nil
 	}
@@ -735,6 +735,15 @@ func (s *Service) ListVerifications(ctx context.Context) ([]AdminVerification, e
 		),
 		''
 	)`
+
+	var whereClause string
+	var args []interface{}
+	statusFilter = strings.ToLower(strings.TrimSpace(statusFilter))
+	if statusFilter == "pending" || statusFilter == "approved" || statusFilter == "rejected" {
+		whereClause = ` WHERE COALESCE(NULLIF(m.verification_status,''), CASE WHEN COALESCE(m.is_approved,false)=true THEN 'approved' ELSE 'pending' END) = $1`
+		args = append(args, statusFilter)
+	}
+
 	query := `
 	SELECT
 		m.id,
@@ -761,14 +770,11 @@ func (s *Service) ListVerifications(ctx context.Context) ([]AdminVerification, e
 		SELECT a.city_id FROM addresses a WHERE a.user_id=u.id AND a.type='present' ORDER BY a.id DESC LIMIT 1
 	) addr ON true
 	LEFT JOIN cities ci ON ci.id=addr.city_id
-	ORDER BY CASE 
-		WHEN COALESCE(m.verification_status, CASE WHEN COALESCE(m.is_approved,false)=true THEN 'approved' ELSE 'pending' END) = 'pending' THEN 0 
-		WHEN COALESCE(m.verification_status, '') = 'rejected' THEN 1 
-		ELSE 2 
-	END, m.created_at DESC
-	LIMIT 200
+	` + whereClause + `
+	ORDER BY COALESCE(m.reviewed_at, m.updated_at, m.created_at) DESC, m.id DESC
+	LIMIT 400
 	`
-	rows, err := s.pg.Pool.Query(ctx, query)
+	rows, err := s.pg.Pool.Query(ctx, query, args...)
 	if err != nil {
 		if isMissingTable(err) {
 			return []AdminVerification{}, nil

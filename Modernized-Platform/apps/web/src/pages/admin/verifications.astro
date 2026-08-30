@@ -146,13 +146,16 @@ import {
     if (!grid) return;
     grid.innerHTML = '<div class="col-span-2 py-16 text-center text-slate-400 bg-white rounded-2xl border border-slate-200">Loading live verifications from API...</div>';
     try {
-      const list = await AdminStore.getVerifications();
-      verificationsCache = list;
+      const [allList, currentTabList] = await Promise.all([
+        AdminStore.getVerifications('all'),
+        AdminStore.getVerifications(currentTab)
+      ]);
+      verificationsCache = currentTabList;
       
       // Counts
-      const pendingCount = list.filter(v => v.status === 'pending').length;
-      const approvedCount = list.filter(v => v.status === 'approved').length;
-      const rejectedCount = list.filter(v => v.status === 'rejected').length;
+      const pendingCount = allList.filter(v => v.status === 'pending').length;
+      const approvedCount = allList.filter(v => v.status === 'approved').length;
+      const rejectedCount = allList.filter(v => v.status === 'rejected').length;
 
       const elPending = document.getElementById('count-pending');
       if (elPending) elPending.textContent = String(pendingCount);
@@ -161,10 +164,10 @@ import {
       const elRejected = document.getElementById('count-rejected');
       if (elRejected) elRejected.textContent = String(rejectedCount);
 
-      const filtered = list.filter(v => v.status === currentTab);
+      const filtered = currentTabList;
 
       if (filtered.length === 0) {
-        grid.innerHTML = `<div class="col-span-2 py-16 text-center text-slate-500 bg-white rounded-2xl border border-slate-200">No live data — no ${currentTab} verifications.</div>`;
+        grid.innerHTML = `<div class="col-span-2 py-16 text-center text-slate-500 bg-white rounded-2xl border border-slate-200">No ${currentTab} verifications found.</div>`;
         return;
       }
 

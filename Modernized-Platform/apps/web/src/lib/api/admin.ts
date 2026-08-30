@@ -205,8 +205,9 @@ export const AdminStore = {
   },
 
   // Verifications — GET /admin/verifications
-  async getVerifications(): Promise<AdminVerification[]> {
-    const res = await api.get('/admin/verifications');
+  async getVerifications(status?: string): Promise<AdminVerification[]> {
+    const url = status && status !== 'all' ? `/admin/verifications?status=${encodeURIComponent(status)}` : '/admin/verifications';
+    const res = await api.get(url);
     return unwrap<AdminVerification[]>(res) ?? [];
   },
   async reviewVerification(id: number, status: 'approved' | 'rejected', reason?: string): Promise<void> {
