@@ -747,8 +747,9 @@ func (s *Service) ListVerifications(ctx context.Context) ([]AdminVerification, e
 		` + pmdcSQL + `,
 		` + docSQL + `,
 		m.created_at,
-		CASE WHEN COALESCE(m.is_approved,false)=true THEN 'approved' ELSE 'pending' END,
-		COALESCE(m.updated_at, m.created_at)
+		COALESCE(NULLIF(m.verification_status,''), CASE WHEN COALESCE(m.is_approved,false)=true THEN 'approved' ELSE 'pending' END),
+		COALESCE(m.rejection_reason, ''),
+		COALESCE(m.reviewed_at, m.updated_at, m.created_at)
 	FROM members m
 	JOIN users u ON u.id=m.user_id AND u.deleted_at IS NULL
 	LEFT JOIN LATERAL (
@@ -760,7 +761,11 @@ func (s *Service) ListVerifications(ctx context.Context) ([]AdminVerification, e
 		SELECT a.city_id FROM addresses a WHERE a.user_id=u.id AND a.type='present' ORDER BY a.id DESC LIMIT 1
 	) addr ON true
 	LEFT JOIN cities ci ON ci.id=addr.city_id
-	ORDER BY CASE WHEN COALESCE(m.is_approved,false)=false THEN 0 ELSE 1 END, m.created_at DESC
+	ORDER BY CASE 
+		WHEN COALESCE(m.verification_status, CASE WHEN COALESCE(m.is_approved,false)=true THEN 'approved' ELSE 'pending' END) = 'pending' THEN 0 
+		WHEN COALESCE(m.verification_status, '') = 'rejected' THEN 1 
+		ELSE 2 
+	END, m.created_at DESC
 	LIMIT 200
 	`
 	rows, err := s.pg.Pool.Query(ctx, query)
@@ -776,13 +781,13 @@ func (s *Service) ListVerifications(ctx context.Context) ([]AdminVerification, e
 		var v AdminVerification
 		var submittedAt, reviewedAt time.Time
 		var status string
-		err := rows.Scan(&v.ID, &v.DoctorID, &v.DoctorName, &v.Avatar, &v.Speciality, &v.Hospital, &v.City, &v.PMDCNumber, &v.DocumentURL, &submittedAt, &status, &reviewedAt)
+		err := rows.Scan(&v.ID, &v.DoctorID, &v.DoctorName, &v.Avatar, &v.Speciality, &v.Hospital, &v.City, &v.PMDCNumber, &v.DocumentURL, &submittedAt, &status, &v.RejectionReason, &reviewedAt)
 		if err != nil {
 			continue
 		}
 		v.SubmittedAt = timeToString(submittedAt)
 		v.Status = status
-		if status == "approved" {
+		if status == "approved" || status == "rejected" {
 			v.ReviewedAt = timeToString(reviewedAt)
 		}
 		v.DocumentType = "PMDC License Card"
@@ -791,21 +796,34 @@ func (s *Service) ListVerifications(ctx context.Context) ([]AdminVerification, e
 	return out, rows.Err()
 }
 
-// ReviewVerification approves or rejects a verification (updates members.is_approved).
+// ReviewVerification approves or rejects a verification (updates members.is_approved and members.verification_status).
 func (s *Service) ReviewVerification(ctx context.Context, id int64, status string, reason string) error {
 	if s.pg == nil || s.pg.Pool == nil {
 		return errors.New("database unavailable")
 	}
 	switch strings.ToLower(status) {
 	case "approved":
-		_, err := s.pg.Pool.Exec(ctx, `UPDATE members SET is_approved=true, updated_at=NOW() WHERE id=$1`, id)
+		_, err := s.pg.Pool.Exec(ctx, `
+			UPDATE members 
+			SET is_approved=true, 
+			    verification_status='approved', 
+			    rejection_reason='', 
+			    reviewed_at=NOW(), 
+			    updated_at=NOW() 
+			WHERE id=$1`, id)
 		return err
 	case "rejected":
-		_, err := s.pg.Pool.Exec(ctx, `UPDATE members SET is_approved=false, updated_at=NOW() WHERE id=$1`, id)
+		_, err := s.pg.Pool.Exec(ctx, `
+			UPDATE members 
+			SET is_approved=false, 
+			    verification_status='rejected', 
+			    rejection_reason=$2, 
+			    reviewed_at=NOW(), 
+			    updated_at=NOW() 
+			WHERE id=$1`, id, strings.TrimSpace(reason))
 		if err != nil {
 			return err
 		}
-		// Optionally store rejection reason in verification_document or log; we can log
 		slog.Info("verification rejected", "member_id", id, "reason", reason)
 		return nil
 	default:

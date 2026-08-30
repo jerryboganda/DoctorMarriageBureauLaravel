@@ -317,10 +317,34 @@ import {
                   <span>Approve Badge</span>
                 </button>
               </div>
+            ` : v.status === 'rejected' ? `
+              <div class="flex items-center gap-2">
+                <div class="text-right">
+                  <p class="text-[11px] font-semibold text-rose-700 truncate max-w-[200px]" title="${v.rejection_reason || 'License rejected'}">Reason: ${v.rejection_reason || 'License rejected'}</p>
+                  <p class="text-[10px] text-slate-400 font-medium">${v.reviewed_at || 'Recently'}</p>
+                </div>
+                <button 
+                  data-action="approve-verif" 
+                  data-id="${v.id}"
+                  class="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors cursor-pointer"
+                >
+                  Re-Approve
+                </button>
+              </div>
             ` : `
-              <span class="text-xs text-slate-400 font-medium">
-                ${v.status === 'approved' ? `Approved on ${v.reviewed_at || 'Recently'}` : `Rejected: ${v.rejection_reason || 'Invalid license image'}`}
-              </span>
+              <div class="flex items-center gap-2">
+                <div class="text-right">
+                  <p class="text-[11px] font-semibold text-emerald-700">✓ Verified PMDC Badge</p>
+                  <p class="text-[10px] text-slate-400 font-medium">${v.reviewed_at || 'Recently'}</p>
+                </div>
+                <button 
+                  data-action="reject-verif" 
+                  data-id="${v.id}"
+                  class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition-colors cursor-pointer"
+                >
+                  Revoke
+                </button>
+              </div>
             `}
           </div>
         </div>
