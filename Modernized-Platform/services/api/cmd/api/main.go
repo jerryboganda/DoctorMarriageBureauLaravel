@@ -142,14 +142,20 @@ func SetupRouter(cfg *config.Config, pg *postgres.Client, rdb *redis.Client) *ch
 	r.Use(middleware.RequestLogger())
 
 	// CORS Configuration
-	r.Use(cors.Handler(cors.Options{
+	corsOpts := cors.Options{
 		AllowedOrigins:   cfg.AllowedOrigins,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-Request-ID"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-Request-ID", "X-Requested-With", "App-Language", "Accept-Language", "Origin", "Cookie"},
 		ExposedHeaders:   []string{"Link", "X-Request-ID", "Retry-After"},
 		AllowCredentials: true,
 		MaxAge:           300,
-	}))
+	}
+	if !cfg.IsProduction() {
+		corsOpts.AllowOriginFunc = func(r *http.Request, origin string) bool {
+			return true
+		}
+	}
+	r.Use(cors.Handler(corsOpts))
 
 	// Rate limiting middlewares
 	rateAPI := middleware.RateLimiter(rdb, "api", cfg.RateLimitAPI, time.Minute)
