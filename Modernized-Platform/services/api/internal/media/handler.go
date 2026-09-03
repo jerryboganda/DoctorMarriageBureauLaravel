@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
@@ -34,6 +35,11 @@ func (h *Handler) Routes() chi.Router {
 	r.Post("/access-requests/{id}/reject", h.HandleRejectAccess)
 	r.Get("/access-requests", h.HandleListAccessRequests)
 	r.Get("/user/{id}", h.HandleGetUserMedia)
+	r.Get("/privacy", h.HandleGetGalleryPrivacy)
+	r.Post("/privacy", h.HandleSetGalleryPrivacy)
+	r.Post("/share", h.HandleShareGallery)
+	r.Delete("/share/{targetId}", h.HandleRevokeShare)
+	r.Post("/{id}/profile-photo", h.HandleSetProfilePhoto)
 
 	return r
 }
@@ -270,4 +276,114 @@ func (h *Handler) HandleGetUserMedia(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.JSON(w, http.StatusOK, mediaList, "User media retrieved")
+}
+
+// HandleGetGalleryPrivacy handles GET /api/v1/media/privacy
+func (h *Handler) HandleGetGalleryPrivacy(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	if !ok {
+		response.Error(w, http.StatusUnauthorized, "UNAUTHORIZED", "Authentication required", nil)
+		return
+	}
+	res, err := h.service.GetGalleryPrivacy(r.Context(), userID)
+	if err != nil {
+		response.Error(w, http.StatusInternalServerError, "PRIVACY_ERROR", err.Error(), nil)
+		return
+	}
+	response.JSON(w, http.StatusOK, res, "Gallery privacy retrieved")
+}
+
+// HandleSetGalleryPrivacy handles POST /api/v1/media/privacy
+func (h *Handler) HandleSetGalleryPrivacy(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	if !ok {
+		response.Error(w, http.StatusUnauthorized, "UNAUTHORIZED", "Authentication required", nil)
+		return
+	}
+	var req struct {
+		Privacy string `json:"privacy"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.Error(w, http.StatusBadRequest, "INVALID_PAYLOAD", "Invalid JSON payload", nil)
+		return
+	}
+	if err := h.service.SetGalleryPrivacy(r.Context(), userID, req.Privacy); err != nil {
+		response.Error(w, http.StatusInternalServerError, "PRIVACY_UPDATE_ERROR", err.Error(), nil)
+		return
+	}
+	res, _ := h.service.GetGalleryPrivacy(r.Context(), userID)
+	response.JSON(w, http.StatusOK, res, "Gallery privacy updated successfully")
+}
+
+// HandleShareGallery handles POST /api/v1/media/share
+func (h *Handler) HandleShareGallery(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	if !ok {
+		response.Error(w, http.StatusUnauthorized, "UNAUTHORIZED", "Authentication required", nil)
+		return
+	}
+	var req struct {
+		TargetUserID int64  `json:"target_user_id"`
+		Search       string `json:"search"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.Error(w, http.StatusBadRequest, "INVALID_PAYLOAD", "Invalid JSON payload", nil)
+		return
+	}
+	targetID := req.TargetUserID
+	if targetID <= 0 && req.Search != "" {
+		if num, err := strconv.ParseInt(strings.TrimSpace(req.Search), 10, 64); err == nil {
+			targetID = num
+		}
+	}
+	if targetID <= 0 {
+		response.Error(w, http.StatusBadRequest, "INVALID_TARGET", "Target doctor or member ID is required", nil)
+		return
+	}
+	sharedUser, err := h.service.ShareGalleryWithUser(r.Context(), userID, targetID)
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, "SHARE_ERROR", err.Error(), nil)
+		return
+	}
+	response.JSON(w, http.StatusOK, sharedUser, "Gallery access shared with doctor")
+}
+
+// HandleRevokeShare handles DELETE /api/v1/media/share/{targetId}
+func (h *Handler) HandleRevokeShare(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	if !ok {
+		response.Error(w, http.StatusUnauthorized, "UNAUTHORIZED", "Authentication required", nil)
+		return
+	}
+	idStr := chi.URLParam(r, "targetId")
+	targetID, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil || targetID <= 0 {
+		response.Error(w, http.StatusBadRequest, "INVALID_ID", "Invalid member ID", nil)
+		return
+	}
+	if err := h.service.RevokeGalleryAccess(r.Context(), userID, targetID); err != nil {
+		response.Error(w, http.StatusInternalServerError, "REVOKE_ERROR", err.Error(), nil)
+		return
+	}
+	response.JSON(w, http.StatusOK, map[string]bool{"revoked": true}, "Gallery access revoked")
+}
+
+// HandleSetProfilePhoto handles POST /api/v1/media/{id}/profile-photo
+func (h *Handler) HandleSetProfilePhoto(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	if !ok {
+		response.Error(w, http.StatusUnauthorized, "UNAUTHORIZED", "Authentication required", nil)
+		return
+	}
+	idStr := chi.URLParam(r, "id")
+	imageID, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil || imageID <= 0 {
+		response.Error(w, http.StatusBadRequest, "INVALID_ID", "Invalid photo ID", nil)
+		return
+	}
+	if err := h.service.SetProfilePhoto(r.Context(), userID, imageID); err != nil {
+		response.Error(w, http.StatusBadRequest, "PHOTO_ERROR", err.Error(), nil)
+		return
+	}
+	response.JSON(w, http.StatusOK, map[string]bool{"is_primary": true}, "Profile photo updated successfully")
 }

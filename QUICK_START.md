@@ -1,13 +1,13 @@
 # Doctor Marriage Bureau — Quick Start
 
 Use [`PROJECT_SSOT.md`](PROJECT_SSOT.md) for ownership and
-[`HOSTINGER_DEPLOY_GUIDE.md`](HOSTINGER_DEPLOY_GUIDE.md) for production.
+[`VPS_DEPLOYMENT_GUIDE.md`](VPS_DEPLOYMENT_GUIDE.md) for Production VPS (`185.252.233.186`).
 
 ## Production topology
 
-- Marketing website: <https://doctormarriagebureau.com.pk> — separate WordPress site.
-- Web app: <https://panel.doctormarriagebureau.com.pk> — separate Laravel site, API, and admin.
-- Both sites are hosted separately on the same Hostinger account but use separate quotas: WordPress uses its PHP/website quota with generous limits, while Laravel uses the project's web-app quota. The Laravel deployment workflow does not deploy WordPress.
+- Marketing website: <https://doctormarriagebureau.com.pk> — external WordPress site.
+- Web app & API: <https://panel.doctormarriagebureau.com.pk> — running on Production VPS (`185.252.233.186`).
+- Deployment: Docker Compose on VPS at `/opt/docker/doctormarriagebureau`.
 
 ## Local Laravel setup
 
@@ -54,7 +54,7 @@ npm start
 npx eas build --platform android --profile preview --no-wait
 ```
 
-The mobile app is not deployed by the Hostinger Laravel artifact.
+The mobile app is built independently via EAS.
 
 ## GitHub Actions validation
 
@@ -68,19 +68,16 @@ backend-mysql-smoke
 user-frontend-quality
 ```
 
-Production deployment and remote operations use the dedicated GitHub Actions
-Hostinger workflows. The CI workflow does not validate WordPress/Elementor.
+Production deployment runs via `.github/workflows/deploy.yml` directly targeting the Production VPS (`185.252.233.186`).
 
 ## Production status and logs
 
-Direct SSH is blocked from the local network. Use the approved workflows:
+Access the Production VPS (`185.252.233.186`):
 
-```powershell
-gh workflow run "Hostinger Production Status" --repo jerryboganda/DoctorMarriageBureauLaravel
-gh workflow run "Hostinger Remote Exec" --repo jerryboganda/DoctorMarriageBureauLaravel -f command="tail -100 storage/logs/laravel.log"
+```bash
+ssh root@185.252.233.186
+cd /opt/docker/doctormarriagebureau
+docker compose ps
+docker compose logs -f app
 ```
 
-Current blocker: Hostinger has no production `.env`, so
-`https://panel.doctormarriagebureau.com.pk/api/health` returns HTTP 500.
-Provision it securely, then clear/rebuild caches and re-run the health check.
-Do not print `.env`, OTPs, tokens, or credentials in workflow output.

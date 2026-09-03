@@ -1,10 +1,8 @@
 # Mobile App Integration Status
 
-> **Scope note:** This is an integration record, not a production approval.
-> The canonical API is `https://panel.doctormarriagebureau.com.pk/api`.
-> Hostinger currently lacks the production `.env` and `/api/health` returns
-> HTTP 500. See the repository `PROJECT_SSOT.md` and
-> `HOSTINGER_DEPLOY_GUIDE.md`.
+> **Scope note:** This is an integration record.
+> The canonical API is `https://panel.doctormarriagebureau.com.pk/api` on the Production VPS (`185.252.233.186`).
+> See [`VPS_DEPLOYMENT_GUIDE.md`](../VPS_DEPLOYMENT_GUIDE.md).
 
 ## 1. Overview
 
@@ -64,6 +62,5 @@ The React Native mobile app is now fully integrated with the Laravel backend. Ga
 
 - Ensure `composer dump-autoload` is run on the backend if new classes were added (OnboardingController).
 - Ensure DB migrations are up to date for `Family` and `Community` tables.
-- Native/mobile releases are independent EAS operations; the Hostinger Laravel
-  artifact does not include this directory.
+- Native/mobile releases are independent EAS operations.
 - Use Node.js 18–20 for the checked-in Expo/Metro toolchain.

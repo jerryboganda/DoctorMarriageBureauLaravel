@@ -4,9 +4,8 @@
 > **Canonical API base:** `https://panel.doctormarriagebureau.com.pk/api`
 
 This document describes the API contract used by the React member panel and
-the Expo mobile app. It is not a production-readiness approval: Hostinger
-currently lacks the production `.env`, and `/api/health` returns HTTP 500.
-See [`HOSTINGER_DEPLOY_GUIDE.md`](HOSTINGER_DEPLOY_GUIDE.md).
+the Expo mobile app on the Production VPS (`185.252.233.186`).
+See [`VPS_DEPLOYMENT_GUIDE.md`](VPS_DEPLOYMENT_GUIDE.md).
 
 ## Authentication endpoints
 
@@ -71,7 +70,7 @@ fields, and includes Google/Facebook login UI.
 
 Source: `DMB Mobile App/`. It uses Axios and secure token storage. Use Node
 18–20 for Metro and set the API URL in the ignored local/mobile environment.
-Native EAS builds are independent of Hostinger.
+Native EAS builds are independent of the VPS release.
 
 ## Verification and operational behavior
 
@@ -87,7 +86,7 @@ Native EAS builds are independent of Hostinger.
 
 ## Validation checklist
 
-Before calling authentication ready after the Hostinger blocker is resolved:
+Before calling authentication ready:
 
 - [ ] `GET /api/health` returns HTTP 200.
 - [ ] Signup and email/phone verification work with a disposable test account.

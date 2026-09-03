@@ -12,7 +12,12 @@ const browserOrigin = () =>
 
 export const resolveApiBaseUrl = (value = configuredApiUrl): string => {
   const configured = `${value || ''}`.trim();
-  if (!configured) return '/api/v1';
+  if (!configured) {
+    if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+      return 'http://localhost:8080/api/v1';
+    }
+    return '/api/v1';
+  }
 
   const normalized = withoutTrailingSlash(configured);
   if (normalized.endsWith('/api/v1')) return normalized;

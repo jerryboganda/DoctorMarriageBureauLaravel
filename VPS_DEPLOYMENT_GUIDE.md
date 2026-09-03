@@ -13,7 +13,7 @@ This document describes the production architecture, setup, and deployment proce
   - Container `dmb-webapp`: Bundles PHP 8.3 FPM, Nginx, Laravel Queue Worker (`php artisan queue:work`), and Laravel Cron Scheduler (`php artisan schedule:run`) managed by Supervisord.
   - Container `dmb-mysql`: Isolated MySQL 8.0 database container for Laravel data persistence.
 - **Reverse Proxy**: Nginx Proxy Manager (`nginx-proxy-manager-app-1`) running on ports 80/443, connected via internal Docker network `nginx-proxy-manager_default`.
-- **WordPress Marketing Website**: Remains hosted on Hostinger shared hosting at `https://doctormarriagebureau.com.pk`. The 15 daily rotating blurred proposals are served dynamically via the public API `https://panel.doctormarriagebureau.com.pk/api/public/proposals`.
+- **WordPress Marketing Website**: External WordPress site at `https://doctormarriagebureau.com.pk`. The 15 daily rotating blurred proposals are served dynamically via the public API `https://panel.doctormarriagebureau.com.pk/api/public/proposals`.
 
 ---
 

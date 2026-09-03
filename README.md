@@ -17,7 +17,7 @@ Doctor Marriage Bureau (DMB) is an exclusive matrimonial platform designed speci
 | Need | Document |
 |---|---|
 | System map, ownership, source of truth, and boundaries | [`PROJECT_SSOT.md`](PROJECT_SSOT.md) |
-| Hostinger deployment, remote access, health checks, and blog sync | [`HOSTINGER_DEPLOY_GUIDE.md`](HOSTINGER_DEPLOY_GUIDE.md) |
+| Production VPS deployment, remote access, health checks | [`VPS_DEPLOYMENT_GUIDE.md`](VPS_DEPLOYMENT_GUIDE.md) |
 | Authentication/API behavior | [`AUTH_PRODUCTION_READY.md`](AUTH_PRODUCTION_READY.md) |
 | Mobile quick start | [`DMB Mobile App/README.md`](DMB%20Mobile%20App/README.md) |
 | CI definition | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) |
@@ -26,45 +26,23 @@ Doctor Marriage Bureau (DMB) is an exclusive matrimonial platform designed speci
 
 - GitHub: [`jerryboganda/DoctorMarriageBureauLaravel`](https://github.com/jerryboganda/DoctorMarriageBureauLaravel)
 - Production branch: `main`
-- Local repository: `D:\Projects\Doctor Marriage Bureau`
-- The GitHub repository is the source of truth for Laravel, frontends, the
-  `wordpress-plugin/` bridge, deployment scripts, and documentation.
-- Production deploys are artifact-based. Secrets and runtime state are never
-  committed or shipped in the artifact.
-- All durable Laravel state lives outside the Git checkout under
-  `$HOME/.dmb-persistent`. The release script preserves the production `.env`
-  and immutable `APP_KEY`, uploads, `storage/app`, admin add-ons, logs, file
-  sessions, legacy SQL backups, deployment metadata, retained releases, and
-  pre-migration database backups there, then recreates and validates runtime
-  symlinks after every deployment.
-- Hostinger hPanel Git auto-deploy must remain disabled. Only the approved
-  GitHub Actions deployment may change production.
-- Do not use `master`, an old VPS checkout, Vercel, or a local build as a
-  production source of truth.
+- Local repository: `f:\projects\Doctor Marriage Bureau`
+- Production VPS: `185.252.233.186`
+- The GitHub repository is the source of truth for all services, frontends, and documentation.
+- Production deploys are automated via GitHub Actions (`.github/workflows/deploy.yml`).
 
 ## Public surfaces and ownership
 
 | Surface | URL | Owner and boundary |
 |---|---|---|
-| Marketing website | <https://doctormarriagebureau.com.pk> | WordPress on Hostinger. Public pages, navigation, Elementor sections, header/footer, social links, and marketing copy are maintained in WordPress. |
-| WordPress administration | <https://doctormarriagebureau.com.pk/wp-login.php> | WordPress admin and Elementor access. Credentials are supplied at runtime; never store them here. |
-| Member web app | <https://panel.doctormarriagebureau.com.pk> | Laravel-hosted React/Vite user panel. |
-| Laravel API | <https://panel.doctormarriagebureau.com.pk/api> | Same Laravel production application as the member panel. Health endpoint: `/api/health`. |
-| Laravel admin | <https://panel.doctormarriagebureau.com.pk/admin> | Member, package, blog, payment, settings, and operational administration. |
-| Mobile app | `DMB Mobile App/` | React Native/Expo source and EAS build configuration; it consumes the Laravel API. |
+| Marketing website | <https://doctormarriagebureau.com.pk> | External WordPress marketing site. |
+| WordPress administration | <https://doctormarriagebureau.com.pk/wp-login.php> | WordPress admin and Elementor access. |
+| Member web app | <https://panel.doctormarriagebureau.com.pk> | Web app and user portal on Production VPS (`185.252.233.186`). |
+| API service | <https://panel.doctormarriagebureau.com.pk/api> | API running on Production VPS (`185.252.233.186`). Health endpoint: `/api/health`. |
+| Admin panel | <https://panel.doctormarriagebureau.com.pk/admin> | Member, package, and operational administration. |
+| Mobile app | `DMB Mobile App/` | React Native/Expo source; consumes the API. |
 
-The marketing website and Laravel web app are separate Hostinger sites under the
-same account but use separate quota types. WordPress uses its separate
-PHP/website quota with generous limits; the Laravel web app uses the project's
-web-app quota. Keep their application, document-root, and quota boundaries
-separate: the Laravel GitHub Actions release updates only
-`panel.doctormarriagebureau.com.pk`, while WordPress content and Elementor
-layout changes are managed on the marketing site itself.
-
-`api.doctormarriagebureau.com.pk` appears in older frontend and release
-documents. It is not the Hostinger workflow health target and must be treated
-as a legacy/unverified hostname until DNS and certificates are explicitly
-confirmed.
+The marketing website and member web app are separate installations. The member web app runs directly on Production VPS (`185.252.233.186`), while WordPress content is managed on the marketing website.
 
 ## Package landing page and prices
 
@@ -139,48 +117,31 @@ npm run ci
 ```
 
 Set `VITE_API_URL`/the project’s API base setting in an ignored
-`.env.local`. For the repository-level Hostinger build use:
-
-```powershell
-cd "D:\Projects\Doctor Marriage Bureau"
-npm run hostinger:build
-```
+`.env.local`.
 
 ### Mobile app
 
 Use Node.js 18–20 for the current Expo/Metro toolchain:
 
 ```powershell
-cd "D:\Projects\Doctor Marriage Bureau\DMB Mobile App"
+cd "f:\projects\Doctor Marriage Bureau\DMB Mobile App"
 npm ci
 npm run typecheck
 npm start
 npx eas build --platform android --profile preview --no-wait
 ```
 
-The mobile app is not included in the Hostinger production artifact. Its
-`build:web` target is CI validation/build output only unless a separate
-release is approved.
+The mobile app target is independent of the VPS web release.
 
 ## Validation and deployment
 
-- GitHub Actions is the only CI/CD and validation platform. The `Project CI`
-  workflow runs Laravel quality, Laravel/MySQL regression and backup smoke
-  tests, and the React member-panel quality pipeline. Hostinger deployment and
-  remote operations also run through GitHub Actions workflows.
-- Approved production workflows are the repository’s
-  `Hostinger Deploy Dispatch`, `Hostinger Build And Deploy`,
-  `Hostinger Remote Exec`, and `Hostinger Production Status` workflows.
-- Direct SSH from the local network is blocked. Use GitHub Actions for
-  production access.
-- Every deployment creates and validates a compressed database backup before
-  running migrations, enters Laravel maintenance mode for the migration/code
-  switch, uses quota-safe hard links for the retained release, cleans failed
-  release workspaces and incoming artifacts, and fails unless the production
-  health endpoint returns HTTP 200.
-- Vercel configuration exists in `vercel.json`, but no active production
-  ownership is established there. Hostinger remains the production boundary.
+- GitHub Actions is the automated CI/CD platform.
+- Production deploys run via `.github/workflows/deploy.yml` directly targeting the Production VPS (`185.252.233.186`).
+- Direct SSH access to the Production VPS:
+  ```bash
+  ssh root@185.252.233.186
+  cd /opt/docker/doctormarriagebureau
+  docker compose ps
+  ```
+- Detailed production architecture and emergency operations are documented in [`VPS_DEPLOYMENT_GUIDE.md`](VPS_DEPLOYMENT_GUIDE.md).
 
-Read [`HOSTINGER_DEPLOY_GUIDE.md`](HOSTINGER_DEPLOY_GUIDE.md) before any
-production operation. Do not commit or run `git add -A` for unrelated local
-files when preparing a deployment.

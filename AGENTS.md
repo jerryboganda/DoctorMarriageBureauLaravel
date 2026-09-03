@@ -28,6 +28,6 @@
 
 - GitHub Actions is the only CI/CD and automated validation platform for this project.
 - Use `.github/workflows/ci.yml` for backend quality, MySQL regression/backup smoke checks, and member-panel quality.
-- Use the Hostinger workflows under `.github/workflows/` for production deploys, remote commands, and production status checks.
+- Production environment is hosted on Production VPS (IP: 185.252.233.186). Use `.github/workflows/deploy.yml` for production deploys, remote commands, and production status checks.
 - Do not add, restore, or use CircleCI configuration or CircleCI-only validation scripts.
 - Before finalizing implementation work, report the relevant GitHub Actions run status or the exact blocker that prevented using it.

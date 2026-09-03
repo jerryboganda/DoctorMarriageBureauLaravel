@@ -51,7 +51,7 @@ SELECT
 	COALESCE(pa.height, 0),
 	` + assets.PhotoSQLWithUserFallback("u.photo", "u.id") + `,
 	(COALESCE(u.photo_approved, 0) = 0),
-	(m.is_approved AND u.email_verified_at IS NOT NULL),
+	((COALESCE(m.is_approved, false) OR COALESCE(u.approved, false)) AND u.email_verified_at IS NOT NULL),
 	COALESCE(m.travel_mode, false),
 	COALESCE(m.travel_city, '')
 FROM users u

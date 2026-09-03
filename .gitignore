@@ -4,9 +4,14 @@
 
 # ---- Environment / Secrets ----
 .env
-.env.*.php
-.env.local
-.env.production
+.env.*
+!.env.example
+Modernized-Platform/services/api/uploads/
+*.env
+*.backup
+*.exe
+*.log
+seed_dev_users.sql
 
 # ---- PHP / Laravel ----
 /vendor/

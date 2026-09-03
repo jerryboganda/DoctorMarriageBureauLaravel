@@ -7,13 +7,11 @@ React Native/Expo mobile client for Doctor Marriage Bureau.
 - Source: `DMB Mobile App/`
 - Bundle identifier: `com.doctorsmarriagebureau.app`
 - API: the Laravel API at the `/api` path of the production panel host
-- Native release: EAS/Expo, independent of Hostinger
-- Hostinger does **not** deploy the mobile app; `build:web` is a local/CI
-  artifact unless a separate release is approved.
+- Native release: EAS/Expo, independent of the Production VPS (`185.252.233.186`).
+- The mobile app is deployed independently via EAS.
 
-The checked-in package currently uses Expo SDK 55 preview packages. Older
+The checked-in package uses Expo SDK. Older
 documents referring to Expo 54 or a “production-ready” release are historical.
-They do not override the current Hostinger health blocker.
 
 ## Prerequisites
 

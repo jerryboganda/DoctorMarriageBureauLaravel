@@ -4,14 +4,7 @@
 > **Status:** Historical feature/build record; not a current production
 > approval.
 
-This file records the February 2026 mobile hardening work. The checked-in app
-now uses Expo SDK 55 preview packages; validate the current dependency graph
-before an EAS release.
-
-> Hostinger currently lacks the Laravel production `.env`, so
-> `https://panel.doctormarriagebureau.com.pk/api/health` returns HTTP 500.
-> Resolve that backend blocker and complete current device/EAS QA before
-> publishing a mobile release.
+This file records the mobile build and integration configuration.
 
 ## App identity
 
@@ -20,7 +13,7 @@ before an EAS release.
 | Name | Doctor Marriage Bureau |
 | Bundle ID | `com.doctorsmarriagebureau.app` |
 | Version in `app.json` | `1.0.0` |
-| Native build boundary | Expo/EAS; independent of Hostinger |
+| Native build boundary | Expo/EAS; independent of VPS release |
 
 ## Historical scope
 
@@ -56,7 +49,7 @@ npx eas build --platform android --profile preview --no-wait
 
 ## Release checklist
 
-- [ ] Hostinger `.env` is securely provisioned.
+- [ ] Production VPS `.env` is securely provisioned.
 - [ ] `GET /api/health` returns HTTP 200.
 - [ ] API URL and allowed origins are verified for the build.
 - [ ] Signup, verification, sign-in, password reset, and logout pass with a
@@ -68,4 +61,4 @@ npx eas build --platform android --profile preview --no-wait
 
 For API paths and production boundaries, use the repository
 [`AUTH_PRODUCTION_READY.md`](../AUTH_PRODUCTION_READY.md) and
-[`HOSTINGER_DEPLOY_GUIDE.md`](../HOSTINGER_DEPLOY_GUIDE.md).
+[`VPS_DEPLOYMENT_GUIDE.md`](../VPS_DEPLOYMENT_GUIDE.md).

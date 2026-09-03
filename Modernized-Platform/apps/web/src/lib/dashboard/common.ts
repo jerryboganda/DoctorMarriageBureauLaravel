@@ -346,7 +346,13 @@ export function doctorCardHtml(doc: DoctorCard, opts: { shortlist?: boolean } = 
         <div class="aspect-[4/3] w-full overflow-hidden bg-navy-100 relative">
           <img src="${photo}" alt="${name}" loading="lazy" onerror="this.onerror=null;this.src='${escapeHtml(avatarFor('', doc.gender))}';" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500 ${doc.is_photo_blurred ? 'blur-md' : ''}" />
           ${score != null ? `<div class="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-bold glass-card text-brand-600 shadow-md">✨ ${score}% Match</div>` : ''}
-          ${doc.is_verified ? `<div class="absolute top-3 right-3 p-1.5 rounded-full bg-emerald-500 text-white shadow-md" title="Verified">✓</div>` : ''}
+          ${doc.is_verified ? `
+            <div class="absolute top-3 right-3 z-10 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-[11px] font-bold shadow-lg shadow-emerald-950/20 border border-white/40 backdrop-blur-md transition-transform duration-200 group-hover:scale-105" title="Verified Doctor Profile">
+              <svg class="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+              <span class="tracking-wide">Verified</span>
+            </div>` : ''}
         </div>
         <div class="p-5 space-y-3">
           <div>

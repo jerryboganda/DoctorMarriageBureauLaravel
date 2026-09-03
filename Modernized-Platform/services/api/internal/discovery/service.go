@@ -158,7 +158,7 @@ func (s *discoveryService) fetchCandidates(ctx context.Context, viewerID int64, 
 			COALESCE(ms.name, ''), COALESCE(pa.height, 0),
 			` + assets.PhotoSQLWithUserFallback("u.photo", "u.id") + `,
 			(COALESCE(u.photo_approved, 0) = 0),
-			(m.is_approved AND u.email_verified_at IS NOT NULL),
+			((COALESCE(m.is_approved, false) OR COALESCE(u.approved, false)) AND u.email_verified_at IS NOT NULL),
 			(COALESCE(m.travel_mode, false) AND (m.travel_expires_at IS NULL OR m.travel_expires_at > NOW())),
 			COALESCE(m.travel_city, ''),
 			COALESCE(sb.religion_id, 0), COALESCE(sb.sect_id, 0), COALESCE(sb.caste_id, 0),
@@ -386,7 +386,7 @@ func (s *discoveryService) GetProfile(ctx context.Context, viewerID, candidateID
 	_ = s.pg.Pool.QueryRow(ctx, `SELECT `+assets.PhotoSQLWithUserFallback("u.photo", "u.id")+` FROM users u WHERE u.id=$1`, candidateID).Scan(&photo)
 	cr.card.ProfilePhotoURL = photo
 	var verified bool
-	_ = s.pg.Pool.QueryRow(ctx, `SELECT (m.is_approved AND u.email_verified_at IS NOT NULL) FROM users u JOIN members m ON m.user_id=u.id WHERE u.id=$1`, candidateID).Scan(&verified)
+	_ = s.pg.Pool.QueryRow(ctx, `SELECT ((COALESCE(m.is_approved, false) OR COALESCE(u.approved, false)) AND u.email_verified_at IS NOT NULL) FROM users u JOIN members m ON m.user_id=u.id WHERE u.id=$1`, candidateID).Scan(&verified)
 	cr.card.IsVerified = verified
 	exp := s.loadExpectations(ctx, viewerID)
 	breakdown := CalculateCompatibility(exp, &cr.prof, nil)

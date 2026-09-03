@@ -3,16 +3,16 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 ---
 
 <DashboardLayout
-  title="Edit Doctor Profile — Doctor Marriage Bureau"
-  description="Update medical credentials, personal attributes, and partner expectations."
+  title="Edit Profile — Doctor Marriage Bureau"
+  description="Update qualifications, personal attributes, and partner expectations."
 >
   <div class="space-y-8 animate-fadeIn max-w-4xl">
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
         <h1 class="text-2xl sm:text-3xl font-black text-navy-800 font-serif">
-          Edit <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 via-brand-600 to-pink-600">Doctor Profile</span>
+          Edit <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 via-brand-600 to-pink-600">Profile</span>
         </h1>
-        <p class="text-xs sm:text-sm text-navy-500">Keep your medical background and matchmaking criteria accurate.</p>
+        <p class="text-xs sm:text-sm text-navy-500">Keep your background and matchmaking criteria accurate.</p>
       </div>
       <div class="shrink-0 p-3.5 rounded-2xl bg-white border border-brand-100 shadow-luxury text-right">
         <span class="text-[11px] font-bold text-navy-500 block">Quality Score</span>
@@ -32,7 +32,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
   const tabs = [
     { id: 'basics', label: '1. Basics' },
-    { id: 'career', label: '2. Medical' },
+    { id: 'career', label: '2. Education' },
     { id: 'lifestyle', label: '3. Lifestyle' },
     { id: 'family', label: '4. Family' },
     { id: 'preferences', label: '5. Partner' },
@@ -46,6 +46,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   let sectOpts: Opt[] = [];
   let casteOpts: Opt[] = [];
   let specialityOpts: Opt[] = [];
+  let galleryPrivacyData: any = { privacy: 'public', shared_users: [], pending_requests: [] };
 
   function attr(value: unknown): string {
     return escapeHtml(value ?? '');
@@ -154,8 +155,8 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
         ${field('institution', 'Institution', 'text', edu.institution)}
         ${field('designation', 'Current designation', 'text', job.designation)}
         ${field('company', 'Hospital / employer', 'text', job.company)}
-        ${sel('medical_speciality', 'Medical speciality', specialityOpts, c.medical_speciality)}
-        ${field('medical_registration', 'PMDC / GMC number', 'text', c.medical_registration)}
+        ${sel('medical_speciality', 'Speciality', specialityOpts, c.medical_speciality)}
+        ${field('medical_registration', 'PMDC / GMC number (optional)', 'text', c.medical_registration)}
         ${sel('work_location_type', 'Work location', group('work_location_type'), job.work_location_type)}
       </div>`;
     } else if (current === 'lifestyle') {
@@ -199,24 +200,246 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
         ${sel('children_acceptable', 'Children acceptable', acceptOpts, p.children_acceptable)}
       </div>`;
     } else {
-      const photos = (m.gallery || []).map((g: any) =>
-        `<div class="relative"><img src="${avatarFor(g.url)}" class="aspect-square rounded-2xl object-cover border border-navy-100" /><button type="button" data-del-media="${g.id}" class="absolute top-2 right-2 px-2 py-1 rounded-full bg-white text-[10px] font-bold">✕</button></div>`
-      ).join('');
-      html = `<div class="space-y-4">
-        <div class="grid grid-cols-3 sm:grid-cols-4 gap-3">${photos || '<p class="text-xs text-navy-500 col-span-3">No photos uploaded yet.</p>'}</div>
-        <label class="block text-xs font-bold text-navy-700">Upload photo
-          <input id="photo-file" type="file" accept="image/*" class="mt-1 block text-xs" />
-        </label>
-        <label class="flex items-center gap-2 text-xs font-semibold text-navy-700"><input id="photo-primary" type="checkbox" class="accent-brand-500" /> Set as main photo</label>
+      const currentPriv = galleryPrivacyData.privacy || 'public';
+      const sharedList = galleryPrivacyData.shared_users || [];
+      const pendingList = galleryPrivacyData.pending_requests || [];
+
+      const sharedHtml = sharedList.length ? sharedList.map((u: any) => `
+        <div class="flex items-center justify-between p-3 rounded-2xl bg-white border border-brand-100 shadow-sm gap-3">
+          <div class="flex items-center gap-3 min-w-0">
+            <img src="${avatarFor(u.photo, u.gender)}" class="w-10 h-10 rounded-full object-cover border border-brand-200 shrink-0" />
+            <div class="min-w-0">
+              <div class="text-xs font-bold text-navy-900 truncate">Dr. ${escapeHtml(u.first_name)} ${escapeHtml(u.last_name)} <span class="text-[10px] text-navy-400 font-normal">#${u.user_id}</span></div>
+              <div class="text-[11px] text-brand-600 truncate">${escapeHtml([u.degree, u.speciality, u.city].filter(Boolean).join(' · ') || 'Doctor')}</div>
+            </div>
+          </div>
+          <button type="button" data-revoke-share="${u.user_id}" class="px-3 py-1.5 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 text-[11px] font-bold transition-colors shrink-0">
+            Revoke Access
+          </button>
+        </div>
+      `).join('') : '<p class="text-xs text-navy-400 italic py-2">No friends added yet. Enter a doctor ID or choose a suggestion below to share access with them.</p>';
+
+      const pendingHtml = pendingList.length ? `
+        <div class="mt-4 pt-3 border-t border-navy-100 space-y-2">
+          <h5 class="text-xs font-bold text-amber-700">Access Requests from Other Doctors (${pendingList.length})</h5>
+          ${pendingList.map((req: any) => `
+            <div class="flex items-center justify-between p-3 rounded-xl bg-amber-50/70 border border-amber-200 text-xs">
+              <span class="font-bold text-navy-800">${escapeHtml(req.requester_name || `Doctor #${req.requested_by_user_id}`)} requested to view your gallery</span>
+              <div class="flex items-center gap-2">
+                <button type="button" data-accept-req="${req.id}" class="px-3 py-1 rounded-lg bg-emerald-600 text-white font-bold text-[11px]">Accept</button>
+                <button type="button" data-reject-req="${req.id}" class="px-3 py-1 rounded-lg bg-navy-200 text-navy-700 font-bold text-[11px]">Decline</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      ` : '';
+
+      const photos = (m.gallery || []).map((g: any) => {
+        const isMain = g.is_main || sameVal(b.photo, g.url);
+        return `<div class="group relative aspect-square rounded-2xl overflow-hidden bg-navy-50 border ${isMain ? 'border-brand-500 ring-2 ring-brand-500/30' : 'border-navy-200'}">
+          <img src="${avatarFor(g.url)}" class="w-full h-full object-cover" />
+          <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2.5">
+            <div class="flex justify-end">
+              <button type="button" data-del-media="${g.id}" class="w-7 h-7 rounded-full bg-white/90 text-navy-800 text-xs font-bold hover:bg-rose-500 hover:text-white transition-colors flex items-center justify-center shadow" title="Delete Photo">✕</button>
+            </div>
+            <div>
+              ${isMain ? `<span class="px-2 py-1 rounded-lg bg-emerald-500 text-white text-[11px] font-bold block text-center shadow">✓ Profile Photo</span>` : `<button type="button" data-make-profile="${g.id}" class="w-full py-1.5 px-2 rounded-lg bg-white hover:bg-brand-600 hover:text-white text-navy-900 text-[10.5px] font-bold transition-colors shadow">Make it profile photo</button>`}
+            </div>
+          </div>
+          ${isMain ? `<span class="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-emerald-600 text-white text-[10px] font-bold shadow group-hover:hidden">Profile Photo</span>` : ''}
+        </div>`;
+      }).join('');
+
+      html = `<div class="space-y-6">
+        <!-- Gallery Privacy Controls -->
+        <div class="p-5 sm:p-6 rounded-3xl bg-slate-50 border border-slate-200/80 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-3">
+            <div>
+              <div class="text-sm font-bold text-navy-900 flex items-center gap-2">
+                <span>🔒 Gallery Privacy</span>
+              </div>
+              <p class="text-xs text-navy-500">Choose who is permitted to view your photo gallery</p>
+            </div>
+            <span class="text-xs font-bold px-3 py-1 rounded-full self-start sm:self-auto ${currentPriv === 'public' ? 'bg-blue-100 text-blue-800' : currentPriv === 'private' ? 'bg-amber-100 text-amber-800' : 'bg-brand-100 text-brand-800'}">
+              ${currentPriv === 'public' ? 'Public (everyone can view)' : currentPriv === 'private' ? 'Private (only you can view)' : 'Only Share With (selective friends)'}
+            </span>
+          </div>
+
+          <!-- 3 Privacy Options Buttons -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <button type="button" data-set-privacy="private" class="p-3.5 rounded-2xl border text-left transition-all ${currentPriv === 'private' ? 'border-brand-500 bg-white ring-2 ring-brand-500/20 shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300'}">
+              <div class="flex items-center justify-between font-bold text-xs text-navy-900 mb-1">
+                <span>🔒 Private</span>
+                <span class="w-3.5 h-3.5 rounded-full border ${currentPriv === 'private' ? 'border-brand-600 bg-brand-600' : 'border-slate-300'} flex items-center justify-center">${currentPriv === 'private' ? '<span class="w-1.5 h-1.5 bg-white rounded-full"></span>' : ''}</span>
+              </div>
+              <p class="text-[11px] text-navy-500">Only user can view</p>
+            </button>
+
+            <button type="button" data-set-privacy="public" class="p-3.5 rounded-2xl border text-left transition-all ${currentPriv === 'public' ? 'border-brand-500 bg-white ring-2 ring-brand-500/20 shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300'}">
+              <div class="flex items-center justify-between font-bold text-xs text-navy-900 mb-1">
+                <span>🌐 Public</span>
+                <span class="w-3.5 h-3.5 rounded-full border ${currentPriv === 'public' ? 'border-brand-600 bg-brand-600' : 'border-slate-300'} flex items-center justify-center">${currentPriv === 'public' ? '<span class="w-1.5 h-1.5 bg-white rounded-full"></span>' : ''}</span>
+              </div>
+              <p class="text-[11px] text-navy-500">Everyone can view</p>
+            </button>
+
+            <button type="button" data-set-privacy="only_share_with" class="p-3.5 rounded-2xl border text-left transition-all ${currentPriv === 'only_share_with' ? 'border-brand-500 bg-white ring-2 ring-brand-500/20 shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300'}">
+              <div class="flex items-center justify-between font-bold text-xs text-navy-900 mb-1">
+                <span>👥 Only Share With</span>
+                <span class="w-3.5 h-3.5 rounded-full border ${currentPriv === 'only_share_with' ? 'border-brand-600 bg-brand-600' : 'border-slate-300'} flex items-center justify-center">${currentPriv === 'only_share_with' ? '<span class="w-1.5 h-1.5 bg-white rounded-full"></span>' : ''}</span>
+              </div>
+              <p class="text-[11px] text-navy-500">Selected friends & doctors</p>
+            </button>
+          </div>
+
+          <!-- Share with Friend / Doctor management panel -->
+          <div class="${currentPriv === 'only_share_with' ? 'block' : 'hidden'} pt-2 space-y-4">
+            <div class="p-4 rounded-2xl bg-white border border-brand-100/80 space-y-3">
+              <label class="block text-xs font-bold text-navy-800">Add Friend / Doctor to Share Gallery Access</label>
+              <div class="flex flex-col sm:flex-row gap-2">
+                <input id="share-target-input" type="text" placeholder="Enter Doctor ID (e.g. 99992, 844, 679) or name…" class="flex-1 px-4 py-2.5 rounded-xl text-xs bg-slate-50 border border-slate-200 outline-none focus:border-brand-500 text-navy-900" />
+                <button type="button" id="btn-share-access" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-brand-500 via-brand-600 to-pink-600 hover:from-brand-600 hover:to-pink-700 text-white text-xs font-bold shadow transition-all shrink-0">
+                  + Share Access
+                </button>
+              </div>
+              <div class="flex flex-wrap items-center gap-1.5 text-[11px] text-navy-500">
+                <span class="font-semibold">Quick suggest:</span>
+                <button type="button" data-fill-id="99992" class="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-brand-50 hover:text-brand-600 text-navy-700 font-medium">Dr. Ayesha Malik (#99992)</button>
+                <button type="button" data-fill-id="844" class="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-brand-50 hover:text-brand-600 text-navy-700 font-medium">Dr. Usman (#844)</button>
+                <button type="button" data-fill-id="679" class="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-brand-50 hover:text-brand-600 text-navy-700 font-medium">Dr. Ismail (#679)</button>
+              </div>
+            </div>
+
+            <!-- Shared Users List -->
+            <div class="space-y-2">
+              <div class="text-xs font-bold text-navy-800">Shared Friends & Doctors (${sharedList.length})</div>
+              <div class="space-y-2">${sharedHtml}</div>
+            </div>
+
+            ${pendingHtml}
+          </div>
+        </div>
+
+        <!-- Photos Grid -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-bold text-navy-800">Photo Album (${(m.gallery || []).length})</h4>
+            <span class="text-[11px] text-navy-400">Hover photo to set as profile photo or delete</span>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">${photos || '<p class="text-xs text-navy-500 col-span-4 p-4 rounded-xl bg-slate-50 border border-slate-100 text-center">No photos uploaded yet.</p>'}</div>
+        </div>
+
+        <!-- Upload Form -->
+        <div class="p-5 rounded-2xl bg-white border border-brand-100/80 space-y-3">
+          <label class="block text-xs font-bold text-navy-700">Upload new photo
+            <input id="photo-file" type="file" accept="image/*" class="mt-1.5 block w-full text-xs text-navy-700 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 cursor-pointer" />
+          </label>
+          <label class="flex items-center gap-2 text-xs font-semibold text-navy-700 cursor-pointer pt-1">
+            <input id="photo-primary" type="checkbox" class="w-4 h-4 accent-brand-500 rounded" />
+            <span>Make it profile photo</span>
+          </label>
+        </div>
       </div>`;
     }
-    form.innerHTML = html + `<div class="pt-2"><button type="submit" class="px-6 py-2.5 rounded-full bg-gradient-to-r from-brand-500 via-brand-600 to-pink-600 text-white text-xs font-bold shadow-lg shadow-brand-500/30">Save ${tabs.find((t) => t.id === current)?.label}</button></div>`;
+    form.innerHTML = html + `<div class="pt-2"><button type="submit" class="px-6 py-2.5 rounded-full bg-gradient-to-r from-brand-500 via-brand-600 to-pink-600 text-white text-xs font-bold shadow-lg shadow-brand-500/30">${current === 'media' ? 'Upload Photo & Save' : `Save ${tabs.find((t) => t.id === current)?.label}`}</button></div>`;
 
     form.querySelectorAll<HTMLButtonElement>('[data-del-media]').forEach((btn) => {
       btn.addEventListener('click', async () => {
         try {
           await api.delete(`/media/${btn.dataset.delMedia}`);
           toast('Photo removed.', 'info');
+          await reload();
+        } catch (err) {
+          toast(errorMessage(err), 'error');
+        }
+      });
+    });
+
+    form.querySelectorAll<HTMLButtonElement>('[data-set-privacy]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const priv = btn.dataset.setPrivacy;
+        if (!priv) return;
+        try {
+          await api.post('/media/privacy', { privacy: priv });
+          const label = priv === 'public' ? 'Public (everyone can view)' : priv === 'private' ? 'Private (only you can view)' : 'Only Share With (selected friends)';
+          toast(`Gallery privacy set to ${label}`, 'success');
+          await reload();
+        } catch (err) {
+          toast(errorMessage(err, 'Failed to update privacy.'), 'error');
+        }
+      });
+    });
+
+    form.querySelector<HTMLButtonElement>('#btn-share-access')?.addEventListener('click', async () => {
+      const input = form.querySelector<HTMLInputElement>('#share-target-input');
+      const val = input?.value?.trim();
+      if (!val) {
+        toast('Please enter a Doctor ID or name to share with.', 'error');
+        return;
+      }
+      try {
+        await api.post('/media/share', { target_user_id: Number(val), search: val });
+        toast('Gallery access shared with doctor!', 'success');
+        await reload();
+      } catch (err) {
+        toast(errorMessage(err, 'Failed to share gallery access.'), 'error');
+      }
+    });
+
+    form.querySelectorAll<HTMLButtonElement>('[data-fill-id]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const input = form.querySelector<HTMLInputElement>('#share-target-input');
+        if (input && btn.dataset.fillId) {
+          input.value = btn.dataset.fillId;
+        }
+      });
+    });
+
+    form.querySelectorAll<HTMLButtonElement>('[data-revoke-share]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const targetId = btn.dataset.revokeShare;
+        if (!targetId) return;
+        try {
+          await api.delete(`/media/share/${targetId}`);
+          toast('Gallery access revoked.', 'info');
+          await reload();
+        } catch (err) {
+          toast(errorMessage(err, 'Failed to revoke access.'), 'error');
+        }
+      });
+    });
+
+    form.querySelectorAll<HTMLButtonElement>('[data-make-profile]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const imgId = btn.dataset.makeProfile;
+        if (!imgId) return;
+        try {
+          await api.post(`/media/${imgId}/profile-photo`);
+          toast('Profile photo updated successfully!', 'success');
+          await reload();
+        } catch (err) {
+          toast(errorMessage(err, 'Could not set profile photo.'), 'error');
+        }
+      });
+    });
+
+    form.querySelectorAll<HTMLButtonElement>('[data-accept-req]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        try {
+          await api.post(`/media/access-requests/${btn.dataset.acceptReq}/accept`);
+          toast('Access request accepted!', 'success');
+          await reload();
+        } catch (err) {
+          toast(errorMessage(err), 'error');
+        }
+      });
+    });
+
+    form.querySelectorAll<HTMLButtonElement>('[data-reject-req]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        try {
+          await api.post(`/media/access-requests/${btn.dataset.rejectReq}/reject`);
+          toast('Access request declined.', 'info');
           await reload();
         } catch (err) {
           toast(errorMessage(err), 'error');
@@ -270,8 +493,12 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   }
 
   async function reload() {
-    const res = await api.get('/profiles/full');
+    const [res, privRes] = await Promise.all([
+      api.get('/profiles/full').catch(() => ({ data: { data: {} } })),
+      api.get('/media/privacy').catch(() => ({ data: { data: { privacy: 'public', shared_users: [], pending_requests: [] } } })),
+    ]);
     profile = res.data?.data ?? {};
+    galleryPrivacyData = privRes.data?.data ?? { privacy: 'public', shared_users: [], pending_requests: [] };
     const score = Math.round(Number(profile.quality_score?.total || 0));
     document.getElementById('edit-score')!.textContent = `${score}% Complete`;
     await renderForm();
@@ -282,14 +509,18 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     try {
       if (current === 'media') {
         const file = (document.getElementById('photo-file') as HTMLInputElement | null)?.files?.[0];
-        if (!file) { toast('Choose a photo to upload.', 'error'); return; }
+        if (!file) {
+          toast('Gallery privacy and settings are saved. Choose a photo to upload a new image.', 'info');
+          return;
+        }
+        const isPrimary = (document.getElementById('photo-primary') as HTMLInputElement)?.checked || false;
         const fd = new FormData();
         fd.append('file', file);
         fd.append('category', 'gallery');
-        fd.append('is_primary', String((document.getElementById('photo-primary') as HTMLInputElement)?.checked || false));
-        fd.append('is_private', 'false');
+        fd.append('is_primary', String(isPrimary));
+        fd.append('is_private', galleryPrivacyData.privacy === 'public' ? 'false' : 'true');
         await api.post('/media/upload', fd);
-        toast('Photo uploaded.', 'success');
+        toast(isPrimary ? 'Photo uploaded and set as profile photo!' : 'Photo added to your gallery.', 'success');
       } else {
         await api.post(`/profiles/section/${current}`, payloadFromForm());
         toast('Section saved.', 'success');
