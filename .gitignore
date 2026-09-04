@@ -32,6 +32,8 @@ Homestead.yaml
 !/storage/framework/sessions/.gitkeep
 /storage/framework/views/*
 !/storage/framework/views/.gitkeep
+/storage/framework/testing/*
+!/storage/framework/testing/.gitkeep
 /storage/logs/*
 !/storage/logs/.gitkeep
 /storage/debugbar/*
