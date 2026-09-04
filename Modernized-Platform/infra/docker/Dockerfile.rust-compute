@@ -5,7 +5,7 @@ RUN apk add --no-cache musl-dev
 COPY Cargo.toml ./
 RUN mkdir src && echo "fn main() {}" > src/main.rs && cargo build --release || true
 COPY . .
-RUN cargo build --release
+RUN rm -rf .cargo && cargo build --release
 
 FROM alpine:3.20
 WORKDIR /app
